@@ -1,0 +1,19 @@
+[package]
+name = "rule34"
+version = "0.0.1"
+authors = [ "ProfessionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
+edition = "2018"
+license = "MIT/Apache-2.0"
+
+[dependencies]
+bytes = "0.5.6"
+http = "0.2.1"
+hyper = "0.13.9"
+hyper-tls = "0.4.3"
+select = "0.5.0"
+serde_json = "1.0.58"
+serde = { version = "1.0.115", features = [ "derive" ] }
+url = { version = "2.1.1", features = [ "serde" ] }
+
+[dev-dependencies]
+tokio = { version = "0.2.22", features = [ "macros" ] }

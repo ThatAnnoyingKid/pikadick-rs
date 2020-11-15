@@ -1,0 +1,169 @@
+pub mod season;
+
+pub use self::season::Season;
+use crate::types::{
+    platform::Platform,
+    stat::Stat,
+};
+use std::collections::HashMap;
+use url::Url;
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct UserData {
+    /// Unique user id
+    pub id: String,
+
+    #[serde(rename = "type")]
+    pub kind: String,
+
+    /// Collection of ranked seasons stats
+    pub children: Vec<Season>,
+    pub metadata: Metadata,
+    pub stats: Vec<Stat>,
+
+    /// Unknown fields
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+impl UserData {
+    /// Utility function to get a stat by name. Currently an O(n) linear search.
+    fn get_stat_by_name(&self, name: &str) -> Option<&Stat> {
+        self.stats.iter().find(|s| s.name() == name)
+    }
+
+    /// Gets top mmr from all servers.
+    pub fn current_mmr(&self) -> Option<u32> {
+        self.get_stat_by_name("MMR").map(|s| s.value as u32)
+    }
+
+    /// Get the image url for the rank this user is at gloablly
+    pub fn current_mmr_image(&self) -> Option<&Url> {
+        self.get_stat_by_name("Global MMR")
+            .and_then(|s| s.icon_url())
+    }
+
+    /// Get the MMR for this user.
+    pub fn current_mmr_america(&self) -> Option<u32> {
+        self.get_stat_by_name("Global MMR").map(|s| s.value as u32)
+    }
+
+    /// Gets this season's color as a string hex value
+    pub fn season_color(&self) -> &str {
+        &self.metadata.current_season_color
+    }
+
+    /// Tries to parse this season's hex color as a u32
+    pub fn season_color_u32(&self) -> Option<u32> {
+        u32::from_str_radix(self.season_color().get(1..)?, 16).ok()
+    }
+
+    /// Get total # of kills
+    pub fn get_kills(&self) -> Option<u64> {
+        self.get_stat_by_name("Kills").map(|s| s.value as u64)
+    }
+
+    /// Get total # of deaths
+    pub fn get_deaths(&self) -> Option<u64> {
+        self.get_stat_by_name("Deaths").map(|s| s.value as u64)
+    }
+
+    /// Get overall K/D
+    pub fn kd(&self) -> Option<f64> {
+        self.get_stat_by_name("KD Ratio").map(|s| s.value)
+    }
+
+    /// Get Overall W/L
+    pub fn wl(&self) -> Option<f64> {
+        self.get_stat_by_name("WL Ratio").map(|s| s.value)
+    }
+
+    /// Get user tag name
+    pub fn name(&self) -> &str {
+        &self.metadata.platform_user_handle
+    }
+
+    /// Get user avatar url
+    pub fn avatar_url(&self) -> &Url {
+        &self.metadata.picture_url
+    }
+
+    /// Get the latest stats for the latest ranked region/season the user has played in
+    pub fn get_latest_season(&self) -> Option<&Season> {
+        let target_id = format!(
+            "region-{}.season-{}",
+            self.metadata.latest_region.unwrap_or(100),
+            self.metadata.latest_season
+        );
+
+        self.children.iter().find(|s| s.id == target_id)
+    }
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct Metadata {
+    #[serde(rename = "accountId")]
+    pub account_id: String,
+
+    #[serde(rename = "countryCode")]
+    pub country_code: Option<String>,
+
+    #[serde(rename = "currentSeasonColor")]
+    pub current_season_color: String,
+
+    #[serde(rename = "currentSeasonName")]
+    pub current_season_name: String,
+
+    #[serde(rename = "latestRegion")]
+    pub latest_region: Option<u32>,
+
+    #[serde(rename = "latestSeason")]
+    pub latest_season: u32,
+
+    #[serde(rename = "pictureUrl")]
+    pub picture_url: Url,
+
+    #[serde(rename = "platformId")]
+    pub platform_id: Platform,
+
+    #[serde(rename = "platformUserHandle")]
+    pub platform_user_handle: String,
+
+    #[serde(rename = "segmentControls")]
+    pub segment_controls: Vec<serde_json::Value>,
+
+    #[serde(rename = "statsCategoryOrder")]
+    pub stats_category_order: Vec<String>,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::types::ApiResponse;
+
+    const SAMPLE_1: &str = include_str!("../../test_data/user_data_1.json");
+    const SAMPLE_2: &str = include_str!("../../test_data/user_data_2.json");
+
+    #[test]
+    fn parse_sample_1() {
+        let data = serde_json::from_str::<ApiResponse<UserData>>(SAMPLE_1)
+            .unwrap()
+            .data;
+        let season = data.get_latest_season().unwrap();
+
+        dbg!(season);
+    }
+
+    #[test]
+    fn parse_sample_2() {
+        let data = serde_json::from_str::<ApiResponse<UserData>>(SAMPLE_2)
+            .unwrap()
+            .data;
+        let season = data.get_latest_season().unwrap();
+
+        dbg!(season);
+    }
+}

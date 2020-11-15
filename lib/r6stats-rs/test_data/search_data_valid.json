@@ -1,0 +1,137 @@
+[{
+        "username": "Godly.NaVi",
+        "platform": "pc",
+        "ubisoft_id": "fe316a1a-9d5d-4dee-aed2-7b574e4f7a2e",
+        "uplay_id": "fe316a1a-9d5d-4dee-aed2-7b574e4f7a2e",
+        "avatar_url_146": "https://ubisoft-avatars.akamaized.net/fe316a1a-9d5d-4dee-aed2-7b574e4f7a2e/default_146_146.png",
+        "avatar_url_256": "https://ubisoft-avatars.akamaized.net/fe316a1a-9d5d-4dee-aed2-7b574e4f7a2e/default_256_256.png",
+        "avatar_banned": false,
+        "claimed": false,
+        "last_updated": "2020-07-15T05:33:53.801Z",
+        "progressionStats": {
+            "level": 390,
+            "lootbox_probability": 1100,
+            "total_xp": 7197
+        },
+        "genericStats": {
+            "general": {
+                "assists": 1252,
+                "barricades_deployed": 413,
+                "blind_kills": 9,
+                "bullets_fired": 0,
+                "bullets_hit": 48694,
+                "dbnos": 2336,
+                "deaths": 3555,
+                "distance_travelled": 963687,
+                "draws": 0,
+                "gadgets_destroyed": 4080,
+                "games_played": 1429,
+                "headshots": 2102,
+                "kd": 1.58,
+                "kills": 5625,
+                "losses": 545,
+                "melee_kills": 115,
+                "penetration_kills": 256,
+                "playtime": 1141069,
+                "rappel_breaches": 0,
+                "reinforcements_deployed": 4576,
+                "revives": 111,
+                "suicides": 13,
+                "wins": 884,
+                "wl": 1.62
+            },
+            "queue": {
+                "casual": {
+                    "deaths": 2858,
+                    "draws": 0,
+                    "games_played": 1036,
+                    "kd": 1.48,
+                    "kills": 4217,
+                    "losses": 421,
+                    "playtime": 876250,
+                    "wins": 615,
+                    "wl": 1.46
+                },
+                "ranked": {
+                    "deaths": 493,
+                    "draws": 0,
+                    "games_played": 313,
+                    "kd": 2.19,
+                    "kills": 1081,
+                    "losses": 96,
+                    "playtime": 208432,
+                    "wins": 217,
+                    "wl": 2.26
+                },
+                "other": {
+                    "deaths": 204,
+                    "draws": 0,
+                    "games_played": 80,
+                    "kd": 1.6,
+                    "kills": 327,
+                    "losses": 28,
+                    "playtime": 56387,
+                    "wins": 52,
+                    "wl": 1.86
+                }
+            },
+            "gamemode": {
+                "bomb": {
+                    "best_score": 8820,
+                    "games_played": 1397,
+                    "losses": 533,
+                    "playtime": 1125875,
+                    "wins": 864,
+                    "wl": 1.62
+                },
+                "secure_area": {
+                    "best_score": 3950,
+                    "games_played": 2,
+                    "kills_as_attacker_in_objective": 1,
+                    "kills_as_defender_in_objective": 5,
+                    "losses": 1,
+                    "playtime": 2424,
+                    "times_objective_secured": 1,
+                    "wins": 1,
+                    "wl": 1
+                },
+                "hostage": {
+                    "best_score": 3112,
+                    "games_played": 1,
+                    "losses": 0,
+                    "playtime": 682,
+                    "extractions_denied": 0,
+                    "wins": 1,
+                    "wl": 0
+                }
+            },
+            "timestamps": {
+                "created": "2020-07-15T00:37:06.376Z",
+                "last_updated": "2020-07-15T05:34:03.588Z"
+            }
+        },
+        "seasonalStats": {
+            "region": "emea",
+            "wins": 10,
+            "losses": 0,
+            "abandons": 0,
+            "kills": 51,
+            "deaths": 16,
+            "prev_rank_mmr": 4400,
+            "mmr": 5529,
+            "next_rank_mmr": 5000,
+            "max_mmr": 5529,
+            "last_match_mmr_change": 157,
+            "rank": 22,
+            "max_rank": 22,
+            "champions_rank_position": 0,
+            "skill_mean": 55.2888,
+            "last_match_skill_mean_change": 1.5676287861,
+            "skill_standard_deviation": 7.01531,
+            "last_match_skill_standard_deviation_change": -0.0731779791,
+            "updated_at": "2020-07-15T05:34:03.615Z",
+            "created_at": "2020-07-15T00:37:06.386Z",
+            "created_for_date": "2020-07-15T05:34:03.609Z"
+        }
+    }
+]

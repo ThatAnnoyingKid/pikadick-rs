@@ -1,0 +1,37 @@
+name: BuildRpi
+on:
+  push:
+    branches:
+      - master
+env:
+  DATABASE_URL: sqlite:./testing/testing_db.sqlite
+  
+jobs:
+  build-rpi:
+    name: Build Rpi
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: armv7-unknown-linux-gnueabihf
+        profile: minimal
+        override: true
+        components: rustfmt, rust-src
+
+    - name: Install GCC Cross Compilation Toolchain
+      run: sudo apt-get install gcc-arm-linux-gnueabihf
+
+    - name: Build
+      run: python3 ./scripts/cross.py
+      
+    - name: Upload Binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: pikadick
+        path: target/armv7-unknown-linux-gnueabihf/release/pikadick

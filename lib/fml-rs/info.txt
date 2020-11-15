@@ -1,0 +1,43 @@
+REQUEST
+	HEADERS
+		X-VDM-Api-Key: [INSERT API KEY]
+
+ENDPOINTS
+	GET https://www.fmylife.com/api/v2/article/list
+		QUERY_PARAMS:
+			page[number]
+				type: int
+				desc: Starting page of page results
+			page[bypage]
+				type: int
+				desc: Number per page
+			status[]
+				type: Status
+				repeatable: true
+			type[]: ? arr[int]
+			keyword: ? arr[int]
+			orderby[datePublish]: string
+			orderby[RAND()]
+				type: string
+				values
+					ASC: Random FML quotes
+			created_after: string
+			expr: string
+			user: int
+	
+OBJECTS 
+	enum Status
+		new: 0
+		rejected: 1
+		promoted: 2
+		refused: 3
+		validated: 4
+		privacy: 5
+		autopilot: 6
+		deleted: 7
+		scheduled: 8
+		toCheck: 9
+	struct ApiResponse
+		badge: ?
+		data: [varies]
+		meta: ?

@@ -1,0 +1,10 @@
+token = "[BOT_TOKEN]"
+prefix = "[PREFIX]" # EX: ~, p!, !
+data_dir = "[PATH_TO_DATA]" # EX: ./data
+
+[status]
+name = "you like a damn fiddle" # EX: "Crysis", "song", "basically anything"
+type = "[Status Type]" # EX: Playing, Listening, Streaming
+
+[fml]
+key = "4dccf019bdfac" # Use this

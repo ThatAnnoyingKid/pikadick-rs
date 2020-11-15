@@ -1,0 +1,6 @@
+{
+    "status": "error",
+    "errores": {
+        "csrf": "El token expir\u00f3 o es inv\u00e1lido."
+    }
+}
