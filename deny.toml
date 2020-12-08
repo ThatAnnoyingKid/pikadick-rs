@@ -27,7 +27,7 @@ allow-osi-fsf-free = "neither"
 confidence-threshold = 0.93
 default = "deny"
 private = { ignore = true }
-allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause" ]
+allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "CC0-1.0", "BSD-3-Clause" ]
 exceptions = [
     { name = "webpki-roots", allow = [ "MPL-2.0" ] },
     { name = "wepoll-sys", allow = [ "MPL-2.0" ] },
@@ -55,20 +55,11 @@ skip = [
     # blocked on tokio bumping mio to 0.7
     { name = "winapi", version = "0.2.8" },
     
-    # blocked on systemstat bumping nom to 0.5.0
-    { name = "memchr", version = "1.0.2" },
-
-    # blocked on reqwest bumping webpki-roots to 0.20.0
-    { name = "webpki-roots", version = "0.19.0" },
-    
     # Used as a build dep in raw-cpuid (8.1.0), not important.
     { name = "semver-parser", version = "0.7.0" },
     
     # Blocked on chrono, hyper, systemstat, and xml5ever bumping time to 0.2.16
     { name = "time", version = "0.1.43" },
-    
-    # Blocked on systemstat updating nom to 5.1.2
-    { name = "nom", version = "3.2.1"},
     
     # Blocked on rand updating their getrandom dep
     { name = "getrandom", version = "0.1.15" },
@@ -82,6 +73,9 @@ skip = [
     
     # Blocked on crossbeam, dashmap, dirs, getrandom, heim, log, mio, net2, nix, openssl, parking_lot, socket2, tempfile, and tracing updating to cfg-if 1.0.x
     { name = "cfg-if", version = "0.1.10" },
+    
+    # Blocked on sync-compression updating pin-project-lite to 0.2.x 
+    { name = "pin-project-lite", version = "0.1.11" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -120,7 +114,6 @@ allow-git = [
     "https://github.com/adumbidiot/zalgo-rs",
     "https://github.com/adumbidiot/shift-client-rs",
     "https://github.com/adumbidiot/polldaddy-rs",
-    "https://github.com/myfreeweb/systemstat",
     "https://github.com/adumbidiot/reddit-rs",
     "https://github.com/heim-rs/heim",
 ]

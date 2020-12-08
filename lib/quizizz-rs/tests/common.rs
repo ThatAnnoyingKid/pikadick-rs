@@ -1,3 +1,4 @@
+#[ignore]
 #[tokio::test]
 async fn check_room() {
     let client = quizizz::Client::new();
