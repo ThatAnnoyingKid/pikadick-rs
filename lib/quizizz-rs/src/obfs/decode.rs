@@ -72,11 +72,11 @@ pub fn decode_str(ostr: &str) -> Option<String> {
 fn is_char_valid_for_obfs(c: char) -> bool {
     let c = u32::from(c);
 
-    if c >= 0xD800 && c <= 0xDBFF {
+    if (0xD800..=0xDBFF).contains(&c) {
         return false;
     }
 
-    if c >= 0xDC00 && c <= 0xDFFF {
+    if (0xDC00..=0xDFFF).contains(&c) {
         return false;
     }
 

@@ -34,7 +34,7 @@ impl Client {
         Self { client }
     }
 
-    pub async fn check_room(&self, room_code: &'_ str) -> QResult<GenericResponse> {
+    pub async fn check_room_v3(&self, room_code: &'_ str) -> QResult<GenericResponse> {
         let payload = serde_json::to_vec(&CheckRoomJsonRequest { room_code })?;
 
         let req = Request::builder()
