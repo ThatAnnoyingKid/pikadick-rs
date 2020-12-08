@@ -19,19 +19,45 @@ use hyper::{
 };
 use hyper_tls::HttpsConnector;
 
-const CHECK_ROOM_URI: &str = "https://game.quizizz.com/play-api/v3/checkRoom";
+const CHECK_ROOM_URI_V3: &str = "https://game.quizizz.com/play-api/v3/checkRoom";
+const CHECK_ROOM_URI: &str = "https://game.quizizz.com/play-api/v4/checkRoom";
 
+/// A Client
 #[derive(Debug)]
 pub struct Client {
     client: hyper::Client<HttpsConnector<hyper::client::HttpConnector>>,
 }
 
 impl Client {
+    /// Make a new client
     pub fn new() -> Self {
         let https = HttpsConnector::new();
         let client = hyper::Client::builder().build::<_, hyper::Body>(https);
 
         Self { client }
+    }
+
+    pub async fn check_room(&self, room_code: &'_ str) -> QResult<GenericResponse> {
+        let payload = serde_json::to_vec(&CheckRoomJsonRequest { room_code })?;
+
+        let req = Request::builder()
+            .method(Method::POST)
+            .header(CONTENT_TYPE, "application/json")
+            .header(CONTENT_LENGTH, payload.len())
+            .uri(CHECK_ROOM_URI)
+            .body(hyper::Body::from(payload))?;
+
+        let res = self.client.request(req).await?;
+
+        let status = res.status();
+        if !status.is_success() {
+            return Err(QError::InvalidStatus(status));
+        }
+
+        let body = hyper::body::aggregate(res.into_body()).await?;
+        let ret: GenericResponse = serde_json::from_slice(body.bytes())?;
+
+        Ok(ret)
     }
 
     pub async fn check_room_v3(&self, room_code: &'_ str) -> QResult<GenericResponse> {
@@ -41,7 +67,7 @@ impl Client {
             .method(Method::POST)
             .header(CONTENT_TYPE, "application/json")
             .header(CONTENT_LENGTH, payload.len())
-            .uri(CHECK_ROOM_URI)
+            .uri(CHECK_ROOM_URI_V3)
             .body(hyper::Body::from(payload))?;
 
         let res = self.client.request(req).await?;
