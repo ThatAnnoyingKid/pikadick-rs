@@ -28,7 +28,7 @@ rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.118", features = [ "derive" ] }
 serenity = "0.9.1"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "774f36b" } 
-slog = "2.5.2"
+slog = "2.7.0"
 slog-async = "2.5.0"
 slog-term = "2.6.0"
 sqlx = { version = "0.3.5", default-features = false, features = [ "runtime-tokio", "macros", "sqlite" ] }
