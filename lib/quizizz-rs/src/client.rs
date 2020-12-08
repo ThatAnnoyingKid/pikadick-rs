@@ -1,89 +1,43 @@
 use crate::{
-    obfs::decode::decode_str,
     types::{
         CheckRoomJsonRequest,
-        CheckRoomObfuscatedJsonResponse,
         GenericResponse,
     },
     QError,
     QResult,
 };
-use bytes::Buf;
-use hyper::{
-    header::{
-        CONTENT_LENGTH,
-        CONTENT_TYPE,
-    },
-    Method,
-    Request,
-};
-use hyper_tls::HttpsConnector;
 
-const CHECK_ROOM_URI_V3: &str = "https://game.quizizz.com/play-api/v3/checkRoom";
 const CHECK_ROOM_URI: &str = "https://game.quizizz.com/play-api/v4/checkRoom";
 
-/// A Client
-#[derive(Debug)]
+/// A quizizz Client
+#[derive(Debug, Clone)]
 pub struct Client {
-    client: hyper::Client<HttpsConnector<hyper::client::HttpConnector>>,
+    client: reqwest::Client,
 }
 
 impl Client {
     /// Make a new client
     pub fn new() -> Self {
-        let https = HttpsConnector::new();
-        let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-
-        Self { client }
+        Self {
+            client: reqwest::Client::new(),
+        }
     }
 
+    /// Check if the room code exists
     pub async fn check_room(&self, room_code: &'_ str) -> QResult<GenericResponse> {
-        let payload = serde_json::to_vec(&CheckRoomJsonRequest { room_code })?;
-
-        let req = Request::builder()
-            .method(Method::POST)
-            .header(CONTENT_TYPE, "application/json")
-            .header(CONTENT_LENGTH, payload.len())
-            .uri(CHECK_ROOM_URI)
-            .body(hyper::Body::from(payload))?;
-
-        let res = self.client.request(req).await?;
+        let res = self
+            .client
+            .post(CHECK_ROOM_URI)
+            .json(&CheckRoomJsonRequest { room_code })
+            .send()
+            .await?;
 
         let status = res.status();
         if !status.is_success() {
             return Err(QError::InvalidStatus(status));
         }
 
-        let body = hyper::body::aggregate(res.into_body()).await?;
-        let ret: GenericResponse = serde_json::from_slice(body.bytes())?;
-
-        Ok(ret)
-    }
-
-    pub async fn check_room_v3(&self, room_code: &'_ str) -> QResult<GenericResponse> {
-        let payload = serde_json::to_vec(&CheckRoomJsonRequest { room_code })?;
-
-        let req = Request::builder()
-            .method(Method::POST)
-            .header(CONTENT_TYPE, "application/json")
-            .header(CONTENT_LENGTH, payload.len())
-            .uri(CHECK_ROOM_URI_V3)
-            .body(hyper::Body::from(payload))?;
-
-        let res = self.client.request(req).await?;
-
-        let status = res.status();
-        if !status.is_success() {
-            return Err(QError::InvalidStatus(status));
-        }
-
-        let body = hyper::body::aggregate(res.into_body()).await?;
-        let res: CheckRoomObfuscatedJsonResponse = serde_json::from_slice(body.bytes())?;
-
-        let ret = decode_str(&res.odata).ok_or(QError::Decode)?;
-        let ret: GenericResponse = serde_json::from_str(&ret)?;
-
-        Ok(ret)
+        Ok(res.json().await?)
     }
 }
 
