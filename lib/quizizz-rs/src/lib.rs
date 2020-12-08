@@ -1,28 +1,21 @@
 mod client;
 mod types;
 
-pub use crate::{
-    client::Client,
-    types::CheckRoomJsonRequest,
-};
+pub use crate::client::Client;
 
 /// Library Result
 pub type QResult<T> = Result<T, QError>;
 
 /// Library Error
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum QError {
     /// Reqwest HTTP Error
-    Reqwest(reqwest::Error),
+    #[error("{0}")]
+    Reqwest(#[from] reqwest::Error),
 
     /// Invalid HTTP Status
+    #[error("Invalid HTTP status {0}")]
     InvalidStatus(reqwest::StatusCode),
-}
-
-impl From<reqwest::Error> for QError {
-    fn from(e: reqwest::Error) -> Self {
-        QError::Reqwest(e)
-    }
 }
 
 #[cfg(test)]
