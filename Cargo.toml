@@ -15,7 +15,7 @@ heim = { version = "0.1.0-beta.3", features = [ "host", "cpu", "virt", "memory" 
 indexmap = "1.6.0"
 lazy_static = "1.4.0"
 nekos = { path = "./lib/nekos-rs" }
-parking_lot = "0.10.1"
+parking_lot = "0.11.1"
 polldaddy = { git = "https://github.com/adumbidiot/polldaddy-rs", rev = "990fa0b" }
 quizizz = { path = "./lib/quizizz-rs" }
 r6stats = { path = "./lib/r6stats-rs" }
