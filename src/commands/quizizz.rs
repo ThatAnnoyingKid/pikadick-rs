@@ -62,8 +62,8 @@ async fn quizizz(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                     .say(
                         &ctx.http,
                         format!(
-                            "Got error while searching for quizizz code, quitting: {:#?}",
-                            e
+                            "Got error while searching for quizizz code '{}', quitting: {}",
+                            &code_str, e,
                         ),
                     )
                     .await?;
