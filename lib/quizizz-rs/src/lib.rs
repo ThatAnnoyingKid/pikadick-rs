@@ -1,5 +1,6 @@
 mod client;
-mod types;
+/// Api Types
+pub mod types;
 
 pub use crate::client::Client;
 
@@ -25,7 +26,7 @@ mod test {
     #[tokio::test]
     async fn check_room() {
         let client = Client::new();
-        let data = client.check_room("114545").await.unwrap();
+        let data = client.check_room("701838").await.unwrap();
 
         dbg!(data);
     }
