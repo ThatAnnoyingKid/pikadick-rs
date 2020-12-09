@@ -28,7 +28,7 @@ pub fn vaporwave_str(data: &str) -> String {
     data.chars()
         .filter_map(|c| {
             let c = c as u32;
-            if c >= 33 && c <= 270 {
+            if (33..=270).contains(&c) {
                 std::char::from_u32(c + 65248) // unwrap or c ?
             } else {
                 Some(32 as char)

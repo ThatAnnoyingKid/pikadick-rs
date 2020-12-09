@@ -1,0 +1,88 @@
+{
+    "__cid__": null,
+    "room": {
+        "hash": "5fcfc3af4ed815001ff4bf02",
+        "type": "live",
+        "expiry": 7200,
+        "createdAt": 1607451567161,
+        "version": [{
+                "type": "MCQ",
+                "version": 1
+            }
+        ],
+        "code": "701838",
+        "assignments": null,
+        "deleted": false,
+        "experiment": "main_main",
+        "hostId": "58f508a9da84ca1100fa5c86",
+        "hostSessionId": "",
+        "hostOccupation": "teacher_school",
+        "options": {
+            "memeset": "5c192b4955537b001ad76687",
+            "studentLeaderboard": false,
+            "timer": true,
+            "jumble": true,
+            "jumbleAnswers": true,
+            "memes": false,
+            "showAnswers_2": "always",
+            "studentQuizReview_2": "yes",
+            "showAnswers": true,
+            "studentQuizReview": true,
+            "limitAttempts": 0,
+            "studentMusic": false,
+            "redemption": "yes",
+            "powerups": "no",
+            "nicknameGenerator": false,
+            "loginRequired": false
+        },
+        "questions": ["5fcefed2881c00001b0c20c8", "5a272a7eaaab391100aa8952", "5a272a7eaaab391100aa8953", "5a272a7eaaab391100aa8954", "5a272a7eaaab391100aa8955", "5a272a7eaaab391100aa8956", "5a272a7eaaab391100aa8957", "5a272a7eaaab391100aa8958", "5a272a7eaaab391100aa8959", "5a272a7eaaab391100aa895a", "5a272a7eaaab391100aa895b"],
+        "quizId": "0312ffa593479ea8fbd12ff4fa55fa79bc0ca2e0acc44f21e7e41ad161a24133",
+        "groupIds": [],
+        "groupsInfo": {
+            "mode": "check",
+            "create": {},
+            "gcl": [],
+            "assigned": [],
+            "hasGCL": false,
+            "assignedTo": {},
+            "data": {
+                "title": null,
+                "description": null
+            }
+        },
+        "startedAt": 1607451594132,
+        "state": "running",
+        "totalCorrect": 197,
+        "totalPlayers": 21,
+        "totalQuestions": 220,
+        "assignmentTitle": null,
+        "versionId": "5fcefef71195b5001b8b19df",
+        "collectionId": null,
+        "unitId": null,
+        "replayOf": null,
+        "courseId": null,
+        "reopenable": false,
+        "reopened": false,
+        "soloApis": null,
+        "subscription": {
+            "playerLimit": 500,
+            "trialEndAt": null,
+            "adsFree": true,
+            "branding": true
+        },
+        "simGame": false,
+        "totalAnswerableQuestions": 11,
+        "traits": {
+            "isQuizWithoutCorrectAnswer": false,
+            "totalSlides": 0
+        },
+        "organization": "",
+        "isShared": false,
+        "createGroup": null
+    },
+    "player": {
+        "isAllowed": true,
+        "loginRequired": false,
+        "attempts": []
+    }
+}

@@ -1,38 +1,33 @@
-pub mod client;
-pub mod obfs;
+mod client;
+/// Api Types
 pub mod types;
 
-pub use crate::{
-    client::Client,
-    types::CheckRoomJsonRequest,
-};
+pub use crate::client::Client;
 
+/// Library Result
 pub type QResult<T> = Result<T, QError>;
 
-#[derive(Debug)]
+/// Library Error
+#[derive(Debug, thiserror::Error)]
 pub enum QError {
-    Http(http::Error),
-    InvalidStatus(http::StatusCode),
-    Hyper(hyper::Error),
-    Json(serde_json::Error),
+    /// Reqwest HTTP Error
+    #[error("{0}")]
+    Reqwest(#[from] reqwest::Error),
 
-    Decode,
+    /// Invalid HTTP Status
+    #[error("Invalid HTTP status {0}")]
+    InvalidStatus(reqwest::StatusCode),
 }
 
-impl From<http::Error> for QError {
-    fn from(e: http::Error) -> Self {
-        QError::Http(e)
-    }
-}
+#[cfg(test)]
+mod test {
+    use super::*;
 
-impl From<hyper::Error> for QError {
-    fn from(e: hyper::Error) -> Self {
-        QError::Hyper(e)
-    }
-}
+    #[tokio::test]
+    async fn check_room() {
+        let client = Client::new();
+        let data = client.check_room("701838").await.unwrap();
 
-impl From<serde_json::Error> for QError {
-    fn from(e: serde_json::Error) -> Self {
-        QError::Json(e)
+        dbg!(data);
     }
 }

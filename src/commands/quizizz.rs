@@ -12,14 +12,13 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use std::sync::Arc;
 
 const MAX_TRIES: usize = 100;
 const MAX_CODE: u32 = 999_999;
 
 #[derive(Default, Clone, Debug)]
 pub struct QuizizzClient {
-    client: Arc<quizizz::Client>,
+    client: quizizz::Client,
 }
 
 impl QuizizzClient {
@@ -63,8 +62,8 @@ async fn quizizz(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                     .say(
                         &ctx.http,
                         format!(
-                            "Got error while searching for quizizz code, quitting: {:#?}",
-                            e
+                            "Got error while searching for quizizz code '{}', quitting: {}",
+                            &code_str, e,
                         ),
                     )
                     .await?;

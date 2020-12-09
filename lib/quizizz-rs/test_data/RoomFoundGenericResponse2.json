@@ -1,0 +1,20 @@
+{
+    "__cid__": null,
+    "room": {
+        "hash": "5dce31f67c59ea001b3bcfee",
+        "type": "async",
+        "expiry": 87005.955,
+        "createdAt": 1573794294325,
+        "version": [{
+                "type": "MCQ",
+                "version": 1
+            }
+        ],
+        "createGroup": null
+    },
+    "player": {
+        "isAllowed": true,
+        "loginRequired": false,
+        "attempts": []
+    }
+}

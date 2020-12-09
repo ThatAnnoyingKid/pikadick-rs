@@ -1959,14 +1959,12 @@ dependencies = [
 
 [[package]]
 name = "quizizz"
-version = "0.0.1"
+version = "0.0.0"
 dependencies = [
- "bytes",
- "http",
- "hyper",
- "hyper-tls",
+ "reqwest",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
 ]
 
