@@ -3,11 +3,9 @@ use crate::{
         ApiResponse,
         UserData,
     },
-    R6Error,
     R6Result,
 };
 use bytes::buf::ext::BufExt;
-use hyper::StatusCode;
 use hyper_tls::HttpsConnector;
 
 #[derive(Debug)]
@@ -26,11 +24,6 @@ impl Client {
     pub async fn search(&self, name: &str) -> R6Result<Vec<UserData>> {
         let url = format!("https://r6stats.com/api/player-search/{}/pc", name).parse()?;
         let res = self.client.get(url).await?;
-
-        let status = res.status();
-        if !status.is_success() && status != StatusCode::NOT_FOUND {
-            return Err(R6Error::InvalidStatus(status));
-        }
 
         let body = hyper::body::aggregate(res.into_body()).await?;
 
