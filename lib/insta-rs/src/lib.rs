@@ -62,6 +62,8 @@ impl Default for Client {
 mod test {
     use super::*;
 
+    /// Fails on CI since other people hit the rate limit.
+    #[ignore]
     #[tokio::test]
     async fn get_post() {
         let client = Client::new();
