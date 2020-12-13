@@ -1,6 +1,6 @@
 [package]
 name = "pikadick"
-version = "0.0.1"
+version = "0.0.0"
 authors = [ "professionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -59,4 +59,5 @@ members = [
 	"lib/r6tracker-rs", 
 	"lib/reddit-tube-rs",
 	"lib/rule34-rs",
+    "lib/insta-rs",
 ]

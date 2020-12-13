@@ -1241,6 +1241,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "insta"
+version = "0.0.0"
+dependencies = [
+ "reqwest",
+ "select",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "instant"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1775,7 +1785,7 @@ dependencies = [
 
 [[package]]
 name = "pikadick"
-version = "0.0.1"
+version = "0.0.0"
 dependencies = [
  "bincode",
  "chrono",
