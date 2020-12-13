@@ -164,7 +164,8 @@ async fn help(
     cmd,
     latency,
     uwuify,
-    cache_stats
+    cache_stats,
+    insta_dl
 )]
 struct General;
 
@@ -419,7 +420,7 @@ fn main() {
         let db = match sqlx::sqlite::SqlitePool::new(&db_url).await {
             Ok(db) => Database::new(db).await.unwrap(),
             Err(e) => {
-                error!(logger, "Failed to open database: {:?}", e);
+                error!(logger, "Failed to open database: {}", e);
                 return;
             }
         };

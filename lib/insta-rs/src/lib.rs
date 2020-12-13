@@ -24,7 +24,7 @@ pub enum InstaError {
 }
 
 /// Client
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Client {
     client: reqwest::Client,
 }
