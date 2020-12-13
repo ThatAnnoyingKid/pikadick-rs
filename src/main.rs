@@ -65,6 +65,7 @@ use slog::{
     info,
     warn,
 };
+use sqlx::sqlite::SqlitePool;
 use std::{
     collections::HashSet,
     sync::Arc,
@@ -417,8 +418,14 @@ fn main() {
         info!(logger, "Opening database...");
         // TODO: Does this handle non-unicode paths? Should I care?
         let db_url = format!("sqlite:{}", db_path.display());
-        let db = match sqlx::sqlite::SqlitePool::new(&db_url).await {
-            Ok(db) => Database::new(db).await.unwrap(),
+        let db = match SqlitePool::new(&db_url).await {
+            Ok(db) => match Database::new(db).await {
+                Ok(db) => db,
+                Err(e) => {
+                    error!(logger, "Failed to initalize database: {}", e);
+                    return;
+                }
+            },
             Err(e) => {
                 error!(logger, "Failed to open database: {}", e);
                 return;
