@@ -16,7 +16,7 @@ pub struct ImageList {
     pub unknown: HashMap<String, serde_json::Value>,
 }
 
-// Neko images
+/// Neko images
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Image {
     /// Image id
@@ -54,7 +54,7 @@ pub struct Image {
 impl Image {
     /// Get the url
     pub fn get_url(&self) -> Result<Url, url::ParseError> {
-        let base = Url::parse("https://nekos.moe/image").expect("Valid Base");
+        let base = Url::parse("https://nekos.moe/image/").expect("Valid Base");
         base.join(&self.id)
     }
 }
