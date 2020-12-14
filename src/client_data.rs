@@ -2,6 +2,7 @@ use crate::{
     checks::EnabledCheckData,
     commands::{
         fml::FmlClient,
+        insta_dl::InstaClient,
         nekos::NekosClient,
         polldaddy::PollDaddyClient,
         quizizz::QuizizzClient,
@@ -74,6 +75,7 @@ pub struct ClientData {
     pub shift_client: ShiftClient,
     pub reddit_embed_data: RedditEmbedData,
     pub enabled_check_data: EnabledCheckData,
+    pub insta_client: InstaClient,
 
     pub db: Database,
 
@@ -103,6 +105,7 @@ impl ClientData {
             shift_client: ShiftClient::new(),
             reddit_embed_data: Default::default(),
             enabled_check_data: Default::default(),
+            insta_client: Default::default(),
 
             db,
 
@@ -124,6 +127,7 @@ impl ClientData {
             &self.reddit_embed_data,
             &self.rule34_client,
             &self.shift_client,
+            &self.insta_client,
         ];
 
         for cache_stat_provider in cache_stat_providers {

@@ -1,6 +1,7 @@
 pub mod cache_stats;
 pub mod cmd;
 pub mod fml;
+pub mod insta_dl;
 pub mod invite;
 pub mod latency;
 pub mod nekos;
@@ -21,6 +22,7 @@ pub use crate::commands::{
     cache_stats::CACHE_STATS_COMMAND,
     cmd::CMD_COMMAND,
     fml::FML_COMMAND,
+    insta_dl::INSTA_DL_COMMAND,
     invite::INVITE_COMMAND,
     latency::LATENCY_COMMAND,
     nekos::NEKOS_COMMAND,

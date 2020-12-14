@@ -12,35 +12,18 @@ use std::{
     sync::Arc,
 };
 
+/// Bincode Error
 pub type BincodeError = Box<bincode::ErrorKind>;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum DatabaseError {
-    Sqlx(sqlx::Error),
-    Bincode(BincodeError),
-}
+    /// SQLx DB Error
+    #[error("{0}")]
+    Sqlx(#[from] sqlx::Error),
 
-impl std::fmt::Display for DatabaseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DatabaseError::Sqlx(e) => e.fmt(f),
-            DatabaseError::Bincode(e) => e.fmt(f),
-        }
-    }
-}
-
-impl std::error::Error for DatabaseError {}
-
-impl From<sqlx::Error> for DatabaseError {
-    fn from(e: sqlx::Error) -> Self {
-        DatabaseError::Sqlx(e)
-    }
-}
-
-impl From<BincodeError> for DatabaseError {
-    fn from(e: BincodeError) -> Self {
-        DatabaseError::Bincode(e)
-    }
+    /// Bincode Ser/De Error
+    #[error("{0}")]
+    Bincode(#[from] BincodeError),
 }
 
 /// Raw key = b"{prefix}0{key}"

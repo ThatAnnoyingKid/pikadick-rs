@@ -1,6 +1,6 @@
 [package]
 name = "pikadick"
-version = "0.0.1"
+version = "0.0.0"
 authors = [ "professionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -13,6 +13,7 @@ dashmap = "3.11.10" # 4.0.0-rc6
 fml = { path = "./lib/fml-rs" }
 heim = { version = "0.1.0-beta.3", features = [ "host", "cpu", "virt", "memory" ] }
 indexmap = "1.6.0"
+insta = { path = "./lib/insta-rs" }
 lazy_static = "1.4.0"
 nekos = { path = "./lib/nekos-rs" }
 parking_lot = "0.11.1"
@@ -33,6 +34,7 @@ slog-async = "2.5.0"
 slog-term = "2.6.0"
 sqlx = { version = "0.3.5", default-features = false, features = [ "runtime-tokio", "macros", "sqlite" ] }
 systemstat = "0.1.5"
+thiserror = "1.0.22"
 tokio = { version = "0.2.22", features = [ "parking_lot", "sync", "rt-core", "rt-threaded", "time", "signal" ] }
 toml = "0.5.6"
 uom = "0.30.0"
@@ -59,4 +61,5 @@ members = [
 	"lib/r6tracker-rs", 
 	"lib/reddit-tube-rs",
 	"lib/rule34-rs",
+    "lib/insta-rs",
 ]
