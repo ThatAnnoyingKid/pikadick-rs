@@ -3,45 +3,46 @@ use crate::{
         Post,
         SearchResult,
     },
+    RuleError,
     RuleResult,
 };
-use bytes::{
-    buf::ext::BufExt,
-    Buf,
-};
-use hyper_tls::HttpsConnector;
 use select::document::Document;
+use std::io::Write;
 use url::Url;
 
 const DEFAULT_USER_AGENT_STR: &str = "rule34-rs";
 
 /// Client
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Client {
-    client: hyper::Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>,
+    client: reqwest::Client,
 }
 
 impl Client {
+    /// Make a new client
     pub fn new() -> Self {
-        let https = HttpsConnector::new();
-        let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-
-        Client { client }
+        Client {
+            client: reqwest::Client::new(),
+        }
     }
 
-    /// Gets a uri as a Buf
-    pub async fn get_buf(&self, uri: &str) -> RuleResult<impl Buf> {
-        let req = hyper::Request::builder()
-            .method("GET")
-            .uri(uri)
-            .header(http::header::USER_AGENT, DEFAULT_USER_AGENT_STR)
-            .body(hyper::Body::empty())?;
+    /// Gets a uri as a String
+    pub async fn get_text(&self, uri: &str) -> RuleResult<String> {
+        let res = self
+            .client
+            .get(uri)
+            .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT_STR)
+            .send()
+            .await?;
 
-        let res = self.client.request(req).await?;
+        let text = res.text().await?;
 
-        let body = hyper::body::aggregate(res.into_body()).await?;
+        Ok(text)
+    }
 
-        Ok(body)
+    /// Gets a uri as a doc
+    pub async fn get_doc(&self, uri: &str) -> RuleResult<Document> {
+        Ok(Document::from(self.get_text(uri).await?.as_str()))
     }
 
     /// Runs a search. Querys are based on "tags". Tags are seperated by spaces, while words are seperated by underscores. Characters are automatically encoded.
@@ -51,8 +52,7 @@ impl Client {
             &[("tags", query)],
         )?;
 
-        let res = self.get_buf(url.as_str()).await?;
-        let doc = Document::from_read(res.reader())?;
+        let doc = self.get_doc(url.as_str()).await?;
         let ret = SearchResult::from_doc(&doc)?;
 
         Ok(ret)
@@ -62,11 +62,25 @@ impl Client {
     pub async fn get_post(&self, id: u64) -> RuleResult<Post> {
         let url = format!("https://rule34.xxx/index.php?page=post&s=view&id={}", id);
 
-        let res = self.get_buf(&url).await?;
-        let doc = Document::from_read(res.reader())?;
+        let doc = self.get_doc(&url).await?;
         let post = Post::from_doc(&doc)?;
 
         Ok(post)
+    }
+
+    /// Get a url and copy it to the given writer
+    pub async fn copy_res_to<T: Write>(&self, url: &Url, mut writer: T) -> RuleResult<()> {
+        let mut res = self.client.get(url.as_str()).send().await?;
+        let status = res.status();
+        if !status.is_success() {
+            return Err(RuleError::InvalidStatus(status));
+        }
+
+        while let Some(chunk) = res.chunk().await? {
+            writer.write_all(&chunk)?;
+        }
+
+        Ok(())
     }
 }
 
