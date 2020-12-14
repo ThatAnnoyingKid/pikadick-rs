@@ -9,10 +9,7 @@ use crate::{
 };
 use crossbeam::queue::ArrayQueue;
 use indexmap::set::IndexSet;
-use nekos::{
-    ImageUri,
-    NekosError,
-};
+use nekos::NekosError;
 use parking_lot::RwLock;
 use rand::Rng;
 use serenity::{
@@ -29,9 +26,10 @@ use std::{
     str::FromStr,
     sync::Arc,
 };
+use url::Url;
 
 /// Max images per single request
-const BUFFER_SIZE: usize = 100;
+const BUFFER_SIZE: u8 = 100;
 
 #[derive(Debug)]
 struct NsfwArgParseError;
@@ -56,7 +54,7 @@ pub struct Cache(Arc<CacheInner>);
 impl Cache {
     pub fn new() -> Self {
         Self(Arc::new(CacheInner {
-            primary: ArrayQueue::new(BUFFER_SIZE),
+            primary: ArrayQueue::new(BUFFER_SIZE.into()),
             secondary: RwLock::new(IndexSet::new()),
         }))
     }
@@ -77,12 +75,12 @@ impl Cache {
         self.0.secondary.read().is_empty()
     }
 
-    pub fn add(&self, uri: ImageUri) {
+    pub fn add(&self, uri: Url) {
         let _ = self.0.primary.push(uri.clone());
         self.0.secondary.write().insert(uri);
     }
 
-    pub fn add_many<I: Iterator<Item = ImageUri>>(&self, iter: I) {
+    pub fn add_many<I: Iterator<Item = Url>>(&self, iter: I) {
         let mut secondary = self.0.secondary.write();
         for uri in iter {
             let _ = self.0.primary.push(uri.clone());
@@ -90,7 +88,7 @@ impl Cache {
         }
     }
 
-    pub async fn get_rand(&self) -> Option<ImageUri> {
+    pub async fn get_rand(&self) -> Option<Url> {
         if let Ok(uri) = self.0.primary.pop() {
             Some(uri)
         } else {
@@ -116,13 +114,13 @@ impl Default for Cache {
 
 #[derive(Debug)]
 struct CacheInner {
-    primary: ArrayQueue<ImageUri>,
-    secondary: RwLock<IndexSet<ImageUri>>,
+    primary: ArrayQueue<Url>,
+    secondary: RwLock<IndexSet<Url>>,
 }
 
 #[derive(Clone, Debug)]
 pub struct NekosClient {
-    client: Arc<nekos::Client>,
+    client: nekos::Client,
 
     cache: Cache,
     nsfw_cache: Cache,
@@ -131,7 +129,7 @@ pub struct NekosClient {
 impl NekosClient {
     pub fn new() -> Self {
         NekosClient {
-            client: Arc::new(nekos::Client::new()),
+            client: Default::default(),
             cache: Cache::new(),
             nsfw_cache: Cache::new(),
         }
@@ -147,17 +145,19 @@ impl NekosClient {
 
     pub async fn populate(&self, nsfw: bool) -> Result<(), NekosError> {
         let cache = self.get_cache(nsfw);
-        let image_list = self
-            .client
-            .get_random(Some(nsfw), BUFFER_SIZE as u8)
-            .await?;
+        let image_list = self.client.get_random(Some(nsfw), BUFFER_SIZE).await?;
 
-        cache.add_many(image_list.images.iter().filter_map(|img| img.uri().ok()));
+        cache.add_many(
+            image_list
+                .images
+                .iter()
+                .filter_map(|img| img.get_url().ok()),
+        );
 
         Ok(())
     }
 
-    pub async fn get_rand(&self, nsfw: bool) -> Result<Option<ImageUri>, NekosError> {
+    pub async fn get_rand(&self, nsfw: bool) -> Result<Option<Url>, NekosError> {
         let cache = self.get_cache(nsfw);
 
         if cache.primary_is_empty() {
@@ -218,9 +218,9 @@ async fn nekos(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
 
     match nekos_client.get_rand(nsfw).await {
-        Ok(Some(uri)) => {
+        Ok(Some(url)) => {
             loading.send_ok();
-            msg.channel_id.say(&ctx.http, &uri.0.to_string()).await?;
+            msg.channel_id.say(&ctx.http, url.as_str()).await?;
         }
         Ok(None) => {
             msg.channel_id

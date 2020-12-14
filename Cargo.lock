@@ -1583,13 +1583,14 @@ dependencies = [
 name = "nekos"
 version = "0.0.1"
 dependencies = [
- "bytes",
- "http",
- "hyper",
- "hyper-tls",
+ "argh",
+ "itoa",
+ "reqwest",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
+ "url",
 ]
 
 [[package]]
