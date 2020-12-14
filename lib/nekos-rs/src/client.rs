@@ -1,43 +1,25 @@
 use crate::{
     types::ImageList,
-    ImageUri,
     NekosError,
     NekosResult,
 };
-use bytes::{
-    buf::BufExt,
-    Buf,
-};
-use hyper_tls::HttpsConnector;
-use std::{
-    convert::TryFrom,
-    fmt::Write,
-};
+use std::io::Write;
+use url::Url;
 
-#[derive(Debug)]
+const DEFAULT_USER_AGENT: &str = "nekos-rs";
+
+/// Client for nekos.moe
+#[derive(Debug, Clone)]
 pub struct Client {
-    client: hyper::Client<HttpsConnector<hyper::client::HttpConnector>>,
+    client: reqwest::Client,
 }
 
 impl Client {
+    /// Make a new client
     pub fn new() -> Self {
-        let https = HttpsConnector::new();
-        let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-        Client { client }
-    }
-
-    async fn get_body(&self, uri: hyper::Uri) -> NekosResult<impl Buf> {
-        let res = self.client.get(uri).await?;
-        let status = res.status();
-
-        if !status.is_success() {
-            return Err(NekosError::InvalidStatus(status));
+        Client {
+            client: reqwest::Client::new(),
         }
-
-        let body = res.into_body();
-        let buf = hyper::body::aggregate(body).await?;
-
-        Ok(buf)
     }
 
     /// Get a random list of catgirls.
@@ -50,40 +32,46 @@ impl Client {
         );
 
         if let Some(nsfw) = nsfw {
+            use std::fmt::Write;
             write!(&mut url, "&nsfw={}", nsfw).unwrap();
         }
 
-        let uri = hyper::Uri::try_from(url)?;
-        let body = self.get_body(uri).await?;
-        let json = serde_json::from_reader(body.reader())?;
+        let res = self
+            .client
+            .get(&url)
+            .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT)
+            .send()
+            .await?;
+
+        let status = res.status();
+        if !status.is_success() {
+            return Err(NekosError::InvalidStatus(status));
+        }
+
+        let body = res.text().await?;
+        let json = serde_json::from_str(&body)?;
 
         Ok(json)
     }
 
-    pub async fn get_image(&self, uri: ImageUri) -> NekosResult<bytes::Bytes> {
-        Ok(self.get_body(uri.0).await?.to_bytes())
+    /// Get a url and copy it to the given writer
+    pub async fn copy_res_to<T: Write>(&self, url: &Url, mut writer: T) -> NekosResult<()> {
+        let mut res = self.client.get(url.as_str()).send().await?;
+        let status = res.status();
+        if !status.is_success() {
+            return Err(NekosError::InvalidStatus(status));
+        }
+
+        while let Some(chunk) = res.chunk().await? {
+            writer.write_all(&chunk)?;
+        }
+
+        Ok(())
     }
 }
 
 impl Default for Client {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    pub fn common() {
-        let mut rt = tokio::runtime::Runtime::new().unwrap();
-        let client = Client::new();
-        let image_list = rt.block_on(client.get_random(Some(false), 10)).unwrap();
-
-        assert_eq!(image_list.images.len(), 10);
-
-        let image_uri = image_list.images[0].uri().unwrap();
-        let _image = rt.block_on(client.get_image(image_uri)).unwrap();
     }
 }
