@@ -26,19 +26,15 @@ impl Client {
     /// count is a num from 0 < count <= 100 and is the number of returned images.
     /// nsfw is whether the images should be nsfw. If not specified, both are returned.
     pub async fn get_random(&self, nsfw: Option<bool>, count: u8) -> NekosResult<ImageList> {
-        let mut url = format!(
-            "https://nekos.moe/api/v1/random/image?count={}",
-            count.min(100)
-        );
-
-        if let Some(nsfw) = nsfw {
-            use std::fmt::Write;
-            write!(&mut url, "&nsfw={}", nsfw).unwrap();
-        }
+        let mut buf = itoa::Buffer::new();
+        let count_query = std::iter::once(("count", buf.format(count.min(100))));
+        let nsfw_query = nsfw.map(|nsfw| ("nsfw", if nsfw { "true" } else { "false" }));
+        let query = count_query.chain(nsfw_query);
+        let url = Url::parse_with_params("https://nekos.moe/api/v1/random/image", query)?;
 
         let res = self
             .client
-            .get(&url)
+            .get(url.as_str())
             .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT)
             .send()
             .await?;

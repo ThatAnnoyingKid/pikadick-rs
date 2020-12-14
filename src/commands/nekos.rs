@@ -21,15 +21,15 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use url::Url;
 use slog::error;
 use std::{
     str::FromStr,
     sync::Arc,
 };
+use url::Url;
 
 /// Max images per single request
-const BUFFER_SIZE: usize = 100;
+const BUFFER_SIZE: u8 = 100;
 
 #[derive(Debug)]
 struct NsfwArgParseError;
@@ -54,7 +54,7 @@ pub struct Cache(Arc<CacheInner>);
 impl Cache {
     pub fn new() -> Self {
         Self(Arc::new(CacheInner {
-            primary: ArrayQueue::new(BUFFER_SIZE),
+            primary: ArrayQueue::new(BUFFER_SIZE.into()),
             secondary: RwLock::new(IndexSet::new()),
         }))
     }
@@ -145,12 +145,14 @@ impl NekosClient {
 
     pub async fn populate(&self, nsfw: bool) -> Result<(), NekosError> {
         let cache = self.get_cache(nsfw);
-        let image_list = self
-            .client
-            .get_random(Some(nsfw), BUFFER_SIZE as u8)
-            .await?;
+        let image_list = self.client.get_random(Some(nsfw), BUFFER_SIZE).await?;
 
-        cache.add_many(image_list.images.iter().filter_map(|img| img.get_url().ok()));
+        cache.add_many(
+            image_list
+                .images
+                .iter()
+                .filter_map(|img| img.get_url().ok()),
+        );
 
         Ok(())
     }

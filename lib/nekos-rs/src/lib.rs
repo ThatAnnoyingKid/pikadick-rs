@@ -3,7 +3,10 @@ mod types;
 
 pub use crate::{
     client::Client,
-    types::Image,
+    types::{
+        Image,
+        ImageList,
+    },
 };
 pub use url::Url;
 
@@ -11,50 +14,23 @@ pub use url::Url;
 pub type NekosResult<T> = Result<T, NekosError>;
 
 /// Nekos lib error
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum NekosError {
     /// Reqwest HTTP Error
-    Reqwest(reqwest::Error),
+    #[error("{0}")]
+    Reqwest(#[from] reqwest::Error),
     /// Invalid HTTP Status
+    #[error("invalid status {0}")]
     InvalidStatus(reqwest::StatusCode),
     /// Invalid JSON
-    Json(serde_json::Error),
+    #[error("{0}")]
+    Json(#[from] serde_json::Error),
     /// Invalid URL
-    InvalidUrl(url::ParseError),
+    #[error("{0}")]
+    InvalidUrl(#[from] url::ParseError),
     /// Io Error
-    Io(std::io::Error),
-}
-
-impl std::fmt::Display for NekosError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            NekosError::Reqwest(e) => e.fmt(f),
-            NekosError::Json(e) => e.fmt(f),
-            NekosError::InvalidStatus(status) => write!(f, "Invalid Status {}", status),
-            NekosError::InvalidUrl(e) => e.fmt(f),
-            NekosError::Io(e) => e.fmt(f),
-        }
-    }
-}
-
-impl std::error::Error for NekosError {}
-
-impl From<reqwest::Error> for NekosError {
-    fn from(e: reqwest::Error) -> Self {
-        NekosError::Reqwest(e)
-    }
-}
-
-impl From<serde_json::Error> for NekosError {
-    fn from(e: serde_json::Error) -> NekosError {
-        NekosError::Json(e)
-    }
-}
-
-impl From<std::io::Error> for NekosError {
-    fn from(e: std::io::Error) -> NekosError {
-        NekosError::Io(e)
-    }
+    #[error("{0}")]
+    Io(#[from] std::io::Error),
 }
 
 #[cfg(test)]
@@ -71,5 +47,26 @@ mod test {
         let image_url = image_list.images[0].get_url().unwrap();
         let mut image = Vec::new();
         client.copy_res_to(&image_url, &mut image).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn get_nsfw() {
+        let client = Client::new();
+        let image_list = client.get_random(Some(true), 10).await.unwrap();
+        assert_eq!(image_list.images.len(), 10);
+    }
+
+    #[tokio::test]
+    async fn get_non_nsfw() {
+        let client = Client::new();
+        let image_list = client.get_random(Some(false), 10).await.unwrap();
+        assert_eq!(image_list.images.len(), 10);
+    }
+
+    #[tokio::test]
+    async fn get_100() {
+        let client = Client::new();
+        let image_list = client.get_random(None, 100).await.unwrap();
+        assert_eq!(image_list.images.len(), 100);
     }
 }

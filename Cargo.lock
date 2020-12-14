@@ -1554,9 +1554,11 @@ dependencies = [
 name = "nekos"
 version = "0.0.1"
 dependencies = [
+ "itoa",
  "reqwest",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "url",
 ]
