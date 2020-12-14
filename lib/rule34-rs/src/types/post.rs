@@ -14,10 +14,13 @@ use url::Url;
 pub struct Post {
     /// Not included for videos/gifs
     pub thumb_url: Option<Url>,
+
+    /// Image URL
     pub image_url: Url,
 }
 
 impl Post {
+    /// Try to make a Post from a Document
     pub fn from_doc(doc: &Document) -> Result<Self, FromDocError> {
         let thumb_url = doc
             .find(Attr("id", "image"))
@@ -51,20 +54,16 @@ impl Post {
     }
 }
 
-#[derive(Debug)]
+/// Error that may occur while parsing a Post from a Document
+#[derive(Debug, thiserror::Error)]
 pub enum FromDocError {
+    /// Invalid thumbnail url
+    #[error("invalid thumbnail url: {0}")]
     InvalidThumbUrl(url::ParseError),
 
+    /// Missing Image Url
+    #[error("missing image url")]
     MissingImageUrl,
-}
-
-impl std::fmt::Display for FromDocError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FromDocError::InvalidThumbUrl(e) => e.fmt(f),
-            FromDocError::MissingImageUrl => "missing image url".fmt(f),
-        }
-    }
 }
 
 #[cfg(test)]

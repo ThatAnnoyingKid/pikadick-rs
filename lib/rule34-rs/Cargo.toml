@@ -10,6 +10,7 @@ reqwest = "0.10.9"
 select = "0.5.0"
 serde_json = "1.0.58"
 serde = { version = "1.0.118", features = [ "derive" ] }
+thiserror = "1.0.22"
 url = { version = "2.1.1", features = [ "serde" ] }
 
 [dev-dependencies]

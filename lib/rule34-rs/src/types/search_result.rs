@@ -8,12 +8,15 @@ use select::{
 };
 use url::Url;
 
+/// Results for a search
 #[derive(Debug)]
 pub struct SearchResult {
+    /// Search result entries
     pub entries: Vec<Option<SearchEntry>>,
 }
 
 impl SearchResult {
+    /// Try to make a SearchResult from a Document
     pub fn from_doc(doc: &Document) -> Result<Self, FromDocError> {
         let content_div = doc
             .find(Class("content"))
@@ -29,28 +32,29 @@ impl SearchResult {
     }
 }
 
-#[derive(Debug)]
+/// Error that may occur while making a SearchResult from a Document
+#[derive(Debug, thiserror::Error)]
 pub enum FromDocError {
+    /// Missing Content Div
+    #[error("missing content div")]
     MissingContentDiv,
 }
 
-impl std::fmt::Display for FromDocError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        "missing content div".fmt(f)
-    }
-}
-
-impl std::error::Error for FromDocError {}
-
+/// Search Result Entry
 #[derive(Debug)]
 pub struct SearchEntry {
+    /// Entry ID
     pub id: u64,
+    /// Entry Url
     pub link: Url,
+    /// Thumbnail URL
     pub thumb: Url,
+    /// Description
     pub desc: String,
 }
 
 impl SearchEntry {
+    /// Try to make a SearchEntry from a Node
     pub fn from_node(n: Node) -> Option<SearchEntry> {
         let id_str = n.attr("id")?.trim_start_matches('s');
         let id = id_str.parse().ok()?;
