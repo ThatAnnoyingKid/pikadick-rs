@@ -28,7 +28,7 @@ use std::sync::Arc;
 
 #[derive(Clone, Default, Debug)]
 pub struct Rule34Client {
-    client: Arc<rule34::Client>,
+    client: rule34::Client,
     search_cache: TimedCache<String, Post>,
 }
 
