@@ -45,6 +45,7 @@ impl Client {
         }
 
         let body = res.text().await?;
+
         let json = serde_json::from_str(&body)?;
 
         Ok(json)

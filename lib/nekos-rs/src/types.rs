@@ -71,3 +71,16 @@ pub struct ShortUser {
     #[serde(flatten)]
     pub unknown: HashMap<String, serde_json::Value>,
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const RANDOM: &str = include_str!("../test_data/random.json");
+
+    #[test]
+    fn parse_image_list() {
+        let image_list: ImageList = serde_json::from_str(RANDOM).unwrap();
+        dbg!(image_list);
+    }
+}
