@@ -5,6 +5,11 @@ authors = [ "ProfessionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
 edition = "2018"
 license = "MIT/Apache-2.0"
 
+[[bin]]
+name = "rule34"
+required-features = [ "cli" ]
+path = "src/main.rs"
+
 [dependencies]
 reqwest = "0.10.9"
 select = "0.5.0"
@@ -13,5 +18,15 @@ serde = { version = "1.0.118", features = [ "derive" ] }
 thiserror = "1.0.22"
 url = { version = "2.1.1", features = [ "serde" ] }
 
+# Optional
+argh = { version = "0.1.4", optional = true }
+tokio = { version = "0.2.22", optional = true }
+
 [dev-dependencies]
 tokio = { version = "0.2.22", features = [ "macros" ] }
+
+[features]
+cli = [
+    "argh",
+    "tokio/rt-threaded"
+]

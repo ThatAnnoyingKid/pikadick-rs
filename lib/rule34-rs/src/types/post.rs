@@ -52,6 +52,11 @@ impl Post {
             image_url,
         })
     }
+
+    /// Try to get the image name
+    pub fn get_image_name(&self) -> Option<&str> {
+        self.image_url.path_segments()?.last()
+    }
 }
 
 /// Error that may occur while parsing a Post from a Document

@@ -11,6 +11,12 @@ pub enum RuleError {
     /// Invalid URL Error
     #[error("{0}")]
     InvalidUrl(#[from] url::ParseError),
+    /// Invalid HTTP Status Code
+    #[error("invalid status {0}")]
+    InvalidStatus(reqwest::StatusCode),
+    /// IO Error
+    #[error("{0}")]
+    Io(#[from] std::io::Error),
 
     /// Invalid Search Result
     #[error("invalid search result: {0}")]

@@ -3,9 +3,11 @@ use crate::{
         Post,
         SearchResult,
     },
+    RuleError,
     RuleResult,
 };
 use select::document::Document;
+use std::io::Write;
 use url::Url;
 
 const DEFAULT_USER_AGENT_STR: &str = "rule34-rs";
@@ -17,6 +19,7 @@ pub struct Client {
 }
 
 impl Client {
+    /// Make a new client
     pub fn new() -> Self {
         Client {
             client: reqwest::Client::new(),
@@ -63,6 +66,21 @@ impl Client {
         let post = Post::from_doc(&doc)?;
 
         Ok(post)
+    }
+
+    /// Get a url and copy it to the given writer
+    pub async fn copy_res_to<T: Write>(&self, url: &Url, mut writer: T) -> RuleResult<()> {
+        let mut res = self.client.get(url.as_str()).send().await?;
+        let status = res.status();
+        if !status.is_success() {
+            return Err(RuleError::InvalidStatus(status));
+        }
+
+        while let Some(chunk) = res.chunk().await? {
+            writer.write_all(&chunk)?;
+        }
+
+        Ok(())
     }
 }
 
