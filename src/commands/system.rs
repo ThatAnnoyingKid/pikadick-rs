@@ -97,6 +97,14 @@ fn fmt_cpu_frequency(freq: &Frequency) -> String {
     format!("{:.2}", fmt_args.with(freq))
 }
 
+async fn get_cpu_usage() -> Result<f32, heim::Error> {
+    let start = heim::cpu::usage().await?;
+    tokio::time::delay_for(Duration::from_secs(1)).await;
+    let end = heim::cpu::usage().await?;
+
+    Ok((end - start).get::<heim::units::ratio::percent>())
+}
+
 #[command]
 #[description("Get System Stats")]
 #[bucket("system")]
@@ -113,13 +121,6 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     // Start Legacy data gathering
     let sys = System::new();
-    let cpu_load = match get_cpu_load_aggregate(&sys).await {
-        Ok(cpu_load) => Some(cpu_load),
-        Err(e) => {
-            warn!(logger, "Failed to get platform cpu load: {}", e);
-            None
-        }
-    };
 
     let cpu_temp = match sys.cpu_temp() {
         Ok(cpu_temp) => Some(cpu_temp),
@@ -128,6 +129,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
             None
         }
     };
+
     // End Legacy data gathering
 
     let platform = match heim::host::platform().await {
@@ -197,6 +199,14 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     };
 
     let virtualization = heim::virt::detect().await;
+
+    let cpu_usage = match get_cpu_usage().await {
+        Ok(usage) => Some(usage),
+        Err(e) => {
+            warn!(logger, "Failed to get cpu usage: {}", e);
+            None
+        }
+    };
 
     let data_retrieval_time = Instant::now() - start;
 
@@ -300,6 +310,14 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 };
                 e.field("Virtualization", virtualization_field, true);
 
+                if let (Some(cpu_usage), Some(cpu_logical_count)) = (cpu_usage, cpu_logical_count) {
+                    e.field(
+                        "Cpu Usage",
+                        format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),
+                        true,
+                    );
+                }
+
                 /////////////////////////////////////////////////////////////////////////////////////
                 // Legacy (These functions from systemstat have no direct replacement in heim yet) //
                 /////////////////////////////////////////////////////////////////////////////////////
@@ -309,35 +327,6 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 // It doesn't support Windows, but this never worked there anyways as Windows has no simple way to get temps
                 if let Some(cpu_temp) = cpu_temp {
                     e.field("Cpu Temp", format!("{} °C", cpu_temp), true);
-                }
-
-                // This is wack on Windows with readings not always adding to 100%
-                if let Some(cpu_load) = cpu_load {
-                    e.field(
-                        "Cpu User %",
-                        &format!("{:.2}%", cpu_load.user * 100.0),
-                        true,
-                    );
-                    e.field(
-                        "Cpu Nice %",
-                        &format!("{:.2}%", cpu_load.nice * 100.0),
-                        true,
-                    );
-                    e.field(
-                        "Cpu System %",
-                        &format!("{:.2}%", cpu_load.system * 100.0),
-                        true,
-                    );
-                    e.field(
-                        "Cpu Interrupt %",
-                        &format!("{:.2}%", cpu_load.interrupt * 100.0),
-                        true,
-                    );
-                    e.field(
-                        "Cpu Idle %",
-                        &format!("{:.2}%", cpu_load.idle * 100.0),
-                        true,
-                    );
                 }
 
                 e.footer(|f| {
@@ -355,10 +344,4 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .await?;
 
     Ok(())
-}
-
-async fn get_cpu_load_aggregate(sys: &System) -> Result<systemstat::data::CPULoad, std::io::Error> {
-    let cpu_load = sys.cpu_load_aggregate()?;
-    tokio::time::delay_for(std::time::Duration::from_secs(1)).await;
-    cpu_load.done()
 }
