@@ -49,8 +49,8 @@ openssl = { version = "0.10", optional = true, features = [ "vendored" ] }
 use-openssl-vendored = [ "openssl" ]
 
 [patch.crates-io]
-# Updated deps
-heim = { git = "https://github.com/heim-rs/heim", rev = "8240de547049424f015d249b0ecf04182fc31bb4" }
+# Updated deps and cpu usage support
+heim = { git = "https://github.com/heim-rs/heim", rev = "970dccccd15fded78aa8ff6b6c48a15fb140a173" }
 
 [workspace]
 members = [ 

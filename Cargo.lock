@@ -1025,7 +1025,7 @@ dependencies = [
 [[package]]
 name = "heim"
 version = "0.1.0-beta.3"
-source = "git+https://github.com/heim-rs/heim?rev=8240de547049424f015d249b0ecf04182fc31bb4#8240de547049424f015d249b0ecf04182fc31bb4"
+source = "git+https://github.com/heim-rs/heim?rev=970dccccd15fded78aa8ff6b6c48a15fb140a173#970dccccd15fded78aa8ff6b6c48a15fb140a173"
 dependencies = [
  "heim-common",
  "heim-cpu",
@@ -1038,7 +1038,7 @@ dependencies = [
 [[package]]
 name = "heim-common"
 version = "0.1.0-beta.1"
-source = "git+https://github.com/heim-rs/heim?rev=8240de547049424f015d249b0ecf04182fc31bb4#8240de547049424f015d249b0ecf04182fc31bb4"
+source = "git+https://github.com/heim-rs/heim?rev=970dccccd15fded78aa8ff6b6c48a15fb140a173#970dccccd15fded78aa8ff6b6c48a15fb140a173"
 dependencies = [
  "cfg-if 1.0.0",
  "core-foundation",
@@ -1056,7 +1056,7 @@ dependencies = [
 [[package]]
 name = "heim-cpu"
 version = "0.1.0-beta.3"
-source = "git+https://github.com/heim-rs/heim?rev=8240de547049424f015d249b0ecf04182fc31bb4#8240de547049424f015d249b0ecf04182fc31bb4"
+source = "git+https://github.com/heim-rs/heim?rev=970dccccd15fded78aa8ff6b6c48a15fb140a173#970dccccd15fded78aa8ff6b6c48a15fb140a173"
 dependencies = [
  "cfg-if 1.0.0",
  "futures",
@@ -1074,7 +1074,7 @@ dependencies = [
 [[package]]
 name = "heim-host"
 version = "0.1.0-beta.1"
-source = "git+https://github.com/heim-rs/heim?rev=8240de547049424f015d249b0ecf04182fc31bb4#8240de547049424f015d249b0ecf04182fc31bb4"
+source = "git+https://github.com/heim-rs/heim?rev=970dccccd15fded78aa8ff6b6c48a15fb140a173#970dccccd15fded78aa8ff6b6c48a15fb140a173"
 dependencies = [
  "cfg-if 1.0.0",
  "heim-common",
@@ -1091,7 +1091,7 @@ dependencies = [
 [[package]]
 name = "heim-memory"
 version = "0.1.0-beta.1"
-source = "git+https://github.com/heim-rs/heim?rev=8240de547049424f015d249b0ecf04182fc31bb4#8240de547049424f015d249b0ecf04182fc31bb4"
+source = "git+https://github.com/heim-rs/heim?rev=970dccccd15fded78aa8ff6b6c48a15fb140a173#970dccccd15fded78aa8ff6b6c48a15fb140a173"
 dependencies = [
  "cfg-if 1.0.0",
  "heim-common",
@@ -1105,7 +1105,7 @@ dependencies = [
 [[package]]
 name = "heim-runtime"
 version = "0.1.0-beta.1"
-source = "git+https://github.com/heim-rs/heim?rev=8240de547049424f015d249b0ecf04182fc31bb4#8240de547049424f015d249b0ecf04182fc31bb4"
+source = "git+https://github.com/heim-rs/heim?rev=970dccccd15fded78aa8ff6b6c48a15fb140a173#970dccccd15fded78aa8ff6b6c48a15fb140a173"
 dependencies = [
  "futures",
  "futures-timer",
@@ -1115,7 +1115,7 @@ dependencies = [
 [[package]]
 name = "heim-virt"
 version = "0.1.0-beta.1"
-source = "git+https://github.com/heim-rs/heim?rev=8240de547049424f015d249b0ecf04182fc31bb4#8240de547049424f015d249b0ecf04182fc31bb4"
+source = "git+https://github.com/heim-rs/heim?rev=970dccccd15fded78aa8ff6b6c48a15fb140a173#970dccccd15fded78aa8ff6b6c48a15fb140a173"
 dependencies = [
  "cfg-if 1.0.0",
  "futures",
