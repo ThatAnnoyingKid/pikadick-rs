@@ -1847,6 +1847,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "toml",
+ "unicase",
  "uom",
  "url",
  "zalgo",
