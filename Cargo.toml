@@ -37,20 +37,18 @@ systemstat = "0.1.5"
 thiserror = "1.0.22"
 tokio = { version = "0.2.22", features = [ "parking_lot", "sync", "rt-core", "rt-threaded", "time", "signal" ] }
 toml = "0.5.6"
+unicase = "2.6.0"
 uom = "0.30.0"
 url = "2.1.1"
 zalgo = { git = "https://github.com/adumbidiot/zalgo-rs", rev = "e630ea0" }
 
 # Optional
 openssl = { version = "0.10", optional = true, features = [ "vendored" ] }
-
 [features]
 # Note: This is needed for cross comp as sqlx has a hard, non-optional dependency on native-tls
 use-openssl-vendored = [ "openssl" ]
 
 [patch.crates-io]
-# Updated deps and cpu usage support
-heim = { git = "https://github.com/heim-rs/heim", rev = "970dccccd15fded78aa8ff6b6c48a15fb140a173" }
 
 [workspace]
 members = [ 
