@@ -8,34 +8,31 @@ use crate::{
     R6Error,
     R6Result,
 };
-use bytes::buf::ext::BufExt;
-use hyper_tls::HttpsConnector;
 use serde::de::DeserializeOwned;
 
-#[derive(Debug)]
+/// R6tracker Client
+#[derive(Debug, Clone)]
 pub struct Client {
-    client: hyper::Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>,
+    client: reqwest::Client,
 }
 
 impl Client {
+    /// Make a new client
     pub fn new() -> Self {
-        let https = HttpsConnector::new();
-        let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-        Client { client }
+        Client {
+            client: reqwest::Client::new(),
+        }
     }
 
+    /// Get a url and return it as a json object
     async fn get_api_response<T: DeserializeOwned>(&self, uri: &str) -> R6Result<ApiResponse<T>> {
-        let uri = uri.parse()?;
-        let res = self.client.get(uri).await?;
-
+        let res = self.client.get(uri).send().await?;
         let status = res.status();
         if !status.is_success() {
             return Err(R6Error::InvalidStatus(status));
         }
-
-        let body = hyper::body::aggregate(res.into_body()).await?;
-
-        Ok(serde_json::from_reader(body.reader())?)
+        let text = res.text().await?;
+        Ok(serde_json::from_str(&text)?)
     }
 
     pub async fn get_profile(

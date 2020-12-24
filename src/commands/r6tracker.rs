@@ -41,7 +41,7 @@ pub struct Stats {
 
 #[derive(Clone, Default, Debug)]
 pub struct R6TrackerClient {
-    client: Arc<r6tracker::Client>,
+    client: r6tracker::Client,
     search_cache: TimedCache<String, Stats>,
 }
 
@@ -49,7 +49,7 @@ impl R6TrackerClient {
     /// Make a new r6 client with caching
     pub fn new() -> Self {
         R6TrackerClient {
-            client: Arc::new(r6tracker::Client::new()),
+            client: r6tracker::Client::new(),
             search_cache: TimedCache::new(),
         }
     }
