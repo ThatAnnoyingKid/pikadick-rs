@@ -5,7 +5,7 @@ use crate::{
         ApiResponse,
         Platform,
     },
-    R6Error,
+    Error,
     R6Result,
 };
 use serde::de::DeserializeOwned;
@@ -29,7 +29,7 @@ impl Client {
         let res = self.client.get(uri).send().await?;
         let status = res.status();
         if !status.is_success() {
-            return Err(R6Error::InvalidStatus(status));
+            return Err(Error::InvalidStatus(status));
         }
         let text = res.text().await?;
         Ok(serde_json::from_str(&text)?)
@@ -86,5 +86,25 @@ mod test {
         let sessions = client.get_sessions(user, Platform::Pc).await.unwrap();
         assert!(sessions.unknown.is_empty());
         dbg!(sessions.data);
+    }
+
+    #[tokio::test]
+    async fn empty_user() {
+        let user = "";
+        let client = Client::new();
+
+        let profile_err = client.get_profile(user, Platform::Pc).await.unwrap_err();
+        assert!(matches!(
+            profile_err,
+            Error::InvalidStatus(reqwest::StatusCode::NOT_FOUND)
+        ));
+        dbg!(profile_err);
+
+        let sessions_err = client.get_sessions(user, Platform::Pc).await.unwrap_err();
+        assert!(matches!(
+            sessions_err,
+            Error::InvalidStatus(reqwest::StatusCode::NOT_FOUND)
+        ));
+        dbg!(sessions_err);
     }
 }

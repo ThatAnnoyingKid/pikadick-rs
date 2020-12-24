@@ -11,7 +11,7 @@ pub use self::{
 };
 use std::collections::HashMap;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug)]
 pub struct ApiResponse<T> {
     pub data: T,
 

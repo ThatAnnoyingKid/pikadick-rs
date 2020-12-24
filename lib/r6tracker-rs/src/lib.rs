@@ -12,11 +12,11 @@ pub use crate::{
 };
 
 /// Result type
-pub type R6Result<T> = Result<T, R6Error>;
+pub type R6Result<T> = Result<T, Error>;
 
 /// Error Type
 #[derive(Debug, thiserror::Error)]
-pub enum R6Error {
+pub enum Error {
     /// Reqwest HTTP error
     #[error("{0}")]
     Reqwest(#[from] reqwest::Error),
