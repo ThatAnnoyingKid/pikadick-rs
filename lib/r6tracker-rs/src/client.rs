@@ -35,6 +35,7 @@ impl Client {
         Ok(serde_json::from_str(&text)?)
     }
 
+    /// Get an r6tracker profile
     pub async fn get_profile(
         &self,
         name: &str,
@@ -48,6 +49,7 @@ impl Client {
         self.get_api_response(&uri).await
     }
 
+    /// Get the sessions for a user
     pub async fn get_sessions(
         &self,
         name: &str,
