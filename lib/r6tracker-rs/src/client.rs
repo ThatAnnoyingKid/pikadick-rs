@@ -4,6 +4,7 @@ use crate::{
         user_data::UserData,
         ApiResponse,
         OverwolfPlayer,
+        OverwolfResponse,
         Platform,
     },
     Error,
@@ -27,8 +28,22 @@ impl Client {
     }
 
     /// Get a url and return it as an ApiResponse.
-    async fn get_api_response<T: DeserializeOwned>(&self, uri: &str) -> R6Result<ApiResponse<T>> {
-        let res = self.client.get(uri).send().await?;
+    async fn get_api_response<T: DeserializeOwned>(&self, url: &str) -> R6Result<ApiResponse<T>> {
+        let res = self.client.get(url).send().await?;
+        let status = res.status();
+        if !status.is_success() {
+            return Err(Error::InvalidStatus(status));
+        }
+        let text = res.text().await?;
+        Ok(serde_json::from_str(&text)?)
+    }
+
+    /// Get a url and return an Overwolf API Response
+    async fn get_overwolf_response<T: DeserializeOwned>(
+        &self,
+        url: &str,
+    ) -> R6Result<OverwolfResponse<T>> {
+        let res = self.client.get(url).send().await?;
         let status = res.status();
         if !status.is_success() {
             return Err(Error::InvalidStatus(status));
@@ -66,20 +81,19 @@ impl Client {
     }
 
     /// Get player info using the Overwolf API.
-    pub async fn get_overwolf_player(&self, name: &str) -> R6Result<OverwolfPlayer> {
+    pub async fn get_overwolf_player(
+        &self,
+        name: &str,
+    ) -> R6Result<OverwolfResponse<OverwolfPlayer>> {
         let url = Url::parse_with_params(
             "https://r6.tracker.network/api/v0/overwolf/player",
             &[("name", name)],
         )?;
 
-        let res = self.client.get(url.as_str()).send().await?;
-        let status = res.status();
-        if !status.is_success() {
-            return Err(Error::InvalidStatus(status));
-        }
-        let text = res.text().await?;
-        Ok(serde_json::from_str(&text)?)
+        self.get_overwolf_response(url.as_str()).await
     }
+
+    // TODO: Investigate https://r6.tracker.network/api/v0/overwolf/operators
 }
 
 impl Default for Client {
@@ -113,14 +127,9 @@ mod test {
         let client = Client::new();
 
         let profile = client.get_overwolf_player(VALID_USER).await.unwrap();
-        dbg!(&profile);
-        assert!(profile.unknown.is_empty());
-
-        /*
-        let sessions = client.get_sessions(VALID_USER, Platform::Pc).await.unwrap();
-        assert!(sessions.unknown.is_empty());
-        dbg!(sessions.data);
-        */
+        let profile_data = profile.data.as_ref().unwrap();
+        dbg!(&profile_data);
+        assert!(profile.success);
     }
 
     #[tokio::test]
