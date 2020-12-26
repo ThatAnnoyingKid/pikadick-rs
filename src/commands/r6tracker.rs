@@ -12,8 +12,8 @@ use crate::{
     ClientDataKey,
 };
 use r6tracker::{
+    Error as R6Error,
     Platform,
-    R6Error,
     SessionsData,
     StatusCode,
     UserData,

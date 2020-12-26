@@ -10,6 +10,7 @@ pub use crate::{
         UserData,
     },
 };
+pub use reqwest::StatusCode;
 
 /// Result type
 pub type R6Result<T> = Result<T, Error>;
