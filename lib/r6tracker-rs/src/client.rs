@@ -3,12 +3,14 @@ use crate::{
         sessions_data::SessionsData,
         user_data::UserData,
         ApiResponse,
+        OverwolfPlayer,
         Platform,
     },
     Error,
     R6Result,
 };
 use serde::de::DeserializeOwned;
+use url::Url;
 
 /// R6tracker Client
 #[derive(Debug, Clone)]
@@ -24,7 +26,7 @@ impl Client {
         }
     }
 
-    /// Get a url and return it as a json object
+    /// Get a url and return it as an ApiResponse.
     async fn get_api_response<T: DeserializeOwned>(&self, uri: &str) -> R6Result<ApiResponse<T>> {
         let res = self.client.get(uri).send().await?;
         let status = res.status();
@@ -62,6 +64,22 @@ impl Client {
         );
         self.get_api_response(&uri).await
     }
+
+    /// Get player info using the Overwolf API.
+    pub async fn get_overwolf_player(&self, name: &str) -> R6Result<OverwolfPlayer> {
+        let url = Url::parse_with_params(
+            "https://r6.tracker.network/api/v0/overwolf/player",
+            &[("name", name)],
+        )?;
+
+        let res = self.client.get(url.as_str()).send().await?;
+        let status = res.status();
+        if !status.is_success() {
+            return Err(Error::InvalidStatus(status));
+        }
+        let text = res.text().await?;
+        Ok(serde_json::from_str(&text)?)
+    }
 }
 
 impl Default for Client {
@@ -74,33 +92,55 @@ impl Default for Client {
 mod test {
     use super::*;
 
+    const VALID_USER: &str = "KingGeorge";
+    const INVALID_USER: &str = "";
+
     #[tokio::test]
     async fn it_works() {
-        let user = "KingGeorge";
         let client = Client::new();
 
-        let profile = client.get_profile(user, Platform::Pc).await.unwrap();
+        let profile = client.get_profile(VALID_USER, Platform::Pc).await.unwrap();
         assert!(profile.unknown.is_empty());
         dbg!(profile.data);
 
-        let sessions = client.get_sessions(user, Platform::Pc).await.unwrap();
+        let sessions = client.get_sessions(VALID_USER, Platform::Pc).await.unwrap();
         assert!(sessions.unknown.is_empty());
         dbg!(sessions.data);
     }
 
     #[tokio::test]
-    async fn empty_user() {
-        let user = "";
+    async fn it_works_overwolf() {
         let client = Client::new();
 
-        let profile_err = client.get_profile(user, Platform::Pc).await.unwrap_err();
+        let profile = client.get_overwolf_player(VALID_USER).await.unwrap();
+        dbg!(&profile);
+        assert!(profile.unknown.is_empty());
+
+        /*
+        let sessions = client.get_sessions(VALID_USER, Platform::Pc).await.unwrap();
+        assert!(sessions.unknown.is_empty());
+        dbg!(sessions.data);
+        */
+    }
+
+    #[tokio::test]
+    async fn empty_user() {
+        let client = Client::new();
+
+        let profile_err = client
+            .get_profile(INVALID_USER, Platform::Pc)
+            .await
+            .unwrap_err();
         assert!(matches!(
             profile_err,
             Error::InvalidStatus(reqwest::StatusCode::NOT_FOUND)
         ));
         dbg!(profile_err);
 
-        let sessions_err = client.get_sessions(user, Platform::Pc).await.unwrap_err();
+        let sessions_err = client
+            .get_sessions(INVALID_USER, Platform::Pc)
+            .await
+            .unwrap_err();
         assert!(matches!(
             sessions_err,
             Error::InvalidStatus(reqwest::StatusCode::NOT_FOUND)

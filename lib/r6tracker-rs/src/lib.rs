@@ -20,10 +20,16 @@ pub enum Error {
     /// Reqwest HTTP error
     #[error("{0}")]
     Reqwest(#[from] reqwest::Error),
+
     /// Invalid HTTP Status
     #[error("invalid http status {0}")]
     InvalidStatus(reqwest::StatusCode),
+
     /// Json Error
     #[error("{0}")]
     Json(#[from] serde_json::Error),
+
+    /// Url Parse Error
+    #[error("{0}")]
+    Url(#[from] url::ParseError),
 }
