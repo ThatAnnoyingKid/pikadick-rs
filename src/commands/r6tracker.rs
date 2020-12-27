@@ -58,15 +58,14 @@ impl R6TrackerClient {
             return Ok(entry);
         }
 
-        let overwolf_player = self.client.get_overwolf_player(query).await?.take_data()?;
-        let profile = self
-            .client
-            .get_profile(query, r6tracker::Platform::Pc)
-            .await?
-            .data;
+        let (overwolf_player, profile) = futures::future::join(
+            self.client.get_overwolf_player(query),
+            self.client.get_profile(query, r6tracker::Platform::Pc),
+        )
+        .await;
         let entry = Stats {
-            overwolf_player,
-            profile,
+            overwolf_player: overwolf_player?.take_data()?,
+            profile: profile?.data,
         };
         self.search_cache.insert(String::from(query), entry);
 
@@ -119,55 +118,38 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
 
                         // New Overwolf Api
                         e.title(&stats.overwolf_player.name)
-                            .image(&stats.overwolf_player.avatar)
-                            .field(
-                                "Current Rank",
-                                &stats.overwolf_player.current_season_best_region.rank_name,
-                                true,
-                            )
-                            .field(
-                                "Current MMR",
-                                stats.overwolf_player.current_season_best_region.mmr,
-                                true,
-                            )
-                            .field(
-                                "Seasonal Ranked K/D",
-                                format!(
-                                    "{:.2}",
-                                    stats.overwolf_player.current_season_best_region.kd
-                                ),
-                                true,
-                            )
-                            .field(
-                                "Seasonal Ranked Win %",
-                                stats.overwolf_player.current_season_best_region.win_pct,
-                                true,
-                            )
-                            .field(
-                                "Seasonal # of Ranked Matches",
-                                stats.overwolf_player.current_season_best_region.matches,
-                                true,
-                            )
-                            .field(
-                                "Best MMR",
-                                stats.overwolf_player.lifetime_stats.best_mmr.mmr,
-                                true,
-                            )
-                            .field(
-                                "Best Rank",
-                                &stats.overwolf_player.lifetime_stats.best_mmr.name,
-                                true,
-                            )
-                            .field(
-                                "Lifetime K/D",
-                                &stats.overwolf_player.lifetime_stats.kd,
-                                true,
-                            )
-                            .field(
-                                "Lifetime Win %",
-                                &stats.overwolf_player.lifetime_stats.win_pct,
-                                true,
-                            );
+                            .image(&stats.overwolf_player.avatar);
+
+                        if let Some(season) =
+                            stats.overwolf_player.current_season_best_region.as_ref()
+                        {
+                            e.field("Current Rank", &season.rank_name, true)
+                                .field("Current MMR", season.mmr, true)
+                                .field("Seasonal Ranked K/D", format!("{:.2}", season.kd), true)
+                                .field("Seasonal Ranked Win %", season.win_pct, true)
+                                .field("Seasonal # of Ranked Matches", season.matches, true);
+                        }
+
+                        e.field(
+                            "Best MMR",
+                            stats.overwolf_player.lifetime_stats.best_mmr.mmr,
+                            true,
+                        )
+                        .field(
+                            "Best Rank",
+                            &stats.overwolf_player.lifetime_stats.best_mmr.name,
+                            true,
+                        )
+                        .field(
+                            "Lifetime K/D",
+                            &stats.overwolf_player.lifetime_stats.kd,
+                            true,
+                        )
+                        .field(
+                            "Lifetime Win %",
+                            &stats.overwolf_player.lifetime_stats.win_pct,
+                            true,
+                        );
 
                         // Old Non-Overwolf API
 

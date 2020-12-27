@@ -110,7 +110,7 @@ pub struct OverwolfPlayer {
 
     /// Current season best region stats
     #[serde(rename = "currentSeasonBestRegion")]
-    pub current_season_best_region: OverwolfSeason,
+    pub current_season_best_region: Option<OverwolfSeason>,
 
     /// Lifetime Stats
     #[serde(rename = "lifetimeStats")]
@@ -272,13 +272,22 @@ pub struct SeasonalOperators {
 mod test {
     use super::*;
 
-    const OVERWOLF_PLAYER: &str = include_str!("../../test_data/overwolf_player.json");
+    const OVERWOLF_PLAYER_1: &str = include_str!("../../test_data/overwolf_player_1.json");
+    const OVERWOLF_PLAYER_2: &str = include_str!("../../test_data/overwolf_player_2.json");
     const INVALID_OVERWOLF_RESPONSE: &str =
         include_str!("../../test_data/invalid_overwolf_response.json");
 
     #[test]
-    fn parse_overwolf_player() {
-        let res: OverwolfResponse<OverwolfPlayer> = serde_json::from_str(OVERWOLF_PLAYER).unwrap();
+    fn parse_overwolf_player_1() {
+        let res: OverwolfResponse<OverwolfPlayer> =
+            serde_json::from_str(OVERWOLF_PLAYER_1).unwrap();
+        dbg!(res.data.unwrap());
+    }
+
+    #[test]
+    fn parse_overwolf_player_2() {
+        let res: OverwolfResponse<OverwolfPlayer> =
+            serde_json::from_str(OVERWOLF_PLAYER_2).unwrap();
         dbg!(res.data.unwrap());
     }
 
