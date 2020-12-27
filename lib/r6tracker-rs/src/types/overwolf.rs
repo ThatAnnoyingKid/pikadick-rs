@@ -281,14 +281,14 @@ mod test {
     fn parse_overwolf_player_1() {
         let res: OverwolfResponse<OverwolfPlayer> =
             serde_json::from_str(OVERWOLF_PLAYER_1).unwrap();
-        dbg!(res.data.unwrap());
+        dbg!(res.take_data().unwrap());
     }
 
     #[test]
     fn parse_overwolf_player_2() {
         let res: OverwolfResponse<OverwolfPlayer> =
             serde_json::from_str(OVERWOLF_PLAYER_2).unwrap();
-        dbg!(res.data.unwrap());
+        dbg!(res.take_data().unwrap());
     }
 
     #[test]

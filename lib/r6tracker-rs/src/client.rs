@@ -127,9 +127,8 @@ mod test {
         let client = Client::new();
 
         let profile = client.get_overwolf_player(VALID_USER).await.unwrap();
-        let profile_data = profile.data.as_ref().unwrap();
+        let profile_data = profile.take_data().unwrap();
         dbg!(&profile_data);
-        assert!(profile.success);
     }
 
     #[tokio::test]
