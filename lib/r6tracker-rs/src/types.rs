@@ -7,6 +7,7 @@ pub mod user_data;
 
 pub use self::{
     overwolf::{
+        InvalidOverwolfResponseError,
         OverwolfOperator,
         OverwolfPlayer,
         OverwolfRank,

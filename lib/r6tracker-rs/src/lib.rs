@@ -4,6 +4,9 @@ pub mod types;
 pub use crate::{
     client::Client,
     types::{
+        InvalidOverwolfResponseError,
+        OverwolfPlayer,
+        OverwolfResponse,
         Platform,
         SessionsData,
         Stat,
@@ -33,4 +36,8 @@ pub enum Error {
     /// Url Parse Error
     #[error("{0}")]
     Url(#[from] url::ParseError),
+
+    /// An Overwolf Response returned an error.
+    #[error("{0}")]
+    InvalidOverwolfResponse(#[from] InvalidOverwolfResponseError),
 }

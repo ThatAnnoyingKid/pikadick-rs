@@ -13,10 +13,7 @@ use crate::{
 };
 use r6tracker::{
     Error as R6Error,
-    Platform,
-    SessionsData,
     StatusCode,
-    UserData,
 };
 use serenity::{
     framework::standard::{
@@ -33,10 +30,11 @@ use slog::{
 };
 use std::sync::Arc;
 
+/// R6Tracker stats for a user
 #[derive(Debug)]
 pub struct Stats {
-    pub profile: UserData,
-    pub sessions: SessionsData,
+    overwolf_player: r6tracker::OverwolfPlayer,
+    profile: r6tracker::UserData,
 }
 
 #[derive(Clone, Default, Debug)]
@@ -49,26 +47,33 @@ impl R6TrackerClient {
     /// Make a new r6 client with caching
     pub fn new() -> Self {
         R6TrackerClient {
-            client: r6tracker::Client::new(),
-            search_cache: TimedCache::new(),
+            client: Default::default(),
+            search_cache: Default::default(),
         }
     }
 
-    /// Get r6 stats
+    /// Get R6Tracker stats
     pub async fn get_stats(&self, query: &str) -> Result<Arc<TimedCacheEntry<Stats>>, R6Error> {
         if let Some(entry) = self.search_cache.get_if_fresh(query) {
             return Ok(entry);
         }
 
-        let profile = self.client.get_profile(query, Platform::Pc).await?.data;
-        let sessions = self.client.get_sessions(query, Platform::Pc).await?.data;
-        let entry = Stats { profile, sessions };
+        let overwolf_player = self.client.get_overwolf_player(query).await?.take_data()?;
+        let profile = self
+            .client
+            .get_profile(query, r6tracker::Platform::Pc)
+            .await?
+            .data;
+        let entry = Stats {
+            overwolf_player,
+            profile,
+        };
         self.search_cache.insert(String::from(query), entry);
 
         Ok(self
             .search_cache
             .get_if_fresh(query)
-            .expect("Valid r6tracker user data"))
+            .expect("Valid R6Tracker Stats"))
     }
 }
 
@@ -85,7 +90,7 @@ impl CacheStatsProvider for R6TrackerClient {
 #[command]
 #[description("Get r6 stats for a user from r6tracker")]
 #[usage("<player>")]
-#[example("Kooklxs")]
+#[example("KingGeorge")]
 #[bucket("r6tracker")]
 #[min_args(1)]
 #[max_args(1)]
@@ -97,9 +102,9 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
     let logger = client_data.logger.clone();
     drop(data_lock);
 
-    let name = args.trimmed().current().expect("name");
+    let name = args.trimmed().current().expect("Valid Name");
 
-    info!(logger, "Getting r6 stats for '{}' using r6tracker", name);
+    info!(logger, "Getting r6 stats for '{}' using R6Tracker", name);
 
     let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
 
@@ -108,34 +113,71 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
             loading.send_ok();
             msg.channel_id
                 .send_message(&ctx.http, |m| {
+                    let stats = entry.data();
                     m.embed(|e| {
-                        let data = entry.data();
+                        // We mix overwolf and non-overwolf data to get what we want.
 
-                        e.title(name).image(data.profile.avatar_url());
+                        // New Overwolf Api
+                        e.title(&stats.overwolf_player.name)
+                            .image(&stats.overwolf_player.avatar)
+                            .field(
+                                "Current Rank",
+                                &stats.overwolf_player.current_season_best_region.rank_name,
+                                true,
+                            )
+                            .field(
+                                "Current MMR",
+                                stats.overwolf_player.current_season_best_region.mmr,
+                                true,
+                            )
+                            .field(
+                                "Seasonal Ranked K/D",
+                                format!(
+                                    "{:.2}",
+                                    stats.overwolf_player.current_season_best_region.kd
+                                ),
+                                true,
+                            )
+                            .field(
+                                "Seasonal Ranked Win %",
+                                stats.overwolf_player.current_season_best_region.win_pct,
+                                true,
+                            )
+                            .field(
+                                "Seasonal # of Ranked Matches",
+                                stats.overwolf_player.current_season_best_region.matches,
+                                true,
+                            )
+                            .field(
+                                "Best MMR",
+                                stats.overwolf_player.lifetime_stats.best_mmr.mmr,
+                                true,
+                            )
+                            .field(
+                                "Best Rank",
+                                &stats.overwolf_player.lifetime_stats.best_mmr.name,
+                                true,
+                            )
+                            .field(
+                                "Lifetime K/D",
+                                &stats.overwolf_player.lifetime_stats.kd,
+                                true,
+                            )
+                            .field(
+                                "Lifetime Win %",
+                                &stats.overwolf_player.lifetime_stats.win_pct,
+                                true,
+                            );
 
-                        if let Some(c) = data.profile.season_color_u32() {
+                        // Old Non-Overwolf API
+
+                        // Overwolf API does not send season colors
+                        if let Some(c) = stats.profile.season_color_u32() {
                             e.color(c);
                         }
 
-                        if let Some(kd) = data.profile.kd() {
-                            e.field("Overall K/D", kd, true);
-                        }
-
-                        if let Some(wl) = data.profile.wl() {
-                            e.field("Overall Win / Loss", wl / 100.0, true);
-                        }
-
-                        if let Some(mmr) = data.profile.current_mmr() {
-                            e.field("MMR", mmr, true);
-                        }
-
-                        if let Some(season) = data.profile.get_latest_season() {
-                            if let Some(wl) = season.wl() {
-                                e.field("Ranked Win / Loss", wl / 100.0, true);
-                            }
-                        }
-
-                        if let Some(thumb) = data.profile.current_mmr_image() {
+                        // Overwolf API does not send non-svg rank thumbnails
+                        if let Some(thumb) = stats.profile.current_mmr_image() {
                             e.thumbnail(thumb);
                         }
 
