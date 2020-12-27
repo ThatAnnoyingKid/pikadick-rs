@@ -12,7 +12,7 @@ use crate::{
     ClientDataKey,
 };
 use r6stats::{
-    R6Error,
+    Error as R6Error,
     UserData,
 };
 use serenity::{
