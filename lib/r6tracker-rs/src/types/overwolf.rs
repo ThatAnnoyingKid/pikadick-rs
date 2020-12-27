@@ -8,52 +8,74 @@ use url::Url;
 /// The error that occurs when an OverwolfResponse is in an error state and the data field is accessed.
 /// It optionally contains the reason of failure.
 #[derive(Debug)]
-pub struct InvalidOverwolfResponseError(pub Option<String>);
+pub struct InvalidOverwolfResponseError(pub String);
 
 impl std::error::Error for InvalidOverwolfResponseError {}
 
 impl std::fmt::Display for InvalidOverwolfResponseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.0 {
-            Some(reason) => write!(f, "the overwolf response was invalid ({})", reason),
-            None => "the overwolf response was invalid".fmt(f),
+        write!(f, "the overwolf response was invalid ({})", self.0)
+    }
+}
+
+/// A Json Overwolf Response
+#[derive(Debug)]
+pub enum OverwolfResponse<T> {
+    /// A Valid response
+    Valid(T),
+
+    /// An Invalid Response
+    Invalid(String),
+}
+
+impl<'de, T> serde::Deserialize<'de> for OverwolfResponse<T>
+where
+    T: serde::Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let mut map = serde_json::Map::deserialize(deserializer)?;
+
+        let success = map
+            .remove("success")
+            .ok_or_else(|| serde::de::Error::missing_field("success"))
+            .map(serde::Deserialize::deserialize)?
+            .map_err(serde::de::Error::custom)?;
+        let rest = serde_json::Value::Object(map);
+
+        if success {
+            T::deserialize(rest)
+                .map(OverwolfResponse::Valid)
+                .map_err(serde::de::Error::custom)
+        } else {
+            #[derive(serde::Deserialize)]
+            struct ErrorReason {
+                reason: String,
+            }
+
+            ErrorReason::deserialize(rest)
+                .map(|e| OverwolfResponse::Invalid(e.reason))
+                .map_err(serde::de::Error::custom)
         }
     }
 }
 
-/// A json Overwolf Response
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct OverwolfResponse<T> {
-    /// Whether this request was successful. If true, `data` should be Some(T).
-    pub success: bool,
-    /// The reason of failure if `success` is false.
-    pub reason: Option<String>,
-
-    /// The data payload.
-    #[serde(flatten)]
-    pub data: Option<T>,
-}
-
 impl<T> OverwolfResponse<T> {
-    /// Get the payload. This checks `success` to ensure `data` is valid and returns an error if it isn't.
+    /// Get the payload.
     pub fn get_data(&self) -> Result<&T, InvalidOverwolfResponseError> {
-        match (self.success, self.reason.as_ref(), self.data.as_ref()) {
-            (true, _, Some(data)) => Ok(data),
-            (false, reason, _) => Err(InvalidOverwolfResponseError(reason.map(|s| s.to_string()))),
-            // This almost certainly will never happen.
-            // TODO: Rewrite the deser impl to reject this state as a json error earlier on.
-            (true, _, None) => Err(InvalidOverwolfResponseError(None)),
+        match &self {
+            Self::Valid(data) => Ok(data),
+            Self::Invalid(reason) => Err(InvalidOverwolfResponseError(reason.to_string())),
         }
     }
 
     /// Take the payload, consuming this struct. Same function as `get_data` except it is consuming.
     pub fn take_data(self) -> Result<T, InvalidOverwolfResponseError> {
-        match (self.success, self.reason, self.data) {
-            (true, _, Some(data)) => Ok(data),
-            (false, reason, _) => Err(InvalidOverwolfResponseError(reason)),
-            // This almost certainly will never happen.
-            // TODO: Rewrite the deser impl to reject this state as a json error earlier on.
-            (true, _, None) => Err(InvalidOverwolfResponseError(None)),
+        match self {
+            Self::Valid(data) => Ok(data),
+            Self::Invalid(reason) => Err(InvalidOverwolfResponseError(reason)),
         }
     }
 }
