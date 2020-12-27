@@ -32,7 +32,7 @@ use std::sync::Arc;
 
 #[derive(Clone, Default, Debug)]
 pub struct R6StatsClient {
-    client: Arc<r6stats::Client>,
+    client: r6stats::Client,
     search_cache: TimedCache<String, UserData>,
 }
 

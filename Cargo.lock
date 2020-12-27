@@ -2020,13 +2020,10 @@ dependencies = [
 
 [[package]]
 name = "r6stats"
-version = "0.0.1"
+version = "0.0.0"
 dependencies = [
- "bytes",
  "chrono",
- "http",
- "hyper",
- "hyper-tls",
+ "reqwest",
  "serde",
  "serde_json",
  "tokio",
