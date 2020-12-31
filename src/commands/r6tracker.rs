@@ -179,13 +179,13 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                 })
                 .await?;
         }
-        // This returns "No results" to the user when an InvalidName Overwolf API Error occurs. 
-        // This works because we check for errors in the Overwolf response first, 
+        // This returns "No results" to the user when an InvalidName Overwolf API Error occurs.
+        // This works because we check for errors in the Overwolf response first,
         // so non-existent users are always predictably caught there.
-        // 
-        // However, it may be beneficial to add a case for other API errors to catch edge cases, 
-        // such as UserData erroring while Overwolf. 
-        // This isn't a high priortiy however as this is entirely cosmetic; 
+        //
+        // However, it may be beneficial to add a case for other API errors to catch edge cases,
+        // such as UserData erroring while Overwolf.
+        // This isn't a high priortiy however as this is entirely cosmetic;
         // the user will simply get an ugly error if we fail to special-case it here.
         //
         // TODO: Add case for UserData
