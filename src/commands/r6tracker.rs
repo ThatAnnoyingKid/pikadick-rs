@@ -64,8 +64,8 @@ impl R6TrackerClient {
         )
         .await;
         let entry = Stats {
-            overwolf_player: overwolf_player?.take_valid()?,
-            profile: profile?.data,
+            overwolf_player: overwolf_player?.into_result()?,
+            profile: profile?.into_result()?,
         };
         self.search_cache.insert(String::from(query), entry);
 
@@ -181,9 +181,6 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                     })
                 })
                 .await?;
-        }
-        Err(R6Error::InvalidStatus(StatusCode::NOT_FOUND)) => {
-            msg.channel_id.say(&ctx.http, "No results").await?;
         }
         Err(e) => {
             msg.channel_id

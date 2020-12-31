@@ -63,19 +63,27 @@ where
 }
 
 impl<T> OverwolfResponse<T> {
-    /// Get the payload.
-    pub fn get_valid(&self) -> Result<&T, InvalidOverwolfResponseError> {
-        match &self {
-            Self::Valid(data) => Ok(data),
-            Self::Invalid(reason) => Err(InvalidOverwolfResponseError(reason.to_string())),
-        }
-    }
-
-    /// Take the payload, consuming this struct. Same function as `get_data` except it is consuming.
-    pub fn take_valid(self) -> Result<T, InvalidOverwolfResponseError> {
+    /// Turn this into a Result.
+    pub fn into_result(self) -> Result<T, InvalidOverwolfResponseError> {
         match self {
             Self::Valid(data) => Ok(data),
             Self::Invalid(reason) => Err(InvalidOverwolfResponseError(reason)),
+        }
+    }
+
+    /// Get the valid member as an Option.
+    pub fn get_valid(&self) -> Option<&T> {
+        match &self {
+            Self::Valid(data) => Some(data),
+            Self::Invalid(_) => None,
+        }
+    }
+
+    /// Take the valid member, consuming this struct. Same function as `get_valid` except it is consuming.
+    pub fn take_valid(self) -> Option<T> {
+        match self {
+            Self::Valid(data) => Some(data),
+            Self::Invalid(_) => None,
         }
     }
 }

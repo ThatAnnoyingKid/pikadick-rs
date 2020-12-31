@@ -2,7 +2,9 @@
 pub mod overwolf;
 pub mod platform;
 pub mod sessions_data;
+/// Stat Data Type
 pub mod stat;
+/// User Data Type
 pub mod user_data;
 
 pub use self::{
@@ -17,15 +19,9 @@ pub use self::{
     platform::Platform,
     sessions_data::SessionsData,
     stat::Stat,
-    user_data::UserData,
+    user_data::{
+        ApiResponse,
+        InvalidApiResponseError,
+        UserData,
+    },
 };
-use std::collections::HashMap;
-
-/// A json response from the API.
-#[derive(serde::Deserialize, Debug)]
-pub struct ApiResponse<T> {
-    pub data: T,
-
-    #[serde(flatten)]
-    pub unknown: HashMap<String, serde_json::Value>,
-}

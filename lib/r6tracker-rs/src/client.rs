@@ -30,10 +30,6 @@ impl Client {
     /// Get a url and return it as an ApiResponse.
     async fn get_api_response<T: DeserializeOwned>(&self, url: &str) -> R6Result<ApiResponse<T>> {
         let res = self.client.get(url).send().await?;
-        let status = res.status();
-        if !status.is_success() {
-            return Err(Error::InvalidStatus(status));
-        }
         let text = res.text().await?;
         Ok(serde_json::from_str(&text)?)
     }
@@ -58,8 +54,13 @@ impl Client {
         name: &str,
         platform: Platform,
     ) -> R6Result<ApiResponse<UserData>> {
+        let name_len = name.len();
+        if name_len < 2 {
+            return Err(Error::InvalidNameLength(name_len));
+        }
+
         let uri = format!(
-            "https://r6.tracker.network/api/v1/standard/profile/{}/{}",
+            "https://r6.tracker.network/api/v1/standard/profile/{}/{}/",
             platform.as_u32(),
             name
         );
@@ -72,6 +73,11 @@ impl Client {
         name: &str,
         platform: Platform,
     ) -> R6Result<ApiResponse<SessionsData>> {
+        let name_len = name.len();
+        if name_len < 2 {
+            return Err(Error::InvalidNameLength(name_len));
+        }
+
         let uri = format!(
             "https://r6.tracker.network/api/v1/standard/profile/{}/{}/sessions?",
             platform.as_u32(),
@@ -107,19 +113,17 @@ mod test {
     use super::*;
 
     const VALID_USER: &str = "KingGeorge";
-    const INVALID_USER: &str = "";
+    const INVALID_USER: &str = "aba";
 
     #[tokio::test]
     async fn it_works() {
         let client = Client::new();
 
         let profile = client.get_profile(VALID_USER, Platform::Pc).await.unwrap();
-        assert!(profile.unknown.is_empty());
-        dbg!(profile.data);
+        dbg!(profile.take_valid().unwrap());
 
         let sessions = client.get_sessions(VALID_USER, Platform::Pc).await.unwrap();
-        assert!(sessions.unknown.is_empty());
-        dbg!(sessions.data);
+        dbg!(sessions.take_valid().unwrap());
     }
 
     #[tokio::test]
@@ -130,29 +134,36 @@ mod test {
         let profile_data = profile.take_valid().unwrap();
         dbg!(&profile_data);
     }
-
     #[tokio::test]
     async fn empty_user() {
+        let client = Client::new();
+
+        let profile_err = client.get_profile("", Platform::Pc).await.unwrap_err();
+        assert!(matches!(profile_err, Error::InvalidNameLength(0)));
+
+        let sessions_err = client.get_sessions("", Platform::Pc).await.unwrap_err();
+        assert!(matches!(sessions_err, Error::InvalidNameLength(0)));
+    }
+
+    #[tokio::test]
+    async fn invalid_user() {
         let client = Client::new();
 
         let profile_err = client
             .get_profile(INVALID_USER, Platform::Pc)
             .await
-            .unwrap_err();
-        assert!(matches!(
-            profile_err,
-            Error::InvalidStatus(reqwest::StatusCode::NOT_FOUND)
-        ));
+            .unwrap()
+            .take_invalid()
+            .unwrap();
         dbg!(profile_err);
 
-        let sessions_err = client
+        let sessions_data = client
             .get_sessions(INVALID_USER, Platform::Pc)
             .await
-            .unwrap_err();
-        assert!(matches!(
-            sessions_err,
-            Error::InvalidStatus(reqwest::StatusCode::NOT_FOUND)
-        ));
-        dbg!(sessions_err);
+            .unwrap()
+            .take_valid()
+            .unwrap();
+        assert!(sessions_data.items.is_empty());
+        dbg!(sessions_data);
     }
 }

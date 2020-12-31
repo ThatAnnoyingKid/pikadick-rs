@@ -54,7 +54,8 @@ mod test {
     fn parse_sample_1() {
         let data = serde_json::from_str::<ApiResponse<SessionsData>>(SAMPLE_1)
             .unwrap()
-            .data;
+            .take_valid()
+            .unwrap();
 
         dbg!(&data);
     }

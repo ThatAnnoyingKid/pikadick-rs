@@ -4,6 +4,7 @@ pub mod types;
 pub use crate::{
     client::Client,
     types::{
+        InvalidApiResponseError,
         InvalidOverwolfResponseError,
         OverwolfPlayer,
         OverwolfResponse,
@@ -37,7 +38,15 @@ pub enum Error {
     #[error("{0}")]
     Url(#[from] url::ParseError),
 
+    /// An API Response returned an error
+    #[error("{0}")]
+    InvalidApiResponse(#[from] InvalidApiResponseError),
+
     /// An Overwolf Response returned an error.
     #[error("{0}")]
     InvalidOverwolfResponse(#[from] InvalidOverwolfResponseError),
+
+    /// Too short of a name was provided. The member is the length of the erroneous name
+    #[error("the name is too short")]
+    InvalidNameLength(usize),
 }
