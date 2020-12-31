@@ -140,12 +140,47 @@ pub struct OverwolfPlayer {
 }
 
 impl OverwolfPlayer {
-    /// Get the season with the max mmr.
-    pub fn get_max_season(&self) -> Option<&OverwolfSeason> {
+    /// Iterate over ranked seasons
+    pub fn iter_ranked_seasons(&self) -> impl Iterator<Item = &OverwolfSeason> {
         self.seasons
             .iter()
             .filter(|season| season.region_label != "CASUAL")
+    }
+
+    /// Iterate over ranked seasons where the user placed
+    pub fn iter_placed_ranked_seasons(&self) -> impl Iterator<Item = &OverwolfSeason> {
+        self.iter_ranked_seasons()
+            .filter(|season| season.current_rank.rank_tier != 0)
+    }
+
+    /// Get the season with the max mmr
+    pub fn get_max_season(&self) -> Option<&OverwolfSeason> {
+        self.iter_placed_ranked_seasons()
             .max_by_key(|season| season.max_mmr)
+    }
+
+    /// Get the lifetime K/D for ranked
+    pub fn get_lifetime_ranked_kd(&self) -> f64 {
+        let mut length = 0;
+        let mut sum = 0.0;
+        for season in self.iter_placed_ranked_seasons() {
+            sum += season.kd;
+            length += 1;
+        }
+
+        sum / (length as f64)
+    }
+
+    /// Get lifetime ranked win %
+    pub fn get_lifetime_ranked_win_pct(&self) -> f64 {
+        let mut length = 0;
+        let mut sum = 0.0;
+        for season in self.iter_placed_ranked_seasons() {
+            sum += season.win_pct;
+            length += 1;
+        }
+
+        sum / (length as f64)
     }
 }
 

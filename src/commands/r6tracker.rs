@@ -152,6 +152,19 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                         e.field("Best MMR", max_mmr, true)
                             .field("Best Rank", max_rank, true)
                             .field(
+                                "Lifetime Ranked K/D",
+                                format!("{:.2}", stats.overwolf_player.get_lifetime_ranked_kd()),
+                                true,
+                            )
+                            .field(
+                                "Lifetime Ranked Win %",
+                                format!(
+                                    "{:.2}",
+                                    stats.overwolf_player.get_lifetime_ranked_win_pct()
+                                ),
+                                true,
+                            )
+                            .field(
                                 "Lifetime K/D",
                                 &stats.overwolf_player.lifetime_stats.kd,
                                 true,
