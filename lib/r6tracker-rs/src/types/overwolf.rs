@@ -64,7 +64,7 @@ where
 
 impl<T> OverwolfResponse<T> {
     /// Get the payload.
-    pub fn get_data(&self) -> Result<&T, InvalidOverwolfResponseError> {
+    pub fn get_valid(&self) -> Result<&T, InvalidOverwolfResponseError> {
         match &self {
             Self::Valid(data) => Ok(data),
             Self::Invalid(reason) => Err(InvalidOverwolfResponseError(reason.to_string())),
@@ -72,7 +72,7 @@ impl<T> OverwolfResponse<T> {
     }
 
     /// Take the payload, consuming this struct. Same function as `get_data` except it is consuming.
-    pub fn take_data(self) -> Result<T, InvalidOverwolfResponseError> {
+    pub fn take_valid(self) -> Result<T, InvalidOverwolfResponseError> {
         match self {
             Self::Valid(data) => Ok(data),
             Self::Invalid(reason) => Err(InvalidOverwolfResponseError(reason)),
@@ -131,6 +131,16 @@ pub struct OverwolfPlayer {
     pub unknown: HashMap<String, serde_json::Value>,
 }
 
+impl OverwolfPlayer {
+    /// Get the season with the max mmr.
+    pub fn get_max_season(&self) -> Option<&OverwolfSeason> {
+        self.seasons
+            .iter()
+            .filter(|season| season.region_label != "CASUAL")
+            .max_by_key(|season| season.max_mmr)
+    }
+}
+
 /// Season stats
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct OverwolfSeason {
@@ -146,6 +156,10 @@ pub struct OverwolfSeason {
 
     /// Season Region
     pub region: String,
+
+    /// The label of the region
+    #[serde(rename = "regionLabel")]
+    pub region_label: String,
 
     /// MMR
     pub mmr: u64,
@@ -170,9 +184,21 @@ pub struct OverwolfSeason {
     #[serde(rename = "mmrChange")]
     pub mmr_change: i64,
 
+    /// Whether the player is ranked
+    #[serde(rename = "isRanked")]
+    pub is_ranked: bool,
+
+    /// The max mmr for this season
+    #[serde(rename = "maxMmr")]
+    pub max_mmr: u64,
+
     /// Current Rank Info
     #[serde(rename = "currentRank")]
     pub current_rank: OverwolfRank,
+
+    /// Max Rank Info
+    #[serde(rename = "maxRank")]
+    pub max_rank: OverwolfRank,
 
     /// Previous Rank Info
     #[serde(rename = "prevRank")]
@@ -281,14 +307,16 @@ mod test {
     fn parse_overwolf_player_1() {
         let res: OverwolfResponse<OverwolfPlayer> =
             serde_json::from_str(OVERWOLF_PLAYER_1).unwrap();
-        dbg!(res.take_data().unwrap());
+        dbg!(res.take_valid().unwrap());
     }
 
     #[test]
     fn parse_overwolf_player_2() {
         let res: OverwolfResponse<OverwolfPlayer> =
             serde_json::from_str(OVERWOLF_PLAYER_2).unwrap();
-        dbg!(res.take_data().unwrap());
+        let valid = res.take_valid().unwrap();
+        dbg!(&valid);
+        dbg!(&valid.get_max_season());
     }
 
     #[test]

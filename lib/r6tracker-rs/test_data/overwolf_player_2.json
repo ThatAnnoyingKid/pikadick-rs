@@ -2,11 +2,39 @@
   "playerId": "e298720c-664b-4aa7-b964-e2029e0e8fb4",
   "name": "Smack.Nexus",
   "avatar": "https://ubisoft-avatars.akamaized.net/e298720c-664b-4aa7-b964-e2029e0e8fb4/default_256_256.png",
-  "level": 114,
+  "level": 115,
   "success": true,
   "isPremium": false,
   "suspectedCheater": false,
   "currentSeason": 20,
+  "currentSeasonBestRegion": {
+    "rankName": "Not ranked yet.",
+    "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+    "season": 20,
+    "region": "global",
+    "regionLabel": "RANKED",
+    "mmr": 2468,
+    "winPct": 50.0,
+    "wins": 1,
+    "kd": 1.3333333333333335,
+    "kills": 8,
+    "matches": 2,
+    "mmrChange": -129,
+    "isRanked": true,
+    "maxMmr": 0,
+    "currentRank": {
+      "rankTier": 0,
+      "mmr": 0,
+      "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+      "rankName": "Not ranked yet."
+    },
+    "maxRank": {
+      "rankTier": 0,
+      "mmr": 0,
+      "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+      "rankName": "Not ranked yet."
+    }
+  },
   "lifetimeStats": {
     "bestMmr": {
       "mmr": 3311,
@@ -14,17 +42,17 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank17.svg"
     },
     "winPct": 51.2,
-    "wins": 442,
+    "wins": 446,
     "kd": 1.24,
-    "kills": 4251,
-    "matches": 864,
-    "headshotPct": 45.75,
-    "headshots": 1945,
+    "kills": 4281,
+    "matches": 871,
+    "headshotPct": 45.9,
+    "headshots": 1965,
     "meleeKills": 64,
     "blindKills": 5,
-    "deaths": 3429,
-    "losses": 422,
-    "xp": 10177163
+    "deaths": 3448,
+    "losses": 425,
+    "xp": 10243953
   },
   "seasons": [
     {
@@ -32,6 +60,7 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank8-hd.5b0b90e9f6.svg",
       "season": 12,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 2045,
       "winPct": 35.71,
       "wins": 5,
@@ -39,11 +68,19 @@
       "kills": 0,
       "matches": 14,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 2630,
       "currentRank": {
         "rankTier": 8,
         "mmr": 2000,
         "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank8-hd.5b0b90e9f6.svg",
         "rankName": "BRONZE I"
+      },
+      "maxRank": {
+        "rankTier": 9,
+        "mmr": 2100,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank9-hd.c432740e25.svg",
+        "rankName": "SILVER IV"
       },
       "nextRank": {
         "rankTier": 9,
@@ -63,6 +100,7 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank5-hd.d08a99eb54.svg",
       "season": 14,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 1720,
       "winPct": 36.0,
       "wins": 9,
@@ -70,11 +108,19 @@
       "kills": 101,
       "matches": 25,
       "mmrChange": -78,
+      "isRanked": true,
+      "maxMmr": 2443,
       "currentRank": {
         "rankTier": 5,
         "mmr": 1700,
         "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank5-hd.d08a99eb54.svg",
         "rankName": "BRONZE IV"
+      },
+      "maxRank": {
+        "rankTier": 11,
+        "mmr": 2300,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank11-hd.cce1c8c4ae.svg",
+        "rankName": "SILVER II"
       },
       "nextRank": {
         "rankTier": 6,
@@ -94,6 +140,7 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
       "season": 13,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 2146,
       "winPct": 20.0,
       "wins": 1,
@@ -101,7 +148,15 @@
       "kills": 0,
       "matches": 5,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 0,
       "currentRank": {
+        "rankTier": 0,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+        "rankName": "Not ranked yet."
+      },
+      "maxRank": {
         "rankTier": 0,
         "mmr": 0,
         "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
@@ -113,6 +168,7 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
       "season": 15,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 1702,
       "winPct": 14.29,
       "wins": 1,
@@ -120,7 +176,15 @@
       "kills": 39,
       "matches": 7,
       "mmrChange": -87,
+      "isRanked": true,
+      "maxMmr": 0,
       "currentRank": {
+        "rankTier": 0,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+        "rankName": "Not ranked yet."
+      },
+      "maxRank": {
         "rankTier": 0,
         "mmr": 0,
         "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
@@ -132,6 +196,7 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank15-hd.1e94c7f0fe.svg",
       "season": 16,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 2856,
       "winPct": 54.75,
       "wins": 144,
@@ -139,7 +204,15 @@
       "kills": 1604,
       "matches": 263,
       "mmrChange": 19,
+      "isRanked": true,
+      "maxMmr": 2856,
       "currentRank": {
+        "rankTier": 17,
+        "mmr": 2800,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank15-hd.1e94c7f0fe.svg",
+        "rankName": "GOLD II"
+      },
+      "maxRank": {
         "rankTier": 17,
         "mmr": 2800,
         "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank15-hd.1e94c7f0fe.svg",
@@ -163,6 +236,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank17.svg",
       "season": 17,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 3311,
       "winPct": 57.14,
       "wins": 24,
@@ -170,11 +244,19 @@
       "kills": 187,
       "matches": 42,
       "mmrChange": -61,
+      "isRanked": true,
+      "maxMmr": 3614,
       "currentRank": {
         "rankTier": 19,
         "mmr": 3200,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank17.svg",
         "rankName": "PLATINUM III"
+      },
+      "maxRank": {
+        "rankTier": 20,
+        "mmr": 3600,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank18.svg",
+        "rankName": "PLATINUM II"
       },
       "nextRank": {
         "rankTier": 20,
@@ -194,6 +276,7 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank11-hd.cce1c8c4ae.svg",
       "season": 19,
       "region": "global",
+      "regionLabel": "CASUAL",
       "mmr": 2463,
       "winPct": 37.04,
       "wins": 10,
@@ -201,11 +284,19 @@
       "kills": 74,
       "matches": 27,
       "mmrChange": -77,
+      "isRanked": false,
+      "maxMmr": 0,
       "currentRank": {
         "rankTier": 14,
         "mmr": 2400,
         "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank11-hd.cce1c8c4ae.svg",
         "rankName": "SILVER II"
+      },
+      "maxRank": {
+        "rankTier": 0,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+        "rankName": "Not ranked yet."
       },
       "nextRank": {
         "rankTier": 15,
@@ -221,34 +312,43 @@
       }
     },
     {
-      "rankName": "SILVER I",
-      "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank12-hd.4196c32981.svg",
+      "rankName": "GOLD III",
+      "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank14-hd.e8ddab14ed.svg",
       "season": 20,
       "region": "global",
-      "mmr": 2574,
-      "winPct": 55.56,
-      "wins": 5,
-      "kd": 1.097560975609756,
-      "kills": 45,
-      "matches": 9,
-      "mmrChange": -102,
+      "regionLabel": "CASUAL",
+      "mmr": 2650,
+      "winPct": 58.33,
+      "wins": 7,
+      "kd": 1.18,
+      "kills": 59,
+      "matches": 12,
+      "mmrChange": 105,
+      "isRanked": false,
+      "maxMmr": 0,
       "currentRank": {
-        "rankTier": 15,
-        "mmr": 2500,
-        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank12-hd.4196c32981.svg",
-        "rankName": "SILVER I"
-      },
-      "nextRank": {
         "rankTier": 16,
         "mmr": 2600,
         "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank14-hd.e8ddab14ed.svg",
         "rankName": "GOLD III"
       },
+      "maxRank": {
+        "rankTier": 0,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+        "rankName": "Not ranked yet."
+      },
+      "nextRank": {
+        "rankTier": 17,
+        "mmr": 2800,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank15-hd.1e94c7f0fe.svg",
+        "rankName": "GOLD II"
+      },
       "prevRank": {
-        "rankTier": 14,
-        "mmr": 2400,
-        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank11-hd.cce1c8c4ae.svg",
-        "rankName": "SILVER II"
+        "rankTier": 15,
+        "mmr": 2500,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank12-hd.4196c32981.svg",
+        "rankName": "SILVER I"
       }
     },
     {
@@ -256,6 +356,7 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
       "season": 18,
       "region": "global",
+      "regionLabel": "RANKED",
       "mmr": 3024,
       "winPct": 66.67,
       "wins": 2,
@@ -263,7 +364,43 @@
       "kills": 13,
       "matches": 3,
       "mmrChange": -119,
+      "isRanked": true,
+      "maxMmr": 0,
       "currentRank": {
+        "rankTier": 0,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+        "rankName": "Not ranked yet."
+      },
+      "maxRank": {
+        "rankTier": 0,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+        "rankName": "Not ranked yet."
+      }
+    },
+    {
+      "rankName": "Not ranked yet.",
+      "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+      "season": 20,
+      "region": "global",
+      "regionLabel": "RANKED",
+      "mmr": 2468,
+      "winPct": 50.0,
+      "wins": 1,
+      "kd": 1.3333333333333335,
+      "kills": 8,
+      "matches": 2,
+      "mmrChange": -129,
+      "isRanked": true,
+      "maxMmr": 0,
+      "currentRank": {
+        "rankTier": 0,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+        "rankName": "Not ranked yet."
+      },
+      "maxRank": {
         "rankTier": 0,
         "mmr": 0,
         "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
@@ -381,6 +518,18 @@
       "timePlayed": 3381
     },
     {
+      "name": "MOZZIE",
+      "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-mozzie.adeac1885.png",
+      "isAttack": false,
+      "isTopOperator": false,
+      "winpct": 100.0,
+      "wins": 3,
+      "kd": 0.0,
+      "kills": 0,
+      "timePlayedDisplay": "0h 9m",
+      "timePlayed": 568
+    },
+    {
       "name": "NØKK",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-nakk.d3b4f1afe5.png",
       "isAttack": true,
@@ -433,24 +582,24 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-oryx.6472c8ee.png",
       "isAttack": false,
       "isTopOperator": false,
-      "winpct": 50.0,
-      "wins": 4,
-      "kd": 0.67,
-      "kills": 4,
-      "timePlayedDisplay": "0h 13m",
-      "timePlayed": 787
+      "winpct": 55.6,
+      "wins": 5,
+      "kd": 0.83,
+      "kills": 5,
+      "timePlayedDisplay": "0h 16m",
+      "timePlayed": 975
     },
     {
       "name": "MELUSI",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-melusi.f93b3d64.png",
       "isAttack": false,
       "isTopOperator": false,
-      "winpct": 50.0,
+      "winpct": 33.3,
       "wins": 1,
-      "kd": 1.0,
+      "kd": 0.67,
       "kills": 2,
-      "timePlayedDisplay": "0h 5m",
-      "timePlayed": 354
+      "timePlayedDisplay": "0h 8m",
+      "timePlayed": 527
     },
     {
       "name": "DOC",
@@ -529,12 +678,12 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-hibana.c2a8477d1b.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 37.5,
+      "winpct": 30.0,
       "wins": 3,
-      "kd": 1.8,
-      "kills": 9,
-      "timePlayedDisplay": "0h 23m",
-      "timePlayed": 1389
+      "kd": 1.43,
+      "kills": 10,
+      "timePlayedDisplay": "0h 29m",
+      "timePlayed": 1763
     },
     {
       "name": "JACKAL",
@@ -565,12 +714,12 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-ela.63ec2d26e4.png",
       "isAttack": false,
       "isTopOperator": false,
-      "winpct": 76.9,
+      "winpct": 74.1,
       "wins": 20,
-      "kd": 1.16,
-      "kills": 22,
-      "timePlayedDisplay": "1h 7m",
-      "timePlayed": 4060
+      "kd": 1.15,
+      "kills": 23,
+      "timePlayedDisplay": "1h 11m",
+      "timePlayed": 4296
     },
     {
       "name": "MAESTRO",
@@ -661,12 +810,12 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-ash.16913d82e3.png",
       "isAttack": true,
       "isTopOperator": true,
-      "winpct": 46.0,
-      "wins": 545,
+      "winpct": 46.1,
+      "wins": 548,
       "kd": 1.3,
-      "kills": 1215,
-      "timePlayedDisplay": "61h 7m",
-      "timePlayed": 220035
+      "kills": 1223,
+      "timePlayedDisplay": "61h 21m",
+      "timePlayed": 220879
     },
     {
       "name": "ROOK",
@@ -781,12 +930,12 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-zofia.2a892bf5dc.png",
       "isAttack": true,
       "isTopOperator": true,
-      "winpct": 45.1,
-      "wins": 128,
-      "kd": 1.19,
-      "kills": 256,
-      "timePlayedDisplay": "16h 36m",
-      "timePlayed": 56207
+      "winpct": 45.3,
+      "wins": 131,
+      "kd": 1.21,
+      "kills": 264,
+      "timePlayedDisplay": "16h 50m",
+      "timePlayed": 57029
     },
     {
       "name": "VIGIL",
@@ -794,11 +943,11 @@
       "isAttack": false,
       "isTopOperator": true,
       "winpct": 53.1,
-      "wins": 170,
-      "kd": 1.19,
-      "kills": 302,
-      "timePlayedDisplay": "17h 37m",
-      "timePlayed": 59851
+      "wins": 172,
+      "kd": 1.2,
+      "kills": 307,
+      "timePlayedDisplay": "17h 50m",
+      "timePlayed": 60649
     },
     {
       "name": "ALIBI",
@@ -817,24 +966,24 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-sledge.00141f9258.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 54.5,
-      "wins": 12,
-      "kd": 1.27,
-      "kills": 19,
-      "timePlayedDisplay": "1h 8m",
-      "timePlayed": 4087
+      "winpct": 54.2,
+      "wins": 13,
+      "kd": 1.18,
+      "kills": 20,
+      "timePlayedDisplay": "1h 13m",
+      "timePlayed": 4439
     },
     {
       "name": "ACE",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-ace.f898bd77.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 0.0,
-      "wins": 0,
-      "kd": 0.0,
-      "kills": 0,
-      "timePlayedDisplay": "0h 3m",
-      "timePlayed": 192
+      "winpct": 50.0,
+      "wins": 1,
+      "kd": 2.0,
+      "kills": 2,
+      "timePlayedDisplay": "0h 5m",
+      "timePlayed": 326
     },
     {
       "name": "4:1A",
@@ -921,6 +1070,18 @@
       "timePlayed": 130
     },
     {
+      "name": "ARUNI",
+      "img": "https://images.ctfassets.net/p0f8o8d25gmk/5rOLCYQOh5HH0Nv6NHe38H/9b0328e497113d55ecb88cc2b090cbcd/r6s-operators-badge-aruni.png",
+      "isAttack": false,
+      "isTopOperator": false,
+      "winpct": 100.0,
+      "wins": 1,
+      "kd": 2.0,
+      "kills": 2,
+      "timePlayedDisplay": "0h 4m",
+      "timePlayed": 268
+    },
+    {
       "name": "THERMITE",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-thermite.9010fa3311.png",
       "isAttack": true,
@@ -961,12 +1122,12 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-bandit.385144d970.png",
       "isAttack": false,
       "isTopOperator": false,
-      "winpct": 57.8,
-      "wins": 37,
-      "kd": 1.57,
-      "kills": 72,
-      "timePlayedDisplay": "3h 27m",
-      "timePlayed": 12469
+      "winpct": 57.6,
+      "wins": 38,
+      "kd": 1.52,
+      "kills": 73,
+      "timePlayedDisplay": "4h 32m",
+      "timePlayed": 12752
     }
   ],
   "seasonalOperators": {
@@ -984,28 +1145,76 @@
         "timePlayed": 455
       },
       {
+        "name": "MOZZIE",
+        "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-mozzie.adeac1885.png",
+        "isAttack": false,
+        "isTopOperator": false,
+        "winpct": 100.0,
+        "wins": 1,
+        "kd": 0.0,
+        "kills": 0,
+        "timePlayedDisplay": "0h 3m",
+        "timePlayed": 232
+      },
+      {
         "name": "ORYX",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-oryx.6472c8ee.png",
         "isAttack": false,
         "isTopOperator": false,
         "winpct": 100.0,
-        "wins": 1,
-        "kd": 2.0,
-        "kills": 2,
+        "wins": 2,
+        "kd": 3.0,
+        "kills": 3,
+        "timePlayedDisplay": "0h 5m",
+        "timePlayed": 318
+      },
+      {
+        "name": "MELUSI",
+        "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-melusi.f93b3d64.png",
+        "isAttack": false,
+        "isTopOperator": false,
+        "winpct": 0.0,
+        "wins": 0,
+        "kd": 0.0,
+        "kills": 0,
         "timePlayedDisplay": "0h 2m",
-        "timePlayed": 130
+        "timePlayed": 173
+      },
+      {
+        "name": "HIBANA",
+        "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-hibana.c2a8477d1b.png",
+        "isAttack": true,
+        "isTopOperator": false,
+        "winpct": 0.0,
+        "wins": 0,
+        "kd": 0.5,
+        "kills": 1,
+        "timePlayedDisplay": "0h 6m",
+        "timePlayed": 374
+      },
+      {
+        "name": "ELA",
+        "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-ela.63ec2d26e4.png",
+        "isAttack": false,
+        "isTopOperator": false,
+        "winpct": 0.0,
+        "wins": 0,
+        "kd": 1.0,
+        "kills": 1,
+        "timePlayedDisplay": "0h 3m",
+        "timePlayed": 236
       },
       {
         "name": "ASH",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-ash.16913d82e3.png",
         "isAttack": true,
         "isTopOperator": true,
-        "winpct": 50.0,
-        "wins": 1,
-        "kd": 0.0,
-        "kills": 0,
-        "timePlayedDisplay": "0h 7m",
-        "timePlayed": 466
+        "winpct": 57.1,
+        "wins": 4,
+        "kd": 1.6,
+        "kills": 8,
+        "timePlayedDisplay": "0h 21m",
+        "timePlayed": 1310
       },
       {
         "name": "ROOK",
@@ -1020,16 +1229,52 @@
         "timePlayed": 107
       },
       {
+        "name": "ZOFIA",
+        "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-zofia.2a892bf5dc.png",
+        "isAttack": true,
+        "isTopOperator": true,
+        "winpct": 60.0,
+        "wins": 3,
+        "kd": 2.666666666666667,
+        "kills": 8,
+        "timePlayedDisplay": "0h 13m",
+        "timePlayed": 822
+      },
+      {
         "name": "VIGIL",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-vigil.4db5385b08.png",
         "isAttack": false,
         "isTopOperator": true,
-        "winpct": 0.0,
-        "wins": 0,
+        "winpct": 33.3,
+        "wins": 2,
+        "kd": 1.2,
+        "kills": 6,
+        "timePlayedDisplay": "0h 19m",
+        "timePlayed": 1176
+      },
+      {
+        "name": "SLEDGE",
+        "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-sledge.00141f9258.png",
+        "isAttack": true,
+        "isTopOperator": false,
+        "winpct": 50.0,
+        "wins": 1,
         "kd": 0.5,
         "kills": 1,
-        "timePlayedDisplay": "0h 6m",
-        "timePlayed": 378
+        "timePlayedDisplay": "0h 5m",
+        "timePlayed": 352
+      },
+      {
+        "name": "ACE",
+        "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-ace.f898bd77.png",
+        "isAttack": true,
+        "isTopOperator": false,
+        "winpct": 100.0,
+        "wins": 1,
+        "kd": 2.0,
+        "kills": 2,
+        "timePlayedDisplay": "0h 2m",
+        "timePlayed": 134
       },
       {
         "name": "JÄGER",
@@ -1042,6 +1287,18 @@
         "kills": 4,
         "timePlayedDisplay": "0h 6m",
         "timePlayed": 396
+      },
+      {
+        "name": "BANDIT",
+        "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-bandit.385144d970.png",
+        "isAttack": false,
+        "isTopOperator": false,
+        "winpct": 50.0,
+        "wins": 1,
+        "kd": 0.5,
+        "kills": 1,
+        "timePlayedDisplay": "0h 4m",
+        "timePlayed": 283
       }
     ],
     "startedTracking": "2020-12-19T09:51:34.22-05:00"

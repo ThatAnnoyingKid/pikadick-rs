@@ -8,34 +8,43 @@
   "suspectedCheater": false,
   "currentSeason": 20,
   "currentSeasonBestRegion": {
-    "rankName": "PLATINUM II",
-    "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank18.svg",
+    "rankName": "PLATINUM III",
+    "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank17.svg",
     "season": 20,
     "region": "global",
-    "mmr": 3756,
-    "winPct": 52.21,
-    "wins": 130,
-    "kd": 0.902014652014652,
-    "kills": 985,
-    "matches": 249,
-    "mmrChange": 29,
+    "regionLabel": "RANKED",
+    "mmr": 3482,
+    "winPct": 50.9,
+    "wins": 141,
+    "kd": 0.90229885057471271,
+    "kills": 1099,
+    "matches": 277,
+    "mmrChange": -25,
+    "isRanked": true,
+    "maxMmr": 4270,
     "currentRank": {
-      "rankTier": 20,
-      "mmr": 3600,
-      "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank18.svg",
-      "rankName": "PLATINUM II"
+      "rankTier": 19,
+      "mmr": 3200,
+      "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank17.svg",
+      "rankName": "PLATINUM III"
     },
-    "nextRank": {
+    "maxRank": {
       "rankTier": 21,
       "mmr": 4000,
       "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank19.svg",
       "rankName": "PLATINUM I"
     },
+    "nextRank": {
+      "rankTier": 20,
+      "mmr": 3600,
+      "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank18.svg",
+      "rankName": "PLATINUM II"
+    },
     "prevRank": {
-      "rankTier": 19,
-      "mmr": 3200,
-      "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank17.svg",
-      "rankName": "PLATINUM III"
+      "rankTier": 18,
+      "mmr": 3000,
+      "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank16-hd.42fb03b4a4.svg",
+      "rankName": "GOLD I"
     }
   },
   "lifetimeStats": {
@@ -44,18 +53,18 @@
       "name": "DIAMOND",
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg"
     },
-    "winPct": 68.4,
-    "wins": 11898,
+    "winPct": 68.3,
+    "wins": 11909,
     "kd": 1.23,
-    "kills": 82565,
-    "matches": 17396,
-    "headshotPct": 43.21,
-    "headshots": 35680,
-    "meleeKills": 595,
+    "kills": 82679,
+    "matches": 17426,
+    "headshotPct": 43.22,
+    "headshots": 35732,
+    "meleeKills": 596,
     "blindKills": 114,
-    "deaths": 66864,
-    "losses": 5359,
-    "xp": 258116993
+    "deaths": 66990,
+    "losses": 5376,
+    "xp": 258520499
   },
   "seasons": [
     {
@@ -63,6 +72,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 11,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 5318,
       "winPct": 72.29,
       "wins": 806,
@@ -70,7 +80,15 @@
       "kills": 2930,
       "matches": 1115,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 5617,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -88,6 +106,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 10,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 4531,
       "winPct": 86.67,
       "wins": 26,
@@ -95,7 +114,15 @@
       "kills": 0,
       "matches": 30,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 4531,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -113,6 +140,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 10,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 4929,
       "winPct": 67.67,
       "wins": 699,
@@ -120,7 +148,15 @@
       "kills": 0,
       "matches": 1033,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 5250,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -138,6 +174,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 9,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 4760,
       "winPct": 76.09,
       "wins": 35,
@@ -145,7 +182,15 @@
       "kills": 0,
       "matches": 46,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 4839,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -163,6 +208,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 9,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 5137,
       "winPct": 68.45,
       "wins": 779,
@@ -170,7 +216,15 @@
       "kills": 0,
       "matches": 1138,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 5351,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -188,6 +242,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 8,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 5169,
       "winPct": 73.26,
       "wins": 63,
@@ -195,7 +250,15 @@
       "kills": 0,
       "matches": 86,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 5427,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -213,6 +276,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 8,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 5307,
       "winPct": 70.43,
       "wins": 686,
@@ -220,7 +284,15 @@
       "kills": 0,
       "matches": 974,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 5447,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -238,6 +310,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 7,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 5124,
       "winPct": 70.1,
       "wins": 136,
@@ -245,7 +318,15 @@
       "kills": 0,
       "matches": 194,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 5216,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -263,6 +344,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 7,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 5071,
       "winPct": 69.42,
       "wins": 470,
@@ -270,7 +352,15 @@
       "kills": 0,
       "matches": 677,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 5123,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -288,6 +378,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 6,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 6236,
       "winPct": 79.81,
       "wins": 170,
@@ -295,7 +386,15 @@
       "kills": 0,
       "matches": 213,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 6501,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -313,6 +412,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 6,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 5514,
       "winPct": 74.77,
       "wins": 664,
@@ -320,7 +420,15 @@
       "kills": 0,
       "matches": 888,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 5578,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -338,6 +446,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 11,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 4778,
       "winPct": 70.0,
       "wins": 56,
@@ -345,7 +454,15 @@
       "kills": 2523,
       "matches": 80,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 4977,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -363,6 +480,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 12,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 5365,
       "winPct": 68.65,
       "wins": 749,
@@ -370,7 +488,15 @@
       "kills": 5409,
       "matches": 1091,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 5730,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -388,6 +514,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 12,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 4721,
       "winPct": 74.58,
       "wins": 44,
@@ -395,7 +522,15 @@
       "kills": 4188,
       "matches": 59,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 4730,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -413,6 +548,7 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
       "season": 8,
       "region": "apac",
+      "regionLabel": "Asia",
       "mmr": 2627,
       "winPct": 100.0,
       "wins": 1,
@@ -420,7 +556,15 @@
       "kills": 0,
       "matches": 1,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 0,
       "currentRank": {
+        "rankTier": 0,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+        "rankName": "Not ranked yet."
+      },
+      "maxRank": {
         "rankTier": 0,
         "mmr": 0,
         "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
@@ -432,6 +576,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 13,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 4904,
       "winPct": 66.38,
       "wins": 762,
@@ -439,7 +584,15 @@
       "kills": 5544,
       "matches": 1148,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 5594,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -457,6 +610,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 13,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 4725,
       "winPct": 93.1,
       "wins": 27,
@@ -464,7 +618,15 @@
       "kills": 4207,
       "matches": 29,
       "mmrChange": 0,
+      "isRanked": true,
+      "maxMmr": 4725,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -482,6 +644,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 14,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 4661,
       "winPct": 64.75,
       "wins": 518,
@@ -489,7 +652,15 @@
       "kills": 3766,
       "matches": 800,
       "mmrChange": -12,
+      "isRanked": true,
+      "maxMmr": 5101,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -507,6 +678,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 14,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 5291,
       "winPct": 78.95,
       "wins": 45,
@@ -514,7 +686,15 @@
       "kills": 312,
       "matches": 57,
       "mmrChange": 30,
+      "isRanked": true,
+      "maxMmr": 5322,
       "currentRank": {
+        "rankTier": 20,
+        "mmr": 4500,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 20,
         "mmr": 4500,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -532,6 +712,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/s15/hd-rank23.svg",
       "season": 15,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 5233,
       "winPct": 63.62,
       "wins": 411,
@@ -539,7 +720,15 @@
       "kills": 3047,
       "matches": 646,
       "mmrChange": -17,
+      "isRanked": true,
+      "maxMmr": 5397,
       "currentRank": {
+        "rankTier": 23,
+        "mmr": 5000,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/s15/hd-rank23.svg",
+        "rankName": "CHAMPIONS"
+      },
+      "maxRank": {
         "rankTier": 23,
         "mmr": 5000,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/s15/hd-rank23.svg",
@@ -557,6 +746,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 15,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 4416,
       "winPct": 79.17,
       "wins": 19,
@@ -564,7 +754,15 @@
       "kills": 2189,
       "matches": 24,
       "mmrChange": 54,
+      "isRanked": true,
+      "maxMmr": 4416,
       "currentRank": {
+        "rankTier": 22,
+        "mmr": 4400,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 22,
         "mmr": 4400,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -588,6 +786,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/s15/hd-rank23.svg",
       "season": 16,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 5138,
       "winPct": 63.55,
       "wins": 408,
@@ -595,7 +794,15 @@
       "kills": 2899,
       "matches": 642,
       "mmrChange": 9,
+      "isRanked": true,
+      "maxMmr": 5154,
       "currentRank": {
+        "rankTier": 23,
+        "mmr": 5000,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/s15/hd-rank23.svg",
+        "rankName": "CHAMPIONS"
+      },
+      "maxRank": {
         "rankTier": 23,
         "mmr": 5000,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/s15/hd-rank23.svg",
@@ -613,6 +820,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank19.svg",
       "season": 16,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 4359,
       "winPct": 69.7,
       "wins": 23,
@@ -620,11 +828,19 @@
       "kills": 163,
       "matches": 33,
       "mmrChange": -75,
+      "isRanked": true,
+      "maxMmr": 4585,
       "currentRank": {
         "rankTier": 21,
         "mmr": 4000,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank19.svg",
         "rankName": "PLATINUM I"
+      },
+      "maxRank": {
+        "rankTier": 22,
+        "mmr": 4400,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
       },
       "nextRank": {
         "rankTier": 22,
@@ -644,6 +860,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 17,
       "region": "ncsa",
+      "regionLabel": "America",
       "mmr": 4693,
       "winPct": 57.33,
       "wins": 446,
@@ -651,7 +868,15 @@
       "kills": 3399,
       "matches": 778,
       "mmrChange": 6,
+      "isRanked": true,
+      "maxMmr": 4694,
       "currentRank": {
+        "rankTier": 22,
+        "mmr": 4400,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
+      },
+      "maxRank": {
         "rankTier": 22,
         "mmr": 4400,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
@@ -675,6 +900,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
       "season": 17,
       "region": "emea",
+      "regionLabel": "Europe",
       "mmr": 4619,
       "winPct": 76.74,
       "wins": 33,
@@ -682,11 +908,19 @@
       "kills": 229,
       "matches": 43,
       "mmrChange": -44,
+      "isRanked": true,
+      "maxMmr": 5025,
       "currentRank": {
         "rankTier": 22,
         "mmr": 4400,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
         "rankName": "DIAMOND"
+      },
+      "maxRank": {
+        "rankTier": 23,
+        "mmr": 5000,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/s15/hd-rank23.svg",
+        "rankName": "CHAMPIONS"
       },
       "nextRank": {
         "rankTier": 23,
@@ -706,6 +940,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank19.svg",
       "season": 18,
       "region": "global",
+      "regionLabel": "RANKED",
       "mmr": 4297,
       "winPct": 57.27,
       "wins": 441,
@@ -713,11 +948,19 @@
       "kills": 3412,
       "matches": 770,
       "mmrChange": 10,
+      "isRanked": true,
+      "maxMmr": 4698,
       "currentRank": {
         "rankTier": 21,
         "mmr": 4000,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank19.svg",
         "rankName": "PLATINUM I"
+      },
+      "maxRank": {
+        "rankTier": 22,
+        "mmr": 4400,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank20.svg",
+        "rankName": "DIAMOND"
       },
       "nextRank": {
         "rankTier": 22,
@@ -737,6 +980,7 @@
       "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/s15/hd-rank23.svg",
       "season": 19,
       "region": "global",
+      "regionLabel": "RANKED",
       "mmr": 5510,
       "winPct": 61.02,
       "wins": 429,
@@ -744,7 +988,15 @@
       "kills": 3121,
       "matches": 703,
       "mmrChange": -70,
+      "isRanked": true,
+      "maxMmr": 5580,
       "currentRank": {
+        "rankTier": 23,
+        "mmr": 5000,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/s15/hd-rank23.svg",
+        "rankName": "CHAMPIONS"
+      },
+      "maxRank": {
         "rankTier": 23,
         "mmr": 5000,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/s15/hd-rank23.svg",
@@ -762,6 +1014,7 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
       "season": 19,
       "region": "global",
+      "regionLabel": "CASUAL",
       "mmr": 2860,
       "winPct": 50.0,
       "wins": 1,
@@ -769,7 +1022,15 @@
       "kills": 11,
       "matches": 2,
       "mmrChange": -52,
+      "isRanked": false,
+      "maxMmr": 0,
       "currentRank": {
+        "rankTier": 0,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+        "rankName": "Not ranked yet."
+      },
+      "maxRank": {
         "rankTier": 0,
         "mmr": 0,
         "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
@@ -777,34 +1038,43 @@
       }
     },
     {
-      "rankName": "PLATINUM II",
-      "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank18.svg",
+      "rankName": "PLATINUM III",
+      "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank17.svg",
       "season": 20,
       "region": "global",
-      "mmr": 3756,
-      "winPct": 52.21,
-      "wins": 130,
-      "kd": 0.902014652014652,
-      "kills": 985,
-      "matches": 249,
-      "mmrChange": 29,
+      "regionLabel": "RANKED",
+      "mmr": 3482,
+      "winPct": 50.9,
+      "wins": 141,
+      "kd": 0.90229885057471271,
+      "kills": 1099,
+      "matches": 277,
+      "mmrChange": -25,
+      "isRanked": true,
+      "maxMmr": 4270,
       "currentRank": {
-        "rankTier": 20,
-        "mmr": 3600,
-        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank18.svg",
-        "rankName": "PLATINUM II"
+        "rankTier": 19,
+        "mmr": 3200,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank17.svg",
+        "rankName": "PLATINUM III"
       },
-      "nextRank": {
+      "maxRank": {
         "rankTier": 21,
         "mmr": 4000,
         "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank19.svg",
         "rankName": "PLATINUM I"
       },
+      "nextRank": {
+        "rankTier": 20,
+        "mmr": 3600,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank18.svg",
+        "rankName": "PLATINUM II"
+      },
       "prevRank": {
-        "rankTier": 19,
-        "mmr": 3200,
-        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank17.svg",
-        "rankName": "PLATINUM III"
+        "rankTier": 18,
+        "mmr": 3000,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank16-hd.42fb03b4a4.svg",
+        "rankName": "GOLD I"
       }
     },
     {
@@ -812,6 +1082,7 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank15-hd.1e94c7f0fe.svg",
       "season": 20,
       "region": "global",
+      "regionLabel": "CASUAL",
       "mmr": 2824,
       "winPct": 100.0,
       "wins": 1,
@@ -819,11 +1090,19 @@
       "kills": 3,
       "matches": 1,
       "mmrChange": 79,
+      "isRanked": false,
+      "maxMmr": 0,
       "currentRank": {
         "rankTier": 17,
         "mmr": 2800,
         "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank15-hd.1e94c7f0fe.svg",
         "rankName": "GOLD II"
+      },
+      "maxRank": {
+        "rankTier": 0,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/rainbow6-ubi/assets/images/season5-rank0-hd.a1bedded1a.svg",
+        "rankName": "Not ranked yet."
       },
       "nextRank": {
         "rankTier": 18,
@@ -953,12 +1232,12 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-maverick.7eab7c75e7.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 54.0,
-      "wins": 883,
+      "winpct": 53.9,
+      "wins": 885,
       "kd": 1.05,
-      "kills": 1171,
-      "timePlayedDisplay": "88h 54m",
-      "timePlayed": 316464
+      "kills": 1175,
+      "timePlayedDisplay": "88h 19m",
+      "timePlayed": 317979
     },
     {
       "name": "NOMAD",
@@ -978,23 +1257,23 @@
       "isAttack": false,
       "isTopOperator": false,
       "winpct": 64.4,
-      "wins": 224,
-      "kd": 1.09,
-      "kills": 272,
-      "timePlayedDisplay": "19h 30m",
-      "timePlayed": 66633
+      "wins": 226,
+      "kd": 1.1,
+      "kills": 277,
+      "timePlayedDisplay": "19h 40m",
+      "timePlayed": 67230
     },
     {
       "name": "NØKK",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-nakk.d3b4f1afe5.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 44.7,
+      "winpct": 43.6,
       "wins": 17,
-      "kd": 0.63,
+      "kd": 0.61,
       "kills": 20,
-      "timePlayedDisplay": "2h 57m",
-      "timePlayed": 7056
+      "timePlayedDisplay": "2h 43s",
+      "timePlayed": 7243
     },
     {
       "name": "WARDEN",
@@ -1037,12 +1316,12 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-kali.ff0fee46.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 54.8,
-      "wins": 184,
-      "kd": 1.01,
-      "kills": 228,
-      "timePlayedDisplay": "19h 35m",
-      "timePlayed": 66929
+      "winpct": 54.5,
+      "wins": 188,
+      "kd": 1.02,
+      "kills": 237,
+      "timePlayedDisplay": "19h 6m",
+      "timePlayed": 68782
     },
     {
       "name": "ORYX",
@@ -1061,24 +1340,24 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-iana.6fa68bc8.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 53.3,
-      "wins": 97,
-      "kd": 1.48,
-      "kills": 173,
-      "timePlayedDisplay": "10h 32m",
-      "timePlayed": 34336
+      "winpct": 53.4,
+      "wins": 101,
+      "kd": 1.42,
+      "kills": 176,
+      "timePlayedDisplay": "10h 55m",
+      "timePlayed": 35754
     },
     {
       "name": "MELUSI",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-melusi.f93b3d64.png",
       "isAttack": false,
       "isTopOperator": false,
-      "winpct": 58.0,
-      "wins": 159,
-      "kd": 1.06,
-      "kills": 220,
-      "timePlayedDisplay": "15h 30m",
-      "timePlayed": 52248
+      "winpct": 58.3,
+      "wins": 168,
+      "kd": 1.04,
+      "kills": 228,
+      "timePlayedDisplay": "15h 19m",
+      "timePlayed": 55193
     },
     {
       "name": "CASTLE",
@@ -1134,11 +1413,11 @@
       "isAttack": true,
       "isTopOperator": false,
       "winpct": 57.2,
-      "wins": 1770,
+      "wins": 1771,
       "kd": 1.23,
       "kills": 2482,
-      "timePlayedDisplay": "160h 41m",
-      "timePlayed": 574877
+      "timePlayedDisplay": "160h 48m",
+      "timePlayed": 575294
     },
     {
       "name": "BLACKBEARD",
@@ -1149,8 +1428,8 @@
       "wins": 1421,
       "kd": 1.52,
       "kills": 2334,
-      "timePlayedDisplay": "131h 20m",
-      "timePlayed": 472824
+      "timePlayedDisplay": "132h 30m",
+      "timePlayed": 473403
     },
     {
       "name": "CAPITÃO",
@@ -1158,11 +1437,11 @@
       "isAttack": true,
       "isTopOperator": false,
       "winpct": 62.9,
-      "wins": 686,
+      "wins": 687,
       "kd": 1.3,
-      "kills": 866,
-      "timePlayedDisplay": "54h 47m",
-      "timePlayed": 193661
+      "kills": 869,
+      "timePlayedDisplay": "54h 54m",
+      "timePlayed": 194066
     },
     {
       "name": "HIBANA",
@@ -1170,23 +1449,23 @@
       "isAttack": true,
       "isTopOperator": false,
       "winpct": 56.2,
-      "wins": 2427,
+      "wins": 2431,
       "kd": 1.2,
-      "kills": 3239,
-      "timePlayedDisplay": "228h 41m",
-      "timePlayed": 819714
+      "kills": 3246,
+      "timePlayedDisplay": "228h 7m",
+      "timePlayed": 821276
     },
     {
       "name": "JACKAL",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-jackal.0326ca29ca.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 53.9,
-      "wins": 930,
+      "winpct": 54.1,
+      "wins": 934,
       "kd": 1.19,
-      "kills": 1423,
-      "timePlayedDisplay": "90h 6m",
-      "timePlayed": 324407
+      "kills": 1424,
+      "timePlayedDisplay": "90h 18m",
+      "timePlayed": 325137
     },
     {
       "name": "YING",
@@ -1205,48 +1484,48 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-ela.63ec2d26e4.png",
       "isAttack": false,
       "isTopOperator": false,
-      "winpct": 63.7,
-      "wins": 1002,
+      "winpct": 63.6,
+      "wins": 1003,
       "kd": 1.21,
-      "kills": 1402,
-      "timePlayedDisplay": "84h 23m",
-      "timePlayed": 303795
+      "kills": 1404,
+      "timePlayedDisplay": "85h 31m",
+      "timePlayed": 304313
     },
     {
       "name": "DOKKAEBI",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-dokkaebi.2f83a34f88.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 61.8,
-      "wins": 308,
-      "kd": 1.33,
+      "winpct": 61.9,
+      "wins": 309,
+      "kd": 1.32,
       "kills": 404,
-      "timePlayedDisplay": "25h 16m",
-      "timePlayed": 90988
+      "timePlayedDisplay": "25h 20m",
+      "timePlayed": 91233
     },
     {
       "name": "MAESTRO",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-maestro.b6cf7905ed.png",
       "isAttack": false,
       "isTopOperator": false,
-      "winpct": 61.4,
+      "winpct": 61.3,
       "wins": 1004,
       "kd": 1.14,
-      "kills": 1162,
-      "timePlayedDisplay": "89h 53m",
-      "timePlayed": 319999
+      "kills": 1167,
+      "timePlayedDisplay": "89h 3m",
+      "timePlayed": 320609
     },
     {
       "name": "MUTE",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-mute.3e4f2b0170.png",
       "isAttack": false,
       "isTopOperator": false,
-      "winpct": 61.1,
-      "wins": 1132,
-      "kd": 1.22,
-      "kills": 1486,
-      "timePlayedDisplay": "99h 29m",
-      "timePlayed": 358156
+      "winpct": 60.8,
+      "wins": 1135,
+      "kd": 1.21,
+      "kills": 1497,
+      "timePlayedDisplay": "100h 5m",
+      "timePlayed": 360347
     },
     {
       "name": "CLASH",
@@ -1266,11 +1545,11 @@
       "isAttack": false,
       "isTopOperator": false,
       "winpct": 60.9,
-      "wins": 866,
-      "kd": 1.04,
-      "kills": 1022,
-      "timePlayedDisplay": "77h 6m",
-      "timePlayed": 277612
+      "wins": 870,
+      "kd": 1.03,
+      "kills": 1023,
+      "timePlayedDisplay": "77h 26m",
+      "timePlayed": 278777
     },
     {
       "name": "GRIDLOCK",
@@ -1301,12 +1580,12 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-wamai.4e4bf506.png",
       "isAttack": false,
       "isTopOperator": false,
-      "winpct": 57.6,
+      "winpct": 57.0,
       "wins": 57,
       "kd": 1.21,
-      "kills": 86,
-      "timePlayedDisplay": "5h 16m",
-      "timePlayed": 19000
+      "kills": 87,
+      "timePlayedDisplay": "5h 18m",
+      "timePlayed": 19108
     },
     {
       "name": "3:1A",
@@ -1326,11 +1605,11 @@
       "isAttack": true,
       "isTopOperator": false,
       "winpct": 57.9,
-      "wins": 3018,
-      "kd": 1.39,
-      "kills": 4926,
-      "timePlayedDisplay": "264h 39m",
-      "timePlayed": 949144
+      "wins": 3027,
+      "kd": 1.38,
+      "kills": 4940,
+      "timePlayedDisplay": "265h 35m",
+      "timePlayed": 952545
     },
     {
       "name": "ROOK",
@@ -1338,23 +1617,23 @@
       "isAttack": false,
       "isTopOperator": true,
       "winpct": 65.6,
-      "wins": 4371,
+      "wins": 4374,
       "kd": 1.34,
-      "kills": 6186,
-      "timePlayedDisplay": "348h 49m",
-      "timePlayed": 1252161
+      "kills": 6191,
+      "timePlayedDisplay": "348h 8m",
+      "timePlayed": 1253299
     },
     {
       "name": "FUZE",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-fuze.9e7e92226e.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 60.4,
-      "wins": 689,
+      "winpct": 60.3,
+      "wins": 690,
       "kd": 1.29,
-      "kills": 881,
-      "timePlayedDisplay": "57h 28m",
-      "timePlayed": 206918
+      "kills": 883,
+      "timePlayedDisplay": "58h 39m",
+      "timePlayed": 207542
     },
     {
       "name": "IQ",
@@ -1386,23 +1665,23 @@
       "isAttack": false,
       "isTopOperator": false,
       "winpct": 61.4,
-      "wins": 1547,
+      "wins": 1548,
       "kd": 1.22,
-      "kills": 2110,
-      "timePlayedDisplay": "140h 22m",
-      "timePlayed": 505331
+      "kills": 2112,
+      "timePlayedDisplay": "140h 28m",
+      "timePlayed": 505712
     },
     {
       "name": "CAVEIRA",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-caveira.757e9259e4.png",
       "isAttack": false,
       "isTopOperator": false,
-      "winpct": 63.3,
-      "wins": 371,
+      "winpct": 63.4,
+      "wins": 372,
       "kd": 1.18,
       "kills": 496,
-      "timePlayedDisplay": "31h 44m",
-      "timePlayed": 110675
+      "timePlayedDisplay": "31h 48m",
+      "timePlayed": 110897
     },
     {
       "name": "ECHO",
@@ -1410,23 +1689,23 @@
       "isAttack": false,
       "isTopOperator": false,
       "winpct": 62.1,
-      "wins": 898,
+      "wins": 899,
       "kd": 1.16,
-      "kills": 1058,
-      "timePlayedDisplay": "78h 55m",
-      "timePlayed": 280513
+      "kills": 1060,
+      "timePlayedDisplay": "78h 1m",
+      "timePlayed": 280877
     },
     {
       "name": "MIRA",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-mira.22fb72a5cc.png",
       "isAttack": false,
       "isTopOperator": false,
-      "winpct": 62.3,
-      "wins": 2811,
-      "kd": 1.35,
-      "kills": 3557,
-      "timePlayedDisplay": "243h 46m",
-      "timePlayed": 873993
+      "winpct": 62.2,
+      "wins": 2817,
+      "kd": 1.34,
+      "kills": 3566,
+      "timePlayedDisplay": "244h 30m",
+      "timePlayed": 876643
     },
     {
       "name": "LESION",
@@ -1445,12 +1724,12 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-zofia.2a892bf5dc.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 51.0,
+      "winpct": 50.9,
       "wins": 518,
       "kd": 1.09,
       "kills": 785,
-      "timePlayedDisplay": "53h 45m",
-      "timePlayed": 189958
+      "timePlayedDisplay": "53h 49m",
+      "timePlayed": 190184
     },
     {
       "name": "VIGIL",
@@ -1494,11 +1773,11 @@
       "isAttack": true,
       "isTopOperator": true,
       "winpct": 57.1,
-      "wins": 3001,
+      "wins": 3006,
       "kd": 1.28,
-      "kills": 4505,
-      "timePlayedDisplay": "269h 38m",
-      "timePlayed": 967083
+      "kills": 4509,
+      "timePlayedDisplay": "269h 2m",
+      "timePlayed": 968552
     },
     {
       "name": "4:16",
@@ -1544,9 +1823,9 @@
       "winpct": 63.4,
       "wins": 1218,
       "kd": 1.4,
-      "kills": 1775,
-      "timePlayedDisplay": "103h 23m",
-      "timePlayed": 372222
+      "kills": 1776,
+      "timePlayedDisplay": "103h 27m",
+      "timePlayed": 372453
     },
     {
       "name": "TWITCH",
@@ -1557,8 +1836,8 @@
       "wins": 1541,
       "kd": 1.39,
       "kills": 2273,
-      "timePlayedDisplay": "134h 22m",
-      "timePlayed": 483755
+      "timePlayedDisplay": "134h 25m",
+      "timePlayed": 483918
     },
     {
       "name": "KAPKAN",
@@ -1577,24 +1856,24 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-jager.600b2773be.png",
       "isAttack": false,
       "isTopOperator": true,
-      "winpct": 60.9,
-      "wins": 3474,
+      "winpct": 61.0,
+      "wins": 3482,
       "kd": 1.2,
-      "kills": 4990,
-      "timePlayedDisplay": "307h 56m",
-      "timePlayed": 1104981
+      "kills": 5001,
+      "timePlayedDisplay": "308h 36m",
+      "timePlayed": 1107418
     },
     {
       "name": "FINKA",
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-finka.71d3a2432f.png",
       "isAttack": true,
       "isTopOperator": false,
-      "winpct": 57.6,
-      "wins": 179,
-      "kd": 1.28,
+      "winpct": 57.5,
+      "wins": 180,
+      "kd": 1.26,
       "kills": 282,
-      "timePlayedDisplay": "15h 32m",
-      "timePlayed": 52323
+      "timePlayedDisplay": "15h 38m",
+      "timePlayed": 52699
     },
     {
       "name": "THATCHER",
@@ -1650,11 +1929,11 @@
       "isAttack": true,
       "isTopOperator": true,
       "winpct": 55.6,
-      "wins": 3716,
+      "wins": 3718,
       "kd": 1.2,
-      "kills": 5152,
-      "timePlayedDisplay": "350h 39m",
-      "timePlayed": 1258781
+      "kills": 5153,
+      "timePlayedDisplay": "350h 53m",
+      "timePlayed": 1259633
     },
     {
       "name": "MONTAGNE",
@@ -1685,12 +1964,12 @@
       "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-bandit.385144d970.png",
       "isAttack": false,
       "isTopOperator": true,
-      "winpct": 62.8,
-      "wins": 3233,
+      "winpct": 62.7,
+      "wins": 3234,
       "kd": 1.19,
-      "kills": 4225,
-      "timePlayedDisplay": "279h 40m",
-      "timePlayed": 1003256
+      "kills": 4228,
+      "timePlayedDisplay": "279h 54m",
+      "timePlayed": 1004060
     },
     {
       "name": "6:16",
@@ -1784,12 +2063,12 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-maverick.7eab7c75e7.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 52.0,
-        "wins": 66,
-        "kd": 0.86363636363636376,
-        "kills": 76,
-        "timePlayedDisplay": "7h 7m",
-        "timePlayed": 25621
+        "winpct": 50.7,
+        "wins": 68,
+        "kd": 0.86021505376344087,
+        "kills": 80,
+        "timePlayedDisplay": "8h 32m",
+        "timePlayed": 27136
       },
       {
         "name": "NOMAD",
@@ -1809,11 +2088,11 @@
         "isAttack": false,
         "isTopOperator": false,
         "winpct": 66.7,
-        "wins": 2,
-        "kd": 1.3333333333333335,
-        "kills": 4,
-        "timePlayedDisplay": "0h 9m",
-        "timePlayed": 554
+        "wins": 4,
+        "kd": 1.8,
+        "kills": 9,
+        "timePlayedDisplay": "0h 19m",
+        "timePlayed": 1151
       },
       {
         "name": "NØKK",
@@ -1824,8 +2103,8 @@
         "wins": 0,
         "kd": 0.0,
         "kills": 0,
-        "timePlayedDisplay": "0h 1m",
-        "timePlayed": 92
+        "timePlayedDisplay": "0h 4m",
+        "timePlayed": 279
       },
       {
         "name": "WARDEN",
@@ -1868,12 +2147,12 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-kali.ff0fee46.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 54.7,
-        "wins": 29,
-        "kd": 1.0303030303030303,
-        "kills": 34,
-        "timePlayedDisplay": "3h 50m",
-        "timePlayed": 10238
+        "winpct": 53.2,
+        "wins": 33,
+        "kd": 1.075,
+        "kills": 43,
+        "timePlayedDisplay": "3h 21m",
+        "timePlayed": 12091
       },
       {
         "name": "ORYX",
@@ -1892,24 +2171,24 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-iana.6fa68bc8.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 58.3,
-        "wins": 7,
-        "kd": 1.1666666666666667,
-        "kills": 7,
-        "timePlayedDisplay": "1h 39m",
-        "timePlayed": 2345
+        "winpct": 57.9,
+        "wins": 11,
+        "kd": 0.76923076923076916,
+        "kills": 10,
+        "timePlayedDisplay": "1h 2m",
+        "timePlayed": 3763
       },
       {
         "name": "MELUSI",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-melusi.f93b3d64.png",
         "isAttack": false,
         "isTopOperator": false,
-        "winpct": 58.6,
-        "wins": 51,
-        "kd": 0.95454545454545459,
-        "kills": 63,
-        "timePlayedDisplay": "5h 48m",
-        "timePlayed": 17327
+        "winpct": 59.4,
+        "wins": 60,
+        "kd": 0.92207792207792216,
+        "kills": 71,
+        "timePlayedDisplay": "6h 37m",
+        "timePlayed": 20272
       },
       {
         "name": "CASTLE",
@@ -1964,48 +2243,60 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-buck.2fc3e09779.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 70.4,
-        "wins": 19,
-        "kd": 1.5384615384615383,
+        "winpct": 69.0,
+        "wins": 20,
+        "kd": 1.4285714285714286,
         "kills": 20,
-        "timePlayedDisplay": "2h 30m",
-        "timePlayed": 5423
+        "timePlayedDisplay": "2h 37m",
+        "timePlayed": 5840
       },
       {
         "name": "BLACKBEARD",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-blackbeard.fccd7e2c03.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 35.0,
+        "winpct": 30.4,
         "wins": 7,
-        "kd": 0.875,
+        "kd": 0.736842105263158,
         "kills": 14,
-        "timePlayedDisplay": "1h 8m",
-        "timePlayed": 4138
+        "timePlayedDisplay": "1h 18m",
+        "timePlayed": 4717
+      },
+      {
+        "name": "CAPITÃO",
+        "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-capitao.6603e417c1.png",
+        "isAttack": true,
+        "isTopOperator": false,
+        "winpct": 50.0,
+        "wins": 1,
+        "kd": 3.0,
+        "kills": 3,
+        "timePlayedDisplay": "0h 6m",
+        "timePlayed": 405
       },
       {
         "name": "HIBANA",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-hibana.c2a8477d1b.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 59.5,
-        "wins": 22,
-        "kd": 0.63636363636363635,
-        "kills": 14,
-        "timePlayedDisplay": "2h 3m",
-        "timePlayed": 7433
+        "winpct": 59.1,
+        "wins": 26,
+        "kd": 0.84,
+        "kills": 21,
+        "timePlayedDisplay": "2h 29m",
+        "timePlayed": 8995
       },
       {
         "name": "JACKAL",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-jackal.0326ca29ca.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 22.7,
-        "wins": 5,
-        "kd": 0.3,
-        "kills": 6,
-        "timePlayedDisplay": "1h 13m",
-        "timePlayed": 4416
+        "winpct": 34.6,
+        "wins": 9,
+        "kd": 0.31818181818181818,
+        "kills": 7,
+        "timePlayedDisplay": "1h 25m",
+        "timePlayed": 5146
       },
       {
         "name": "YING",
@@ -2024,48 +2315,48 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-ela.63ec2d26e4.png",
         "isAttack": false,
         "isTopOperator": false,
-        "winpct": 30.8,
-        "wins": 4,
-        "kd": 0.5,
-        "kills": 6,
-        "timePlayedDisplay": "1h 40m",
-        "timePlayed": 2454
+        "winpct": 31.2,
+        "wins": 5,
+        "kd": 0.53333333333333333,
+        "kills": 8,
+        "timePlayedDisplay": "1h 49m",
+        "timePlayed": 2972
       },
       {
         "name": "DOKKAEBI",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-dokkaebi.2f83a34f88.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 20.0,
-        "wins": 1,
-        "kd": 0.5,
+        "winpct": 33.3,
+        "wins": 2,
+        "kd": 0.4,
         "kills": 2,
-        "timePlayedDisplay": "0h 17m",
-        "timePlayed": 1020
+        "timePlayedDisplay": "0h 21m",
+        "timePlayed": 1265
       },
       {
         "name": "MAESTRO",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-maestro.b6cf7905ed.png",
         "isAttack": false,
         "isTopOperator": false,
-        "winpct": 55.6,
+        "winpct": 50.0,
         "wins": 15,
-        "kd": 1.1875,
-        "kills": 19,
-        "timePlayedDisplay": "1h 29m",
-        "timePlayed": 5358
+        "kd": 1.263157894736842,
+        "kills": 24,
+        "timePlayedDisplay": "2h 39m",
+        "timePlayed": 5968
       },
       {
         "name": "MUTE",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-mute.3e4f2b0170.png",
         "isAttack": false,
         "isTopOperator": false,
-        "winpct": 48.4,
-        "wins": 31,
-        "kd": 0.87755102040816324,
-        "kills": 43,
-        "timePlayedDisplay": "3h 23m",
-        "timePlayed": 12229
+        "winpct": 44.7,
+        "wins": 34,
+        "kd": 0.91525423728813571,
+        "kills": 54,
+        "timePlayedDisplay": "4h 20s",
+        "timePlayed": 14420
       },
       {
         "name": "CLASH",
@@ -2084,12 +2375,12 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-kaid.ae2bfa7a5b.png",
         "isAttack": false,
         "isTopOperator": false,
-        "winpct": 51.4,
-        "wins": 19,
-        "kd": 0.7,
-        "kills": 21,
-        "timePlayedDisplay": "2h 2m",
-        "timePlayed": 7363
+        "winpct": 53.5,
+        "wins": 23,
+        "kd": 0.6470588235294118,
+        "kills": 22,
+        "timePlayedDisplay": "2h 22m",
+        "timePlayed": 8528
       },
       {
         "name": "GRIDLOCK",
@@ -2108,48 +2399,48 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-wamai.4e4bf506.png",
         "isAttack": false,
         "isTopOperator": false,
-        "winpct": 37.5,
+        "winpct": 33.3,
         "wins": 3,
-        "kd": 0.57142857142857151,
-        "kills": 4,
-        "timePlayedDisplay": "0h 25m",
-        "timePlayed": 1559
+        "kd": 0.625,
+        "kills": 5,
+        "timePlayedDisplay": "0h 27m",
+        "timePlayed": 1667
       },
       {
         "name": "ASH",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-ash.16913d82e3.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 45.7,
-        "wins": 21,
-        "kd": 1.0,
-        "kills": 34,
-        "timePlayedDisplay": "3h 35m",
-        "timePlayed": 9357
+        "winpct": 46.9,
+        "wins": 30,
+        "kd": 0.96,
+        "kills": 48,
+        "timePlayedDisplay": "4h 32m",
+        "timePlayed": 12758
       },
       {
         "name": "ROOK",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-rook.eb954a4e67.png",
         "isAttack": false,
         "isTopOperator": true,
-        "winpct": 57.6,
-        "wins": 19,
-        "kd": 1.08,
-        "kills": 27,
-        "timePlayedDisplay": "2h 46m",
-        "timePlayed": 6381
+        "winpct": 56.4,
+        "wins": 22,
+        "kd": 1.0666666666666667,
+        "kills": 32,
+        "timePlayedDisplay": "2h 5m",
+        "timePlayed": 7519
       },
       {
         "name": "FUZE",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-fuze.9e7e92226e.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 53.3,
-        "wins": 16,
-        "kd": 1.3125,
-        "kills": 21,
-        "timePlayedDisplay": "2h 41m",
-        "timePlayed": 6099
+        "winpct": 51.5,
+        "wins": 17,
+        "kd": 1.3529411764705883,
+        "kills": 23,
+        "timePlayedDisplay": "2h 52m",
+        "timePlayed": 6723
       },
       {
         "name": "IQ",
@@ -2180,36 +2471,48 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-valkyrie.f87cb6bdc2.png",
         "isAttack": false,
         "isTopOperator": false,
-        "winpct": 69.0,
-        "wins": 20,
-        "kd": 0.85714285714285721,
-        "kills": 18,
-        "timePlayedDisplay": "2h 34m",
-        "timePlayed": 5662
+        "winpct": 67.7,
+        "wins": 21,
+        "kd": 0.90909090909090917,
+        "kills": 20,
+        "timePlayedDisplay": "2h 40m",
+        "timePlayed": 6043
+      },
+      {
+        "name": "CAVEIRA",
+        "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-caveira.757e9259e4.png",
+        "isAttack": false,
+        "isTopOperator": false,
+        "winpct": 100.0,
+        "wins": 1,
+        "kd": 0.0,
+        "kills": 0,
+        "timePlayedDisplay": "0h 3m",
+        "timePlayed": 222
       },
       {
         "name": "ECHO",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-echo.a77c7d7eb5.png",
         "isAttack": false,
         "isTopOperator": false,
-        "winpct": 64.2,
-        "wins": 34,
-        "kd": 1.0588235294117647,
-        "kills": 36,
-        "timePlayedDisplay": "3h 54m",
-        "timePlayed": 10481
+        "winpct": 63.6,
+        "wins": 35,
+        "kd": 1.0857142857142856,
+        "kills": 38,
+        "timePlayedDisplay": "3h 45s",
+        "timePlayed": 10845
       },
       {
         "name": "MIRA",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-mira.22fb72a5cc.png",
         "isAttack": false,
         "isTopOperator": false,
-        "winpct": 68.6,
-        "wins": 83,
-        "kd": 1.1315789473684212,
-        "kills": 86,
-        "timePlayedDisplay": "7h 31m",
-        "timePlayed": 23486
+        "winpct": 65.4,
+        "wins": 89,
+        "kd": 1.1176470588235294,
+        "kills": 95,
+        "timePlayedDisplay": "7h 15m",
+        "timePlayed": 26136
       },
       {
         "name": "LESION",
@@ -2228,12 +2531,12 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-zofia.2a892bf5dc.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 37.5,
+        "winpct": 36.0,
         "wins": 9,
-        "kd": 0.90476190476190488,
+        "kd": 0.86363636363636376,
         "kills": 19,
-        "timePlayedDisplay": "1h 19m",
-        "timePlayed": 4781
+        "timePlayedDisplay": "1h 23m",
+        "timePlayed": 5007
       },
       {
         "name": "VIGIL",
@@ -2276,12 +2579,12 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-sledge.00141f9258.png",
         "isAttack": true,
         "isTopOperator": true,
-        "winpct": 38.6,
-        "wins": 22,
-        "kd": 0.53333333333333333,
-        "kills": 24,
-        "timePlayedDisplay": "3h 8m",
-        "timePlayed": 11298
+        "winpct": 41.5,
+        "wins": 27,
+        "kd": 0.56,
+        "kills": 28,
+        "timePlayedDisplay": "4h 32m",
+        "timePlayed": 12767
       },
       {
         "name": "ACE",
@@ -2300,24 +2603,24 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-pulse.9de627c54e.png",
         "isAttack": false,
         "isTopOperator": false,
-        "winpct": 45.5,
+        "winpct": 41.7,
         "wins": 5,
-        "kd": 0.55555555555555558,
-        "kills": 5,
-        "timePlayedDisplay": "1h 32m",
-        "timePlayed": 1928
+        "kd": 0.6,
+        "kills": 6,
+        "timePlayedDisplay": "1h 35m",
+        "timePlayed": 2159
       },
       {
         "name": "TWITCH",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-twitch.83cbfa9789.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 50.0,
+        "winpct": 33.3,
         "wins": 1,
         "kd": 0.0,
         "kills": 0,
-        "timePlayedDisplay": "0h 4m",
-        "timePlayed": 288
+        "timePlayedDisplay": "0h 7m",
+        "timePlayed": 451
       },
       {
         "name": "KAPKAN",
@@ -2336,24 +2639,24 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-jager.600b2773be.png",
         "isAttack": false,
         "isTopOperator": true,
-        "winpct": 57.1,
-        "wins": 20,
-        "kd": 0.66666666666666674,
-        "kills": 20,
-        "timePlayedDisplay": "2h 51m",
-        "timePlayed": 6680
+        "winpct": 59.6,
+        "wins": 28,
+        "kd": 0.79487179487179493,
+        "kills": 31,
+        "timePlayedDisplay": "3h 31m",
+        "timePlayed": 9117
       },
       {
         "name": "FINKA",
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-finka.71d3a2432f.png",
         "isAttack": true,
         "isTopOperator": false,
-        "winpct": 33.3,
-        "wins": 3,
-        "kd": 1.5,
+        "winpct": 36.4,
+        "wins": 4,
+        "kd": 1.125,
         "kills": 9,
-        "timePlayedDisplay": "1h 30m",
-        "timePlayed": 1842
+        "timePlayedDisplay": "1h 36m",
+        "timePlayed": 2218
       },
       {
         "name": "THATCHER",
@@ -2385,11 +2688,11 @@
         "isAttack": true,
         "isTopOperator": true,
         "winpct": 50.0,
-        "wins": 17,
-        "kd": 1.1304347826086958,
-        "kills": 26,
-        "timePlayedDisplay": "2h 50m",
-        "timePlayed": 6655
+        "wins": 19,
+        "kd": 1.0384615384615385,
+        "kills": 27,
+        "timePlayedDisplay": "2h 5m",
+        "timePlayed": 7507
       },
       {
         "name": "MONTAGNE",
@@ -2420,12 +2723,12 @@
         "img": "https://trackercdn.com/rainbow6-ubi/assets/images/badge-bandit.385144d970.png",
         "isAttack": false,
         "isTopOperator": true,
-        "winpct": 53.6,
-        "wins": 37,
-        "kd": 0.82758620689655171,
-        "kills": 48,
-        "timePlayedDisplay": "4h 43m",
-        "timePlayed": 13429
+        "winpct": 51.4,
+        "wins": 38,
+        "kd": 0.80952380952380953,
+        "kills": 51,
+        "timePlayedDisplay": "4h 57m",
+        "timePlayed": 14233
       }
     ],
     "startedTracking": "2020-12-01T14:41:12.077-05:00"

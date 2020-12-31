@@ -127,7 +127,7 @@ mod test {
         let client = Client::new();
 
         let profile = client.get_overwolf_player(VALID_USER).await.unwrap();
-        let profile_data = profile.take_data().unwrap();
+        let profile_data = profile.take_valid().unwrap();
         dbg!(&profile_data);
     }
 

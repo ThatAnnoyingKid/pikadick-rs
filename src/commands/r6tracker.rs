@@ -64,7 +64,7 @@ impl R6TrackerClient {
         )
         .await;
         let entry = Stats {
-            overwolf_player: overwolf_player?.take_data()?,
+            overwolf_player: overwolf_player?.take_valid()?,
             profile: profile?.data,
         };
         self.search_cache.insert(String::from(query), entry);
@@ -130,16 +130,26 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                                 .field("Seasonal # of Ranked Matches", season.matches, true);
                         }
 
-                        // Best Rank/MMR stats are bugged in overwolf.
+                        // Best Rank/MMR lifetime stats are bugged in Overwolf.
                         // It shows the max ending stats.
-                        // Try manual calc, falling back to the given overwolf value.
+                        //
+                        // Try manual calculation based on the Overwolf API Season stats,
+                        // falling back to manual calculation based on the overlay stats,
+                        // falling back to the Overwolf API lifetime value, which is bugged.
+                        //
+                        let max_overwolf_season = stats.overwolf_player.get_max_season();
                         let max_season = stats.profile.get_max_season();
-                        let max_mmr = max_season
-                            .and_then(|season| season.max_mmr())
+                        let max_mmr = max_overwolf_season
+                            .map(|season| season.max_mmr)
+                            .or_else(|| max_season.and_then(|season| season.max_mmr()))
                             .unwrap_or(stats.overwolf_player.lifetime_stats.best_mmr.mmr);
-                        let max_rank = max_season
-                            .and_then(|season| season.max_rank())
-                            .map(|rank| rank.name())
+                        let max_rank = max_overwolf_season
+                            .map(|season| season.max_rank.rank_name.as_str())
+                            .or_else(|| {
+                                max_season
+                                    .and_then(|season| season.max_rank())
+                                    .map(|rank| rank.name())
+                            })
                             .unwrap_or(&stats.overwolf_player.lifetime_stats.best_mmr.name);
 
                         e.field("Best MMR", max_mmr, true)
