@@ -1,4 +1,7 @@
-use crate::types::stat::Stat;
+use crate::types::{
+    stat::Stat,
+    user_data::Rank,
+};
 use std::collections::HashMap;
 
 /// A representation of a ranked season/region
@@ -31,6 +34,50 @@ impl Season {
     pub fn wl(&self) -> Option<f64> {
         // Why is this different from UserData?
         self.get_stat_by_name("WLRatio").map(|s| s.value)
+    }
+
+    /// Get the max mmr
+    pub fn max_mmr(&self) -> Option<u64> {
+        self.get_stat_by_name("Max MMR").map(|s| s.value as u64)
+    }
+
+    /// Get the max rank
+    pub fn max_rank(&self) -> Option<Rank> {
+        match self.get_stat_by_name("Max Rank")?.value as u64 {
+            0 => Some(Rank::Unranked),
+
+            1 => Some(Rank::CopperV),
+            2 => Some(Rank::CopperIV),
+            3 => Some(Rank::CopperIII),
+            4 => Some(Rank::CopperII),
+            5 => Some(Rank::CopperI),
+
+            6 => Some(Rank::BronzeV),
+            7 => Some(Rank::BronzeIV),
+            8 => Some(Rank::BronzeIII),
+            9 => Some(Rank::BronzeII),
+            10 => Some(Rank::BronzeI),
+
+            11 => Some(Rank::SilverV),
+            12 => Some(Rank::SilverIV),
+            13 => Some(Rank::SilverIII),
+            14 => Some(Rank::SilverII),
+            15 => Some(Rank::SilverI),
+
+            16 => Some(Rank::GoldIII),
+            17 => Some(Rank::GoldII),
+            18 => Some(Rank::GoldI),
+
+            19 => Some(Rank::PlatinumIII),
+            20 => Some(Rank::PlatinumII),
+            21 => Some(Rank::PlatinumI),
+
+            22 => Some(Rank::Diamond),
+
+            23 => Some(Rank::Champion),
+
+            _ => None,
+        }
     }
 }
 

@@ -130,26 +130,30 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                                 .field("Seasonal # of Ranked Matches", season.matches, true);
                         }
 
-                        e.field(
-                            "Best MMR",
-                            stats.overwolf_player.lifetime_stats.best_mmr.mmr,
-                            true,
-                        )
-                        .field(
-                            "Best Rank",
-                            &stats.overwolf_player.lifetime_stats.best_mmr.name,
-                            true,
-                        )
-                        .field(
-                            "Lifetime K/D",
-                            &stats.overwolf_player.lifetime_stats.kd,
-                            true,
-                        )
-                        .field(
-                            "Lifetime Win %",
-                            &stats.overwolf_player.lifetime_stats.win_pct,
-                            true,
-                        );
+                        // Best Rank/MMR stats are bugged in overwolf.
+                        // It shows the max ending stats.
+                        // Try manual calc, falling back to the given overwolf value.
+                        let max_season = stats.profile.get_max_season();
+                        let max_mmr = max_season
+                            .and_then(|season| season.max_mmr())
+                            .unwrap_or(stats.overwolf_player.lifetime_stats.best_mmr.mmr);
+                        let max_rank = max_season
+                            .and_then(|season| season.max_rank())
+                            .map(|rank| rank.name())
+                            .unwrap_or(&stats.overwolf_player.lifetime_stats.best_mmr.name);
+
+                        e.field("Best MMR", max_mmr, true)
+                            .field("Best Rank", max_rank, true)
+                            .field(
+                                "Lifetime K/D",
+                                &stats.overwolf_player.lifetime_stats.kd,
+                                true,
+                            )
+                            .field(
+                                "Lifetime Win %",
+                                &stats.overwolf_player.lifetime_stats.win_pct,
+                                true,
+                            );
 
                         // Old Non-Overwolf API
 

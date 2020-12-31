@@ -8,6 +8,81 @@ use crate::types::{
 use std::collections::HashMap;
 use url::Url;
 
+/// An R6 Rank
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum Rank {
+    Unranked,
+
+    CopperV,
+    CopperIV,
+    CopperIII,
+    CopperII,
+    CopperI,
+
+    BronzeV,
+    BronzeIV,
+    BronzeIII,
+    BronzeII,
+    BronzeI,
+
+    SilverV,
+    SilverIV,
+    SilverIII,
+    SilverII,
+    SilverI,
+
+    GoldIII,
+    GoldII,
+    GoldI,
+
+    PlatinumIII,
+    PlatinumII,
+    PlatinumI,
+
+    Diamond,
+
+    Champion,
+}
+
+impl Rank {
+    /// Get a string rep of this rank
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Unranked => "Unranked",
+
+            Self::CopperV => "Copper V",
+            Self::CopperIV => "Copper IV",
+            Self::CopperIII => "Copper III",
+            Self::CopperII => "Copper II",
+            Self::CopperI => "Copper I",
+
+            Self::BronzeV => "Bronze V",
+            Self::BronzeIV => "Bronze IV",
+            Self::BronzeIII => "Bronze III",
+            Self::BronzeII => "Bronze II",
+            Self::BronzeI => "Bronze I",
+
+            Self::SilverV => "Silver V",
+            Self::SilverIV => "Silver IV",
+            Self::SilverIII => "Silver III",
+            Self::SilverII => "Silver II",
+            Self::SilverI => "Silver I",
+
+            Self::GoldIII => "Gold III",
+            Self::GoldII => "Gold II",
+            Self::GoldI => "Gold I",
+
+            Self::PlatinumIII => "Platinum III",
+            Self::PlatinumII => "Platinum II",
+            Self::PlatinumI => "Platinum I",
+
+            Self::Diamond => "Diamond",
+
+            Self::Champion => "Champion",
+        }
+    }
+}
+
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct UserData {
     /// Unique user id
@@ -18,7 +93,11 @@ pub struct UserData {
 
     /// Collection of ranked seasons stats
     pub children: Vec<Season>,
+
+    /// Metadata
     pub metadata: Metadata,
+
+    /// A collection of all stats
     pub stats: Vec<Stat>,
 
     /// Unknown fields
@@ -98,6 +177,15 @@ impl UserData {
 
         self.children.iter().find(|s| s.id == target_id)
     }
+
+    /// Get the season where the user attained their max ranking
+    pub fn get_max_season(&self) -> Option<&Season> {
+        self.children
+            .iter()
+            .filter_map(|child| child.max_mmr().map(|mmr| (child, mmr)))
+            .max_by_key(|(_, mmr)| *mmr)
+            .map(|(child, _)| child)
+    }
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -153,8 +241,11 @@ mod test {
             .unwrap()
             .data;
         let season = data.get_latest_season().unwrap();
-
         dbg!(season);
+
+        let max_season = data.get_max_season().unwrap();
+        dbg!(max_season.max_mmr());
+        dbg!(max_season.max_rank());
     }
 
     #[test]
