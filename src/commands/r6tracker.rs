@@ -13,7 +13,6 @@ use crate::{
 };
 use r6tracker::{
     Error as R6Error,
-    StatusCode,
 };
 use serenity::{
     framework::standard::{
