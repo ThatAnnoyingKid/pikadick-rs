@@ -140,11 +140,16 @@ pub struct OverwolfPlayer {
 }
 
 impl OverwolfPlayer {
-    /// Iterate over ranked seasons
-    pub fn iter_ranked_seasons(&self) -> impl Iterator<Item = &OverwolfSeason> {
+    /// Get the current casual season stats for this user
+    pub fn get_current_casual_season(&self) -> Option<&OverwolfSeason> {
         self.seasons
             .iter()
-            .filter(|season| season.region_label != "CASUAL")
+            .find(|season| !season.is_ranked && season.season == self.current_season)
+    }
+
+    /// Iterate over ranked seasons
+    pub fn iter_ranked_seasons(&self) -> impl Iterator<Item = &OverwolfSeason> {
+        self.seasons.iter().filter(|season| season.is_ranked)
     }
 
     /// Iterate over ranked seasons where the user placed
@@ -184,7 +189,7 @@ impl OverwolfPlayer {
     }
 }
 
-/// Season stats
+/// Seasonal stats. This may also represent hidden casual rankings.
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct OverwolfSeason {
     /// The rank name
@@ -227,7 +232,7 @@ pub struct OverwolfSeason {
     #[serde(rename = "mmrChange")]
     pub mmr_change: i64,
 
-    /// Whether the player is ranked
+    /// Whether this season represents a ranked season
     #[serde(rename = "isRanked")]
     pub is_ranked: bool,
 

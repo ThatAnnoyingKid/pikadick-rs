@@ -127,6 +127,14 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                                 .field("Seasonal # of Ranked Matches", season.matches, true);
                         }
 
+                        if let Some(season) = stats.overwolf_player.get_current_casual_season() {
+                            e.field("Current Casual Rank", &season.rank_name, true)
+                                .field("Current Casual MMR", season.mmr, true)
+                                .field("Seasonal Casual K/D", format!("{:.2}", season.kd), true)
+                                .field("Seasonal Casual Win %", season.win_pct, true)
+                                .field("Seasonal # of Casual Matches", season.matches, true);
+                        }
+
                         // Best Rank/MMR lifetime stats are bugged in Overwolf.
                         // It shows the max ending stats.
                         //
