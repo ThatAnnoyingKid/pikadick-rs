@@ -33,7 +33,7 @@ shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "774
 slog = "2.7.0"
 slog-async = "2.5.0"
 slog-term = "2.6.0"
-sqlx = { version = "0.3.5", default-features = false, features = [ "runtime-tokio", "macros", "sqlite" ] }
+sqlx = { version = "0.4.2", default-features = false, features = [ "runtime-tokio", "macros", "sqlite" ] }
 systemstat = "0.1.5"
 thiserror = "1.0.22"
 tokio = { version = "0.2.22", features = [ "parking_lot", "sync", "rt-core", "rt-threaded", "time", "signal" ] }
