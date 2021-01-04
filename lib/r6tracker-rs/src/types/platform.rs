@@ -1,7 +1,10 @@
 use std::convert::TryFrom;
 
 /// Error when a u32 cannot be converted into a platform.
+#[derive(Debug)]
 pub struct InvalidPlatformCode(pub u32);
+
+impl std::error::Error for InvalidPlatformCode {}
 
 impl std::fmt::Display for InvalidPlatformCode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -35,7 +38,7 @@ impl Platform {
             4 => Ok(Platform::Pc),
             1 => Ok(Platform::Xbox),
             2 => Ok(Platform::Ps4),
-            _ => Err(InvalidPlatformCode(n)),
+            n => Err(InvalidPlatformCode(n)),
         }
     }
 }

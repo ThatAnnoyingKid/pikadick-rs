@@ -12,7 +12,7 @@ use crate::{
     ClientDataKey,
 };
 use r6stats::{
-    R6Error,
+    Error as R6Error,
     UserData,
 };
 use serenity::{
@@ -32,7 +32,7 @@ use std::sync::Arc;
 
 #[derive(Clone, Default, Debug)]
 pub struct R6StatsClient {
-    client: Arc<r6stats::Client>,
+    client: r6stats::Client,
     search_cache: TimedCache<String, UserData>,
 }
 
@@ -73,7 +73,7 @@ impl CacheStatsProvider for R6StatsClient {
 #[command]
 #[description("Get r6 stats for a user from r6stats")]
 #[usage("<player>")]
-#[example("Kooklxs")]
+#[example("KingGeorge")]
 #[bucket("r6stats")]
 #[min_args(1)]
 #[max_args(1)]
@@ -131,7 +131,7 @@ async fn r6stats(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
             error!(
                 logger,
-                "Failed to get r6 stats for '{}', using r6stats: {}", name, e
+                "Failed to get r6 stats for '{}' using r6stats: {}", name, e
             );
         }
     }

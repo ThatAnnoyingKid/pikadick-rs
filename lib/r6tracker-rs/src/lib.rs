@@ -1,57 +1,52 @@
-pub mod client;
+mod client;
 pub mod types;
 
 pub use crate::{
     client::Client,
     types::{
+        InvalidApiResponseError,
+        InvalidOverwolfResponseError,
+        OverwolfPlayer,
+        OverwolfResponse,
         Platform,
         SessionsData,
         Stat,
         UserData,
     },
 };
+pub use reqwest::StatusCode;
 
-use http::uri::InvalidUri;
-pub use hyper::StatusCode;
+/// Result type
+pub type R6Result<T> = Result<T, Error>;
 
-pub type R6Result<T> = Result<T, R6Error>;
+/// Error Type
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    /// Reqwest HTTP error
+    #[error("{0}")]
+    Reqwest(#[from] reqwest::Error),
 
-#[derive(Debug)]
-pub enum R6Error {
-    InvalidStatus(StatusCode),
+    /// Invalid HTTP Status
+    #[error("invalid http status {0}")]
+    InvalidStatus(reqwest::StatusCode),
 
-    InvalidUri(InvalidUri),
-    Hyper(hyper::Error),
-    Json(serde_json::Error),
-}
+    /// Json Error
+    #[error("{0}")]
+    Json(#[from] serde_json::Error),
 
-impl std::fmt::Display for R6Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            R6Error::InvalidStatus(status) => write!(f, "Invalid Status: {}", status),
-            R6Error::InvalidUri(e) => e.fmt(f),
-            R6Error::Hyper(e) => e.fmt(f),
-            R6Error::Json(e) => e.fmt(f),
-        }
-    }
-}
+    /// Url Parse Error
+    #[error("{0}")]
+    Url(#[from] url::ParseError),
 
-impl std::error::Error for R6Error {}
+    /// An API Response returned an error
+    #[error("{0}")]
+    InvalidApiResponse(#[from] InvalidApiResponseError),
 
-impl From<hyper::Error> for R6Error {
-    fn from(e: hyper::Error) -> Self {
-        R6Error::Hyper(e)
-    }
-}
+    /// An Overwolf Response returned an error.
+    #[error("{0}")]
+    InvalidOverwolfResponse(#[from] InvalidOverwolfResponseError),
 
-impl From<InvalidUri> for R6Error {
-    fn from(e: InvalidUri) -> Self {
-        Self::InvalidUri(e)
-    }
-}
-
-impl From<serde_json::Error> for R6Error {
-    fn from(e: serde_json::Error) -> Self {
-        Self::Json(e)
-    }
+    /// Too short of a name was provided. The member is the length of the erroneous name
+    #[error("the name is too short")]
+    InvalidNameLength(usize),
 }

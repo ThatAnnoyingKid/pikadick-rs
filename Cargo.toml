@@ -11,6 +11,7 @@ chrono = "0.4.19"
 crossbeam = "0.7.3"
 dashmap = "3.11.10" # 4.0.0-rc6
 fml = { path = "./lib/fml-rs" }
+futures = { version = "0.3.8", default-features = false }
 heim = { version = "0.1.0-beta.3", features = [ "host", "cpu", "virt", "memory" ] }
 indexmap = "1.6.0"
 insta = { path = "./lib/insta-rs" }
@@ -47,10 +48,6 @@ openssl = { version = "0.10", optional = true, features = [ "vendored" ] }
 [features]
 # Note: This is needed for cross comp as sqlx has a hard, non-optional dependency on native-tls
 use-openssl-vendored = [ "openssl" ]
-
-[patch.crates-io]
-# Updated deps and cpu usage support
-heim = { git = "https://github.com/heim-rs/heim", rev = "970dccccd15fded78aa8ff6b6c48a15fb140a173" }
 
 [workspace]
 members = [ 

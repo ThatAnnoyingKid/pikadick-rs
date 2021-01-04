@@ -1,18 +1,16 @@
 [package]
 name = "r6stats"
-version = "0.0.1"
+version = "0.0.0"
 authors = [ "ProfessionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
 edition = "2018"
 license = "MIT/Apache-2.0"
 
 [dependencies]
-bytes = "0.5.6"
 chrono = { version = "0.4.19", features = [ "serde" ] }
-hyper = "0.13.9"
-hyper-tls = "0.4.3"
-http = "0.2.1"
+reqwest = "0.10.10"
 serde = { version = "1.0.118", features = [ "derive" ] }
 serde_json = "1.0.58"
+thiserror = "1.0.22"
 url = { version = "2.1.1", features = [ "serde" ] }
 
 [dev-dependencies]

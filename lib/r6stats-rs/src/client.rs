@@ -5,29 +5,27 @@ use crate::{
     },
     R6Result,
 };
-use bytes::buf::ext::BufExt;
-use hyper_tls::HttpsConnector;
 
-#[derive(Debug)]
+/// An R6Stats client
+#[derive(Debug, Clone)]
 pub struct Client {
-    client: hyper::Client<HttpsConnector<hyper::client::HttpConnector>>,
+    client: reqwest::Client,
 }
 
 impl Client {
+    /// Make a new client
     pub fn new() -> Self {
-        let https = HttpsConnector::new();
-        let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-        Client { client }
+        Client {
+            client: reqwest::Client::new(),
+        }
     }
 
-    /// Search pc users for a profile
+    /// Search for a PC user's profile by name.
     pub async fn search(&self, name: &str) -> R6Result<Vec<UserData>> {
-        let url = format!("https://r6stats.com/api/player-search/{}/pc", name).parse()?;
-        let res = self.client.get(url).await?;
-
-        let body = hyper::body::aggregate(res.into_body()).await?;
-
-        let res: ApiResponse<Vec<UserData>> = serde_json::from_reader(body.reader())?;
+        let url = format!("https://r6stats.com/api/player-search/{}/pc", name);
+        let res = self.client.get(&url).send().await?;
+        let text = res.text().await?;
+        let res: ApiResponse<Vec<UserData>> = serde_json::from_str(&text)?;
 
         Ok(res.data)
     }
