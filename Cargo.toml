@@ -28,7 +28,7 @@ reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.3.9"
 rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.118", features = [ "derive" ] }
-serenity = "0.9.1"
+serenity = "0.10.1"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "774f36b" } 
 slog = "2.7.0"
 slog-async = "2.5.0"
