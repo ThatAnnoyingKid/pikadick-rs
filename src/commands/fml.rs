@@ -52,7 +52,7 @@ impl FmlClient {
     }
 
     fn get_entry(&self) -> Option<Article> {
-        self.cache.pop().ok()
+        self.cache.pop()
     }
 }
 
