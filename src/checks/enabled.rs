@@ -5,9 +5,9 @@ use serenity::{
     framework::standard::{
         macros::check,
         Args,
-        CheckResult,
         CommandGroup,
         CommandOptions,
+        Reason,
     },
     model::prelude::*,
 };
@@ -59,7 +59,7 @@ pub async fn enabled_check(
     msg: &Message,
     _args: &mut Args,
     opts: &CommandOptions,
-) -> CheckResult {
+) -> Result<(), Reason> {
     let guild_id = match msg.guild_id {
         Some(id) => id,
         None => {
@@ -67,7 +67,7 @@ pub async fn enabled_check(
             // They'll probably need special handling anyways.
             // This will also probably only be useful in Group DMs,
             // which I don't think bots can participate in anyways.
-            return true.into();
+            return Ok(());
         }
     };
 
@@ -83,15 +83,15 @@ pub async fn enabled_check(
             error!(logger, "Failed to read disabled commands: {}", e);
 
             // DB failure, return false to be safe.
-            return false.into();
+            return Err(Reason::Unknown);
         }
     };
 
     let cmd_name = opts.names.first().expect("1 Valid Command Name");
 
     if disabled_commands.contains(*cmd_name) {
-        return CheckResult::new_user("Command Disabled.");
+        return Err(Reason::User("Command Disabled.".to_string()));
     }
 
-    true.into()
+    Ok(())
 }

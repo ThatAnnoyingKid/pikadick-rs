@@ -48,7 +48,7 @@ lazy_static! {
 pub struct RedditEmbedData {
     reddit_client: Arc<reddit::Client>,
     reddit_tube_client: reddit_tube::Client,
-    cache: TimedCache<(SubReddit, PostId), Url>,
+    cache: TimedCache<(SubReddit, PostId), String>,
 }
 
 impl RedditEmbedData {
@@ -228,7 +228,7 @@ impl RedditEmbedData {
                                 Some(post.url)
                             } else {
                                 match self.get_video_data(&url).await {
-                                    Ok(video_data) => Some(video_data.url),
+                                    Ok(video_data) => Some(video_data.url.into_string()),
                                     Err(e) => {
                                         error!(
                                             logger,

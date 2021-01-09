@@ -401,7 +401,7 @@ async fn spam(ctx: &Context, msg: &Message, answer_index: usize) -> CommandResul
             }
         };
         job.lock().count += 1;
-        tokio::time::delay_for(DELAY_PER_VOTE_DURATION).await;
+        tokio::time::sleep(DELAY_PER_VOTE_DURATION).await;
     }
 
     msg.channel_id

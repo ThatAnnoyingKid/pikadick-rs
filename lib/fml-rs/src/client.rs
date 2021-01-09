@@ -6,7 +6,7 @@ use crate::{
     FmlError,
     FmlResult,
 };
-use bytes::buf::BufExt;
+use bytes::Buf;
 use hyper::header::HeaderValue;
 use hyper_tls::HttpsConnector;
 use serde::de::DeserializeOwned;

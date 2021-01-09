@@ -5,8 +5,8 @@ use serenity::{
     framework::standard::{
         macros::check,
         Args,
-        CheckResult,
         CommandOptions,
+        Reason,
     },
     model::prelude::*,
     prelude::*,
@@ -19,25 +19,18 @@ pub async fn admin_check(
     msg: &Message,
     _: &mut Args,
     _: &CommandOptions,
-) -> CheckResult {
-    let guild_id = match msg.guild_id {
-        Some(id) => id,
-        None => {
-            return true.into();
+) -> Result<(), Reason> {
+    if let Some(member) = &msg.member {
+        for role in member.roles.iter() {
+            if role
+                .to_role_cached(&ctx.cache)
+                .await
+                .map_or(false, |r| r.has_permission(Permissions::ADMINISTRATOR))
+            {
+                return Ok(());
+            }
         }
-    };
+    }
 
-    let user_permissions = match ctx
-        .cache
-        .guild_field(guild_id, |guild| guild.member_permissions(msg.author.id))
-        .await
-    {
-        Some(p) => p,
-        None => {
-            // If it has an associated guild in the message but isn't in the cache, return false to be safe?
-            return false.into();
-        }
-    };
-
-    user_permissions.administrator().into()
+    Err(Reason::User("Not Admin.".to_string()))
 }
