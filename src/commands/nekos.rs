@@ -99,7 +99,7 @@ impl Cache {
             }
 
             let mut rng = rand::thread_rng();
-            let index = rng.gen_range(0, lock.len());
+            let index = rng.gen_range(0..lock.len());
 
             lock.get_index(index).cloned()
         }

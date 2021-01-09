@@ -1976,7 +1976,7 @@ dependencies = [
  "quizizz",
  "r6stats",
  "r6tracker",
- "rand 0.7.3",
+ "rand 0.8.1",
  "reddit",
  "reddit-tube",
  "regex",

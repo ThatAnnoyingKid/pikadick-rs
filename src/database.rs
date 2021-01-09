@@ -1,6 +1,4 @@
-use serenity::{
-    model::prelude::*,
-};
+use serenity::model::prelude::*;
 use sqlx::{
     SqlitePool,
     Transaction,
