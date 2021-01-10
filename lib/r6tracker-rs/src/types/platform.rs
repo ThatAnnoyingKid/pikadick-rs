@@ -51,8 +51,8 @@ impl TryFrom<u32> for Platform {
     }
 }
 
-impl Into<u32> for Platform {
-    fn into(self) -> u32 {
-        self.as_u32()
+impl From<Platform> for u32 {
+    fn from(platform: Platform) -> Self {
+        platform.as_u32()
     }
 }

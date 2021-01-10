@@ -857,12 +857,10 @@ dependencies = [
 name = "fml"
 version = "0.0.1"
 dependencies = [
- "bytes 1.0.0",
- "http",
- "hyper",
- "hyper-tls",
+ "reqwest",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
 ]
 

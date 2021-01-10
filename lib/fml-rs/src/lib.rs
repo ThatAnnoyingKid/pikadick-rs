@@ -3,39 +3,40 @@ pub mod types;
 
 pub use crate::client::Client;
 
-#[derive(Debug)]
-pub enum FmlError {
-    Http(http::Error),
-    Hyper(hyper::Error),
-    InvalidHeaderValue(http::header::InvalidHeaderValue),
-    InvalidStatus(http::StatusCode),
-    Json(serde_json::Error),
+/// Error type
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    /// Reqwest HTTP Error
+    #[error("{0}")]
+    Reqwest(#[from] reqwest::Error),
 
+    /// Invalid HTTP Status
+    #[error("{0}")]
+    InvalidStatus(reqwest::StatusCode),
+
+    /// Invalid Json
+    #[error("{0}")]
+    Json(#[from] serde_json::Error),
+
+    /// Invalid Api Error
+    #[error("api error ({0})")]
     Api(String),
 }
 
-impl From<http::Error> for FmlError {
-    fn from(e: http::Error) -> Self {
-        Self::Http(e)
+/// Result Type
+pub type FmlResult<T> = Result<T, Error>;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const KEY: &str = include_str!("../key.txt");
+
+    #[tokio::test]
+    async fn random() {
+        let client = Client::new(KEY.into());
+        let data = client.list_random(5).await.unwrap();
+        println!("{:#?}", data);
+        assert!(!data.is_empty());
     }
 }
-
-impl From<hyper::Error> for FmlError {
-    fn from(e: hyper::Error) -> Self {
-        Self::Hyper(e)
-    }
-}
-
-impl From<http::header::InvalidHeaderValue> for FmlError {
-    fn from(e: http::header::InvalidHeaderValue) -> Self {
-        Self::InvalidHeaderValue(e)
-    }
-}
-
-impl From<serde_json::Error> for FmlError {
-    fn from(e: serde_json::Error) -> Self {
-        Self::Json(e)
-    }
-}
-
-pub type FmlResult<T> = Result<T, FmlError>;

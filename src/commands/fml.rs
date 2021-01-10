@@ -24,20 +24,23 @@ use serenity::{
 use slog::error;
 use std::sync::Arc;
 
+/// A caching fml client
 #[derive(Clone, Debug)]
 pub struct FmlClient {
-    client: Arc<fml::Client>,
+    client: fml::Client,
     cache: Arc<SegQueue<Article>>,
 }
 
 impl FmlClient {
+    /// Make a new FmlClient
     pub fn new(key: String) -> Self {
         Self {
-            client: Arc::new(fml::Client::new(key)),
+            client: fml::Client::new(key),
             cache: Arc::new(SegQueue::new()),
         }
     }
 
+    /// Repopulate the cache
     async fn repopulate(&self) -> FmlResult<()> {
         let articles = self.client.list_random(100).await?;
         for article in articles.into_iter() {
@@ -77,13 +80,10 @@ async fn fml(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     if client.should_repopulate() {
         if let Err(e) = client.repopulate().await {
-            error!(
-                logger,
-                "Failed to repopulate fml cache, got error: {:#?}", e
-            );
+            error!(logger, "Failed to repopulate fml cache: {}", e);
 
             msg.channel_id
-                .say(&ctx.http, format!("Failed to get fml entry: {:#?}", e))
+                .say(&ctx.http, format!("Failed to get fml entry: {}", e))
                 .await?;
 
             return Ok(());
