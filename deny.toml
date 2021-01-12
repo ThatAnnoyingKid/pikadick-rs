@@ -68,13 +68,6 @@ skip = [
     # Blocked on async-tungstenite updating webpki-roots to 0.21.x
     { name = "webpki-roots", version = "0.20.0" },
     
-    # Blocked on pest-meta updating sha-1 to 0.9.x. Less of an issue as it is a build dep.
-    { name = "sha-1", version = "0.8.2" },
-    { name = "opaque-debug", version = "0.2.3" },
-    { name = "generic-array", version = "0.12.3" },
-    { name = "digest", version = "0.8.1" },
-    { name = "block-buffer", version = "0.7.3" },
-    
     # Blocked on raw-cpuid updating rustc_version to 0.11.x. Less of an issue as it is a build dep.
     { name = "semver-parser", version = "0.7.0" },
     { name = "semver", version = "0.9.0" },
