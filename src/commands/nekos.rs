@@ -89,7 +89,7 @@ impl Cache {
     }
 
     pub async fn get_rand(&self) -> Option<Url> {
-        if let Ok(uri) = self.0.primary.pop() {
+        if let Some(uri) = self.0.primary.pop() {
             Some(uri)
         } else {
             let lock = self.0.secondary.read();
@@ -99,7 +99,7 @@ impl Cache {
             }
 
             let mut rng = rand::thread_rng();
-            let index = rng.gen_range(0, lock.len());
+            let index = rng.gen_range(0..lock.len());
 
             lock.get_index(index).cloned()
         }

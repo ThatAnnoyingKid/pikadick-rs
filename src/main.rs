@@ -398,8 +398,7 @@ fn main() {
     drop(log_file_writer);
 
     info!(logger, "Starting Tokio Runtime...");
-    let mut tokio_rt = match RuntimeBuilder::new()
-        .threaded_scheduler()
+    let tokio_rt = match RuntimeBuilder::new_multi_thread()
         .enable_all()
         .thread_name("pikadick-tokio-worker")
         .build()
@@ -418,7 +417,7 @@ fn main() {
         info!(logger, "Opening database...");
         // TODO: Does this handle non-unicode paths? Should I care?
         let db_url = format!("sqlite:{}", db_path.display());
-        let db = match SqlitePool::new(&db_url).await {
+        let db = match SqlitePool::connect(&db_url).await {
             Ok(db) => match Database::new(db).await {
                 Ok(db) => db,
                 Err(e) => {

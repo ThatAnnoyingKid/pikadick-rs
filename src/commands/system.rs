@@ -99,7 +99,7 @@ fn fmt_cpu_frequency(freq: &Frequency) -> String {
 
 async fn get_cpu_usage() -> Result<f32, heim::Error> {
     let start = heim::cpu::usage().await?;
-    tokio::time::delay_for(Duration::from_secs(1)).await;
+    tokio::time::sleep(Duration::from_secs(1)).await;
     let end = heim::cpu::usage().await?;
 
     Ok((end - start).get::<heim::units::ratio::percent>())

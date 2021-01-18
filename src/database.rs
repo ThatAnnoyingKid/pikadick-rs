@@ -1,16 +1,9 @@
-use serenity::{
-    model::prelude::*,
-    prelude::Mutex,
-};
+use serenity::model::prelude::*;
 use sqlx::{
-    Connection,
-    Executor,
+    SqlitePool,
     Transaction,
 };
-use std::{
-    collections::HashSet,
-    sync::Arc,
-};
+use std::collections::HashSet;
 
 /// Bincode Error
 pub type BincodeError = Box<bincode::ErrorKind>;
@@ -38,11 +31,11 @@ fn make_key(prefix: &[u8], key: &[u8]) -> Vec<u8> {
 
 #[derive(Clone, Debug)]
 pub struct Database {
-    db: Arc<Mutex<sqlx::sqlite::SqlitePool>>,
+    db: SqlitePool,
 }
 
 impl Database {
-    pub async fn new(db: sqlx::sqlite::SqlitePool) -> Result<Self, DatabaseError> {
+    pub async fn new(db: SqlitePool) -> Result<Self, DatabaseError> {
         let mut txn = db.begin().await?;
         sqlx::query!(
             "
@@ -68,15 +61,12 @@ CREATE TABLE IF NOT EXISTS guild_info (
 
         txn.commit().await?;
 
-        Ok(Database {
-            db: Arc::new(Mutex::new(db)),
-        })
+        Ok(Database { db })
     }
 
-    // TODO: Consider locking by prefix or exposing some transaction-like interface
-    /// Gets the store by name. Locks the entire DB, so use sparingly.
-    pub async fn get_store(&self, name: &str) -> Store<'_> {
-        Store::new(self.db.lock().await, name.into())
+    /// Gets the store by name.
+    pub async fn get_store(&self, name: &str) -> Store {
+        Store::new(self.db.clone(), name.into())
     }
 
     /// Sets a command as disabled if disabled is true
@@ -86,9 +76,9 @@ CREATE TABLE IF NOT EXISTS guild_info (
         cmd: &str,
         disable: bool,
     ) -> Result<(), DatabaseError> {
-        let db = self.db.lock().await;
+        self.create_default_guild_info(id).await?;
 
-        let txn = db.begin().await?;
+        let txn = self.db.begin().await?;
         let (mut disabled_commands, mut txn) = get_disabled_commands(txn, id).await?;
 
         if disable {
@@ -97,6 +87,7 @@ CREATE TABLE IF NOT EXISTS guild_info (
             disabled_commands.remove(cmd);
         }
 
+        let id = id.0 as i64;
         let data = bincode::serialize(&disabled_commands)?;
 
         sqlx::query!(
@@ -104,9 +95,9 @@ CREATE TABLE IF NOT EXISTS guild_info (
 UPDATE guild_info
 SET disabled_commands = ?
 WHERE id = ?;
-                ",
+            ",
             data,
-            id.0 as i64
+            id
         )
         .execute(&mut txn)
         .await?;
@@ -116,59 +107,52 @@ WHERE id = ?;
         Ok(())
     }
 
+    /// Get disabled commands as a set
     pub async fn get_disabled_commands(
         &self,
         id: GuildId,
     ) -> Result<HashSet<String>, DatabaseError> {
-        let db = self.db.lock().await;
-
-        let txn = db.begin().await?;
+        let txn = self.db.begin().await?;
         let (data, txn) = get_disabled_commands(txn, id).await?;
         txn.commit().await?;
 
         Ok(data)
     }
-}
 
-/// Create guild entry if not present
-async fn create_default_guild_info<T>(txn: &mut T, id: GuildId) -> Result<(), DatabaseError>
-where
-    T: Executor<Database = sqlx::Sqlite> + Connection,
-{
-    // SQLite doesn't support u64, only i64. We cast to i64 to cope,
-    // but the id will not match the actual id of the server.
-    // This is ok because I'm pretty sure using 'as' is essentially a transmute here.
-    // In the future, it might be better to use a byte array or an actual transmute
-    sqlx::query!(
-        "
+    /// Create the default guild entry for the given GuildId
+    async fn create_default_guild_info(&self, id: GuildId) -> Result<(), DatabaseError> {
+        let id = id.0 as i64;
+        let mut txn = self.db.begin().await?;
+
+        // SQLite doesn't support u64, only i64. We cast to i64 to cope,
+        // but the id will not match the actual id of the server.
+        // This is ok because I'm pretty sure using 'as' is essentially a transmute here.
+        // In the future, it might be better to use a byte array or an actual transmute
+        sqlx::query!(
+            "
 INSERT OR IGNORE INTO guild_info (id, disabled_commands) VALUES (?, NULL);
-                ",
-        id.0 as i64
-    )
-    .execute(txn)
-    .await?;
+            ",
+            id
+        )
+        .execute(&mut txn)
+        .await?;
 
-    Ok(())
+        txn.commit().await?;
+
+        Ok(())
+    }
 }
 
-async fn get_disabled_commands<T>(
-    mut txn: Transaction<T>,
+async fn get_disabled_commands(
+    mut txn: Transaction<'_, sqlx::Sqlite>,
     id: GuildId,
-) -> Result<(HashSet<String>, Transaction<T>), DatabaseError>
-where
-    T: Connection<Database = sqlx::Sqlite>,
-{
-    txn = {
-        let mut create_txn = txn.begin().await?;
-        create_default_guild_info(&mut create_txn, id).await?;
-        create_txn.commit().await?
-    };
-
+) -> Result<(HashSet<String>, Transaction<'_, sqlx::Sqlite>), DatabaseError> {
+    let id = id.0 as i64;
     let entry = sqlx::query!(
         "
 SELECT disabled_commands FROM guild_info WHERE id = ?;
             ",
-        id.0 as i64
+        id
     )
     .fetch_one(&mut txn)
     .await?;
@@ -182,16 +166,14 @@ SELECT disabled_commands FROM guild_info WHERE id = ?;
     Ok((data, txn))
 }
 
-type DbMutexGuard<'a> = tokio::sync::MutexGuard<'a, sqlx::sqlite::SqlitePool>;
-
 #[derive(Debug)]
-pub struct Store<'a> {
-    db: DbMutexGuard<'a>,
+pub struct Store {
+    db: SqlitePool,
     prefix: String,
 }
 
-impl<'a> Store<'a> {
-    fn new(db: DbMutexGuard<'a>, prefix: String) -> Self {
+impl Store {
+    fn new(db: SqlitePool, prefix: String) -> Self {
         Store { db, prefix }
     }
 
@@ -209,7 +191,7 @@ SELECT * FROM kv_store WHERE key = ?;
             ",
             key
         )
-        .fetch_optional(&*self.db)
+        .fetch_optional(&self.db)
         .await?;
 
         let bytes = match entry {
