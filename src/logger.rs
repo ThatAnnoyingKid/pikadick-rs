@@ -133,8 +133,20 @@ pub fn setup() -> Result<DelayWriter, LoggerError> {
         .trace(Color::BrightBlack);
 
     let file_writer = DelayWriter::new();
+    let file_logger = fern::Dispatch::new()
+        .format(move |out, message, record| {
+            out.finish(format_args!(
+                "{}[{}][{}] {}",
+                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                record.target(),
+                record.level(),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Info)
+        .chain(Box::new(file_writer.clone()) as Box<dyn Write + Send>);
 
-    fern::Dispatch::new()
+    let term_logger = fern::Dispatch::new()
         .format(move |out, message, record| {
             out.finish(format_args!(
                 "{}[{}][{}] {}",
@@ -152,8 +164,11 @@ pub fn setup() -> Result<DelayWriter, LoggerError> {
             log::LevelFilter::Error,
         )
         .level_for("sqlx::query", log::LevelFilter::Error)
-        .chain(std::io::stdout())
-        .chain(Box::new(file_writer.clone()) as Box<dyn Write + Send>)
+        .chain(std::io::stdout());
+
+    fern::Dispatch::new()
+        .chain(file_logger)
+        .chain(term_logger)
         .apply()?;
 
     Ok(file_writer)
