@@ -10,17 +10,23 @@ use std::{
     sync::Arc,
 };
 
+/// The mut impl of a DelayWriter
 #[derive(Debug)]
 pub enum DelayWriterInner {
+    /// The buffered data.
     Buffer(Vec<u8>),
+    
+    /// The file being written to.
     File(File),
 }
 
 impl DelayWriterInner {
+    /// Make a new DelayWriterInner with an empty buffer
     fn new() -> Self {
-        DelayWriterInner::Buffer(Vec::new())
+        Self::Buffer(Vec::new())
     }
 
+    /// Try to init this DelayWriterInner with a file. Will return an error if this is already initalized.
     fn init(&mut self, mut file: File) -> Result<(), std::io::Error> {
         let buffer = match self {
             Self::Buffer(bytes) => bytes,
@@ -63,14 +69,17 @@ impl Write for DelayWriterInner {
     }
 }
 
+/// A writer that buffers data until it is assigned a file to write to.
 #[derive(Clone, Debug)]
 pub struct DelayWriter(Arc<PMutex<DelayWriterInner>>);
 
 impl DelayWriter {
+    /// Create a new DelayWriter
     pub fn new() -> Self {
-        DelayWriter(Arc::new(PMutex::new(DelayWriterInner::new())))
+        Self(Arc::new(PMutex::new(DelayWriterInner::new())))
     }
 
+    /// Try to init this DelayWriter
     pub fn init(&self, file: File) -> Result<(), std::io::Error> {
         let mut lock = self.0.lock();
         lock.init(file)
@@ -103,6 +112,7 @@ impl Write for DelayWriter {
     }
 }
 
+/// Setup a logger
 pub fn setup() -> (Logger, DelayWriter) {
     let term_drain = {
         let decorator = slog_term::TermDecorator::new().build();
