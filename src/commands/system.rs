@@ -1,7 +1,4 @@
-use crate::{
-    checks::ENABLED_CHECK,
-    ClientDataKey,
-};
+use crate::checks::ENABLED_CHECK;
 use chrono::DateTime;
 use heim::{
     memory::{
@@ -21,6 +18,7 @@ use heim::{
         Frequency,
     },
 };
+use log::warn;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -31,7 +29,6 @@ use serenity::{
     prelude::*,
     utils::Colour,
 };
-use slog::warn;
 use std::time::{
     Duration,
     Instant,
@@ -110,11 +107,6 @@ async fn get_cpu_usage() -> Result<f32, heim::Error> {
 #[bucket("system")]
 #[checks(Enabled)]
 async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let logger = client_data.logger.clone();
-    drop(data_lock);
-
     let start = Instant::now();
 
     let profile = ctx.http.get_current_user().await?;
@@ -125,7 +117,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let cpu_temp = match sys.cpu_temp() {
         Ok(cpu_temp) => Some(cpu_temp),
         Err(e) => {
-            warn!(logger, "Failed to get cpu temp: {}", e);
+            warn!("Failed to get cpu temp: {}", e);
             None
         }
     };
@@ -135,7 +127,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let platform = match heim::host::platform().await {
         Ok(platform) => Some(platform),
         Err(e) => {
-            warn!(logger, "Failed to get platform info: {}", e);
+            warn!("Failed to get platform info: {}", e);
             None
         }
     };
@@ -145,7 +137,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
             boot_time.get::<nanosecond>() as u64
         )),
         Err(e) => {
-            warn!(logger, "Failed to get boot time: {}", e);
+            warn!("Failed to get boot time: {}", e);
             None
         }
     };
@@ -153,7 +145,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let uptime = match heim::host::uptime().await {
         Ok(uptime) => Some(Duration::from_nanos(uptime.get::<nanosecond>() as u64)),
         Err(e) => {
-            warn!(logger, "Failed to get uptime: {}", e);
+            warn!("Failed to get uptime: {}", e);
             None
         }
     };
@@ -161,7 +153,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let cpu_frequency = match heim::cpu::frequency().await {
         Ok(cpu_frequency) => Some(cpu_frequency),
         Err(e) => {
-            warn!(logger, "Failed to get cpu frequency: {}", e);
+            warn!("Failed to get cpu frequency: {}", e);
             None
         }
     };
@@ -169,7 +161,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let cpu_logical_count = match heim::cpu::logical_count().await {
         Ok(cpu_logical_count) => Some(cpu_logical_count),
         Err(e) => {
-            warn!(logger, "Failed to get logical cpu count: {}", e);
+            warn!("Failed to get logical cpu count: {}", e);
             None
         }
     };
@@ -177,7 +169,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let cpu_physical_count = match heim::cpu::physical_count().await {
         Ok(cpu_physical_count) => cpu_physical_count, // This returns an option, so we return it here to flatten it.
         Err(e) => {
-            warn!(logger, "Failed to get physical cpu count: {}", e);
+            warn!("Failed to get physical cpu count: {}", e);
             None
         }
     };
@@ -185,7 +177,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let memory = match heim::memory::memory().await {
         Ok(memory) => Some(memory),
         Err(e) => {
-            warn!(logger, "Failed to get memory usage: {}", e);
+            warn!("Failed to get memory usage: {}", e);
             None
         }
     };
@@ -193,7 +185,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let swap = match heim::memory::swap().await {
         Ok(swap) => Some(swap),
         Err(e) => {
-            warn!(logger, "Failed to get swap usage: {}", e);
+            warn!("Failed to get swap usage: {}", e);
             None
         }
     };
@@ -203,7 +195,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let cpu_usage = match get_cpu_usage().await {
         Ok(usage) => Some(usage),
         Err(e) => {
-            warn!(logger, "Failed to get cpu usage: {}", e);
+            warn!("Failed to get cpu usage: {}", e);
             None
         }
     };

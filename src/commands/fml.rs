@@ -12,6 +12,7 @@ use fml::{
     types::Article,
     FmlResult,
 };
+use log::error;
 use serenity::{
     client::Context,
     framework::standard::{
@@ -21,7 +22,6 @@ use serenity::{
     },
     model::channel::Message,
 };
-use slog::error;
 use std::sync::Arc;
 
 /// A caching fml client
@@ -72,7 +72,6 @@ impl CacheStatsProvider for FmlClient {
 async fn fml(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let logger = client_data.logger.clone();
     let client = client_data.fml_client.clone();
     drop(data_lock);
 
@@ -80,7 +79,7 @@ async fn fml(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     if client.should_repopulate() {
         if let Err(e) = client.repopulate().await {
-            error!(logger, "Failed to repopulate fml cache: {}", e);
+            error!("Failed to repopulate fml cache: {}", e);
 
             msg.channel_id
                 .say(&ctx.http, format!("Failed to get fml entry: {}", e))

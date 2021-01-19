@@ -2,6 +2,7 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
+use log::warn;
 use serenity::{
     client::bridge::gateway::ShardId,
     framework::standard::{
@@ -12,7 +13,6 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use slog::warn;
 
 #[command]
 #[description("Get the bot's latency in this server")]
@@ -21,7 +21,6 @@ async fn latency(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
     let shard_manager = client_data.shard_manager.clone();
-    let logger = client_data.logger.clone();
     drop(data_lock);
 
     let shard_id = ShardId(ctx.shard_id);
@@ -40,7 +39,7 @@ async fn latency(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 .await?;
         }
         None => {
-            warn!(logger, "Failed to get latency for shard: {}", shard_id);
+            warn!("Failed to get latency for shard: {}", shard_id);
             msg.channel_id
                 .say(&ctx.http, "Failed to get latency")
                 .await?;

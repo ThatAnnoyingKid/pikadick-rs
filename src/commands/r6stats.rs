@@ -11,6 +11,10 @@ use crate::{
     },
     ClientDataKey,
 };
+use log::{
+    error,
+    info,
+};
 use r6stats::{
     Error as R6Error,
     UserData,
@@ -23,10 +27,6 @@ use serenity::{
     },
     model::prelude::*,
     prelude::*,
-};
-use slog::{
-    error,
-    info,
 };
 use std::sync::Arc;
 
@@ -82,12 +82,11 @@ async fn r6stats(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
     let client = client_data.r6stats_client.clone();
-    let logger = client_data.logger.clone();
     drop(data_lock);
 
     let name = args.trimmed().current().unwrap();
 
-    info!(logger, "Getting r6 stats for '{}' using r6stats", name);
+    info!("Getting r6 stats for '{}' using r6stats", name);
 
     let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
 
@@ -129,10 +128,7 @@ async fn r6stats(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
                 .say(&ctx.http, format!("Failed to get stats: {}", e))
                 .await?;
 
-            error!(
-                logger,
-                "Failed to get r6 stats for '{}' using r6stats: {}", name, e
-            );
+            error!("Failed to get r6 stats for '{}' using r6stats: {}", name, e);
         }
     }
 

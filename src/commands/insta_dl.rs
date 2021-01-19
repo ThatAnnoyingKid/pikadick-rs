@@ -11,6 +11,7 @@ use crate::{
     },
     ClientDataKey,
 };
+use log::info;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -20,7 +21,6 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use slog::info;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
@@ -77,12 +77,11 @@ async fn insta_dl(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
     let client = client_data.insta_client.clone();
-    let logger = client_data.logger.clone();
     drop(data_lock);
 
     let url = args.trimmed().current().expect("Valid Url");
 
-    info!(logger, "Getting insta download url stats for '{}'", url);
+    info!("Getting insta download url stats for '{}'", url);
     let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
 
     match client.get_post(url).await {

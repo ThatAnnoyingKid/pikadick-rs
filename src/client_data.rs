@@ -19,7 +19,6 @@ use serenity::{
     client::bridge::gateway::ShardManager,
     prelude::*,
 };
-use slog::Logger;
 use std::{
     collections::BTreeMap,
     error::Error,
@@ -62,7 +61,6 @@ pub trait CacheStatsProvider {
 
 #[derive(Debug)]
 pub struct ClientData {
-    pub logger: Logger,
     pub shard_manager: Arc<Mutex<ShardManager>>,
 
     pub nekos_client: NekosClient,
@@ -84,7 +82,6 @@ pub struct ClientData {
 
 impl ClientData {
     pub async fn init(
-        logger: Logger,
         shard_manager: Arc<Mutex<ShardManager>>,
         config: Config,
         db: Database,
@@ -92,7 +89,6 @@ impl ClientData {
         // TODO: Standardize an async init system with allocated data per command somehow. Maybe boxes?
 
         Ok(ClientData {
-            logger,
             shard_manager,
 
             nekos_client: Default::default(),
