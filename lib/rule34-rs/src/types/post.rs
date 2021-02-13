@@ -46,8 +46,8 @@ impl Post {
                 let a_text = el
                     .find(Text)
                     .filter_map(|el| Some(el.as_text()?.trim()))
-                    .filter(|el| !el.is_empty())
-                    .next()?;
+                    .find(|el| !el.is_empty())?;
+
                 if a_text == "Original image" {
                     Url::parse(a.attr("href")?).ok()
                 } else {
