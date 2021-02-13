@@ -31,9 +31,9 @@ regex = "1.4.3"
 rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.119", features = [ "derive" ] }
 serenity = "0.10.2"
-shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "95ad3c3db461d0d39efff31bd91a091901c7c7db" } 
+shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "04e43f0670a681129164ac0ef90c898cdbb6695a" } 
 # Use runtime-async-std-rustls to not use 2 versions of tokio
-sqlx = { version = "0.4.2", features = [ "sqlite", "runtime-async-std-rustls" ] }
+sqlx = { version = "0.5.1", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.6"
 thiserror = "1.0.23"
 tokio = { version = "1.0.2", features = [ "parking_lot", "sync", "rt-multi-thread", "time", "signal" ] }
@@ -50,6 +50,8 @@ openssl = { version = "0.10.32", optional = true, features = [ "vendored" ] }
 use-openssl-vendored = [ "openssl" ]
 
 [patch.crates-io]
+# Fix security advisory
+heim = { git = "https://github.com/heim-rs/heim", branch = "dependabot/cargo/raw-cpuid-approx-9.0" }
 
 [workspace]
 members = [ 

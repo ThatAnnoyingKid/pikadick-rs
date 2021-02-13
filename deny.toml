@@ -63,13 +63,6 @@ skip = [
     # Blocked on async-tungstenite updating webpki-roots to 0.21.x
     { name = "webpki-roots", version = "0.20.0" },
     
-    # Blocked on raw-cpuid updating rustc_version to 0.11.x. Less of an issue as it is a build dep.
-    { name = "semver-parser", version = "0.7.0" },
-    { name = "semver", version = "0.9.0" },
-    
-    # Blocked on sqlx offering a way to disable tls support
-    { name = "rustls", version = "0.18.1" },
-    
     # Blocked on phf_generator, tempfile, tungstenite, and zalgo moving to rand 0.8.x
     { name = "rand", version = "0.7.3" },
     { name = "rand_core", version = "0.5.1" },
@@ -119,4 +112,5 @@ allow-git = [
     "https://github.com/adumbidiot/shift-client-rs",
     "https://github.com/adumbidiot/polldaddy-rs",
     "https://github.com/adumbidiot/reddit-rs",
+    "https://github.com/heim-rs/heim",
 ]
