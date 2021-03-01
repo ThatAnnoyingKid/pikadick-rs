@@ -11,6 +11,10 @@ use crate::{
     },
     ClientDataKey,
 };
+use log::{
+    error,
+    info,
+};
 use r6tracker::Error as R6Error;
 use serenity::{
     framework::standard::{
@@ -20,10 +24,6 @@ use serenity::{
     },
     model::prelude::*,
     prelude::*,
-};
-use slog::{
-    error,
-    info,
 };
 use std::sync::Arc;
 
@@ -95,12 +95,11 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
     let client = client_data.r6tracker_client.clone();
-    let logger = client_data.logger.clone();
     drop(data_lock);
 
     let name = args.trimmed().current().expect("Valid Name");
 
-    info!(logger, "Getting r6 stats for '{}' using R6Tracker", name);
+    info!("Getting r6 stats for '{}' using R6Tracker", name);
 
     let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
 
@@ -223,10 +222,8 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                     .await?;
 
                 error!(
-                    logger,
                     "Failed to get r6 stats for '{}' using r6tracker (Overwolf API Error): {}",
-                    name,
-                    e
+                    name, e
                 );
             }
         },
@@ -236,8 +233,8 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                 .await?;
 
             error!(
-                logger,
-                "Failed to get r6 stats for '{}' using r6tracker: {}", name, e
+                "Failed to get r6 stats for '{}' using r6tracker: {}",
+                name, e
             );
         }
     }

@@ -9,6 +9,7 @@ use crate::{
 };
 use crossbeam::queue::ArrayQueue;
 use indexmap::set::IndexSet;
+use log::error;
 use nekos::NekosError;
 use parking_lot::RwLock;
 use rand::Rng;
@@ -21,7 +22,6 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use slog::error;
 use std::{
     str::FromStr,
     sync::Arc,
@@ -211,7 +211,6 @@ async fn nekos(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let logger = client_data.logger.clone();
     let nekos_client = client_data.nekos_client.clone();
     drop(data_lock);
 
@@ -230,15 +229,12 @@ async fn nekos(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 )
                 .await?;
 
-            error!(
-                logger,
-                "Both primary and secondary caches are empty. This is not possible.",
-            );
+            error!("Both primary and secondary caches are empty. This is not possible.",);
         }
         Err(e) => {
             error!(
-                logger,
-                "Failed to repopulate nekos cache (secondary cache empty): {}", e
+                "Failed to repopulate nekos cache (secondary cache empty): {}",
+                e
             );
 
             msg.channel_id

@@ -2,6 +2,7 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
+use log::info;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -12,7 +13,6 @@ use serenity::{
     prelude::*,
     utils::Colour,
 };
-use slog::info;
 use std::fmt::Write;
 
 #[command("cache-stats")]
@@ -21,13 +21,10 @@ use std::fmt::Write;
 pub async fn cache_stats(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let logger = client_data.logger.clone();
-
     let stats = client_data.generate_cache_stats();
-
     drop(data_lock);
 
-    info!(logger, "Reporting all cache stats");
+    info!("Reporting all cache stats");
 
     msg.channel_id
         .send_message(&ctx.http, |m| {

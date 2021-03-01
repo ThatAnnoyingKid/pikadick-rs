@@ -9,13 +9,7 @@ targets = [
 vulnerability = "deny"
 unmaintained = "deny"
 notice = "deny"
-ignore = [    
-    # blocked on slog-term moving away from term
-    "RUSTSEC-2018-0015",
-    
-    # blocked on slog-term moving away from dirs
-    "RUSTSEC-2020-0053"
-]
+ignore = []
 
 [licenses]
 unlicensed = "deny"
@@ -29,6 +23,7 @@ exceptions = [
     { name = "webpki-roots", allow = [ "MPL-2.0" ] },
     { name = "wepoll-sys", allow = [ "MPL-2.0" ] },
     { name = "ring", allow = [ "MIT", "ISC", "OpenSSL" ] },
+    { name = "colored", allow = [ "MPL-2.0" ] },
 ]
 
 [[licenses.clarify]]
@@ -55,10 +50,6 @@ skip = [
     # Blocked on rand updating getrandom to 0.2.x 
     { name = "getrandom", version = "0.1.15" },
     
-    # Blocked on tracing-futures bumping pin-project to 1.0.x
-    { name = "pin-project", version = "0.4.27" },
-    { name = "pin-project-internal", version = "0.4.27" },
-    
     # Blocked on rustls, and tungstentite bumping base64 to 0.13.x
     { name = "base64", version = "0.12.3" },
     
@@ -68,21 +59,10 @@ skip = [
     # Blocked on async-tungstenite updating webpki-roots to 0.21.x
     { name = "webpki-roots", version = "0.20.0" },
     
-    # Blocked on raw-cpuid updating rustc_version to 0.11.x. Less of an issue as it is a build dep.
-    { name = "semver-parser", version = "0.7.0" },
-    { name = "semver", version = "0.9.0" },
-    
-    # Blocked on sqlx offering a way to disable tls support
-    { name = "rustls", version = "0.18.1" },
-    
     # Blocked on phf_generator, tempfile, tungstenite, and zalgo moving to rand 0.8.x
     { name = "rand", version = "0.7.3" },
     { name = "rand_core", version = "0.5.1" },
     { name = "rand_chacha", version = "0.2.2" },
-    
-    # Blocked on slog updating to crossbeam 0.8.x
-    { name = "crossbeam-utils", version = "0.7.2" },
-    { name = "crossbeam-channel", version = "0.4.4" },
     
     # Blocked on input_buffer and sqlx moving to bytes 1.0.x
     { name = "bytes", version = "0.5.6" },
@@ -128,4 +108,5 @@ allow-git = [
     "https://github.com/adumbidiot/shift-client-rs",
     "https://github.com/adumbidiot/polldaddy-rs",
     "https://github.com/adumbidiot/reddit-rs",
+    "https://github.com/heim-rs/heim",
 ]

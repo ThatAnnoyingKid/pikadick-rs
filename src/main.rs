@@ -38,6 +38,11 @@ use crate::{
     },
     database::Database,
 };
+use log::{
+    error,
+    info,
+    warn,
+};
 use serenity::{
     client::bridge::gateway::ShardManager,
     framework::standard::{
@@ -59,12 +64,6 @@ use serenity::{
     prelude::*,
     FutureExt,
 };
-use slog::{
-    crit,
-    error,
-    info,
-    warn,
-};
 use sqlx::sqlite::SqlitePool;
 use std::{
     collections::HashSet,
@@ -80,7 +79,6 @@ impl EventHandler for Handler {
         let data_lock = ctx.data.read().await;
         let client_data = data_lock.get::<ClientDataKey>().unwrap();
         let config = client_data.config.clone();
-        let logger = client_data.logger.clone();
         drop(data_lock);
 
         if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
@@ -98,29 +96,23 @@ impl EventHandler for Handler {
             }
         }
 
-        info!(logger, "Logged in as '{}'", ready.user.name);
+        info!("Logged in as '{}'", ready.user.name);
     }
 
-    async fn resume(&self, ctx: Context, _resumed: ResumedEvent) {
-        let data_lock = ctx.data.read().await;
-        let client_data = data_lock.get::<ClientDataKey>().unwrap();
-        let logger = client_data.logger.clone();
-        drop(data_lock);
-
-        warn!(logger, "Resumed connection");
+    async fn resume(&self, _ctx: Context, _resumed: ResumedEvent) {
+        warn!("Resumed connection");
     }
 
     async fn message(&self, ctx: Context, msg: Message) {
         let data_lock = ctx.data.read().await;
         let client_data = data_lock.get::<ClientDataKey>().unwrap();
         let reddit_embed_data = client_data.reddit_embed_data.clone();
-        let logger = client_data.logger.clone();
         drop(data_lock);
 
         match reddit_embed_data.process_msg(&ctx, &msg).await {
             Ok(()) => {}
             Err(e) => {
-                error!(logger, "Failed to generate reddit embed: {:?}", e);
+                error!("Failed to generate reddit embed: {:?}", e);
             }
         }
     }
@@ -170,37 +162,29 @@ async fn help(
 )]
 struct General;
 
-async fn handle_ctrl_c(logger: slog::Logger, shard_manager: Arc<Mutex<ShardManager>>) {
+async fn handle_ctrl_c(shard_manager: Arc<Mutex<ShardManager>>) {
     match tokio::signal::ctrl_c().await {
         Ok(_) => {
-            info!(logger, "Shutting down...");
-            info!(logger, "Stopping Client...");
+            info!("Shutting down...");
+            info!("Stopping Client...");
             shard_manager.lock().await.shutdown_all().await;
         }
         Err(e) => {
-            warn!(logger, "Failed to set Ctrl-C handler: {}", e);
+            warn!("Failed to set Ctrl-C handler: {}", e);
             // The default "kill everything" handler is probably still installed, so this isn't a problem?
         }
     };
 }
 
 fn after_handler<'fut>(
-    ctx: &'fut Context,
+    _ctx: &'fut Context,
     _msg: &'fut Message,
     command_name: &'fut str,
     command_result: CommandResult,
 ) -> BoxFuture<'fut, ()> {
     async move {
-        let data_lock = ctx.data.read().await;
-        let client_data = data_lock.get::<ClientDataKey>().unwrap();
-        let logger = client_data.logger.clone();
-        drop(data_lock);
-
         if let Err(e) = command_result {
-            error!(
-                logger,
-                "Failed to process command '{}': {}", command_name, e
-            );
+            error!("Failed to process command '{}': {}", command_name, e);
         }
     }
     .boxed()
@@ -305,78 +289,73 @@ async fn process_dispatch_error_future<'fut>(
 }
 
 fn main() {
-    let (logger, log_file_writer) = crate::logger::setup();
+    let log_file_writer = match crate::logger::setup() {
+        Ok(file) => file,
+        Err(e) => {
+            error!("Failed to init logger: {}", e);
+            return;
+        }
+    };
 
-    info!(logger, "Loading config.toml...");
+    info!("Loading config.toml...");
     let mut config = match Config::load_from_path("./config.toml".as_ref()) {
         Ok(c) => c,
         Err(e) => {
             match e {
                 ConfigError::DoesNotExist(p) => {
-                    crit!(
-                        logger,
-                        "Failed to load {}. The file does not exist.",
-                        p.display()
-                    );
+                    error!("Failed to load {}. The file does not exist.", p.display());
                 }
                 ConfigError::IsNotFile(p) => {
-                    crit!(
-                        logger,
-                        "Failed to load {}. The path is not a file.",
-                        p.display()
-                    );
+                    error!("Failed to load {}. The path is not a file.", p.display());
                 }
                 _ => {
-                    crit!(logger, "Failed to load ./config.toml: {}", e);
+                    error!("Failed to load ./config.toml: {}", e);
                 }
             }
             return;
         }
     };
 
-    info!(logger, "Validating config.toml...");
+    info!("Validating config.toml...");
     let errors = config.validate();
     let mut error_count = 0;
     for e in errors {
         match e.severity() {
             Severity::Warn => {
-                warn!(logger, "Validation Warning: {}", e.error());
+                warn!("Validation Warning: {}", e.error());
             }
             Severity::Error => {
-                crit!(logger, "Validation Error: {}", e.error());
+                error!("Validation Error: {}", e.error());
                 error_count += 1;
             }
         }
     }
 
     if error_count != 0 {
-        crit!(logger, "Validation failed with {} errors.", error_count);
+        error!("Validation failed with {} errors.", error_count);
         return;
     }
 
-    info!(logger, "Opening data directory...");
+    info!("Opening data directory...");
     let data_dir = config.data_dir();
     let db_path = data_dir.join("pikadick.sqlite");
 
     if data_dir.is_file() {
-        crit!(
-            logger,
-            "Failed to create or open data directory, the path is a file."
-        );
+        error!("Failed to create or open data directory, the path is a file.");
         return;
     }
 
     if !data_dir.exists() {
-        info!(logger, "Data directory does not exist. Creating...");
+        info!("Data directory does not exist. Creating...");
         if let Err(e) = std::fs::create_dir_all(&data_dir) {
-            crit!(logger, "Failed to create data directory: {}", e);
+            error!("Failed to create data directory: {}", e);
             return;
         };
     } else if data_dir.is_dir() {
-        info!(logger, "Data directory already exists.");
+        info!("Data directory already exists.");
     }
 
-    info!(logger, "Initalizing File Logger...");
+    info!("Initalizing File Logger...");
     let log_file = match std::fs::OpenOptions::new()
         .create(true)
         .write(true)
@@ -385,19 +364,19 @@ fn main() {
     {
         Ok(f) => f,
         Err(e) => {
-            crit!(logger, "Failed to initalize file logger: {}", e);
+            error!("Failed to initalize file logger: {}", e);
             return;
         }
     };
 
     if let Err(e) = log_file_writer.init(log_file) {
-        crit!(logger, "Failed to initalize file logger: {}", e);
+        error!("Failed to initalize file logger: {}", e);
         return;
     }
 
     drop(log_file_writer);
 
-    info!(logger, "Starting Tokio Runtime...");
+    info!("Starting Tokio Runtime...");
     let tokio_rt = match RuntimeBuilder::new_multi_thread()
         .enable_all()
         .thread_name("pikadick-tokio-worker")
@@ -405,7 +384,7 @@ fn main() {
     {
         Ok(rt) => rt,
         Err(e) => {
-            crit!(logger, "Failed to start Tokio Runtime: {}", e);
+            error!("Failed to start Tokio Runtime: {}", e);
             return;
         }
     };
@@ -414,19 +393,19 @@ fn main() {
         // TODO: Add similar to sql
         // let mut db_options = rocksdb::Options::default();
         // db_options.create_if_missing(true);
-        info!(logger, "Opening database...");
+        info!("Opening database...");
         // TODO: Does this handle non-unicode paths? Should I care?
         let db_url = format!("sqlite:{}", db_path.display());
         let db = match SqlitePool::connect(&db_url).await {
             Ok(db) => match Database::new(db).await {
                 Ok(db) => db,
                 Err(e) => {
-                    error!(logger, "Failed to initalize database: {}", e);
+                    error!("Failed to initalize database: {}", e);
                     return;
                 }
             },
             Err(e) => {
-                error!(logger, "Failed to open database: {}", e);
+                error!("Failed to open database: {}", e);
                 return;
             }
         };
@@ -452,7 +431,7 @@ fn main() {
             .unrecognised_command(unrecognised_command_handler)
             .on_dispatch_error(process_dispatch_error);
 
-        info!(logger, "Using prefix '{}'", config.prefix());
+        info!("Using prefix '{}'", config.prefix());
 
         let mut client = match Client::builder(config.token())
             .event_handler(Handler)
@@ -461,26 +440,19 @@ fn main() {
         {
             Ok(c) => c,
             Err(e) => {
-                crit!(logger, "Failed to create client: {}", e);
+                error!("Failed to create client: {}", e);
                 return;
             }
         };
 
-        let client_data = match ClientData::init(
-            logger.clone(),
-            client.shard_manager.clone(),
-            config,
-            db,
-        )
-        .await
-        {
+        let client_data = match ClientData::init(client.shard_manager.clone(), config, db).await {
             Ok(mut c) => {
                 // Add all post-init client data changes here
                 c.enabled_check_data.groups.push(&GENERAL_GROUP);
                 c
             }
             Err(e) => {
-                crit!(logger, "Client Data Initialization failed: {}", e);
+                error!("Client Data Initialization failed: {}", e);
                 return;
             }
         };
@@ -490,22 +462,22 @@ fn main() {
             data.insert::<ClientDataKey>(client_data);
         }
 
-        info!(logger, "Logging in...");
+        info!("Logging in...");
 
-        tokio::spawn(handle_ctrl_c(logger.clone(), client.shard_manager.clone()));
+        tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
 
         if let Err(why) = client.start().await {
-            crit!(logger, "Error while running client: {}", why);
+            error!("Error while running client: {}", why);
         }
 
         drop(client);
     });
 
-    info!(logger, "Stopping Tokio Runtime...");
+    info!("Stopping Tokio Runtime...");
     // TODO: Add a timeout to always shut down properly / Can i report when this fails?
     // tokio_rt.shutdown_timeout(TOKIO_RT_SHUTDOWN_DURATION);
     // Avoid using shutdown_timeout. Blocked on: https://github.com/tokio-rs/tokio/issues/2314
     drop(tokio_rt);
 
-    info!(logger, "Successful Shutdown");
+    info!("Successful Shutdown");
 }

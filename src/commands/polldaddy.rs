@@ -3,6 +3,7 @@ use crate::{
     ClientDataKey,
 };
 use dashmap::DashMap;
+use log::error;
 use parking_lot::Mutex;
 use polldaddy::{
     HtmlResponse,
@@ -18,7 +19,6 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use slog::error;
 use std::{
     convert::TryInto,
     fmt::Write,
@@ -335,7 +335,6 @@ async fn spam(ctx: &Context, msg: &Message, answer_index: usize) -> CommandResul
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
     let client = client_data.polldaddy_client.clone();
-    let logger = client_data.logger.clone();
     drop(data_lock);
 
     let job = match client.get_job_by_user(msg.author.id) {
@@ -409,7 +408,7 @@ async fn spam(ctx: &Context, msg: &Message, answer_index: usize) -> CommandResul
         .await?;
 
     if client.remove_job_by_user(msg.author.id).is_none() {
-        error!(logger, "Failed to release job by user id for polldaddy! Memory probably leaked and client is in an undefined state!");
+        error!("Failed to release job by user id for polldaddy! Memory probably leaked and client is in an undefined state!");
     }
 
     Ok(())

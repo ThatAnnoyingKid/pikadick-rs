@@ -11,6 +11,10 @@ use crate::{
     ClientDataKey,
 };
 use lazy_static::lazy_static;
+use log::{
+    error,
+    warn,
+};
 use reddit::RedditError;
 use reddit_tube::{
     types::get_video_response::{
@@ -30,7 +34,6 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use slog::error;
 use std::sync::Arc;
 use url::Url;
 
@@ -161,7 +164,6 @@ impl RedditEmbedData {
     pub async fn process_msg(&self, ctx: &Context, msg: &Message) -> CommandResult {
         let data_lock = ctx.data.read().await;
         let client_data = data_lock.get::<ClientDataKey>().unwrap();
-        let logger = client_data.logger.clone();
         let db = client_data.db.clone();
         drop(data_lock);
 
@@ -180,8 +182,8 @@ impl RedditEmbedData {
                 Ok(None) => false,
                 Err(e) => {
                     error!(
-                        logger,
-                        "Failed to get reddit-embed guild data for '{}': {}", guild_id, e
+                        "Failed to get reddit-embed guild data for '{}': {}",
+                        guild_id, e
                     );
                     false
                 }
@@ -230,17 +232,14 @@ impl RedditEmbedData {
                                 match self.get_video_data(&url).await {
                                     Ok(video_data) => Some(video_data.url.into_string()),
                                     Err(e) => {
-                                        error!(
-                                            logger,
-                                            "Failed to get reddit video info, got error: {:#?}", e
-                                        );
+                                        warn!("Failed to get reddit video info, got error: {}", e);
                                         None
                                     }
                                 }
                             }
                         }
                         Err(e) => {
-                            error!(logger, "Failed to get reddit post, got error: {:#?}", e);
+                            warn!("Failed to get reddit post, got error: {}", e);
                             None
                         }
                     }
@@ -254,7 +253,7 @@ impl RedditEmbedData {
                     msg.channel_id.say(&ctx.http, data).await?;
                 }
             } else {
-                error!(logger, "Failed to parse reddit post url");
+                error!("Failed to parse reddit post url");
                 // TODO: Maybe expand this to an actual error to give better feedback
             }
         }
@@ -281,29 +280,22 @@ impl std::fmt::Debug for RedditEmbedData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum GetPostError {
-    Reddit(RedditError),
+    #[error(transparent)]
+    Reddit(#[from] RedditError),
 
+    #[error("missing post")]
     MissingPost,
 }
 
-impl From<RedditError> for GetPostError {
-    fn from(e: RedditError) -> Self {
-        GetPostError::Reddit(e)
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum GetVideoDataError {
-    RedditTube(TubeError),
-    InvalidResponse(GetVideoResponseError),
-}
+    #[error(transparent)]
+    RedditTube(#[from] TubeError),
 
-impl From<TubeError> for GetVideoDataError {
-    fn from(e: TubeError) -> GetVideoDataError {
-        GetVideoDataError::RedditTube(e)
-    }
+    #[error(transparent)]
+    InvalidResponse(GetVideoResponseError),
 }
 
 #[command("reddit-embed")]
@@ -316,7 +308,6 @@ impl From<TubeError> for GetVideoDataError {
 async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let logger = client_data.logger.clone();
     let db = client_data.db.clone();
     drop(data_lock);
 
@@ -358,8 +349,8 @@ async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
             Ok(v) => v,
             Err(e) => {
                 error!(
-                    logger,
-                    "Failed to get reddit-embed guild data for '{}': {:?}", guild_id, e
+                    "Failed to get reddit-embed guild data for '{}': {:?}",
+                    guild_id, e
                 );
                 None
             }
@@ -369,11 +360,8 @@ async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
             Ok(_) => true,
             Err(e) => {
                 error!(
-                    logger,
                     "Failed to set reddit-embed guild data for '{}' to '{}': {:?}",
-                    guild_id,
-                    enable,
-                    e
+                    guild_id, enable, e
                 );
                 false
             }

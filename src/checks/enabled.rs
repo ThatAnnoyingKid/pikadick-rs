@@ -1,4 +1,5 @@
 use crate::ClientDataKey;
+use log::error;
 use parking_lot::Mutex;
 use serenity::{
     client::Context,
@@ -11,7 +12,6 @@ use serenity::{
     },
     model::prelude::*,
 };
-use slog::error;
 use std::sync::Arc;
 
 type MutexGuard<'a, T> = parking_lot::lock_api::MutexGuard<'a, parking_lot::RawMutex, T>;
@@ -74,13 +74,12 @@ pub async fn enabled_check(
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
     let db = client_data.db.clone();
-    let logger = client_data.logger.clone();
     drop(data_lock);
 
     let disabled_commands = match db.get_disabled_commands(guild_id).await {
         Ok(data) => data,
         Err(e) => {
-            error!(logger, "Failed to read disabled commands: {}", e);
+            error!("Failed to read disabled commands: {}", e);
 
             // DB failure, return false to be safe.
             return Err(Reason::Unknown);

@@ -1,26 +1,31 @@
-use parking_lot::Mutex as PMutex;
-use slog::{
-    info,
-    Drain,
-    Logger,
+use fern::colors::{
+    Color,
+    ColoredLevelConfig,
 };
+use parking_lot::Mutex as PMutex;
 use std::{
     fs::File,
     io::Write,
     sync::Arc,
 };
 
+/// The mut impl of a DelayWriter
 #[derive(Debug)]
 pub enum DelayWriterInner {
+    /// The buffered data.
     Buffer(Vec<u8>),
+
+    /// The file being written to.
     File(File),
 }
 
 impl DelayWriterInner {
+    /// Make a new DelayWriterInner with an empty buffer
     fn new() -> Self {
-        DelayWriterInner::Buffer(Vec::new())
+        Self::Buffer(Vec::new())
     }
 
+    /// Try to init this DelayWriterInner with a file. Will return an error if this is already initalized.
     fn init(&mut self, mut file: File) -> Result<(), std::io::Error> {
         let buffer = match self {
             Self::Buffer(bytes) => bytes,
@@ -63,14 +68,17 @@ impl Write for DelayWriterInner {
     }
 }
 
+/// A writer that buffers data until it is assigned a file to write to.
 #[derive(Clone, Debug)]
 pub struct DelayWriter(Arc<PMutex<DelayWriterInner>>);
 
 impl DelayWriter {
+    /// Create a new DelayWriter
     pub fn new() -> Self {
-        DelayWriter(Arc::new(PMutex::new(DelayWriterInner::new())))
+        Self(Arc::new(PMutex::new(DelayWriterInner::new())))
     }
 
+    /// Try to init this DelayWriter
     pub fn init(&self, file: File) -> Result<(), std::io::Error> {
         let mut lock = self.0.lock();
         lock.init(file)
@@ -103,26 +111,65 @@ impl Write for DelayWriter {
     }
 }
 
-pub fn setup() -> (Logger, DelayWriter) {
-    let term_drain = {
-        let decorator = slog_term::TermDecorator::new().build();
-        slog_term::FullFormat::new(decorator).build()
-    };
+/// An error that occurs while setting up a logger
+#[derive(Debug, thiserror::Error)]
+pub enum LoggerError {
+    /// Error initalizing the logger
+    #[error(transparent)]
+    SetLogger(#[from] log::SetLoggerError),
+
+    /// Io Error
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+}
+
+/// Try to setup a logger
+pub fn setup() -> Result<DelayWriter, LoggerError> {
+    let colors_line = ColoredLevelConfig::new()
+        .error(Color::Red)
+        .warn(Color::Yellow)
+        .info(Color::Cyan)
+        .debug(Color::White)
+        .trace(Color::BrightBlack);
 
     let file_writer = DelayWriter::new();
+    let file_logger = fern::Dispatch::new()
+        .format(move |out, message, record| {
+            out.finish(format_args!(
+                "{}[{}][{}] {}",
+                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                record.target(),
+                record.level(),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Info)
+        .chain(Box::new(file_writer.clone()) as Box<dyn Write + Send>);
 
-    let file_drain = {
-        let decorator = slog_term::PlainDecorator::new(file_writer.clone());
-        slog_term::FullFormat::new(decorator).build()
-    };
+    let term_logger = fern::Dispatch::new()
+        .format(move |out, message, record| {
+            out.finish(format_args!(
+                "{}[{}][{}] {}",
+                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                record.target(),
+                colors_line.color(record.level()),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Info)
+        .level_for("tracing", log::LevelFilter::Warn)
+        .level_for("serenity", log::LevelFilter::Warn)
+        .level_for(
+            "serenity::client::bridge::gateway::shard_runner",
+            log::LevelFilter::Error,
+        )
+        .level_for("sqlx::query", log::LevelFilter::Error)
+        .chain(std::io::stdout());
 
-    let drain = slog_async::Async::new(slog::Duplicate(term_drain, file_drain).fuse())
-        .build()
-        .fuse();
+    fern::Dispatch::new()
+        .chain(file_logger)
+        .chain(term_logger)
+        .apply()?;
 
-    let log = slog::Logger::root(drain, slog::o!());
-
-    info!(log, "Initalized Logger");
-
-    (log, file_writer)
+    Ok(file_writer)
 }

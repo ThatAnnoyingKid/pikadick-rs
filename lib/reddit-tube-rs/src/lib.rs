@@ -7,29 +7,30 @@ pub use crate::types::{
 pub use reqwest::StatusCode;
 use select::document::Document;
 
+/// Result Error
 pub type TubeResult<T> = Result<T, TubeError>;
 
-#[derive(Debug)]
+/// Client Error
+#[derive(Debug, thiserror::Error)]
 pub enum TubeError {
-    Reqwest(reqwest::Error),
-    InvalidStatus(StatusCode),
-    Json(serde_json::Error),
+    /// HTTP Reqwest Error
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
 
+    /// Invalid HTTP Status
+    #[error("invalid http status '{0}'")]
+    InvalidStatus(StatusCode),
+
+    /// Invalid Json
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+
+    /// Invalid main page
+    #[error("invalid main page")]
     InvalidMainPage,
 }
 
-impl From<reqwest::Error> for TubeError {
-    fn from(e: reqwest::Error) -> Self {
-        TubeError::Reqwest(e)
-    }
-}
-
-impl From<serde_json::Error> for TubeError {
-    fn from(e: serde_json::Error) -> Self {
-        TubeError::Json(e)
-    }
-}
-
+/// Client
 #[derive(Clone, Debug)]
 pub struct Client {
     client: reqwest::Client,

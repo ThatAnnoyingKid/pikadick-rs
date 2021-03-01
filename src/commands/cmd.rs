@@ -2,6 +2,7 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
+use log::error;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -11,7 +12,6 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use slog::error;
 use std::fmt::Write;
 
 #[command]
@@ -35,7 +35,6 @@ pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let logger = client_data.logger.clone();
     let data = client_data.enabled_check_data.clone();
     let db = client_data.db.clone();
     drop(data_lock);
@@ -74,7 +73,7 @@ pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     match db.disable_command(guild_id, cmd_name, disable).await {
         Ok(()) => {}
         Err(e) => {
-            error!(logger, "Failed to disable command: {}", e);
+            error!("Failed to disable command: {}", e);
         }
     }
 
@@ -102,7 +101,6 @@ pub async fn list(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let logger = client_data.logger.clone();
     let data = client_data.enabled_check_data.clone();
     let db = client_data.db.clone();
     drop(data_lock);
@@ -110,7 +108,7 @@ pub async fn list(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let disabled_commands = match db.get_disabled_commands(guild_id).await {
         Ok(d) => d,
         Err(e) => {
-            error!(logger, "Failed to get disabled commands: {}", e);
+            error!("Failed to get disabled commands: {}", e);
             return Ok(());
         }
     };
