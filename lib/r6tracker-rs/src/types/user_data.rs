@@ -108,9 +108,6 @@ impl<T> ApiResponse<T> {
 }
 
 /// An R6 Rank.
-///
-// Allow because this technically isnt an acronym and clippy misidentifies it.
-#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Rank {
     Unranked,
