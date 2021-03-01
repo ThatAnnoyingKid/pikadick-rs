@@ -50,10 +50,6 @@ skip = [
     # Blocked on rand updating getrandom to 0.2.x 
     { name = "getrandom", version = "0.1.15" },
     
-    # Blocked on tracing-futures bumping pin-project to 1.0.x
-    { name = "pin-project", version = "0.4.27" },
-    { name = "pin-project-internal", version = "0.4.27" },
-    
     # Blocked on rustls, and tungstentite bumping base64 to 0.13.x
     { name = "base64", version = "0.12.3" },
     
