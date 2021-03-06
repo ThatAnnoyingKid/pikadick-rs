@@ -32,7 +32,6 @@ rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.119", features = [ "derive" ] }
 serenity = "0.10.2"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "04e43f0670a681129164ac0ef90c898cdbb6695a" } 
-# Use runtime-async-std-rustls to not use 2 versions of tokio
 sqlx = { version = "0.5.1", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.6"
 thiserror = "1.0.23"
@@ -63,4 +62,5 @@ members = [
 	"lib/reddit-tube-rs",
 	"lib/rule34-rs",
     "lib/insta-rs",
+    "lib/deviantart-rs",
 ]
