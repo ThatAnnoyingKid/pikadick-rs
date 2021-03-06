@@ -110,7 +110,7 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
     let client = client_data.deviantart_client.clone();
     drop(data_lock);
 
-    let query = args.trimmed().current().unwrap();
+    let query = args.trimmed().quoted().current().unwrap();
 
     info!("Searching for '{}' on deviantart", query);
 
