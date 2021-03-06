@@ -24,6 +24,7 @@ impl Client {
     }
 
     /// Check if the room code exists
+    ///
     pub async fn check_room(&self, room_code: &'_ str) -> QResult<GenericResponse> {
         let res = self
             .client

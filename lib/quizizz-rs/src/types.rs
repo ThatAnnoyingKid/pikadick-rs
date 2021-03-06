@@ -189,6 +189,14 @@ pub struct Room {
     pub extra: HashMap<String, serde_json::Value>,
 }
 
+impl Room {
+    /// Whether this room is running
+    ///
+    pub fn is_running(&self) -> bool {
+        self.state.as_deref() == Some("running")
+    }
+}
+
 /// Traits
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct Traits {

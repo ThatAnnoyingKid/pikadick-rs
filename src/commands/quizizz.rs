@@ -13,7 +13,7 @@ use serenity::{
     prelude::*,
 };
 
-const MAX_TRIES: usize = 100;
+const MAX_TRIES: usize = 1_000;
 const MAX_CODE: u32 = 999_999;
 
 #[derive(Default, Clone, Debug)]
@@ -49,12 +49,16 @@ async fn quizizz(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         match client.client.check_room(&code_str).await {
             Ok(res) => {
                 if res.error.is_none() {
-                    loading.send_ok();
+                    if let Some(room) = res.room {
+                        if room.is_running() {
+                            loading.send_ok();
 
-                    msg.channel_id
-                        .say(&ctx.http, format!("Located quizizz code: {}", code))
-                        .await?;
-                    break;
+                            msg.channel_id
+                                .say(&ctx.http, format!("Located quizizz code: {}", code_str))
+                                .await?;
+                            break;
+                        }
+                    }
                 }
             }
             Err(e) => {
