@@ -56,7 +56,7 @@ impl Deviation {
     /// Get the media url for this [`Deviation`].
     ///
     pub fn get_media_url(&self) -> Option<Url> {
-        let mut url = self.media.base_uri.clone();
+        let mut url = self.media.base_uri.as_ref()?.clone();
         url.query_pairs_mut()
             .append_pair("token", self.media.token.get(0)?);
         Some(url)
@@ -70,7 +70,7 @@ pub struct DeviationMedia {
     /// The base uri
     ///
     #[serde(rename = "baseUri")]
-    pub base_uri: Url,
+    pub base_uri: Option<Url>,
 
     /// Image token
     ///
