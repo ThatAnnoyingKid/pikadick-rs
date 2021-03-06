@@ -158,7 +158,8 @@ async fn help(
     latency,
     uwuify,
     cache_stats,
-    insta_dl
+    insta_dl,
+    deviantart
 )]
 struct General;
 

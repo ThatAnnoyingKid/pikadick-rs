@@ -4,6 +4,7 @@ pub mod types;
 
 pub use crate::types::{
     Deviation,
+    OEmbed,
     SearchResults,
 };
 use tokio::io::{
@@ -49,7 +50,7 @@ pub enum Error {
 
 /// A DeviantArt Client
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Client {
     client: reqwest::Client,
 }
@@ -85,6 +86,21 @@ impl Client {
         let results: SearchResults = res.json().await?;
 
         Ok(results)
+    }
+
+    /// OEmbed API
+    ///
+    pub async fn get_oembed(&self, url: &Url) -> Result<OEmbed, Error> {
+        let url = Url::parse_with_params(
+            "https://backend.deviantart.com/oembed",
+            &[("url", url.as_str())],
+        )?;
+        let res = self.client.get(url.as_str()).send().await?;
+        let status = res.status();
+        if !status.is_success() {
+            return Err(Error::InvalidStatus(status));
+        }
+        Ok(res.json().await?)
     }
 
     /// Download a [`Deviation`].

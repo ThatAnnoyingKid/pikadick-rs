@@ -1,6 +1,7 @@
 use crate::{
     checks::EnabledCheckData,
     commands::{
+        deviantart::DeviantartClient,
         fml::FmlClient,
         insta_dl::InstaClient,
         nekos::NekosClient,
@@ -74,6 +75,7 @@ pub struct ClientData {
     pub reddit_embed_data: RedditEmbedData,
     pub enabled_check_data: EnabledCheckData,
     pub insta_client: InstaClient,
+    pub deviantart_client: DeviantartClient,
 
     pub db: Database,
 
@@ -102,6 +104,7 @@ impl ClientData {
             reddit_embed_data: Default::default(),
             enabled_check_data: Default::default(),
             insta_client: Default::default(),
+            deviantart_client: Default::default(),
 
             db,
 
@@ -124,6 +127,7 @@ impl ClientData {
             &self.rule34_client,
             &self.shift_client,
             &self.insta_client,
+            &self.deviantart_client,
         ];
 
         for cache_stat_provider in cache_stat_providers {

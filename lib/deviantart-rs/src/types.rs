@@ -57,13 +57,8 @@ impl Deviation {
     ///
     pub fn get_media_url(&self) -> Option<Url> {
         let mut url = self.media.base_uri.clone();
-        url.query_pairs_mut().append_pair(
-            "token",
-            self
-                .media
-                .token
-                .get(0)?,
-        );
+        url.query_pairs_mut()
+            .append_pair("token", self.media.token.get(0)?);
         Some(url)
     }
 }
@@ -79,7 +74,26 @@ pub struct DeviationMedia {
 
     /// Image token
     ///
+    #[serde(default)]
     pub token: Vec<String>,
+
+    /// Unknown K/Vs
+    ///
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+/// DeviantArt OEmbed
+///
+#[derive(Debug, serde::Deserialize)]
+pub struct OEmbed {
+    /// Url of the asset
+    ///
+    pub url: Url,
+
+    /// Url of the thumbnail
+    ///
+    pub thumbnail_url: Url,
 
     /// Unknown K/Vs
     ///

@@ -1,5 +1,6 @@
 pub mod cache_stats;
 pub mod cmd;
+pub mod deviantart;
 pub mod fml;
 pub mod insta_dl;
 pub mod invite;
@@ -21,6 +22,7 @@ pub mod zalgo;
 pub use crate::commands::{
     cache_stats::CACHE_STATS_COMMAND,
     cmd::CMD_COMMAND,
+    deviantart::DEVIANTART_COMMAND,
     fml::FML_COMMAND,
     insta_dl::INSTA_DL_COMMAND,
     invite::INVITE_COMMAND,
