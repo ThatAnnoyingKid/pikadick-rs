@@ -258,7 +258,7 @@ async fn process_dispatch_error_future<'fut>(
                     .channel_id
                     .say(
                         &ctx.http,
-                        "You need to be admin in order to use this command!",
+                        "You need to be admin in order to use this command",
                     )
                     .await
                     .is_ok();

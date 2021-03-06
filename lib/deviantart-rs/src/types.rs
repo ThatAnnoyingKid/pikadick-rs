@@ -61,6 +61,12 @@ impl Deviation {
             .append_pair("token", self.media.token.get(0)?);
         Some(url)
     }
+
+    /// Whether this is an image
+    ///
+    pub fn is_image(&self) -> bool {
+        self.kind == "image"
+    }
 }
 
 /// The media field of a [`Deviation`].
@@ -93,7 +99,7 @@ pub struct OEmbed {
 
     /// Url of the thumbnail
     ///
-    pub thumbnail_url: Url,
+    pub thumbnail_url: Option<Url>,
 
     /// Unknown K/Vs
     ///

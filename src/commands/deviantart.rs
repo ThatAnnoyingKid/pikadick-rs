@@ -11,12 +11,12 @@ use crate::{
     },
     ClientDataKey,
 };
+use rand::seq::IteratorRandom;
 use deviantart::SearchResults;
 use log::{
     error,
     info,
 };
-use rand::seq::SliceRandom;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -119,20 +119,35 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
     match client.search(&query).await {
         Ok(entry) => {
             let data = entry.data();
-            loading.send_ok();
-            let choice = data.deviations.choose(&mut rand::thread_rng());
+            let choice = data.deviations.iter().filter(|d| d.is_image()).choose(&mut rand::thread_rng());
 
             if let Some(choice) = choice {
-                let embed = client.client.get_oembed(&choice.url).await?;
-
-                msg.channel_id.say(&ctx.http, &embed.thumbnail_url).await?;
+                info!("Getting oembed for '{}'", &choice.url);
+                match client.get_oembed(&choice.url).await {
+                    Ok(oembed) => match oembed.data().thumbnail_url.as_ref() {
+                        Some(oembed) => {
+                            loading.send_ok();
+                            msg.channel_id.say(&ctx.http, &oembed).await?;
+                        }
+                        None => {
+                            msg.channel_id
+                                .say(&ctx.http, "Failed to get oembed as it is not an image")
+                                .await?;
+                        }
+                    },
+                    Err(e) => {
+                        msg.channel_id
+                            .say(&ctx.http, format!("Failed to get oembed: {}", e))
+                            .await?;
+                    }
+                }
             } else {
                 msg.channel_id.say(&ctx.http, "No Results").await?;
             }
         }
         Err(e) => {
             msg.channel_id
-                .say(&ctx.http, format!("Failed to search: {}", e))
+                .say(&ctx.http, format!("Failed to search '{}': {}", query, e))
                 .await?;
 
             error!("Failed to search for {} on deviantart: {}", query, e);
