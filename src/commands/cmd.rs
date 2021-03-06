@@ -55,7 +55,7 @@ pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     args.advance();
 
-    let cmd_name = args.current().expect("valid arg");
+    let cmd_name = args.current().expect("missing cmd name");
 
     let is_valid_command = {
         let names = data.get_command_names();

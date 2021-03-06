@@ -394,7 +394,6 @@ fn main() {
         // let mut db_options = rocksdb::Options::default();
         // db_options.create_if_missing(true);
         info!("Opening database...");
-        // TODO: Does this handle non-unicode paths? Should I care?
         let db_url = format!("sqlite:{}", db_path.display());
         let db = match SqlitePool::connect(&db_url).await {
             Ok(db) => match Database::new(db).await {

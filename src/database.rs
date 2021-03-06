@@ -108,10 +108,12 @@ WHERE id = ?;
     }
 
     /// Get disabled commands as a set
+    ///
     pub async fn get_disabled_commands(
         &self,
         id: GuildId,
     ) -> Result<HashSet<String>, DatabaseError> {
+        self.create_default_guild_info(id).await?;
         let txn = self.db.begin().await?;
         let (data, txn) = get_disabled_commands(txn, id).await?;
         txn.commit().await?;

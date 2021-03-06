@@ -24,6 +24,7 @@ pub struct EnabledCheckData {
 
 impl EnabledCheckData {
     /// Returns a mutex guard to the command cache. Guaranteed to be Some.
+    ///
     pub fn get_command_names(&self) -> MutexGuard<'_, Option<Vec<String>>> {
         let mut cache = self.command_name_cache.lock();
         cache.get_or_insert_with(|| {
