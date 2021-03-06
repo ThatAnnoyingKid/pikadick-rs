@@ -1,6 +1,8 @@
 use crate::{
-    checks::ENABLED_CHECK,
-    checks::ADMIN_CHECK,
+    checks::{
+        ADMIN_CHECK,
+        ENABLED_CHECK,
+    },
     ClientDataKey,
 };
 use log::error;

@@ -11,12 +11,12 @@ use crate::{
     },
     ClientDataKey,
 };
-use rand::seq::IteratorRandom;
 use deviantart::SearchResults;
 use log::{
     error,
     info,
 };
+use rand::seq::IteratorRandom;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -119,7 +119,11 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
     match client.search(&query).await {
         Ok(entry) => {
             let data = entry.data();
-            let choice = data.deviations.iter().filter(|d| d.is_image()).choose(&mut rand::thread_rng());
+            let choice = data
+                .deviations
+                .iter()
+                .filter(|d| d.is_image())
+                .choose(&mut rand::thread_rng());
 
             if let Some(choice) = choice {
                 info!("Getting oembed for '{}'", &choice.url);
