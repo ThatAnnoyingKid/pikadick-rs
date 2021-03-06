@@ -7,7 +7,6 @@ pub mod invite;
 pub mod latency;
 pub mod nekos;
 pub mod ping;
-pub mod polldaddy;
 pub mod quizizz;
 pub mod r6stats;
 pub mod r6tracker;
@@ -29,7 +28,6 @@ pub use crate::commands::{
     latency::LATENCY_COMMAND,
     nekos::NEKOS_COMMAND,
     ping::PING_COMMAND,
-    polldaddy::POLLDADDY_COMMAND,
     quizizz::QUIZIZZ_COMMAND,
     r6stats::R6STATS_COMMAND,
     r6tracker::R6TRACKER_COMMAND,

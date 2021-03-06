@@ -21,7 +21,6 @@ lazy_static = "1.4.0"
 log = "0.4.13"
 nekos = { path = "./lib/nekos-rs" }
 parking_lot = "0.11.1"
-polldaddy = { git = "https://github.com/adumbidiot/polldaddy-rs", rev = "4a214c9e07a6783a6375d79de0d1430afd6c18ee" }
 quizizz = { path = "./lib/quizizz-rs" }
 r6stats = { path = "./lib/r6stats-rs" }
 r6tracker = { path = "./lib/r6tracker-rs" }

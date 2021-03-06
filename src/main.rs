@@ -145,7 +145,6 @@ async fn help(
     r6stats,
     r6tracker,
     rule34,
-    polldaddy,
     system,
     quizizz,
     fml,

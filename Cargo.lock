@@ -81,19 +81,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-compression"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b72c1f1154e234325b50864a349b9c8e56939e266a4c307c0f159812df2f9537"
-dependencies = [
- "flate2",
- "futures-core",
- "memchr",
- "pin-project-lite",
- "tokio",
-]
-
-[[package]]
 name = "async-executor"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -379,12 +366,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3c69b077ad434294d3ce9f1f6143a2a4b89a8a2d54ef813d85003a4fd1137fd"
 
 [[package]]
-name = "cesu8"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d43a04d8753f35258c91f8ec639f792891f748a1edbd759cf1dcea3382ad83c"
-
-[[package]]
 name = "cfg-if"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -625,25 +606,6 @@ name = "dotenv"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
-
-[[package]]
-name = "ducc"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41bc1f8a30712eb6a7454f85747f218d9dfb41d173bb223a8c4f18daff829207"
-dependencies = [
- "cesu8",
- "ducc-sys",
-]
-
-[[package]]
-name = "ducc-sys"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cdea834bf6a0fde522374db4404695c5f0465fc0ee814f2878d76eaabd4ffed"
-dependencies = [
- "cc",
-]
 
 [[package]]
 name = "either"
@@ -1709,7 +1671,6 @@ dependencies = [
  "nekos",
  "openssl",
  "parking_lot",
- "polldaddy",
  "quizizz",
  "r6stats",
  "r6tracker",
@@ -1774,21 +1735,6 @@ name = "platforms"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc77a3fc329982cbf3ea772aa265b742a550998bad65747c630406ee52dac425"
-
-[[package]]
-name = "polldaddy"
-version = "0.0.1"
-source = "git+https://github.com/adumbidiot/polldaddy-rs?rev=4a214c9e07a6783a6375d79de0d1430afd6c18ee#4a214c9e07a6783a6375d79de0d1430afd6c18ee"
-dependencies = [
- "ducc",
- "futures",
- "rand 0.8.3",
- "reqwest",
- "select",
- "serde",
- "serde_json",
- "url",
-]
 
 [[package]]
 name = "polling"
@@ -2067,7 +2013,6 @@ version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0460542b551950620a3648c6aa23318ac6b3cd779114bd873209e6e8b5eb1c34"
 dependencies = [
- "async-compression",
  "base64 0.13.0",
  "bytes 1.0.1",
  "cookie",
@@ -2097,7 +2042,6 @@ dependencies = [
  "tokio",
  "tokio-native-tls",
  "tokio-rustls",
- "tokio-util",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
