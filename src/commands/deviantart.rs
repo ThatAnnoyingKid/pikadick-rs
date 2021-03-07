@@ -126,7 +126,7 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
                 .choose(&mut rand::thread_rng());
 
             if let Some(choice) = choice {
-                info!("Getting oembed for '{}'", &choice.url);
+                info!("Getting deviantart oembed for '{}'", &choice.url);
                 match client.get_oembed(&choice.url).await {
                     Ok(oembed) => match oembed.data().thumbnail_url.as_ref() {
                         Some(oembed) => {
@@ -134,6 +134,8 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
                             msg.channel_id.say(&ctx.http, &oembed).await?;
                         }
                         None => {
+                            // This generally isn't reachable as we filter above for only images,
+                            // but there's not really any harm in playing safe
                             msg.channel_id
                                 .say(&ctx.http, "Failed to get oembed as it is not an image")
                                 .await?;

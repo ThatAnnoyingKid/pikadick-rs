@@ -37,7 +37,10 @@ impl Rule34Client {
         Default::default()
     }
 
-    /// Get the top result for a query. No normalization is performed on the query, see `rule34::build_search_query` for more info.
+    /// Get the top result for a query.
+    ///
+    /// No normalization is performed on the query, see [`rule34::build_search_query`] for more info.
+    ///
     pub async fn get_entry(
         &self,
         query: &str,

@@ -7,26 +7,32 @@ use crate::{
     RuleResult,
 };
 use select::document::Document;
-use std::io::Write;
+use tokio::io::{
+    AsyncWrite,
+    AsyncWriteExt,
+};
 use url::Url;
 
 const DEFAULT_USER_AGENT_STR: &str = "rule34-rs";
 
-/// Client
+/// A rule34 Client
+///
 #[derive(Debug, Clone)]
 pub struct Client {
     client: reqwest::Client,
 }
 
 impl Client {
-    /// Make a new client
+    /// Make a new [`Client`]
+    ///
     pub fn new() -> Self {
         Client {
             client: reqwest::Client::new(),
         }
     }
 
-    /// Gets a uri as a String
+    /// Send a GET web request to a `uri` and get the result as a [`String`].
+    ///
     pub async fn get_text(&self, uri: &str) -> RuleResult<String> {
         let res = self
             .client
@@ -40,45 +46,76 @@ impl Client {
         Ok(text)
     }
 
-    /// Gets a uri as a doc
-    pub async fn get_doc(&self, uri: &str) -> RuleResult<Document> {
-        Ok(Document::from(self.get_text(uri).await?.as_str()))
+    /// Send a GET web request to a `uri` and get the result as a [`Document`],
+    /// then use the given func to process it.
+    ///
+    pub async fn get_doc<F, T>(&self, uri: &str, f: F) -> RuleResult<T>
+    where
+        F: FnOnce(Document) -> T + Send + 'static,
+        T: Send + 'static,
+    {
+        let text = self.get_text(uri).await?;
+        let ret = tokio::task::spawn_blocking(move || f(Document::from(text.as_str()))).await?;
+        Ok(ret)
     }
 
-    /// Runs a search. Querys are based on "tags". Tags are seperated by spaces, while words are seperated by underscores. Characters are automatically encoded.
+    /// Run a search for a `query`.
+    ///
+    /// Querys are based on "tags".
+    /// Tags are seperated by spaces, while words are seperated by underscores.
+    /// Characters are automatically encoded.
+    ///
     pub async fn search(&self, query: &str) -> RuleResult<SearchResult> {
         let url = Url::parse_with_params(
             "https://rule34.xxx/index.php?page=post&s=list",
             &[("tags", query)],
         )?;
 
-        let doc = self.get_doc(url.as_str()).await?;
-        let ret = SearchResult::from_doc(&doc)?;
+        let ret = self
+            .get_doc(url.as_str(), |doc| SearchResult::from_doc(&doc))
+            .await??;
 
         Ok(ret)
     }
 
-    /// Gets a post by id
+    /// Get a [`Post`] by `id`.
+    ///
     pub async fn get_post(&self, id: u64) -> RuleResult<Post> {
-        let url = format!("https://rule34.xxx/index.php?page=post&s=view&id={}", id);
+        let mut id_str = itoa::Buffer::new();
+        let url = Url::parse_with_params(
+            "https://rule34.xxx/index.php?page=post&s=view",
+            &[("id", id_str.format(id))],
+        )?;
 
-        let doc = self.get_doc(&url).await?;
-        let post = Post::from_doc(&doc)?;
+        let ret = self
+            .get_doc(url.as_str(), |doc| Post::from_doc(&doc))
+            .await??;
 
-        Ok(post)
+        Ok(ret)
     }
 
-    /// Get a url and copy it to the given writer
-    pub async fn copy_res_to<T: Write>(&self, url: &Url, mut writer: T) -> RuleResult<()> {
-        let mut res = self.client.get(url.as_str()).send().await?;
+    /// Send a GET web request to a `uri` and copy the result to the given async writer.
+    ///
+    pub async fn get_to<W>(&self, url: &Url, mut writer: W) -> RuleResult<()>
+    where
+        W: AsyncWrite + Unpin,
+    {
+        let mut res = self
+            .client
+            .get(url.as_str())
+            .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT_STR)
+            .send()
+            .await?;
         let status = res.status();
         if !status.is_success() {
             return Err(RuleError::InvalidStatus(status));
         }
 
         while let Some(chunk) = res.chunk().await? {
-            writer.write_all(&chunk)?;
+            writer.write(&chunk).await?;
         }
+
+        writer.flush().await?;
 
         Ok(())
     }

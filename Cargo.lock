@@ -2070,6 +2070,7 @@ name = "rule34"
 version = "0.0.1"
 dependencies = [
  "argh",
+ "itoa",
  "reqwest",
  "select",
  "serde",

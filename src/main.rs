@@ -108,11 +108,8 @@ impl EventHandler for Handler {
         let reddit_embed_data = client_data.reddit_embed_data.clone();
         drop(data_lock);
 
-        match reddit_embed_data.process_msg(&ctx, &msg).await {
-            Ok(()) => {}
-            Err(e) => {
-                error!("Failed to generate reddit embed: {:?}", e);
-            }
+        if let Err(e) = reddit_embed_data.process_msg(&ctx, &msg).await {
+            error!("Failed to generate reddit embed: {}", e);
         }
     }
 }
@@ -390,9 +387,6 @@ fn main() {
     };
 
     tokio_rt.block_on(async {
-        // TODO: Add similar to sql
-        // let mut db_options = rocksdb::Options::default();
-        // db_options.create_if_missing(true);
         info!("Opening database...");
         let db = match Database::new(&db_path, missing_data_dir).await {
             Ok(db) => db,
