@@ -1,25 +1,38 @@
 use serenity::model::prelude::*;
 use sqlx::{
+    sqlite::SqliteConnectOptions,
     SqlitePool,
     Transaction,
 };
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    path::Path,
+};
 
-/// Bincode Error
+/// Bincode Error typealias
+///
 pub type BincodeError = Box<bincode::ErrorKind>;
 
+/// A Database Error
+///
 #[derive(Debug, thiserror::Error)]
 pub enum DatabaseError {
     /// SQLx DB Error
+    ///
     #[error("{0}")]
     Sqlx(#[from] sqlx::Error),
 
     /// Bincode Ser/De Error
+    ///
     #[error("{0}")]
     Bincode(#[from] BincodeError),
 }
 
-/// Raw key = b"{prefix}0{key}"
+/// Turn a prefix + key into  a key for the k/v store.
+///
+/// # Spec
+/// `Raw key = b"{prefix}0{key}"`
+///
 fn make_key(prefix: &[u8], key: &[u8]) -> Vec<u8> {
     let mut raw_key = prefix.to_vec();
     raw_key.reserve(1 + key.len());
@@ -29,13 +42,22 @@ fn make_key(prefix: &[u8], key: &[u8]) -> Vec<u8> {
     raw_key
 }
 
+/// The database
+///
 #[derive(Clone, Debug)]
 pub struct Database {
     db: SqlitePool,
 }
 
 impl Database {
-    pub async fn new(db: SqlitePool) -> Result<Self, DatabaseError> {
+    //// Make a new [`Database`].
+    ///
+    pub async fn new(db_path: &Path, create_if_missing: bool) -> Result<Self, DatabaseError> {
+        let connect_options = SqliteConnectOptions::new()
+            .filename(&db_path)
+            .create_if_missing(create_if_missing);
+        let db = SqlitePool::connect_with(connect_options).await?;
+
         let mut txn = db.begin().await?;
         sqlx::query!(
             "
@@ -65,11 +87,13 @@ CREATE TABLE IF NOT EXISTS guild_info (
     }
 
     /// Gets the store by name.
+    ///
     pub async fn get_store(&self, name: &str) -> Store {
         Store::new(self.db.clone(), name.into())
     }
 
     /// Sets a command as disabled if disabled is true
+    ///
     pub async fn disable_command(
         &self,
         id: GuildId,

@@ -64,7 +64,6 @@ use serenity::{
     prelude::*,
     FutureExt,
 };
-use sqlx::sqlite::SqlitePool;
 use std::{
     collections::HashSet,
     sync::Arc,
@@ -345,7 +344,8 @@ fn main() {
         return;
     }
 
-    if !data_dir.exists() {
+    let missing_data_dir = !data_dir.exists();
+    if missing_data_dir {
         info!("Data directory does not exist. Creating...");
         if let Err(e) = std::fs::create_dir_all(&data_dir) {
             error!("Failed to create data directory: {}", e);
@@ -394,15 +394,8 @@ fn main() {
         // let mut db_options = rocksdb::Options::default();
         // db_options.create_if_missing(true);
         info!("Opening database...");
-        let db_url = format!("sqlite:{}", db_path.display());
-        let db = match SqlitePool::connect(&db_url).await {
-            Ok(db) => match Database::new(db).await {
-                Ok(db) => db,
-                Err(e) => {
-                    error!("Failed to initalize database: {}", e);
-                    return;
-                }
-            },
+        let db = match Database::new(&db_path, missing_data_dir).await {
+            Ok(db) => db,
             Err(e) => {
                 error!("Failed to open database: {}", e);
                 return;
