@@ -7,7 +7,10 @@ use crate::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
-    util::TimedCache,
+    util::{
+        LoadingReaction,
+        TimedCache,
+    },
     ClientDataKey,
 };
 use lazy_static::lazy_static;
@@ -99,6 +102,7 @@ impl RedditEmbedData {
     }
 
     /// Gets the original post. Resolves crossposts.
+    ///
     pub async fn get_original_post(
         &self,
         subreddit: &str,
@@ -147,6 +151,7 @@ impl RedditEmbedData {
     }
 
     /// Get video data from reddit.tube. Takes a reddit url.
+    ///
     pub async fn get_video_data(&self, url: &Url) -> Result<GetVideoResponseOk, GetVideoDataError> {
         let main_page = self.reddit_tube_client.get_main_page().await?;
         let video_data = self
@@ -161,6 +166,7 @@ impl RedditEmbedData {
     }
 
     /// Process a message and insert an embed if neccesary
+    ///
     pub async fn process_msg(&self, ctx: &Context, msg: &Message) -> CommandResult {
         let data_lock = ctx.data.read().await;
         let client_data = data_lock.get::<ClientDataKey>().unwrap();
@@ -208,6 +214,12 @@ impl RedditEmbedData {
             })
             .collect();
 
+        let mut loading_reaction = if !urls.is_empty() {
+            Some(LoadingReaction::new(ctx.http.clone(), msg))
+        } else {
+            None
+        };
+
         // Embed for each url
         // NOTE: we short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem,
         // esp. since serenity retries each req once
@@ -251,6 +263,9 @@ impl RedditEmbedData {
 
                     // TODO: Consider downloading and reposting?
                     msg.channel_id.say(&ctx.http, data).await?;
+                    if let Some(mut loading_reaction) = loading_reaction.take() {
+                        loading_reaction.send_ok();
+                    }
                 }
             } else {
                 error!("Failed to parse reddit post url");
@@ -349,7 +364,7 @@ async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
             Ok(v) => v,
             Err(e) => {
                 error!(
-                    "Failed to get reddit-embed guild data for '{}': {:?}",
+                    "Failed to get reddit-embed guild data for '{}': {}",
                     guild_id, e
                 );
                 None
@@ -360,7 +375,7 @@ async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
             Ok(_) => true,
             Err(e) => {
                 error!(
-                    "Failed to set reddit-embed guild data for '{}' to '{}': {:?}",
+                    "Failed to set reddit-embed guild data for '{}' to '{}': {}",
                     guild_id, enable, e
                 );
                 false
