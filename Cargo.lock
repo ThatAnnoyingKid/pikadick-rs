@@ -3191,7 +3191,7 @@ dependencies = [
 [[package]]
 name = "zalgo"
 version = "0.0.1"
-source = "git+https://github.com/adumbidiot/zalgo-rs?rev=e630ea0#e630ea029f65cf6544282d758ee9542cb641cc48"
+source = "git+https://github.com/adumbidiot/zalgo-rs?rev=a5e0ce60cb37daee1f4b954c5270c30d1034c4af#a5e0ce60cb37daee1f4b954c5270c30d1034c4af"
 dependencies = [
- "rand 0.7.3",
+ "rand 0.8.3",
 ]
