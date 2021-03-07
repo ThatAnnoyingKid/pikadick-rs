@@ -80,13 +80,11 @@ impl Client {
 
         let body = res.text().await?;
 
-        let main_page = tokio::task::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             let doc = Document::from(body.as_str());
             MainPage::from_doc(&doc).ok_or(TubeError::InvalidMainPage)
         })
-        .await?;
-
-        main_page
+        .await?
     }
 
     /// Get a video for a reddit url.
