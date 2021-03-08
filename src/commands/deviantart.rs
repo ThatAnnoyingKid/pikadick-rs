@@ -27,7 +27,6 @@ use serenity::{
     prelude::*,
 };
 use std::sync::Arc;
-use url::Url;
 
 /// A caching deviantart client
 ///
@@ -35,7 +34,6 @@ use url::Url;
 pub struct DeviantartClient {
     client: deviantart::Client,
     search_cache: TimedCache<String, SearchResults>,
-    oembed_cache: TimedCache<Url, deviantart::OEmbed>,
 }
 
 impl DeviantartClient {
@@ -63,22 +61,6 @@ impl DeviantartClient {
             .get_if_fresh(query)
             .expect("invalid entry"))
     }
-
-    /// Look up a deviantart oembed.
-    ///
-    pub async fn get_oembed(
-        &self,
-        url: &Url,
-    ) -> Result<Arc<TimedCacheEntry<deviantart::OEmbed>>, deviantart::Error> {
-        if let Some(entry) = self.oembed_cache.get_if_fresh(url) {
-            return Ok(entry);
-        }
-
-        let oembed = self.client.get_oembed(url).await?;
-        self.oembed_cache.insert(url.clone(), oembed);
-
-        Ok(self.oembed_cache.get_if_fresh(url).expect("invalid entry"))
-    }
 }
 
 impl CacheStatsProvider for DeviantartClient {
@@ -87,12 +69,6 @@ impl CacheStatsProvider for DeviantartClient {
             "deviantart",
             "search_cache",
             self.search_cache.len() as f32,
-        );
-
-        cache_stats_builder.publish_stat(
-            "deviantart",
-            "oembed_cache",
-            self.oembed_cache.len() as f32,
         );
     }
 }
@@ -126,26 +102,17 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
                 .choose(&mut rand::thread_rng());
 
             if let Some(choice) = choice {
-                info!("Getting deviantart oembed for '{}'", &choice.url);
-                match client.get_oembed(&choice.url).await {
-                    Ok(oembed) => match oembed.data().thumbnail_url.as_ref() {
-                        Some(oembed) => {
-                            loading.send_ok();
-                            msg.channel_id.say(&ctx.http, &oembed).await?;
-                        }
-                        None => {
-                            // This generally isn't reachable as we filter above for only images,
-                            // but there's not really any harm in playing safe
-                            msg.channel_id
-                                .say(&ctx.http, "Failed to get oembed as it is not an image")
-                                .await?;
-                        }
-                    },
-                    Err(e) => {
-                        msg.channel_id
-                            .say(&ctx.http, format!("Failed to get oembed: {}", e))
-                            .await?;
-                    }
+                if let Some(url) = choice
+                    .get_download_url()
+                    .or_else(|| choice.get_fullview_url())
+                {
+                    loading.send_ok();
+                    msg.channel_id.say(&ctx.http, url).await?;
+                } else {
+                    msg.channel_id
+                        .say(&ctx.http, "Missing url. This is probably a bug.")
+                        .await?;
+                    error!("DeviantArt deviantart missing asset url: {:?}", choice);
                 }
             } else {
                 msg.channel_id.say(&ctx.http, "No Results").await?;

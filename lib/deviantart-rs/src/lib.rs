@@ -110,7 +110,10 @@ impl Client {
         deviation: &Deviation,
         mut writer: impl AsyncWrite + Unpin,
     ) -> Result<(), Error> {
-        let url = deviation.get_media_url().ok_or(Error::MissingMediaToken)?;
+        let url = deviation
+            .get_download_url()
+            .or_else(|| deviation.get_media_url())
+            .ok_or(Error::MissingMediaToken)?;
         let mut res = self.client.get(url.as_str()).send().await?;
         let status = res.status();
         if !status.is_success() {
