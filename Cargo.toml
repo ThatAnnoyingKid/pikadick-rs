@@ -29,7 +29,7 @@ reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "b7e79ccd5451b
 reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.4.3"
 rule34 = { path = "./lib/rule34-rs" }
-serde = { version = "1.0.119", features = [ "derive" ] }
+serde = { version = "1.0.124", features = [ "derive" ] }
 serenity = "0.10.2"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "04e43f0670a681129164ac0ef90c898cdbb6695a" } 
 # Use runtime-async-std-rustls to not use 2 versions of tokio
