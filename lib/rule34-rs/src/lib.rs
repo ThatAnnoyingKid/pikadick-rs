@@ -15,7 +15,11 @@ pub use crate::{
 };
 pub use select::document::Document;
 
-/// Utility function to build a search query. Returns none if a tag contains an underscore.
+/// Utility function to build a search query.
+///
+/// # Errors
+/// Returns `None` if a tag contains an underscore.
+///
 pub fn build_search_query<I: Iterator<Item = S>, S: AsRef<str>>(tags: I) -> Option<String> {
     let mut ret = String::new();
     for tag in tags {

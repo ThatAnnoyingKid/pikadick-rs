@@ -1,7 +1,5 @@
-use std::{
-    fs::File,
-    path::PathBuf,
-};
+use std::path::PathBuf;
+use tokio::fs::File;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -36,8 +34,7 @@ pub struct Command {
 
 fn main() -> Result<(), Error> {
     let command: Command = argh::from_env();
-    let mut tokio_rt = tokio::runtime::Builder::new()
-        .threaded_scheduler()
+    let tokio_rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()?;
 
@@ -68,8 +65,8 @@ async fn async_main(command: Command) -> Result<(), Error> {
     println!();
 
     println!("Downloading...");
-    let mut file = File::create(current_dir)?;
-    client.copy_res_to(&post.image_url, &mut file).await?;
+    let mut file = File::create(current_dir).await?;
+    client.get_to(&post.image_url, &mut file).await?;
     println!("Done.");
 
     Ok(())

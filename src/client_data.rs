@@ -1,10 +1,10 @@
 use crate::{
     checks::EnabledCheckData,
     commands::{
+        deviantart::DeviantartClient,
         fml::FmlClient,
         insta_dl::InstaClient,
         nekos::NekosClient,
-        polldaddy::PollDaddyClient,
         quizizz::QuizizzClient,
         r6stats::R6StatsClient,
         r6tracker::R6TrackerClient,
@@ -67,13 +67,13 @@ pub struct ClientData {
     pub r6stats_client: R6StatsClient,
     pub r6tracker_client: R6TrackerClient,
     pub rule34_client: Rule34Client,
-    pub polldaddy_client: PollDaddyClient,
     pub quizizz_client: QuizizzClient,
     pub fml_client: FmlClient,
     pub shift_client: ShiftClient,
     pub reddit_embed_data: RedditEmbedData,
     pub enabled_check_data: EnabledCheckData,
     pub insta_client: InstaClient,
+    pub deviantart_client: DeviantartClient,
 
     pub db: Database,
 
@@ -95,13 +95,13 @@ impl ClientData {
             r6stats_client: Default::default(),
             r6tracker_client: Default::default(),
             rule34_client: Default::default(),
-            polldaddy_client: Default::default(),
             quizizz_client: Default::default(),
             fml_client: FmlClient::new(config.fml().key().to_string()),
             shift_client: ShiftClient::new(),
             reddit_embed_data: Default::default(),
             enabled_check_data: Default::default(),
             insta_client: Default::default(),
+            deviantart_client: Default::default(),
 
             db,
 
@@ -124,6 +124,7 @@ impl ClientData {
             &self.rule34_client,
             &self.shift_client,
             &self.insta_client,
+            &self.deviantart_client,
         ];
 
         for cache_stat_provider in cache_stat_providers {

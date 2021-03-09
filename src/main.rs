@@ -64,7 +64,6 @@ use serenity::{
     prelude::*,
     FutureExt,
 };
-use sqlx::sqlite::SqlitePool;
 use std::{
     collections::HashSet,
     sync::Arc,
@@ -109,11 +108,8 @@ impl EventHandler for Handler {
         let reddit_embed_data = client_data.reddit_embed_data.clone();
         drop(data_lock);
 
-        match reddit_embed_data.process_msg(&ctx, &msg).await {
-            Ok(()) => {}
-            Err(e) => {
-                error!("Failed to generate reddit embed: {:?}", e);
-            }
+        if let Err(e) = reddit_embed_data.process_msg(&ctx, &msg).await {
+            error!("Failed to generate reddit embed: {}", e);
         }
     }
 }
@@ -145,7 +141,6 @@ async fn help(
     r6stats,
     r6tracker,
     rule34,
-    polldaddy,
     system,
     quizizz,
     fml,
@@ -158,7 +153,8 @@ async fn help(
     latency,
     uwuify,
     cache_stats,
-    insta_dl
+    insta_dl,
+    deviantart
 )]
 struct General;
 
@@ -257,7 +253,7 @@ async fn process_dispatch_error_future<'fut>(
                     .channel_id
                     .say(
                         &ctx.http,
-                        "You need to be admin in order to use this command!",
+                        "You need to be admin in order to use this command",
                     )
                     .await
                     .is_ok();
@@ -345,7 +341,8 @@ fn main() {
         return;
     }
 
-    if !data_dir.exists() {
+    let missing_data_dir = !data_dir.exists();
+    if missing_data_dir {
         info!("Data directory does not exist. Creating...");
         if let Err(e) = std::fs::create_dir_all(&data_dir) {
             error!("Failed to create data directory: {}", e);
@@ -390,20 +387,9 @@ fn main() {
     };
 
     tokio_rt.block_on(async {
-        // TODO: Add similar to sql
-        // let mut db_options = rocksdb::Options::default();
-        // db_options.create_if_missing(true);
         info!("Opening database...");
-        // TODO: Does this handle non-unicode paths? Should I care?
-        let db_url = format!("sqlite:{}", db_path.display());
-        let db = match SqlitePool::connect(&db_url).await {
-            Ok(db) => match Database::new(db).await {
-                Ok(db) => db,
-                Err(e) => {
-                    error!("Failed to initalize database: {}", e);
-                    return;
-                }
-            },
+        let db = match Database::new(&db_path, missing_data_dir).await {
+            Ok(db) => db,
             Err(e) => {
                 error!("Failed to open database: {}", e);
                 return;

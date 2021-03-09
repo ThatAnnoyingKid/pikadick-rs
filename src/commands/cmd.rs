@@ -1,5 +1,8 @@
 use crate::{
-    checks::ENABLED_CHECK,
+    checks::{
+        ADMIN_CHECK,
+        ENABLED_CHECK,
+    },
     ClientDataKey,
 };
 use log::error;
@@ -21,7 +24,7 @@ use std::fmt::Write;
 #[min_args(2)]
 #[max_args(2)]
 #[sub_commands(list)]
-#[checks(Enabled)]
+#[checks(Enabled, Admin)]
 pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let guild_id = match msg.guild_id {
         Some(id) => id,
@@ -52,7 +55,7 @@ pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     args.advance();
 
-    let cmd_name = args.current().expect("valid arg");
+    let cmd_name = args.current().expect("missing cmd name");
 
     let is_valid_command = {
         let names = data.get_command_names();

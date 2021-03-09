@@ -11,22 +11,24 @@ required-features = [ "cli" ]
 path = "src/main.rs"
 
 [dependencies]
-reqwest = "0.11.0"
+itoa = "0.4.7"
+reqwest = "0.11.1"
 select = "0.5.0"
-serde_json = "1.0.58"
-serde = { version = "1.0.118", features = [ "derive" ] }
-thiserror = "1.0.22"
-url = { version = "2.1.1", features = [ "serde" ] }
+serde_json = "1.0.64"
+serde = { version = "1.0.124", features = [ "derive" ] }
+thiserror = "1.0.24"
+tokio = { version = "1.2.0" }
+url = { version = "2.2.1", features = [ "serde" ] }
 
 # Optional
 argh = { version = "0.1.4", optional = true }
-tokio = { version = "1.0.1", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.0.1", features = [ "macros" ] }
+tokio = { version = "1.2.0", features = [ "macros" ] }
 
 [features]
 cli = [
     "argh",
-    "tokio/rt-multi-thread"
+    "tokio/rt-multi-thread",
+    "tokio/fs",
 ]
