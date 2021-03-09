@@ -14,7 +14,7 @@ fern = { version = "0.6.0", features = [ "colored" ] }
 fml = { path = "./lib/fml-rs" }
 futures = { version = "0.3.12", default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
-indexmap = "1.6.1"
+indexmap = "1.6.2"
 insta = { path = "./lib/insta-rs" }
 lazy_static = "1.4.0"
 log = "0.4.13"
