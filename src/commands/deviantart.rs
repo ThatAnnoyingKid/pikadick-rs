@@ -105,6 +105,7 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
                 if let Some(url) = choice
                     .get_download_url()
                     .or_else(|| choice.get_fullview_url())
+                    .or_else(|| choice.get_gif_url())
                 {
                     loading.send_ok();
                     msg.channel_id.say(&ctx.http, url).await?;
@@ -112,7 +113,7 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
                     msg.channel_id
                         .say(&ctx.http, "Missing url. This is probably a bug.")
                         .await?;
-                    error!("DeviantArt deviantart missing asset url: {:?}", choice);
+                    error!("DeviantArt deviation missing asset url: {:?}", choice);
                 }
             } else {
                 msg.channel_id.say(&ctx.http, "No Results").await?;

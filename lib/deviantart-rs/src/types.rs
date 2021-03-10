@@ -83,6 +83,15 @@ impl Deviation {
         Some(url)
     }
 
+    /// Get the GIF url for this [`Deviation`].
+    ///
+    pub fn get_gif_url(&self) -> Option<Url> {
+        let mut url = self.media.types.iter().find_map(|c| c.b.clone())?;
+        url.query_pairs_mut()
+            .append_pair("token", self.media.token.get(0)?);
+        Some(url)
+    }
+
     /// Whether this is an image
     ///
     pub fn is_image(&self) -> bool {
@@ -143,7 +152,7 @@ pub struct MediaType {
 
     /// ?
     ///
-    pub r: u64,
+    // pub r: u64,
 
     /// The kind of media
     ///
@@ -157,7 +166,11 @@ pub struct MediaType {
 
     /// ?
     ///
-    pub f: Option<u64>,
+    // pub f: Option<u64>,
+
+    /// ?
+    ///
+    pub b: Option<Url>,
 
     /// Unknown K/Vs
     ///
