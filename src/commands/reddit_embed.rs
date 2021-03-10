@@ -1,8 +1,5 @@
 use crate::{
-    checks::{
-        ADMIN_CHECK,
-        ENABLED_CHECK,
-    },
+    checks::ENABLED_CHECK,
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
@@ -319,7 +316,8 @@ pub enum GetVideoDataError {
 #[example("enable")]
 #[min_args(1)]
 #[max_args(1)]
-#[checks(Admin, Enabled)]
+#[required_permissions("ADMINISTRATOR")]
+#[checks(Enabled)]
 async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();

@@ -1,8 +1,5 @@
 use crate::{
-    checks::{
-        ADMIN_CHECK,
-        ENABLED_CHECK,
-    },
+    checks::ENABLED_CHECK,
     ClientDataKey,
 };
 use log::error;
@@ -24,7 +21,8 @@ use std::fmt::Write;
 #[min_args(2)]
 #[max_args(2)]
 #[sub_commands(list)]
-#[checks(Enabled, Admin)]
+#[checks(Enabled)]
+#[required_permissions("ADMINISTRATOR")]
 pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let guild_id = match msg.guild_id {
         Some(id) => id,
