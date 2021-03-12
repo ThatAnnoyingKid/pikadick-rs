@@ -156,6 +156,7 @@ async fn help(
     insta_dl,
     deviantart,
     urban,
+    xkcd
 )]
 struct General;
 

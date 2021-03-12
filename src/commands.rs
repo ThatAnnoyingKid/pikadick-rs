@@ -17,6 +17,7 @@ pub mod system;
 pub mod urban;
 pub mod uwuify;
 pub mod vaporwave;
+pub mod xkcd;
 pub mod zalgo;
 
 pub use crate::commands::{
@@ -39,5 +40,6 @@ pub use crate::commands::{
     urban::URBAN_COMMAND,
     uwuify::UWUIFY_COMMAND,
     vaporwave::VAPORWAVE_COMMAND,
+    xkcd::XKCD_COMMAND,
     zalgo::ZALGO_COMMAND,
 };

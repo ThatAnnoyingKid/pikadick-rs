@@ -76,6 +76,7 @@ pub struct ClientData {
     pub insta_client: InstaClient,
     pub deviantart_client: DeviantartClient,
     pub urban_client: UrbanClient,
+    pub xkcd_client: xkcd::Client,
 
     pub db: Database,
 
@@ -105,6 +106,7 @@ impl ClientData {
             insta_client: Default::default(),
             deviantart_client: Default::default(),
             urban_client: Default::default(),
+            xkcd_client: Default::default(),
 
             db,
 

@@ -40,6 +40,7 @@ toml = "0.5.8"
 uom = "0.30.0"
 urban-dictionary = { path = "./lib/urban-dictionary-rs" }
 url = "2.2.1"
+xkcd = { path = "lib/xkcd-rs" }
 zalgo = { git = "https://github.com/adumbidiot/zalgo-rs", rev = "a5e0ce60cb37daee1f4b954c5270c30d1034c4af" }
 
 # Optional
@@ -65,4 +66,5 @@ members = [
     "lib/insta-rs",
     "lib/deviantart-rs",
     "lib/urban-dictionary-rs",
+    "lib/xkcd-rs",
 ]
