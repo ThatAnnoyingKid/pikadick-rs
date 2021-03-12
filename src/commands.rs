@@ -14,6 +14,7 @@ pub mod reddit_embed;
 pub mod rule34;
 pub mod shift;
 pub mod system;
+pub mod urban;
 pub mod uwuify;
 pub mod vaporwave;
 pub mod zalgo;
@@ -35,6 +36,7 @@ pub use crate::commands::{
     rule34::RULE34_COMMAND,
     shift::SHIFT_COMMAND,
     system::SYSTEM_COMMAND,
+    urban::URBAN_COMMAND,
     uwuify::UWUIFY_COMMAND,
     vaporwave::VAPORWAVE_COMMAND,
     zalgo::ZALGO_COMMAND,

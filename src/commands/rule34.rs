@@ -68,10 +68,6 @@ impl Rule34Client {
 
         Ok(self.search_cache.get_if_fresh(query))
     }
-
-    pub fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("rule34", "search_cache", self.search_cache.len() as f32);
-    }
 }
 
 impl CacheStatsProvider for Rule34Client {

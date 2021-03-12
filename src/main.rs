@@ -154,7 +154,8 @@ async fn help(
     uwuify,
     cache_stats,
     insta_dl,
-    deviantart
+    deviantart,
+    urban,
 )]
 struct General;
 
