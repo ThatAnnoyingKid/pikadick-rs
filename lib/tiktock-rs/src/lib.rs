@@ -117,10 +117,10 @@ impl Default for Client {
 mod test {
     use super::*;
     use url::Url;
-    
+
     // Only works locally
     #[tokio::test]
-    #[ignore] 
+    #[ignore]
     async fn download() {
         let url = Url::parse("https://www.tiktok.com/@silksheets/video/6916308321234341125")
             .expect("invalid url");
