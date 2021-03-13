@@ -2653,6 +2653,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tiktock"
+version = "0.0.0"
+dependencies = [
+ "argh",
+ "reqwest",
+ "select",
+ "thiserror",
+ "tokio",
+ "url",
+]
+
+[[package]]
 name = "time"
 version = "0.1.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"

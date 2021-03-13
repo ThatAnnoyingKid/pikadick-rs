@@ -67,4 +67,5 @@ members = [
     "lib/deviantart-rs",
     "lib/urban-dictionary-rs",
     "lib/xkcd-rs",
+    "lib/tiktock-rs",
 ]
