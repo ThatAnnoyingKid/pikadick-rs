@@ -27,7 +27,7 @@ r6tracker = { path = "./lib/r6tracker-rs" }
 rand = "0.8.3"
 reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "b7e79ccd5451be21540d54d5cff2cf76749a753a" }
 reddit-tube = { path = "./lib/reddit-tube-rs" }
-regex = "1.4.3"
+regex = "1.4.5"
 rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.124", features = [ "derive" ] }
 serenity = "0.10.4"
