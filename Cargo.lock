@@ -1367,6 +1367,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "minimax"
+version = "0.0.0"
+
+[[package]]
 name = "miniz_oxide"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1668,6 +1672,7 @@ dependencies = [
  "insta",
  "lazy_static",
  "log",
+ "minimax",
  "nekos",
  "openssl",
  "parking_lot",

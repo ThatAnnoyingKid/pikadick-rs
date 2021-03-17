@@ -19,6 +19,7 @@ indexmap = "1.6.2"
 insta = { path = "./lib/insta-rs" }
 lazy_static = "1.4.0"
 log = "0.4.14"
+minimax = { path = "./lib/minimax-rs" }
 nekos = { path = "./lib/nekos-rs" }
 parking_lot = "0.11.1"
 quizizz = { path = "./lib/quizizz-rs" }
@@ -35,7 +36,7 @@ shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "04e
 sqlx = { version = "0.5.1", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.7"
 thiserror = "1.0.24"
-tokio = { version = "1.3.0", features = [ "parking_lot", "sync", "rt-multi-thread", "time", "signal" ] }
+tokio = { version = "1.3.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"
 uom = "0.30.0"
 urban-dictionary = { path = "./lib/urban-dictionary-rs" }
@@ -68,4 +69,5 @@ members = [
     "lib/urban-dictionary-rs",
     "lib/xkcd-rs",
     "lib/tiktock-rs",
+    "lib/minimax-rs"
 ]
