@@ -423,9 +423,9 @@ fn main() {
         };
 
         let client_data = match ClientData::init(client.shard_manager.clone(), config, db).await {
-            Ok(mut c) => {
+            Ok(c) => {
                 // Add all post-init client data changes here
-                c.enabled_check_data.groups.push(&GENERAL_GROUP);
+                c.enabled_check_data.add_groups(&[&GENERAL_GROUP]);
                 c
             }
             Err(e) => {

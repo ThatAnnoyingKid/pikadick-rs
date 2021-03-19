@@ -57,7 +57,6 @@ pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     let is_valid_command = {
         let names = data.get_command_names();
-        let names = names.as_ref().unwrap();
         names.iter().any(|name| name == cmd_name)
     };
 
@@ -118,9 +117,8 @@ pub async fn list(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         let mut res = "Commands:\n".to_string();
 
         let names = data.get_command_names();
-        let names = names.as_ref().unwrap();
 
-        for name in names {
+        for name in names.iter() {
             let state = if disabled_commands.contains(name) {
                 "DISABLED"
             } else {
