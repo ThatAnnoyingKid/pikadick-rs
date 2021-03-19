@@ -156,7 +156,8 @@ async fn help(
     insta_dl,
     deviantart,
     urban,
-    xkcd
+    xkcd,
+    tic_tac_toe
 )]
 struct General;
 
@@ -249,32 +250,20 @@ async fn process_dispatch_error_future<'fut>(
             );
             let _ = msg.channel_id.say(&ctx.http, response_str).await.is_ok();
         }
-        DispatchError::CheckFailed(check_name, reason) => match check_name {
-            "Admin" => {
+        DispatchError::CheckFailed(check_name, reason) => match reason {
+            Reason::User(user_reason_str) => {
+                let _ = msg.channel_id.say(&ctx.http, user_reason_str).await.is_ok();
+            }
+            _ => {
                 let _ = msg
                     .channel_id
                     .say(
                         &ctx.http,
-                        "You need to be admin in order to use this command",
+                        format!("{} check failed: {:#?}", check_name, reason),
                     )
                     .await
                     .is_ok();
             }
-            _ => match reason {
-                Reason::User(user_reason_str) => {
-                    let _ = msg.channel_id.say(&ctx.http, user_reason_str).await.is_ok();
-                }
-                _ => {
-                    let _ = msg
-                        .channel_id
-                        .say(
-                            &ctx.http,
-                            format!("{} check failed: {:#?}", check_name, reason),
-                        )
-                        .await
-                        .is_ok();
-                }
-            },
         },
         e => {
             let _ = msg
@@ -307,7 +296,7 @@ fn main() {
                     error!("Failed to load {}. The path is not a file.", p.display());
                 }
                 _ => {
-                    error!("Failed to load ./config.toml: {}", e);
+                    error!("Failed to load `./config.toml`: {}", e);
                 }
             }
             return;

@@ -116,14 +116,13 @@ where
     }
 
     while let Some(state) = unscored_states.pop_front() {
-        let mut scores = Vec::new();
-
-        for child_state in node_map
+        let children = &node_map
             .get(&state)
             .expect("missing parent node state")
-            .children
-            .iter()
-        {
+            .children;
+        let mut scores = Vec::with_capacity(children.len());
+
+        for child_state in children.iter() {
             scores.push(
                 node_map
                     .get(&child_state)
@@ -134,7 +133,11 @@ where
 
         let score = R::score_state(&state, &scores);
 
-        node_map.get_mut(&state).expect("missing node state").score = score;
+        let mut node = node_map.get_mut(&state).expect("missing node state");
+        if node.score != 0 {
+            panic!("node score already present");
+        }
+        node.score = score;
     }
 
     node_map

@@ -15,6 +15,7 @@ use crate::{
     },
     config::Config,
     database::Database,
+    tic_tac_toe::TicTacToeData,
 };
 use serenity::{
     client::bridge::gateway::ShardManager,
@@ -77,6 +78,7 @@ pub struct ClientData {
     pub deviantart_client: DeviantartClient,
     pub urban_client: UrbanClient,
     pub xkcd_client: xkcd::Client,
+    pub tic_tac_toe_data: TicTacToeData,
 
     pub db: Database,
 
@@ -107,6 +109,7 @@ impl ClientData {
             deviantart_client: Default::default(),
             urban_client: Default::default(),
             xkcd_client: Default::default(),
+            tic_tac_toe_data: Default::default(),
 
             db,
 
