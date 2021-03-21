@@ -53,9 +53,6 @@ skip = [
     # Blocked on rustls, and tungstentite bumping base64 to 0.13.x
     { name = "base64", version = "0.12.3" },
     
-    # Blocked on crossbeam, dashmap, dirs, getrandom, heim, log, mio, net2, nix, openssl, parking_lot, socket2, tempfile, and tracing updating to cfg-if 1.0.x
-    { name = "cfg-if", version = "0.1.10" },
-    
     # Blocked on async-tungstenite updating webpki-roots to 0.21.x
     { name = "webpki-roots", version = "0.20.0" },
     
@@ -69,6 +66,9 @@ skip = [
     
     # Blocked on hashbrown updating ahash to 0.4.7
     { name = "ahash", version = "0.4.7" },
+    
+    # Blocked on hyper and mio updating `socket` to `0.3.0`
+    { name = "socket2", version = "0.3.0" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
