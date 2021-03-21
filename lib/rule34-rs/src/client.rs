@@ -15,8 +15,7 @@ use url::Url;
 
 const DEFAULT_USER_AGENT_STR: &str = "rule34-rs";
 
-/// A rule34 Client
-///
+/// A Rule34 Client
 #[derive(Debug, Clone)]
 pub struct Client {
     client: reqwest::Client,
@@ -24,7 +23,6 @@ pub struct Client {
 
 impl Client {
     /// Make a new [`Client`]
-    ///
     pub fn new() -> Self {
         Client {
             client: reqwest::Client::new(),
@@ -32,7 +30,6 @@ impl Client {
     }
 
     /// Send a GET web request to a `uri` and get the result as a [`String`].
-    ///
     pub async fn get_text(&self, uri: &str) -> RuleResult<String> {
         let res = self
             .client
@@ -48,7 +45,6 @@ impl Client {
 
     /// Send a GET web request to a `uri` and get the result as a [`Document`],
     /// then use the given func to process it.
-    ///
     pub async fn get_doc<F, T>(&self, uri: &str, f: F) -> RuleResult<T>
     where
         F: FnOnce(Document) -> T + Send + 'static,
@@ -64,7 +60,6 @@ impl Client {
     /// Querys are based on "tags".
     /// Tags are seperated by spaces, while words are seperated by underscores.
     /// Characters are automatically encoded.
-    ///
     pub async fn search(&self, query: &str) -> RuleResult<SearchResult> {
         let url = Url::parse_with_params(
             "https://rule34.xxx/index.php?page=post&s=list",
@@ -79,7 +74,6 @@ impl Client {
     }
 
     /// Get a [`Post`] by `id`.
-    ///
     pub async fn get_post(&self, id: u64) -> RuleResult<Post> {
         let mut id_str = itoa::Buffer::new();
         let url = Url::parse_with_params(
@@ -144,7 +138,7 @@ mod test {
         let res = client.search(query).await.unwrap();
         assert!(!res.entries.is_empty());
 
-        let last = res.entries.last().as_ref().unwrap().as_ref().unwrap();
+        let last = res.entries.last().unwrap();
         client.get_post(last.id).await.unwrap()
     }
 
