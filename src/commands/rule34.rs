@@ -11,7 +11,10 @@ use crate::{
     },
     ClientDataKey,
 };
-use log::error;
+use log::{
+    error,
+    info,
+};
 use rand::seq::SliceRandom;
 use rule34::{
     Post,
@@ -113,6 +116,8 @@ async fn rule34(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             return Ok(());
         }
     };
+
+    info!("Searching rule34 for '{}'", query_str);
 
     match client.search(&query).await {
         Ok(search_results) => {
