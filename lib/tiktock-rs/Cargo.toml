@@ -13,14 +13,14 @@ path = "src/main.rs"
 reqwest = { version = "0.11.2", features = [ "cookies" ] } 
 select = "0.5.0"
 thiserror = "1.0.24"
-tokio = "1.3.0"
+tokio = "1.4.0"
 url = "2.2.1"
 
 # Optional
 argh = { version = "0.1.4", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.3.0", features = [ "macros" ] }
+tokio = { version = "1.4.0", features = [ "macros" ] }
 
 [features]
 cli = [ 
