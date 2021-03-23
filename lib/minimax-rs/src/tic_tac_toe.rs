@@ -16,77 +16,11 @@ impl RuleSet for TicTacToeRuleSet {
     }
 
     fn get_team(state: &Self::State) -> Self::Team {
-        let mut x_num = 0;
-        let mut o_num = 0;
-        for team in TicTacToeIter::new(*state).filter_map(std::convert::identity) {
-            match team {
-                TicTacToeTeam::X => x_num += 1,
-                TicTacToeTeam::O => o_num += 1,
-            }
-        }
-
-        if x_num > o_num {
-            TicTacToeTeam::O
-        } else {
-            TicTacToeTeam::X
-        }
+        get_team_turn(*state)
     }
 
     fn get_winner(state: &Self::State) -> Option<Self::Team> {
-        let mut horizontal_iter = TicTacToeIter::new(*state);
-        for _ in 0..3 {
-            let square0 = horizontal_iter.next().expect("missing square 0");
-            let square1 = horizontal_iter.next().expect("missing square 1");
-            let square2 = horizontal_iter.next().expect("missing square 2");
-
-            if let Some(team) = square0 {
-                if square0 == square1 && square1 == square2 {
-                    return Some(team);
-                }
-            }
-        }
-
-        // 0, 3, 6
-        // 1, 4, 7
-        // 2, 5, 8
-        //
-        for i in 0..3 {
-            let mut vertical_iter = TicTacToeIter::new(*state);
-            let square0 = vertical_iter.nth(i).expect("missing square 0");
-            let square1 = vertical_iter.nth(3 - 1).expect("missing square 1");
-            let square2 = vertical_iter.nth(3 - 1).expect("missing square 2");
-
-            if let Some(team) = square0 {
-                if square0 == square1 && square1 == square2 {
-                    return Some(team);
-                }
-            }
-        }
-
-        // 0, 4, 8
-        // 2, 4, 6
-        //
-        // i * 2 = 0, 4 - (i * 2) + (i * 2) = 4, 2 * (4 - (i * 2)) + (i * 2) = 8
-        // i * 2 = 2, 4 - (i * 2) + (i * 2) = 4, 2 * (4 - (i * 2)) + (i * 2) = 6
-        //
-        for i in 0..2 {
-            let mut diagonal_iter = TicTacToeIter::new(*state);
-            let square0 = diagonal_iter.nth(i * 2).expect("missing square 0");
-            let square1 = diagonal_iter
-                .nth(4 - (i * 2) - 1)
-                .expect("missing square 1");
-            let square2 = diagonal_iter
-                .nth(4 - (i * 2) - 1)
-                .expect("missing square 2");
-
-            if let Some(team) = square0 {
-                if square0 == square1 && square1 == square2 {
-                    return Some(team);
-                }
-            }
-        }
-
-        None
+        get_winner(*state)
     }
 
     fn get_child_states(state: &Self::State) -> Vec<Self::State> {
@@ -141,6 +75,82 @@ impl RuleSet for TicTacToeRuleSet {
     }
 }
 
+/// Get whos turn it is
+pub fn get_team_turn(state: u16) -> TicTacToeTeam {
+    let mut x_num = 0;
+    let mut o_num = 0;
+    for team in TicTacToeIter::new(state).filter_map(std::convert::identity) {
+        match team {
+            TicTacToeTeam::X => x_num += 1,
+            TicTacToeTeam::O => o_num += 1,
+        }
+    }
+
+    if x_num > o_num {
+        TicTacToeTeam::O
+    } else {
+        TicTacToeTeam::X
+    }
+}
+
+/// Get the winner, if there is one.
+pub fn get_winner(state: u16) -> Option<TicTacToeTeam> {
+    let mut horizontal_iter = TicTacToeIter::new(state);
+    for _ in 0..3 {
+        let square0 = horizontal_iter.next().expect("missing square 0");
+        let square1 = horizontal_iter.next().expect("missing square 1");
+        let square2 = horizontal_iter.next().expect("missing square 2");
+
+        if let Some(team) = square0 {
+            if square0 == square1 && square1 == square2 {
+                return Some(team);
+            }
+        }
+    }
+
+    // 0, 3, 6
+    // 1, 4, 7
+    // 2, 5, 8
+    //
+    for i in 0..3 {
+        let mut vertical_iter = TicTacToeIter::new(state);
+        let square0 = vertical_iter.nth(i).expect("missing square 0");
+        let square1 = vertical_iter.nth(3 - 1).expect("missing square 1");
+        let square2 = vertical_iter.nth(3 - 1).expect("missing square 2");
+
+        if let Some(team) = square0 {
+            if square0 == square1 && square1 == square2 {
+                return Some(team);
+            }
+        }
+    }
+
+    // 0, 4, 8
+    // 2, 4, 6
+    //
+    // i * 2 = 0, 4 - (i * 2) + (i * 2) = 4, 2 * (4 - (i * 2)) + (i * 2) = 8
+    // i * 2 = 2, 4 - (i * 2) + (i * 2) = 4, 2 * (4 - (i * 2)) + (i * 2) = 6
+    //
+    for i in 0..2 {
+        let mut diagonal_iter = TicTacToeIter::new(state);
+        let square0 = diagonal_iter.nth(i * 2).expect("missing square 0");
+        let square1 = diagonal_iter
+            .nth(4 - (i * 2) - 1)
+            .expect("missing square 1");
+        let square2 = diagonal_iter
+            .nth(4 - (i * 2) - 1)
+            .expect("missing square 2");
+
+        if let Some(team) = square0 {
+            if square0 == square1 && square1 == square2 {
+                return Some(team);
+            }
+        }
+    }
+
+    None
+}
+
 /// An `Iterator` over a Tic-Tac-Toe board.
 ///
 /// Using this is the easiest way to interact with tic-tac-toe states.
@@ -164,8 +174,6 @@ impl RuleSet for TicTacToeRuleSet {
 /// t == 0 is empty.
 /// t == 1 is X.
 /// t == 2 is O.
-///
-///
 #[derive(Debug)]
 pub struct TicTacToeIter {
     state: u16,
@@ -306,4 +314,9 @@ impl std::str::FromStr for TicTacToeTeam {
             s.chars().next().expect("missing char"),
         )?)
     }
+}
+
+/// Check if a game state is a tie
+pub fn is_tie(state: u16) -> bool {
+    TicTacToeIter::new(state).all(|s| s.is_some())
 }
