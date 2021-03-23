@@ -97,6 +97,10 @@ deny = [
     
     # Appears to be moving towards integrating rio more tightly for io_uring support
     { name = "sled", version = "*" },
+    
+    # The general idea seems unsound, and the current version does contain UB.
+    # https://github.com/Kimundi/owning-ref-rs/issues/71
+    { name = "owning_ref", version = "*" },
 ]
 
 [sources]
