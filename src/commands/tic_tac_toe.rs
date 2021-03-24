@@ -211,6 +211,13 @@ impl GamePlayer {
     pub fn is_computer(self) -> bool {
         matches!(self, Self::Computer)
     }
+
+    /// Get the "mention" for a user.
+    ///
+    /// Computer is "computer" and users are mentioned.
+    pub fn mention(self) -> GamePlayerMention {
+        GamePlayerMention(self)
+    }
 }
 
 impl FromStr for GamePlayer {
@@ -224,6 +231,18 @@ impl FromStr for GamePlayer {
         parse_username(data)
             .map(|id| Self::User(UserId(id)))
             .ok_or(InvalidGamePlayer)
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct GamePlayerMention(GamePlayer);
+
+impl std::fmt::Display for GamePlayerMention {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.0 {
+            GamePlayer::Computer => "computer".fmt(f),
+            GamePlayer::User(user_id) => user_id.mention().fmt(f),
+        }
     }
 }
 
@@ -289,95 +308,122 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         }
     };
 
-    let (team_turn, player_turn, move_successful, new_state, maybe_winner, opponent, ai_state) = {
+    async fn process_tic_tac_toe(
+        tic_tac_toe_data: TicTacToeData,
+        game_state: ShareGameState,
+        guild_id: Option<GuildId>,
+        author_id: UserId,
+        move_number: u8,
+    ) -> String {
         let mut game_state = game_state.lock();
-        let team_turn = game_state.get_team_turn();
         let player_turn = game_state.get_player_turn();
+
+        if GamePlayer::User(author_id) != player_turn {
+            return "It is not your turn. Please wait for your opponent to finish.".to_string();
+        }
+
+        let team_turn = game_state.get_team_turn();
         let move_successful = game_state.try_move(team_turn, move_number);
 
-        // Post-move state
-        let new_state = game_state.state;
-        let maybe_winner = minimax::tic_tac_toe::get_winner(new_state);
+        if !move_successful {
+            return format!(
+                "Invalid move. Please choose one of the available squares.\n{}",
+                render_board_basic(game_state.state)
+            );
+        }
+
+        if let Some(winner) = minimax::tic_tac_toe::get_winner(game_state.state) {
+            let game = tic_tac_toe_data
+                .remove_game_state(guild_id, author_id)
+                .expect("failed to delete tic-tac-toe game");
+            let game = game.lock();
+
+            let winner_player = game.get_player(winner);
+            let loser_player = game.get_player(winner.inverse());
+
+            return format!(
+                "{} has triumphed over {} in Tic-Tac-Toe",
+                winner_player.mention(),
+                loser_player.mention(),
+            );
+        }
+
+        if minimax::tic_tac_toe::is_tie(game_state.state) {
+            let game = tic_tac_toe_data
+                .remove_game_state(guild_id, author_id)
+                .expect("failed to delete tic-tac-toe game");
+            let game = game.lock();
+
+            return format!(
+                "{} has tied with {} in Tic-Tac-Toe.",
+                game.get_player(TicTacToeTeam::X).mention(),
+                game.get_player(TicTacToeTeam::O).mention()
+            );
+        }
+
         let opponent = game_state.get_player_turn();
+        match opponent {
+            GamePlayer::Computer => {
+                let ai_state = *tic_tac_toe_data
+                    .ai
+                    .get_move(&game_state.state, &team_turn.inverse())
+                    .expect("invalid game state lookup");
 
-        // AI Move
-        let ai_state = if move_successful && opponent.is_computer() {
-            let ai_state = *tic_tac_toe_data
-                .ai
-                .get_move(&game_state.state, &team_turn.inverse())
-                .expect("invalid game state lookup");
-            game_state.state = ai_state;
+                game_state.state = ai_state;
 
-            Some(ai_state)
-        } else {
-            None
-        };
-        let maybe_ai_winner = ai_state.map(minimax::tic_tac_toe::get_winner);
+                if let Some(winner) = minimax::tic_tac_toe::get_winner(game_state.state) {
+                    let game = tic_tac_toe_data
+                        .remove_game_state(guild_id, author_id)
+                        .expect("failed to delete tic-tac-toe game");
+                    let game = game.lock();
 
-        (
-            team_turn,
-            player_turn,
-            move_successful,
-            new_state,
-            maybe_winner,
-            opponent,
-            ai_state,
-        )
-    };
+                    let winner_player = game.get_player(winner);
+                    let loser_player = game.get_player(winner.inverse());
 
-    if GamePlayer::User(author_id) != player_turn {
-        let response = "It is not your turn. Please wait for your opponent to finish.".to_string();
-        msg.channel_id.say(&ctx.http, response).await?;
-        return Ok(());
-    }
+                    return format!(
+                        "{} has triumphed over {} in Tic-Tac-Toe",
+                        winner_player.mention(),
+                        loser_player.mention(),
+                    );
+                }
 
-    if !move_successful {
-        let response = format!(
-            "Invalid move. Please choose one of the available squares.\n{}",
-            render_board_basic(new_state)
-        );
-        msg.channel_id.say(&ctx.http, response).await?;
-        return Ok(());
-    }
+                if minimax::tic_tac_toe::is_tie(game_state.state) {
+                    let game = tic_tac_toe_data
+                        .remove_game_state(guild_id, author_id)
+                        .expect("failed to delete tic-tac-toe game");
+                    let game = game.lock();
 
-    if let Some(winner) = maybe_winner {
-        let game = tic_tac_toe_data
-            .remove_game_state(guild_id, author_id)
-            .expect("failed to delete tic-tac-toe game");
-        let game = game.lock();
+                    return format!(
+                        "{} has tied with {} in Tic-Tac-Toe.",
+                        game.get_player(TicTacToeTeam::X).mention(),
+                        game.get_player(TicTacToeTeam::O).mention()
+                    );
+                }
 
-        let winner_player = game.get_player(winner);
-        let loser_player = game.get_player(winner.inverse());
-
-        todo!("Announce Winner and loser");
-    }
-
-    if minimax::tic_tac_toe::is_tie(new_state) {
-        let game = tic_tac_toe_data
-            .remove_game_state(guild_id, author_id)
-            .expect("failed to delete tic-tac-toe game");
-
-        todo!("Announce both players");
-        return Ok(());
-    }
-
-    let response = match opponent {
-        GamePlayer::User(user_id) => {
-            format!(
-                "Your turn {}\n{}",
-                user_id.mention(),
-                render_board_basic(new_state)
-            )
-        }
-        GamePlayer::Computer => {
-            if let Some(winner) = ai_state.and_then(minimax::tic_tac_toe::get_winner) {
-                todo!("delete game. Announce Winner.");
+                format!(
+                    "Your turn {}\n{}",
+                    author_id.mention(),
+                    render_board_basic(game_state.state)
+                )
             }
-
-            todo!("tiecheck. ping author.");
+            GamePlayer::User(user_id) => {
+                format!(
+                    "Your turn {}\n{}",
+                    user_id.mention(),
+                    render_board_basic(game_state.state)
+                )
+            }
         }
-    };
+    }
 
+    let response = process_tic_tac_toe(
+        tic_tac_toe_data,
+        game_state,
+        guild_id,
+        author_id,
+        move_number,
+    )
+    .await;
     msg.channel_id.say(&ctx.http, response).await?;
 
     Ok(())
