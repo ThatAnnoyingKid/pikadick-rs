@@ -290,7 +290,7 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
     let move_number = match args.single::<u8>() {
         Ok(num) => num,
         Err(e) => {
-            let response = format!("That move is not a number: {}\nUse `tic-tac-toe play <compuer OR @user> <X or O> to start a game.`", e);
+            let response = format!("That move is not a number: {}\nUse `tic-tac-toe play <computer/@user> <X/O> to start a game.`", e);
             msg.channel_id.say(&ctx.http, response).await?;
             return Ok(());
         }
@@ -302,7 +302,8 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
     let game_state = match tic_tac_toe_data.get_game_state(&(guild_id, author_id)) {
         Some(game_state) => game_state,
         None => {
-            let response = "No games in progress. Make one with `tic-tac-toe play <compuer OR @user> <X or O>`.";
+            let response =
+                "No games in progress. Make one with `tic-tac-toe play <computer/@user> <X/O>`.";
             msg.channel_id.say(&ctx.http, response).await?;
             return Ok(());
         }
@@ -333,13 +334,12 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         }
 
         if let Some(winner) = minimax::tic_tac_toe::get_winner(game_state.state) {
-            let game = tic_tac_toe_data
+            let _game = tic_tac_toe_data
                 .remove_game_state(guild_id, author_id)
                 .expect("failed to delete tic-tac-toe game");
-            let game = game.lock();
 
-            let winner_player = game.get_player(winner);
-            let loser_player = game.get_player(winner.inverse());
+            let winner_player = game_state.get_player(winner);
+            let loser_player = game_state.get_player(winner.inverse());
 
             return format!(
                 "{} has triumphed over {} in Tic-Tac-Toe",
@@ -349,15 +349,14 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         }
 
         if minimax::tic_tac_toe::is_tie(game_state.state) {
-            let game = tic_tac_toe_data
+            let _game = tic_tac_toe_data
                 .remove_game_state(guild_id, author_id)
                 .expect("failed to delete tic-tac-toe game");
-            let game = game.lock();
 
             return format!(
                 "{} has tied with {} in Tic-Tac-Toe.",
-                game.get_player(TicTacToeTeam::X).mention(),
-                game.get_player(TicTacToeTeam::O).mention()
+                game_state.get_player(TicTacToeTeam::X).mention(),
+                game_state.get_player(TicTacToeTeam::O).mention()
             );
         }
 
@@ -372,13 +371,12 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 game_state.state = ai_state;
 
                 if let Some(winner) = minimax::tic_tac_toe::get_winner(game_state.state) {
-                    let game = tic_tac_toe_data
+                    let _game = tic_tac_toe_data
                         .remove_game_state(guild_id, author_id)
                         .expect("failed to delete tic-tac-toe game");
-                    let game = game.lock();
 
-                    let winner_player = game.get_player(winner);
-                    let loser_player = game.get_player(winner.inverse());
+                    let winner_player = game_state.get_player(winner);
+                    let loser_player = game_state.get_player(winner.inverse());
 
                     return format!(
                         "{} has triumphed over {} in Tic-Tac-Toe",
@@ -388,15 +386,14 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 }
 
                 if minimax::tic_tac_toe::is_tie(game_state.state) {
-                    let game = tic_tac_toe_data
+                    let _game = tic_tac_toe_data
                         .remove_game_state(guild_id, author_id)
                         .expect("failed to delete tic-tac-toe game");
-                    let game = game.lock();
 
                     return format!(
                         "{} has tied with {} in Tic-Tac-Toe.",
-                        game.get_player(TicTacToeTeam::X).mention(),
-                        game.get_player(TicTacToeTeam::O).mention()
+                        game_state.get_player(TicTacToeTeam::X).mention(),
+                        game_state.get_player(TicTacToeTeam::O).mention()
                     );
                 }
 
