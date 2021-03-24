@@ -58,6 +58,9 @@ impl TicTacToeData {
     }
 
     /// Remove a [`GameState`] by key. Returns the [`ShareGameState`] if successful.
+    ///
+    /// # Deadlocks
+    /// This function deadlocks if the game is alreadly locked by the same thread.
     pub fn remove_game_state(
         &self,
         guild_id: Option<GuildId>,
@@ -287,6 +290,9 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
     let tic_tac_toe_data = client_data.tic_tac_toe_data.clone();
     drop(data_lock);
 
+    let guild_id = msg.guild_id;
+    let author_id = msg.author.id;
+
     let move_number = match args.single::<u8>() {
         Ok(num) => num,
         Err(e) => {
@@ -296,8 +302,14 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         }
     };
 
-    let guild_id = msg.guild_id;
-    let author_id = msg.author.id;
+    if move_number > 8 {
+        let response = format!(
+            "Your move number must be between 0 and 8 {}",
+            author_id.mention()
+        );
+        msg.channel_id.say(&ctx.http, response).await?;
+        return Ok(());
+    }
 
     let game_state = match tic_tac_toe_data.get_game_state(&(guild_id, author_id)) {
         Some(game_state) => game_state,
@@ -328,35 +340,42 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
 
         if !move_successful {
             return format!(
-                "Invalid move. Please choose one of the available squares.\n{}",
+                "Invalid move {}. Please choose one of the available squares.\n{}",
+                author_id.mention(),
                 render_board_basic(game_state.state)
             );
         }
 
         if let Some(winner) = minimax::tic_tac_toe::get_winner(game_state.state) {
-            let _game = tic_tac_toe_data
+            drop(game_state);
+            let game = tic_tac_toe_data
                 .remove_game_state(guild_id, author_id)
                 .expect("failed to delete tic-tac-toe game");
+            let game_state = game.lock();
 
             let winner_player = game_state.get_player(winner);
             let loser_player = game_state.get_player(winner.inverse());
 
             return format!(
-                "{} has triumphed over {} in Tic-Tac-Toe",
+                "{} has triumphed over {} in Tic-Tac-Toe\n{}",
                 winner_player.mention(),
                 loser_player.mention(),
+                render_board_basic(game_state.state),
             );
         }
 
         if minimax::tic_tac_toe::is_tie(game_state.state) {
-            let _game = tic_tac_toe_data
+            drop(game_state);
+            let game = tic_tac_toe_data
                 .remove_game_state(guild_id, author_id)
                 .expect("failed to delete tic-tac-toe game");
+            let game_state = game.lock();
 
             return format!(
-                "{} has tied with {} in Tic-Tac-Toe.",
+                "{} has tied with {} in Tic-Tac-Toe\n{}",
                 game_state.get_player(TicTacToeTeam::X).mention(),
-                game_state.get_player(TicTacToeTeam::O).mention()
+                game_state.get_player(TicTacToeTeam::O).mention(),
+                render_board_basic(game_state.state)
             );
         }
 
@@ -371,29 +390,35 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 game_state.state = ai_state;
 
                 if let Some(winner) = minimax::tic_tac_toe::get_winner(game_state.state) {
-                    let _game = tic_tac_toe_data
+                    drop(game_state);
+                    let game = tic_tac_toe_data
                         .remove_game_state(guild_id, author_id)
                         .expect("failed to delete tic-tac-toe game");
+                    let game_state = game.lock();
 
                     let winner_player = game_state.get_player(winner);
                     let loser_player = game_state.get_player(winner.inverse());
 
                     return format!(
-                        "{} has triumphed over {} in Tic-Tac-Toe",
+                        "{} has triumphed over {} in Tic-Tac-Toe\n{}",
                         winner_player.mention(),
                         loser_player.mention(),
+                        render_board_basic(game_state.state),
                     );
                 }
 
                 if minimax::tic_tac_toe::is_tie(game_state.state) {
-                    let _game = tic_tac_toe_data
+                    drop(game_state);
+                    let game = tic_tac_toe_data
                         .remove_game_state(guild_id, author_id)
                         .expect("failed to delete tic-tac-toe game");
+                    let game_state = game.lock();
 
                     return format!(
-                        "{} has tied with {} in Tic-Tac-Toe.",
+                        "{} has tied with {} in Tic-Tac-Toe\n{}",
                         game_state.get_player(TicTacToeTeam::X).mention(),
-                        game_state.get_player(TicTacToeTeam::O).mention()
+                        game_state.get_player(TicTacToeTeam::O).mention(),
+                        render_board_basic(game_state.state),
                     );
                 }
 
@@ -501,10 +526,11 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
             }
 
             let game = Arc::new(Mutex::new(raw_game));
-
             game_states.insert((msg.guild_id, msg.author.id), game.clone());
+            let game_lock = game.lock();
+
             if let GamePlayer::User(opponent_id) = opponent {
-                game_states.insert((guild_id, author_id), game);
+                game_states.insert((guild_id, author_id), game.clone());
 
                 // Cannot be a computer here as there are at least 2 human players at this point
                 let user = if GamePlayer::User(author_id) == x_player {
@@ -517,7 +543,7 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
                 format!(
                     "Game created! Your turn {}\n{}",
                     user.mention(),
-                    render_board_basic(initial_state)
+                    render_board_basic(game_lock.state)
                 )
             } else {
                 // The opponent is not a user, so it is a computer.
@@ -527,7 +553,7 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
                 format!(
                     "Game created! Your turn {}\n{}",
                     author_id.mention(),
-                    render_board_basic(initial_state)
+                    render_board_basic(game_lock.state)
                 )
             }
         }

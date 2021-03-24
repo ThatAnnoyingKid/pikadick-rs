@@ -11,6 +11,7 @@ use std::{
         HashMap,
         VecDeque,
     },
+    fmt::Debug,
     hash::Hash,
     marker::PhantomData,
 };
@@ -20,11 +21,11 @@ use std::{
 pub trait RuleSet {
     /// The game state
     ///
-    type State: Eq + Hash + Clone;
+    type State: Debug + Eq + Hash + Clone;
 
     /// The game teams
     ///
-    type Team: Eq + Hash + Clone;
+    type Team: Debug + Eq + Hash + Clone;
 
     /// Get the starting node for minimax-ing.
     ///
@@ -115,7 +116,8 @@ where
         }
     }
 
-    while let Some(state) = unscored_states.pop_front() {
+    // TODO: This is too reliant on order. Make algo work from winning nodes up.
+    while let Some(state) = unscored_states.pop_back() {
         let children = &node_map
             .get(&state)
             .expect("missing parent node state")
