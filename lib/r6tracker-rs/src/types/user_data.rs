@@ -107,6 +107,7 @@ impl<T> ApiResponse<T> {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 /// An R6 Rank.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Rank {
