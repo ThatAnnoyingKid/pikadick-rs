@@ -56,7 +56,7 @@ mod tests {
     #[tokio::test]
     async fn it_works() {
         let client = Client::new();
-        let results = client.search("sun").await.unwrap();
+        let results = client.search("sun").await.expect("failed to search");
         // dbg!(&results);
         let first = &results.deviations[0];
         dbg!(first);

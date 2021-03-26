@@ -30,14 +30,10 @@ impl Client {
     ///
     pub async fn search(&self, query: &str) -> Result<SearchResults, Error> {
         let url = Url::parse_with_params(
-            "https://www.deviantart.com/_napi/da-browse/api/faceted",
+            "https://www.deviantart.com/_napi/da-browse/api/networkbar/search/deviations",
             &[
-                ("init", "false"),
-                ("page_type", "deviations"),
-                ("order", "popular-all-time"),
-                ("include_scraps", "true"),
                 ("q", query),
-                ("offset", "0"),
+                ("page", "1"),
             ],
         )?;
         let res = self.client.get(url.as_str()).send().await?;
