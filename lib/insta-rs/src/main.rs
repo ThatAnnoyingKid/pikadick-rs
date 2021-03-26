@@ -25,13 +25,49 @@ fn main() {
 async fn async_main(options: CommandOptions) {
     let client = insta::Client::new();
 
-    let post = match client.get_post(&options.url).await {
-        Ok(post) => post,
+    let object = match client.get_post(&options.url).await {
+        Ok(object) => object,
         Err(e) => {
             eprintln!("Failed to get post: {}", e);
             return;
         }
     };
 
-    dbg!(post);
+    if object.is_video() {
+        let video_url = match object.video_url.as_ref() {
+            Some(url) => url,
+            None => {
+                eprintln!("Missing video url");
+                return;
+            }
+        };
+
+        let res = match client.client.get(video_url.as_str()).send().await {
+            Ok(res) => res,
+            Err(e) => {
+                eprintln!("Failed to send request: {}", e);
+                return;
+            }
+        };
+        let status = res.status();
+        if !status.is_success() {
+            eprintln!("Invalid HTTP Status Code {}", status);
+            return;
+        }
+
+        let data = match res.bytes().await {
+            Ok(data) => data,
+            Err(e) => {
+                eprintln!("Failed to download request body: {}", e);
+                return;
+            }
+        };
+
+        if let Err(e) = std::fs::write("video.mp4", data) {
+            eprintln!("Failed to save video: {}", e);
+        }
+    } else {
+        eprintln!("Unsupported object type");
+        dbg!(object);
+    }
 }

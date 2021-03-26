@@ -2,7 +2,7 @@ pub use open_graph::{
     self,
     OpenGraphObject,
 };
-use select::document::Document;
+pub use select::document::Document;
 
 /// Result type
 pub type InstaResult<T> = Result<T, InstaError>;
@@ -30,7 +30,10 @@ pub enum InstaError {
 /// A Client
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client.
+    ///
+    /// Useful only for piggybacking requests off of. It's generally a bad idea to touch it.
+    pub client: reqwest::Client,
 }
 
 impl Client {
