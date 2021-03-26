@@ -103,7 +103,6 @@ impl OpenGraphObject {
                 // TODO: Fill fields though testing
             }
             _ => {
-                dbg!(kind);
                 return Err(FromDocError::Unimplemented);
             }
         }
