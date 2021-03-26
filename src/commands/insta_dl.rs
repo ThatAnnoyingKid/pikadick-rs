@@ -26,7 +26,7 @@ use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct InstaClient {
     client: insta::Client,
-    cache: TimedCache<String, insta::Post>,
+    cache: TimedCache<String, insta::OpenGraphObject>,
 }
 
 impl InstaClient {
@@ -42,7 +42,7 @@ impl InstaClient {
     pub async fn get_post(
         &self,
         url: &str,
-    ) -> Result<Arc<TimedCacheEntry<insta::Post>>, insta::InstaError> {
+    ) -> Result<Arc<TimedCacheEntry<insta::OpenGraphObject>>, insta::InstaError> {
         if let Some(entry) = self.cache.get_if_fresh(url) {
             return Ok(entry);
         }
@@ -50,7 +50,10 @@ impl InstaClient {
         let post = self.client.get_post(url).await?;
         self.cache.insert(String::from(url), post);
 
-        Ok(self.cache.get_if_fresh(url).expect("Valid insta post data"))
+        Ok(self
+            .cache
+            .get_if_fresh(url)
+            .expect("invalid insta post data"))
     }
 }
 
@@ -86,11 +89,9 @@ async fn insta_dl(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     match client.get_post(url).await {
         Ok(post) => {
-            if let Some(video_data) = &post.data().video_data {
+            if let Some(video_url) = post.data().video_url.as_ref() {
                 loading.send_ok();
-                msg.channel_id
-                    .say(&ctx.http, video_data.video_url.as_str())
-                    .await?;
+                msg.channel_id.say(&ctx.http, video_url).await?;
             } else {
                 msg.channel_id
                     .say(&ctx.http, "The url is not a valid video post")

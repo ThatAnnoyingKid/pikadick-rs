@@ -9,51 +9,41 @@ use select::{
 use url::Url;
 
 /// An error that may occur while parsing an [`OpenGraphObject`].
-///
 #[derive(Debug, thiserror::Error)]
 pub enum FromDocError {
     /// Missing title field
-    ///
     #[error("missing title")]
     MissingTitle,
 
     /// Missing Type field
-    ///
     #[error("missing type")]
     MissingType,
 
     /// Missing Image field
-    ///
     #[error("missing image")]
     MissingImage,
 
     /// Invalid Image field
-    ///
     #[error("invalid image: {0}")]
     InvalidImage(url::ParseError),
 
     /// Missing Url field
-    ///
     #[error("missing url")]
     MissingUrl,
 
     /// Invalid Image field
-    ///
     #[error("invalid url: {0}")]
     InvalidUrl(url::ParseError),
 
     /// Invalid Audio Url
-    ///
     #[error("invalid audio url: {0}")]
     InvalidAudioUrl(url::ParseError),
 
     /// Invalid Video Url
-    ///
     #[error("invalid video url: {0}")]
     InvalidVideoUrl(url::ParseError),
 
     /// Ran into unimplemented functionality
-    ///
     #[error("unimplemented")]
     Unimplemented,
 }
@@ -61,41 +51,32 @@ pub enum FromDocError {
 /// An OpenGraphObject.
 ///
 /// See https://ogp.me/.
-///
 #[derive(Debug)]
 pub struct OpenGraphObject {
     /// Object Title
-    ///
     pub title: String,
 
     /// Object Type/Kind
-    ///
     pub kind: String,
 
     /// Object Image Url
-    ///
     pub image: Url,
 
     /// Object Permanent Url
-    ///
     pub url: Url,
 
     /// Audio Url
-    ///
     pub audio_url: Option<Url>,
 
     /// Object Description
-    ///
     pub description: Option<String>,
 
     /// Video Url
-    ///
     pub video_url: Option<Url>,
 }
 
 impl OpenGraphObject {
     /// Make a new [`OpenGraphObject`] from a [`Document`].
-    ///
     pub fn from_doc(doc: &Document) -> Result<Self, FromDocError> {
         let title = lookup_meta_kv(doc, "og:title")
             .ok_or(FromDocError::MissingTitle)?
@@ -117,7 +98,12 @@ impl OpenGraphObject {
             "video.episode" => {
                 return Err(FromDocError::Unimplemented);
             }
+            "video" => {
+                // Not in spec, but Instagram uses it.
+                // TODO: Fill fields though testing
+            }
             _ => {
+                dbg!(kind);
                 return Err(FromDocError::Unimplemented);
             }
         }
@@ -153,12 +139,30 @@ impl OpenGraphObject {
             description,
         })
     }
+
+    /// Check whether this is a video
+    pub fn is_video(&self) -> bool {
+        self.kind.split('.').next() == Some("video")
+    }
 }
 
 /// Lookup the value for a `<meta property = {name} content = {value} />`
-///
 fn lookup_meta_kv<'a>(doc: &'a Document, name: &str) -> Option<&'a str> {
     doc.find(And(Name("meta"), Attr("property", name)))
         .next()?
         .attr("content")
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const VIDEO_OBJ: &str = include_str!("../test_data/insta_video.html");
+
+    #[test]
+    fn parse_video_obj() {
+        let doc = Document::from(VIDEO_OBJ);
+        let obj = OpenGraphObject::from_doc(&doc).expect("invalid open graph object");
+        dbg!(obj);
+    }
 }

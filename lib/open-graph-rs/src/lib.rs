@@ -1,3 +1,5 @@
+//! https://ogp.me/
+
 /// [`OpenGraphObject`]
 ///
 pub mod open_graph_object;

@@ -6,5 +6,5 @@ edition = "2018"
 
 [dependencies]
 select = "0.5.0"
-url = "2.2.1"
 thiserror = "1.0.24"
+url = "2.2.1"
