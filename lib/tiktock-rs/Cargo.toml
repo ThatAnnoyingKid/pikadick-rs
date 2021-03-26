@@ -10,6 +10,7 @@ required-features = [ "cli" ]
 path = "src/main.rs"
 
 [dependencies]
+open-graph = { path = "../open-graph-rs" }
 reqwest = { version = "0.11.2", features = [ "cookies" ] } 
 select = "0.5.0"
 thiserror = "1.0.24"

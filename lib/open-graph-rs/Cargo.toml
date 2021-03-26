@@ -1,0 +1,10 @@
+[package]
+name = "open-graph"
+version = "0.0.0"
+authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
+edition = "2018"
+
+[dependencies]
+select = "0.5.0"
+url = "2.2.1"
+thiserror = "1.0.24"

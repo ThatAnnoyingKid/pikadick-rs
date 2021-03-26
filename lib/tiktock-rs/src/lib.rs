@@ -2,9 +2,10 @@
 ///
 mod types;
 
-pub use crate::types::{
+pub use crate::types::PostUrl;
+pub use open_graph::{
+    self,
     OpenGraphObject,
-    PostUrl,
 };
 use select::document::Document;
 use tokio::io::AsyncWriteExt;
@@ -31,7 +32,7 @@ pub enum Error {
     /// Failed to parse an [`OpenGraphObject`].
     ///
     #[error("{0}")]
-    InvalidOpenGraphObject(#[from] crate::types::open_graph_object::FromDocError),
+    InvalidOpenGraphObject(#[from] open_graph::open_graph_object::FromDocError),
 
     /// Io Error
     ///
