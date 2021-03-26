@@ -1,3 +1,5 @@
+use std::path::Path;
+
 #[derive(argh::FromArgs)]
 #[argh(description = "a tool to download posts from instagram")]
 struct CommandOptions {
@@ -20,6 +22,7 @@ fn main() {
     };
 
     tokio_rt.block_on(async_main(options));
+    println!("Done");
 }
 
 async fn async_main(options: CommandOptions) {
@@ -63,11 +66,21 @@ async fn async_main(options: CommandOptions) {
             }
         };
 
-        if let Err(e) = std::fs::write("video.mp4", data) {
+        let extension = match Path::new(video_url.path()).extension() {
+            Some(extension) => extension,
+            None => {
+                eprintln!("Unknown extention, using 'mp4'");
+                "mp4".as_ref()
+            }
+        };
+
+        if let Err(e) = std::fs::write(format!("video.{}", extension.to_string_lossy()), data) {
             eprintln!("Failed to save video: {}", e);
         }
     } else {
         eprintln!("Unsupported object type");
         dbg!(object);
+
+        return;
     }
 }
