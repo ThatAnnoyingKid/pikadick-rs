@@ -67,9 +67,6 @@ skip = [
     # Blocked on hashbrown updating ahash to 0.4.7
     { name = "ahash", version = "0.4.7" },
     
-    # Blocked on hyper and mio updating `socket` to `0.3.0`
-    { name = "socket2", version = "0.3.0" },
-    
     # Blocked on png updating `miniz_oxide` to `0.4.x`
     { name = "miniz_oxide", version = "0.3.7" },
 ]
