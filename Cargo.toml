@@ -76,17 +76,22 @@ members = [
     "lib/open-graph-rs",
 ]
 
+# To make image drawing times sane
 [profile.dev.package.tiny-skia]
 opt-level = 3
 
+# To make image encoding times sane
 [profile.dev.package.png]
 opt-level = 3
 
+# To make image encoding times sane
 [profile.dev.package.miniz_oxide]
 opt-level = 3
 
+# To make image encoding times sane
 [profile.dev.package.crc32fast]
 opt-level = 3
 
+# To make image encoding times sane
 [profile.dev.package.deflate]
 opt-level = 3

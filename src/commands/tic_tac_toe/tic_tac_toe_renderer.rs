@@ -5,17 +5,22 @@ use std::{
     sync::Arc,
     time::Instant,
 };
+use tokio::sync::Semaphore;
 
 const FONT_BYTES: &[u8] = include_bytes!("../../../assets/Roboto/Roboto-Thin.ttf");
 
 const RENDERED_SIZE: u16 = 300;
 const SQUARE_SIZE: u16 = RENDERED_SIZE / 3;
 
+const MAX_PARALLEL_RENDER_LIMIT: usize = 4;
+
 /// Render a Tic-Tac-Toe board
 #[derive(Debug, Clone)]
 pub(crate) struct TicTacToeRenderer {
     background_pixmap: Arc<tiny_skia::Pixmap>,
     number_paths: Arc<Vec<tiny_skia::Path>>,
+
+    render_semaphore: Arc<Semaphore>,
 }
 
 #[allow(clippy::new_without_default)]
@@ -76,6 +81,7 @@ impl TicTacToeRenderer {
         Ok(Self {
             background_pixmap: Arc::new(background_pixmap),
             number_paths: Arc::new(number_paths),
+            render_semaphore: Arc::new(Semaphore::new(MAX_PARALLEL_RENDER_LIMIT)),
         })
     }
 
@@ -89,7 +95,7 @@ impl TicTacToeRenderer {
         paint.anti_alias = true;
         for (i, team) in TicTacToeIter::new(state).enumerate() {
             if let Some(_team) = team {
-                // Place Team
+                // TODO: Place Team
             } else {
                 let path = self.number_paths[i].clone();
                 let bounds = path.bounds();
@@ -132,6 +138,7 @@ impl TicTacToeRenderer {
     /// Render a Tic-Tac-Toe board on a threadpool
     pub(crate) async fn render_board_async(&self, state: u16) -> anyhow::Result<Vec<u8>> {
         let self_clone = self.clone();
+        let _permit = self.render_semaphore.acquire().await?;
         tokio::task::spawn_blocking(move || self_clone.render_board(state)).await?
     }
 }
