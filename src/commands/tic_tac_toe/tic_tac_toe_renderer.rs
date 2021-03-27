@@ -172,8 +172,9 @@ impl TicTacToeRenderer {
 
     /// Render a Tic-Tac-Toe board on a threadpool
     pub(crate) async fn render_board_async(&self, state: u16) -> anyhow::Result<Vec<u8>> {
-        let self_clone = self.clone();
+        // TODO: LRU cache
         let _permit = self.render_semaphore.acquire().await?;
+        let self_clone = self.clone();
         tokio::task::spawn_blocking(move || self_clone.render_board(state)).await?
     }
 }

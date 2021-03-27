@@ -5,20 +5,16 @@ pub mod types;
 pub use crate::client::Client;
 
 /// Library Result
-///
 pub type QResult<T> = Result<T, QError>;
 
 /// Library Error
-///
 #[derive(Debug, thiserror::Error)]
 pub enum QError {
     /// Reqwest HTTP Error
-    ///
     #[error("{0}")]
     Reqwest(#[from] reqwest::Error),
 
     /// Invalid HTTP Status
-    ///
     #[error("Invalid HTTP status {0}")]
     InvalidStatus(reqwest::StatusCode),
 }
