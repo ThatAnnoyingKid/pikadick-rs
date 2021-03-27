@@ -94,12 +94,13 @@ impl TicTacToeRenderer {
         let mut pixmap = self.background_pixmap.as_ref().as_ref().to_owned();
 
         let mut paint = tiny_skia::Paint::default();
+        let mut stroke = tiny_skia::Stroke::default();
         // Author might add more fields
         #[allow(clippy::field_reassign_with_default)]
         {
             paint.anti_alias = true;
+            stroke.width = 4.0;
         }
-        let stroke = tiny_skia::Stroke::default();
         for (i, team) in TicTacToeIter::new(state).enumerate() {
             let transform = tiny_skia::Transform::from_translate(
                 ((i % 3) * usize::from(SQUARE_SIZE)) as f32,
@@ -117,9 +118,7 @@ impl TicTacToeRenderer {
                         path_builder.line_to(100.0, 0.0);
                         path_builder.finish()
                     }
-                    TicTacToeTeam::O => {
-                        todo!("O");
-                    }
+                    TicTacToeTeam::O => tiny_skia::PathBuilder::from_circle(50.0, 50.0, 50.0),
                 };
                 let path = path
                     .with_context(|| format!("Failed to build path for team '{:?}'", team))?

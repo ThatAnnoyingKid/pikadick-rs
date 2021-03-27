@@ -488,7 +488,7 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         }
     };
 
-    match tic_tac_toe_data.try_move(game_state.clone(), guild_id, author_id, move_number) {
+    match tic_tac_toe_data.try_move(game_state, guild_id, author_id, move_number) {
         Ok(TryMoveResponse::Winner {
             game,
             winner,
