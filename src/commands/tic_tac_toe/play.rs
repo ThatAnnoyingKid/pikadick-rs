@@ -1,7 +1,6 @@
 use super::{
+    CreateGameError,
     GamePlayer,
-    GameState,
-    TicTacToeData,
 };
 use crate::{
     checks::ENABLED_CHECK,
@@ -9,9 +8,7 @@ use crate::{
 };
 use log::error;
 use minimax::TicTacToeTeam;
-use parking_lot::Mutex;
 use serenity::{
-    builder::CreateMessage,
     client::Context,
     framework::standard::{
         macros::command,
@@ -21,7 +18,6 @@ use serenity::{
     http::AttachmentType,
     model::prelude::*,
 };
-use std::sync::Arc;
 
 #[command]
 #[description("Start a game of Tic-Tac-Toe")]
@@ -62,115 +58,60 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     let author_id = msg.author.id;
     let guild_id = msg.guild_id;
 
-    let create_message =
-        process_tic_tac_toe_play(tic_tac_toe_data, guild_id, author_id, opponent, author_team)
-            .await;
+    match tic_tac_toe_data.create_game(guild_id, author_id, author_team, opponent) {
+        Ok(game) => {
+            let game_state = game.lock().state;
+            let user = if let GamePlayer::User(opponent_id) = opponent {
+                // Cannot be a computer here as there are at least 2 human players at this point
+                if author_team == TicTacToeTeam::X {
+                    author_id
+                } else {
+                    opponent_id
+                }
+            } else {
+                // The opponent is not a user, so it is a computer.
+                // We already calculated the move and updated if the computer is X.
+                // All that's left is to @author and print the board state.
+                author_id
+            };
 
-    msg.channel_id
-        .send_message(&ctx.http, |m| {
-            *m = create_message;
-            m
-        })
-        .await?;
+            let file = match tic_tac_toe_data
+                .renderer
+                .render_board_async(game_state)
+                .await
+            {
+                Ok(file) => AttachmentType::Bytes {
+                    data: file.into(),
+                    filename: format!("{}.png", game_state),
+                },
+                Err(e) => {
+                    error!("Failed to render Tic-Tac-Toe board: {}", e);
+                    msg.channel_id
+                        .say(
+                            &ctx.http,
+                            format!("Failed to render Tic-Tac-Toe board: {}", e),
+                        )
+                        .await?;
+                    return Ok(());
+                }
+            };
 
-    Ok(())
-}
-
-async fn process_tic_tac_toe_play(
-    tic_tac_toe_data: TicTacToeData,
-    guild_id: Option<GuildId>,
-    author_id: UserId,
-    opponent: GamePlayer,
-    author_team: TicTacToeTeam,
-) -> CreateMessage<'static> {
-    let mut m = CreateMessage::default();
-    let game_state;
-    let (x_player, o_player) = if author_team == TicTacToeTeam::X {
-        (GamePlayer::User(author_id), opponent)
-    } else {
-        (opponent, GamePlayer::User(author_id))
-    };
-
-    {
-        let mut game_states = tic_tac_toe_data.game_states.lock();
-        let author_in_game = game_states.contains_key(&(guild_id, author_id));
-        let opponent_in_game = if let GamePlayer::User(user_id) = opponent {
-            game_states.contains_key(&(guild_id, user_id))
-        } else {
-            false
-        };
-
-        if author_in_game {
-            let response = "Finish your current game in this server before starting a new one. Use `tic-tac-toe concede` to end your current game.".to_string();
-            m.content(response);
-            return m;
+            msg.channel_id
+                .send_message(&ctx.http, |m| {
+                    m.content(format!("Game created! Your turn {}", user.mention()))
+                        .add_file(file)
+                })
+                .await?;
         }
-
-        if opponent_in_game {
-            let response =
-            "Your opponent is currently in another game in this server. Wait for them to finish."
-                .to_string();
-            m.content(response);
-            return m;
+        Err(CreateGameError::AuthorInGame) => {
+            msg.channel_id.say(&ctx.http, "Finish your current game in this server before starting a new one. Use `tic-tac-toe concede` to end your current game.").await?;
+            return Ok(());
         }
-
-        let initial_state = 0;
-        let mut raw_game = GameState {
-            state: initial_state,
-            x_player,
-            o_player,
-        };
-
-        if x_player.is_computer() {
-            raw_game.state = *tic_tac_toe_data
-                .ai
-                .get_move(&initial_state, &TicTacToeTeam::X)
-                .expect("failed to calculate first move");
+        Err(CreateGameError::OpponentInGame) => {
+            msg.channel_id.say(&ctx.http, "Your opponent is currently in another game in this server. Wait for them to finish.").await?;
+            return Ok(());
         }
-
-        let game = Arc::new(Mutex::new(raw_game));
-        let game_lock = game.lock();
-        game_states.insert((guild_id, author_id), game.clone());
-
-        if let GamePlayer::User(opponent_id) = opponent {
-            game_states.insert((guild_id, opponent_id), game.clone());
-        }
-
-        game_state = game_lock.state;
     }
 
-    let user = if let GamePlayer::User(opponent_id) = opponent {
-        // Cannot be a computer here as there are at least 2 human players at this point
-        if GamePlayer::User(author_id) == x_player {
-            author_id
-        } else {
-            opponent_id
-        }
-    } else {
-        // The opponent is not a user, so it is a computer.
-        // We already calculated the move and updated if the computer is X.
-        // All that's left is to @author and print the board state.
-        author_id
-    };
-
-    let response = format!("Game created! Your turn {}", user.mention());
-
-    let file = match tic_tac_toe_data
-        .renderer
-        .render_board_async(game_state)
-        .await
-    {
-        Ok(file) => file,
-        Err(e) => {
-            error!("Failed to render Tic-Tac-Toe board: {}", e);
-            m.content(format!("Failed to render Tic-Tac-Toe board: {}", e));
-            return m;
-        }
-    };
-
-    m.content(response).add_file(AttachmentType::Bytes {
-        data: file.into(),
-        filename: format!("{}.png", game_state),
-    });
-    m
+    Ok(())
 }

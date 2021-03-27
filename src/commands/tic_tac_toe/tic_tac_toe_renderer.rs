@@ -1,6 +1,9 @@
 use anyhow::Context;
 use log::info;
-use minimax::tic_tac_toe::TicTacToeIter;
+use minimax::tic_tac_toe::{
+    TicTacToeIter,
+    TicTacToeTeam,
+};
 use std::{
     sync::Arc,
     time::Instant,
@@ -91,22 +94,55 @@ impl TicTacToeRenderer {
         let mut pixmap = self.background_pixmap.as_ref().as_ref().to_owned();
 
         let mut paint = tiny_skia::Paint::default();
-        paint.set_color_rgba8(255, 255, 255, 255);
-        paint.anti_alias = true;
+        // Author might add more fields
+        #[allow(clippy::field_reassign_with_default)]
+        {
+            paint.anti_alias = true;
+        }
+        let stroke = tiny_skia::Stroke::default();
         for (i, team) in TicTacToeIter::new(state).enumerate() {
-            if let Some(_team) = team {
-                // TODO: Place Team
+            let transform = tiny_skia::Transform::from_translate(
+                ((i % 3) * usize::from(SQUARE_SIZE)) as f32,
+                ((i / 3) * usize::from(SQUARE_SIZE)) as f32,
+            );
+
+            if let Some(team) = team {
+                paint.set_color_rgba8(0, 0, 0, 255);
+                let path = match team {
+                    TicTacToeTeam::X => {
+                        let mut path_builder = tiny_skia::PathBuilder::new();
+                        path_builder.move_to(0.0, 0.0);
+                        path_builder.line_to(100.0, 100.0);
+                        path_builder.move_to(0.0, 100.0);
+                        path_builder.line_to(100.0, 0.0);
+                        path_builder.finish()
+                    }
+                    TicTacToeTeam::O => {
+                        todo!("O");
+                    }
+                };
+                let path = path
+                    .with_context(|| format!("Failed to build path for team '{:?}'", team))?
+                    .transform(transform)
+                    .with_context(|| format!("Failed to transform path for team '{:?}'", team))?;
+
+                pixmap
+                    .stroke_path(
+                        &path,
+                        &paint,
+                        &stroke,
+                        tiny_skia::Transform::identity(),
+                        None,
+                    )
+                    .with_context(|| format!("Failed to draw path for teamt '{:?}'", team))?;
             } else {
+                paint.set_color_rgba8(255, 255, 255, 255);
                 let path = self.number_paths[i].clone();
                 let bounds = path.bounds();
 
                 let ratio = SQUARE_SIZE as f32 / bounds.height().max(bounds.width());
-                let transform = tiny_skia::Transform::from_scale(ratio, ratio).post_translate(
-                    ((i % 3) * usize::from(SQUARE_SIZE)) as f32,
-                    ((i / 3) * usize::from(SQUARE_SIZE)) as f32,
-                );
                 let path = path
-                    .transform(transform)
+                    .transform(transform.pre_scale(ratio, ratio))
                     .with_context(|| format!("Failed to transform path for digit '{}'", i))?;
 
                 pixmap
