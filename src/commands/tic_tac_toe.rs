@@ -11,21 +11,15 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
-use anyhow::{
-    bail,
-    Context as _,
-};
 use log::error;
 use minimax::{
     compile_minimax_map,
-    tic_tac_toe::TicTacToeIter,
     MiniMaxAi,
     TicTacToeRuleSet,
     TicTacToeTeam,
 };
 use parking_lot::Mutex;
 use serenity::{
-    builder::CreateMessage,
     client::Context,
     framework::standard::{
         macros::command,
@@ -55,6 +49,34 @@ pub enum CreateGameError {
     /// The opponent is in a game
     #[error("the opponent is in a game")]
     OpponentInGame,
+}
+
+/// Error that may occur while performing a game move.
+#[derive(Debug, Clone, Copy, thiserror::Error)]
+pub enum TryMoveError {
+    /// It is not the user's turn
+    #[error("not the user's turn to move")]
+    InvalidTurn,
+
+    /// The move is invalid
+    #[error("the move is not valid")]
+    InvalidMove,
+}
+
+/// The response for making a move.
+#[derive(Debug, Copy, Clone)]
+pub enum TryMoveResponse {
+    Winner {
+        game: GameState,
+        winner: GamePlayer,
+        loser: GamePlayer,
+    },
+    Tie {
+        game: GameState,
+    },
+    NextTurn {
+        game: GameState,
+    },
 }
 
 type GameStateKey = (Option<GuildId>, UserId);
@@ -167,6 +189,95 @@ impl TicTacToeData {
         }
 
         Ok(game)
+    }
+
+    /// Try to make a move.
+    pub fn try_move(
+        &self,
+        game_state: ShareGameState,
+        guild_id: Option<GuildId>,
+        author_id: UserId,
+        move_number: u8,
+    ) -> Result<TryMoveResponse, TryMoveError> {
+        let mut game_state = game_state.lock();
+        let player_turn = game_state.get_player_turn();
+
+        if GamePlayer::User(author_id) != player_turn {
+            return Err(TryMoveError::InvalidTurn);
+        }
+
+        let team_turn = game_state.get_team_turn();
+        let move_successful = game_state.try_move(team_turn, move_number);
+
+        if !move_successful {
+            return Err(TryMoveError::InvalidMove);
+        }
+
+        if let Some(winner) = minimax::tic_tac_toe::get_winner(game_state.state) {
+            let game = *game_state;
+            let winner_player = game.get_player(winner);
+            let loser_player = game.get_player(winner.inverse());
+            drop(game_state);
+
+            let _game = self
+                .remove_game_state(guild_id, author_id)
+                .expect("failed to delete tic-tac-toe game");
+
+            return Ok(TryMoveResponse::Winner {
+                game,
+                winner: winner_player,
+                loser: loser_player,
+            });
+        }
+
+        if minimax::tic_tac_toe::is_tie(game_state.state) {
+            let game = *game_state;
+            drop(game_state);
+            let _game = self
+                .remove_game_state(guild_id, author_id)
+                .expect("failed to delete tic-tac-toe game");
+
+            return Ok(TryMoveResponse::Tie { game });
+        }
+
+        let opponent = game_state.get_player_turn();
+        if opponent == GamePlayer::Computer {
+            let ai_state = *self
+                .ai
+                .get_move(&game_state.state, &team_turn.inverse())
+                .expect("invalid game state lookup");
+            game_state.state = ai_state;
+
+            if let Some(winner) = minimax::tic_tac_toe::get_winner(game_state.state) {
+                let game = *game_state;
+                let winner_player = game.get_player(winner);
+                let loser_player = game.get_player(winner.inverse());
+                drop(game_state);
+
+                let _game = self
+                    .remove_game_state(guild_id, author_id)
+                    .expect("failed to delete tic-tac-toe game");
+
+                return Ok(TryMoveResponse::Winner {
+                    game,
+                    winner: winner_player,
+                    loser: loser_player,
+                });
+            }
+
+            if minimax::tic_tac_toe::is_tie(game_state.state) {
+                let game = *game_state;
+                drop(game_state);
+                let _game = self
+                    .remove_game_state(guild_id, author_id)
+                    .expect("failed to delete tic-tac-toe game");
+
+                return Ok(TryMoveResponse::Tie { game });
+            }
+        }
+
+        let game = *game_state;
+        Ok(TryMoveResponse::NextTurn { game })
     }
 }
 
@@ -330,31 +441,6 @@ impl std::fmt::Display for GamePlayerMention {
     }
 }
 
-/// Render a basic Tic-Tac-Toe board.
-fn render_board_basic(state: u16) -> String {
-    let board_size = 3;
-    let reserve_size = 2 * board_size * board_size;
-    let start = String::with_capacity(reserve_size);
-
-    (b'0'..b'9')
-        .map(char::from)
-        .zip(TicTacToeIter::new(state))
-        .enumerate()
-        .map(|(i, (tile_number, team))| {
-            let separator = if (i + 1) % 3 == 0 { '\n' } else { ' ' };
-
-            match team {
-                Some(TicTacToeTeam::X) => ['X', separator],
-                Some(TicTacToeTeam::O) => ['O', separator],
-                None => [tile_number, separator],
-            }
-        })
-        .fold(start, |mut state, el| {
-            state.extend(&el);
-            state
-        })
-}
-
 #[command("tic-tac-toe")]
 #[sub_commands("play", "concede")]
 #[description("Play a game of Tic-Tac-Toe")]
@@ -402,158 +488,109 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         }
     };
 
-    let result = process_tic_tac_toe(
-        tic_tac_toe_data,
-        game_state,
-        guild_id,
-        author_id,
-        move_number,
-    )
-    .await;
-
-    match result {
-        Ok((content, file)) => {
+    match tic_tac_toe_data.try_move(game_state.clone(), guild_id, author_id, move_number) {
+        Ok(TryMoveResponse::Winner {
+            game,
+            winner,
+            loser,
+        }) => {
+            let file = match tic_tac_toe_data
+                .renderer
+                .render_board_async(game.state)
+                .await
+            {
+                Ok(file) => AttachmentType::Bytes {
+                    data: file.into(),
+                    filename: format!("ttt-{}.png", game.state),
+                },
+                Err(e) => {
+                    error!("Failed to render Tic-Tac-Toe board: {}", e);
+                    msg.channel_id
+                        .say(
+                            &ctx.http,
+                            format!("Failed to render Tic-Tac-Toe board: {}", e),
+                        )
+                        .await?;
+                    return Ok(());
+                }
+            };
+            let content = format!(
+                "{} has triumphed over {} in Tic-Tac-Toe",
+                winner.mention(),
+                loser.mention(),
+            );
             msg.channel_id
-                .send_message(&ctx.http, |m| m.content(content))
+                .send_message(&ctx.http, |m| m.content(content).add_file(file))
                 .await?;
         }
-        Err(e) => {
-            msg.channel_id.say(&ctx.http, e).await?;
+        Ok(TryMoveResponse::Tie { game }) => {
+            let file = match tic_tac_toe_data
+                .renderer
+                .render_board_async(game.state)
+                .await
+            {
+                Ok(file) => AttachmentType::Bytes {
+                    data: file.into(),
+                    filename: format!("ttt-{}.png", game.state),
+                },
+                Err(e) => {
+                    error!("Failed to render Tic-Tac-Toe board: {}", e);
+                    msg.channel_id
+                        .say(
+                            &ctx.http,
+                            format!("Failed to render Tic-Tac-Toe board: {}", e),
+                        )
+                        .await?;
+                    return Ok(());
+                }
+            };
+            let content = format!(
+                "{} has tied with {} in Tic-Tac-Toe",
+                game.get_player(TicTacToeTeam::X).mention(),
+                game.get_player(TicTacToeTeam::O).mention(),
+            );
+            msg.channel_id
+                .send_message(&ctx.http, |m| m.content(content).add_file(file))
+                .await?;
         }
-    }
-    Ok(())
-}
-
-async fn process_tic_tac_toe(
-    tic_tac_toe_data: TicTacToeData,
-    game_state: ShareGameState,
-    guild_id: Option<GuildId>,
-    author_id: UserId,
-    move_number: u8,
-) -> anyhow::Result<(String, AttachmentType<'static>)> {
-    let mut m = CreateMessage::default();
-
-    let mut game_state = game_state.lock();
-    let player_turn = game_state.get_player_turn();
-
-    if GamePlayer::User(author_id) != player_turn {
-        bail!("It is not your turn. Please wait for your opponent to finish.");
-    }
-
-    let team_turn = game_state.get_team_turn();
-    let move_successful = game_state.try_move(team_turn, move_number);
-
-    if !move_successful {
-        bail!(format!(
-            "Invalid move {}. Please choose one of the available squares.\n",
-            author_id.mention(),
-        ));
-    }
-
-    if let Some(winner) = minimax::tic_tac_toe::get_winner(game_state.state) {
-        drop(game_state);
-        let game = tic_tac_toe_data
-            .remove_game_state(guild_id, author_id)
-            .with_context(|| "failed to delete tic-tac-toe game")?;
-        let game_state = game.lock();
-
-        let winner_player = game_state.get_player(winner);
-        let loser_player = game_state.get_player(winner.inverse());
-
-        /*
-        return format!(
-            "{} has triumphed over {} in Tic-Tac-Toe\n{}",
-            winner_player.mention(),
-            loser_player.mention(),
-            render_board_basic(game_state.state),
-        );
-        */
-
-        todo!()
-    }
-
-    if minimax::tic_tac_toe::is_tie(game_state.state) {
-        drop(game_state);
-        let game = tic_tac_toe_data
-            .remove_game_state(guild_id, author_id)
-            .expect("failed to delete tic-tac-toe game");
-        let game_state = game.lock();
-
-        /*
-        return format!(
-            "{} has tied with {} in Tic-Tac-Toe\n{}",
-            game_state.get_player(TicTacToeTeam::X).mention(),
-            game_state.get_player(TicTacToeTeam::O).mention(),
-            render_board_basic(game_state.state)
-        );*/
-        todo!()
-    }
-
-    let opponent = game_state.get_player_turn();
-    match opponent {
-        GamePlayer::Computer => {
-            let ai_state = *tic_tac_toe_data
-                .ai
-                .get_move(&game_state.state, &team_turn.inverse())
-                .expect("invalid game state lookup");
-
-            game_state.state = ai_state;
-
-            if let Some(winner) = minimax::tic_tac_toe::get_winner(game_state.state) {
-                drop(game_state);
-                let game = tic_tac_toe_data
-                    .remove_game_state(guild_id, author_id)
-                    .expect("failed to delete tic-tac-toe game");
-                let game_state = game.lock();
-
-                let winner_player = game_state.get_player(winner);
-                let loser_player = game_state.get_player(winner.inverse());
-
-                /*
-                return format!(
-                    "{} has triumphed over {} in Tic-Tac-Toe\n{}",
-                    winner_player.mention(),
-                    loser_player.mention(),
-                    render_board_basic(game_state.state),
-                );*/
-                todo!()
-            }
-
-            if minimax::tic_tac_toe::is_tie(game_state.state) {
-                drop(game_state);
-                let game = tic_tac_toe_data
-                    .remove_game_state(guild_id, author_id)
-                    .context("failed to delete tic-tac-toe game")?;
-                let game_state = game.lock();
-
-                /*
-                return Ok(format!(
-                    "{} has tied with {} in Tic-Tac-Toe\n{}",
-                    game_state.get_player(TicTacToeTeam::X).mention(),
-                    game_state.get_player(TicTacToeTeam::O).mention(),
-                    render_board_basic(game_state.state),
-                ));
-                */
-                todo!()
-            }
-
-            /*
-            Ok((format!(
-                "Your turn {}\n{}",
+        Ok(TryMoveResponse::NextTurn { game }) => {
+            let file = match tic_tac_toe_data
+                .renderer
+                .render_board_async(game.state)
+                .await
+            {
+                Ok(file) => AttachmentType::Bytes {
+                    data: file.into(),
+                    filename: format!("ttt-{}.png", game.state),
+                },
+                Err(e) => {
+                    error!("Failed to render Tic-Tac-Toe board: {}", e);
+                    msg.channel_id
+                        .say(
+                            &ctx.http,
+                            format!("Failed to render Tic-Tac-Toe board: {}", e),
+                        )
+                        .await?;
+                    return Ok(());
+                }
+            };
+            let content = format!("Your turn {}", game.get_player_turn().mention());
+            msg.channel_id
+                .send_message(&ctx.http, |m| m.content(content).add_file(file))
+                .await?;
+        }
+        Err(TryMoveError::InvalidTurn) => {
+            let response = "It is not your turn. Please wait for your opponent to finish.";
+            msg.channel_id.say(&ctx.http, response).await?;
+        }
+        Err(TryMoveError::InvalidMove) => {
+            let response = format!(
+                "Invalid move {}. Please choose one of the available squares.\n",
                 author_id.mention(),
-                render_board_basic(game_state.state)
-            ),))
-            */
-            todo!()
-        }
-        GamePlayer::User(user_id) => {
-            /*
-                Ok(format!(
-                "Your turn {}\n{}",
-                user_id.mention(),
-                render_board_basic(game_state.state)
-            )),*/
-            todo!()
+            );
+            msg.channel_id.say(&ctx.http, response).await?;
         }
     }
+
+    Ok(())
 }
