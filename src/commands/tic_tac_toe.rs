@@ -1,3 +1,12 @@
+mod concede;
+mod play;
+mod tic_tac_toe_renderer;
+
+use self::tic_tac_toe_renderer::TicTacToeRenderer;
+pub use self::{
+    concede::CONCEDE_COMMAND,
+    play::PLAY_COMMAND,
+};
 use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
@@ -38,6 +47,7 @@ type ShareGameState = Arc<Mutex<GameState>>;
 pub struct TicTacToeData {
     game_states: Arc<Mutex<HashMap<GameStateKey, ShareGameState>>>,
     ai: Arc<MiniMaxAi<TicTacToeRuleSet>>,
+    renderer: Arc<TicTacToeRenderer>,
 }
 
 impl TicTacToeData {
@@ -45,10 +55,12 @@ impl TicTacToeData {
     pub fn new() -> Self {
         let map = compile_minimax_map::<TicTacToeRuleSet>();
         let ai = Arc::new(MiniMaxAi::new(map));
+        let renderer = TicTacToeRenderer::new().expect("failed to init renderer");
 
         Self {
             game_states: Default::default(),
             ai,
+            renderer: Arc::new(renderer),
         }
     }
 
@@ -446,169 +458,6 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         move_number,
     )
     .await;
-    msg.channel_id.say(&ctx.http, response).await?;
-
-    Ok(())
-}
-
-#[command]
-#[description("Start a game of Tic-Tac-Toe")]
-#[usage("<computer OR @user, X OR O>")]
-#[example("computer X")]
-#[min_args(2)]
-#[max_args(2)]
-#[checks(Enabled)]
-pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let tic_tac_toe_data = client_data.tic_tac_toe_data.clone();
-    drop(data_lock);
-
-    let opponent: GamePlayer = match args.single() {
-        Ok(player) => player,
-        Err(e) => {
-            let response = format!(
-                "Invalid opponent. Choose 'computer' or '@user'. Error: {}",
-                e
-            );
-            msg.channel_id.say(&ctx.http, response).await?;
-            return Ok(());
-        }
-    };
-
-    let author_team: TicTacToeTeam = match args.single() {
-        Ok(team) => team,
-        Err(e) => {
-            let response = format!("Invalid team. Choose 'X' or 'O'. Error: {}", e);
-            msg.channel_id.say(&ctx.http, response).await?;
-            return Ok(());
-        }
-    };
-
-    let author_id = msg.author.id;
-    let guild_id = msg.guild_id;
-
-    let response = {
-        let mut game_states = tic_tac_toe_data.game_states.lock();
-        let author_in_game = game_states.contains_key(&(msg.guild_id, msg.author.id));
-        let opponent_in_game = if let GamePlayer::User(user_id) = opponent {
-            game_states.contains_key(&(msg.guild_id, user_id))
-        } else {
-            false
-        };
-
-        if author_in_game {
-            "Finish your current game in this server before starting a new one. Use `tic-tac-toe concede` to end your current game.".to_string()
-        } else if opponent_in_game {
-            "Your opponent is currently in another game in this server. Wait for them to finish."
-                .to_string()
-        } else {
-            let (x_player, o_player) = if author_team == TicTacToeTeam::X {
-                (GamePlayer::User(author_id), opponent)
-            } else {
-                (opponent, GamePlayer::User(author_id))
-            };
-
-            let initial_state = 0;
-            let mut raw_game = GameState {
-                state: initial_state,
-                x_player,
-                o_player,
-            };
-
-            if x_player.is_computer() {
-                raw_game.state = *tic_tac_toe_data
-                    .ai
-                    .get_move(&initial_state, &TicTacToeTeam::X)
-                    .expect("failed to calculate first move");
-            }
-
-            let game = Arc::new(Mutex::new(raw_game));
-            game_states.insert((msg.guild_id, msg.author.id), game.clone());
-            let game_lock = game.lock();
-
-            if let GamePlayer::User(opponent_id) = opponent {
-                game_states.insert((guild_id, author_id), game.clone());
-
-                // Cannot be a computer here as there are at least 2 human players at this point
-                let user = if GamePlayer::User(author_id) == x_player {
-                    author_id
-                } else {
-                    opponent_id
-                };
-
-                // board state is 0 if both beginning players are users.
-                format!(
-                    "Game created! Your turn {}\n{}",
-                    user.mention(),
-                    render_board_basic(game_lock.state)
-                )
-            } else {
-                // The opponent is not a user, so it is a computer.
-                // We already calculated the move and updated if the computer is X.
-                // All that's left is to @author and print the board state.
-
-                format!(
-                    "Game created! Your turn {}\n{}",
-                    author_id.mention(),
-                    render_board_basic(game_lock.state)
-                )
-            }
-        }
-    };
-
-    msg.channel_id.say(&ctx.http, response).await?;
-
-    Ok(())
-}
-
-#[command]
-#[description("Concede a game of Tic-Tac-Toe")]
-#[usage("")]
-#[example("")]
-#[min_args(0)]
-#[max_args(0)]
-#[checks(Enabled)]
-pub async fn concede(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let tic_tac_toe_data = client_data.tic_tac_toe_data.clone();
-    drop(data_lock);
-
-    let guild_id = msg.guild_id;
-    let author_id = msg.author.id;
-
-    let game_state = match tic_tac_toe_data.remove_game_state(guild_id, author_id) {
-        Some(game_state) => game_state,
-        None => {
-            let response = "Failed to concede as you have no games in this server".to_string();
-            msg.channel_id.say(&ctx.http, response).await?;
-            return Ok(());
-        }
-    };
-
-    let opponent = game_state
-        .lock()
-        .get_opponent(GamePlayer::User(author_id))
-        .expect("author is not playing the game");
-
-    let response = match opponent {
-        GamePlayer::User(user_id) => {
-            format!(
-                "{} has conceded to {}.",
-                author_id.mention(),
-                user_id.mention()
-            )
-        }
-        GamePlayer::Computer => {
-            format!("{} has conceded to the computer.", author_id.mention())
-        }
-    };
-
     msg.channel_id.say(&ctx.http, response).await?;
 
     Ok(())
