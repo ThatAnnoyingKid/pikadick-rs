@@ -4,6 +4,7 @@ pub mod tic_tac_toe;
 
 pub use self::tic_tac_toe::{
     TicTacToeRuleSet,
+    TicTacToeState,
     TicTacToeTeam,
 };
 use std::{
@@ -241,6 +242,6 @@ mod tests {
 
         let ai: MiniMaxAi<TicTacToeRuleSet> = MiniMaxAi::new(map);
 
-        dbg!(ai.get_move(&0, &TicTacToeTeam::X));
+        dbg!(ai.get_move(&TicTacToeState::default(), &TicTacToeTeam::X));
     }
 }

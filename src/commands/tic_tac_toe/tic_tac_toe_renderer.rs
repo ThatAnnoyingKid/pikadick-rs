@@ -88,18 +88,17 @@ impl TicTacToeRenderer {
     }
 
     /// Render a Tic-Tac-Toe board with `tiny_skia`.
+    // Author might add more fields
+    #[allow(clippy::field_reassign_with_default)]
     pub(crate) fn render_board(&self, state: TicTacToeState) -> anyhow::Result<Vec<u8>> {
         let draw_start = Instant::now();
         let mut pixmap = self.background_pixmap.as_ref().as_ref().to_owned();
 
         let mut paint = tiny_skia::Paint::default();
         let mut stroke = tiny_skia::Stroke::default();
-        // Author might add more fields
-        #[allow(clippy::field_reassign_with_default)]
-        {
-            paint.anti_alias = true;
-            stroke.width = 4.0;
-        }
+        paint.anti_alias = true;
+        stroke.width = 4.0;
+
         for (i, team) in state.iter().enumerate() {
             let transform = tiny_skia::Transform::from_translate(
                 ((i % 3) * usize::from(SQUARE_SIZE)) as f32,
