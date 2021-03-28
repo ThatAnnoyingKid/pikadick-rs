@@ -15,6 +15,7 @@ const FONT_BYTES: &[u8] =
 
 const RENDERED_SIZE: u16 = 300;
 const SQUARE_SIZE: u16 = RENDERED_SIZE / 3;
+const SQUARE_SIZE_USIZE: usize = SQUARE_SIZE as usize;
 const SQUARE_SIZE_F32: f32 = SQUARE_SIZE as f32;
 const HALF_SQUARE_SIZE_F32: f32 = SQUARE_SIZE_F32 / 2.0;
 
@@ -106,8 +107,8 @@ impl TicTacToeRenderer {
 
         for (i, team) in state.iter().enumerate() {
             let transform = tiny_skia::Transform::from_translate(
-                ((i % 3) * usize::from(SQUARE_SIZE)) as f32,
-                ((i / 3) * usize::from(SQUARE_SIZE)) as f32,
+                ((i % 3) * SQUARE_SIZE_USIZE) as f32,
+                ((i / 3) * SQUARE_SIZE_USIZE) as f32,
             );
 
             if let Some(team) = team {
@@ -159,20 +160,51 @@ impl TicTacToeRenderer {
             }
         }
 
-        stroke.width = 10.0;
-        paint.set_color_rgba8(48, 48, 48, 255);
         if let Some(winner_info) = state.get_winning_info() {
-            let start = usize::from(winner_info.tile_indexes[0]);
-            let start_x =
-                ((start % 3) * usize::from(SQUARE_SIZE) + (usize::from(SQUARE_SIZE) / 2)) as f32;
-            let start_y =
-                ((start / 3) * usize::from(SQUARE_SIZE) + (usize::from(SQUARE_SIZE) / 2)) as f32;
+            stroke.width = 10.0;
+            paint.set_color_rgba8(48, 48, 48, 255);
 
-            let end = usize::from(winner_info.tile_indexes[2]);
-            let end_x =
-                ((end % 3) * usize::from(SQUARE_SIZE) + (usize::from(SQUARE_SIZE) / 2)) as f32;
-            let end_y =
-                ((end / 3) * usize::from(SQUARE_SIZE) + (usize::from(SQUARE_SIZE) / 2)) as f32;
+            let start_index = winner_info.tile_indexes[0];
+            let start = usize::from(start_index);
+            let mut start_x = ((start % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+            let mut start_y = ((start / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+
+            let end_index = winner_info.tile_indexes[2];
+            let end = usize::from(end_index);
+            let mut end_x = ((end % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+            let mut end_y = ((end / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+
+            if is_left_index(start_index) {
+                start_x -= SQUARE_SIZE_F32 / 4.0;
+            }
+
+            if is_left_index(end_index) {
+                end_x -= SQUARE_SIZE_F32 / 4.0;
+            }
+
+            if is_right_index(start_index) {
+                start_x += SQUARE_SIZE_F32 / 4.0;
+            }
+
+            if is_right_index(end_index) {
+                end_x += SQUARE_SIZE_F32 / 4.0;
+            }
+
+            if is_top_index(start_index) {
+                start_y -= SQUARE_SIZE_F32 / 4.0;
+            }
+
+            if is_top_index(end_index) {
+                end_y -= SQUARE_SIZE_F32 / 4.0;
+            }
+
+            if is_bottom_index(start_index) {
+                start_y += SQUARE_SIZE_F32 / 4.0;
+            }
+
+            if is_bottom_index(end_index) {
+                end_y += SQUARE_SIZE_F32 / 4.0;
+            }
 
             let mut path_builder = tiny_skia::PathBuilder::new();
             path_builder.move_to(start_x, start_y);
@@ -214,6 +246,26 @@ impl TicTacToeRenderer {
         let self_clone = self.clone();
         tokio::task::spawn_blocking(move || self_clone.render_board(state)).await?
     }
+}
+
+/// Whether the index refers to a left tile
+fn is_left_index(index: u8) -> bool {
+    index == 0 || index == 3 || index == 6
+}
+
+/// Whether the index refers to a right tile
+fn is_right_index(index: u8) -> bool {
+    index == 2 || index == 5 || index == 8
+}
+
+/// Whether the index refers to a top tile
+fn is_top_index(index: u8) -> bool {
+    index == 0 || index == 1 || index == 2
+}
+
+/// Whether the index refers to a bottom tile
+fn is_bottom_index(index: u8) -> bool {
+    index == 6 || index == 7 || index == 8
 }
 
 /// Utility to draw a font glyph to a path.
