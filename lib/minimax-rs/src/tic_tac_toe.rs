@@ -1,48 +1,240 @@
 use crate::RuleSet;
 use std::convert::TryInto;
 
-/// Tic-Tac-Toe RuleSet
+/// Winner Info
+#[derive(Debug, Copy, Clone)]
+pub struct WinnerInfo {
+    /// The winning team
+    pub team: TicTacToeTeam,
+
+    /// The tile_indexes that are part of the win
+    pub tile_indexes: [u8; 3],
+}
+
+/// A Tic-Tac-Toe game state
 ///
-pub struct TicTacToeRuleSet;
+/// `0xFFFF > (3 ^ 9)`, so `u16` is good.
+/// Tic-Tac-Toe states are stored like this in a `u16`:
+/// `t * 3.pow(i)` where
+/// i is the index of the tic-tac-toe board.
+/// t is 0 <= t < 3.
+/// t == 0 is empty.
+/// t == 1 is X.
+/// t == 2 is O.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct TicTacToeState(u16);
 
-impl RuleSet for TicTacToeRuleSet {
-    /// `0xFFFF > (3 ^ 9)`, so `u16` is good.
+impl TicTacToeState {
+    /// Make a new starting Tic-Tac-Toe board state
+    #[inline]
+    pub fn new() -> Self {
+        Self(0)
+    }
+
+    /// Iterate over the tiles
+    #[inline]
+    pub fn iter(self) -> TicTacToeIter {
+        TicTacToeIter::new(self.0)
+    }
+
+    /// Get the tile at the index.
     ///
-    type State = u16;
-    type Team = TicTacToeTeam;
-
-    fn get_start_state() -> Self::State {
-        0
+    /// The index is valid from -1 < index < 9.
+    ///
+    /// # Panics
+    /// Panics if the index is invalid.
+    #[inline]
+    pub fn at(self, index: u8) -> Option<TicTacToeTeam> {
+        self.try_at(index).expect("invalid board index")
     }
 
-    fn get_team(state: &Self::State) -> Self::Team {
-        get_team_turn(*state)
+    /// Get the tile at the index, returning None on error.
+    ///
+    /// The index is valid from -1 < index < 9.
+    #[inline]
+    pub fn try_at(self, index: u8) -> Option<Option<TicTacToeTeam>> {
+        self.iter().nth(index.into())
     }
 
-    fn get_winner(state: &Self::State) -> Option<Self::Team> {
-        get_winner(*state)
+    /// Set the tile at the index, returning the old tile. Panics on failure.
+    ///
+    /// The index is valid from -1 < index < 9.
+    #[inline]
+    pub fn set(&mut self, index: u8, team: Option<TicTacToeTeam>) -> Option<TicTacToeTeam> {
+        let old = self.at(index);
+
+        let team = match team {
+            None => 0,
+            Some(TicTacToeTeam::X) => 1,
+            Some(TicTacToeTeam::O) => 2,
+        };
+
+        let new_entry = team * 3u16.pow(u32::from(index));
+        self.0 += new_entry;
+
+        old
     }
 
-    fn get_child_states(state: &Self::State) -> Vec<Self::State> {
-        let team = Self::get_team(state);
+    /// Set the tile at the index, returning the old tile if successful.
+    ///
+    /// The index is valid from -1 < index < 9.
+    #[inline]
+    pub fn try_set(
+        &mut self,
+        index: u8,
+        team: Option<TicTacToeTeam>,
+    ) -> Option<Option<TicTacToeTeam>> {
+        let old = self.try_at(index)?;
 
+        let team = match team {
+            None => 0,
+            Some(TicTacToeTeam::X) => 1,
+            Some(TicTacToeTeam::O) => 2,
+        };
+
+        let new_entry = team * 3u16.pow(u32::from(index));
+        self.0 += new_entry;
+
+        Some(old)
+    }
+
+    /// Get whos turn it is.
+    pub fn get_team_turn(self) -> TicTacToeTeam {
+        let mut x_num = 0;
+        let mut o_num = 0;
+        for team in self.iter().filter_map(std::convert::identity) {
+            match team {
+                TicTacToeTeam::X => x_num += 1,
+                TicTacToeTeam::O => o_num += 1,
+            }
+        }
+
+        if x_num > o_num {
+            TicTacToeTeam::O
+        } else {
+            TicTacToeTeam::X
+        }
+    }
+
+    /// Get the winning team, if there is one.
+    pub fn get_winning_team(self) -> Option<TicTacToeTeam> {
+        self.get_winning_info().map(|info| info.team)
+    }
+
+    /// Utility function for testing whether 3 indexes are populated and are the same team.
+    fn check_indexes(self, one: u8, two: u8, three: u8) -> Option<WinnerInfo> {
+        let team = self.at(one)?;
+        if self.at(one) == self.at(two) && self.at(two) == self.at(three) {
+            return Some(WinnerInfo {
+                team,
+                tile_indexes: [one, two, three],
+            });
+        }
+
+        None
+    }
+
+    /// Get the winning info, if there was a winner.
+    pub fn get_winning_info(self) -> Option<WinnerInfo> {
+        // Horizontal 1
+        if let Some(winner_info) = self.check_indexes(0, 1, 2) {
+            return Some(winner_info);
+        }
+
+        // Horizontal 2
+        if let Some(winner_info) = self.check_indexes(3, 4, 5) {
+            return Some(winner_info);
+        }
+
+        // Horizontal 3
+        if let Some(winner_info) = self.check_indexes(6, 7, 8) {
+            return Some(winner_info);
+        }
+
+        // Vertical 1
+        if let Some(winner_info) = self.check_indexes(0, 3, 6) {
+            return Some(winner_info);
+        }
+
+        // Vertical 2
+        if let Some(winner_info) = self.check_indexes(1, 4, 7) {
+            return Some(winner_info);
+        }
+
+        // Vertical 3
+        if let Some(winner_info) = self.check_indexes(2, 5, 8) {
+            return Some(winner_info);
+        }
+
+        // Diagonal 1
+        if let Some(winner_info) = self.check_indexes(0, 4, 8) {
+            return Some(winner_info);
+        }
+
+        // Diagonal 2
+        if let Some(winner_info) = self.check_indexes(2, 4, 6) {
+            return Some(winner_info);
+        }
+
+        None
+    }
+
+    /// Check if a game state is a tie
+    pub fn is_tie(self) -> bool {
+        self.iter().all(|s| s.is_some())
+    }
+
+    /// Get the child states for this game
+    pub fn get_child_states(self) -> Vec<Self> {
+        let team = self.get_team_turn();
         let mut states = Vec::with_capacity(9);
 
-        for (i, tile_team) in TicTacToeIter::new(*state).enumerate() {
+        for (i, tile_team) in self.iter().enumerate() {
             if tile_team.is_none() {
-                let team = match team {
-                    TicTacToeTeam::X => 1,
-                    TicTacToeTeam::O => 2,
-                };
-                let i_u32 = i.try_into().expect("could not fit index in a `u32`");
-                let new_entry = team * 3u16.pow(i_u32);
-                let new_state = state + new_entry;
+                let i_u8 = i.try_into().expect("could not fit index in a `u8`");
+                let mut new_state = self;
+                new_state.set(i_u8, Some(team));
 
                 states.push(new_state);
             }
         }
 
         states
+    }
+
+    /// Convert this into a [`u16`].
+    pub fn into_u16(self) -> u16 {
+        self.0
+    }
+}
+
+impl Default for TicTacToeState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Tic-Tac-Toe RuleSet
+pub struct TicTacToeRuleSet;
+
+impl RuleSet for TicTacToeRuleSet {
+    type State = TicTacToeState;
+    type Team = TicTacToeTeam;
+
+    fn get_start_state() -> Self::State {
+        Self::State::default()
+    }
+
+    fn get_team(state: &Self::State) -> Self::Team {
+        state.get_team_turn()
+    }
+
+    fn get_winner(state: &Self::State) -> Option<Self::Team> {
+        state.get_winning_team()
+    }
+
+    fn get_child_states(state: &Self::State) -> Vec<Self::State> {
+        state.get_child_states()
     }
 
     fn score_winner(winner: &Self::Team, score: &mut i8) {
@@ -75,82 +267,6 @@ impl RuleSet for TicTacToeRuleSet {
     }
 }
 
-/// Get whos turn it is
-pub fn get_team_turn(state: u16) -> TicTacToeTeam {
-    let mut x_num = 0;
-    let mut o_num = 0;
-    for team in TicTacToeIter::new(state).filter_map(std::convert::identity) {
-        match team {
-            TicTacToeTeam::X => x_num += 1,
-            TicTacToeTeam::O => o_num += 1,
-        }
-    }
-
-    if x_num > o_num {
-        TicTacToeTeam::O
-    } else {
-        TicTacToeTeam::X
-    }
-}
-
-/// Get the winner, if there is one.
-pub fn get_winner(state: u16) -> Option<TicTacToeTeam> {
-    let mut horizontal_iter = TicTacToeIter::new(state);
-    for _ in 0..3 {
-        let square0 = horizontal_iter.next().expect("missing square 0");
-        let square1 = horizontal_iter.next().expect("missing square 1");
-        let square2 = horizontal_iter.next().expect("missing square 2");
-
-        if let Some(team) = square0 {
-            if square0 == square1 && square1 == square2 {
-                return Some(team);
-            }
-        }
-    }
-
-    // 0, 3, 6
-    // 1, 4, 7
-    // 2, 5, 8
-    //
-    for i in 0..3 {
-        let mut vertical_iter = TicTacToeIter::new(state);
-        let square0 = vertical_iter.nth(i).expect("missing square 0");
-        let square1 = vertical_iter.nth(3 - 1).expect("missing square 1");
-        let square2 = vertical_iter.nth(3 - 1).expect("missing square 2");
-
-        if let Some(team) = square0 {
-            if square0 == square1 && square1 == square2 {
-                return Some(team);
-            }
-        }
-    }
-
-    // 0, 4, 8
-    // 2, 4, 6
-    //
-    // i * 2 = 0, 4 - (i * 2) + (i * 2) = 4, 2 * (4 - (i * 2)) + (i * 2) = 8
-    // i * 2 = 2, 4 - (i * 2) + (i * 2) = 4, 2 * (4 - (i * 2)) + (i * 2) = 6
-    //
-    for i in 0..2 {
-        let mut diagonal_iter = TicTacToeIter::new(state);
-        let square0 = diagonal_iter.nth(i * 2).expect("missing square 0");
-        let square1 = diagonal_iter
-            .nth(4 - (i * 2) - 1)
-            .expect("missing square 1");
-        let square2 = diagonal_iter
-            .nth(4 - (i * 2) - 1)
-            .expect("missing square 2");
-
-        if let Some(team) = square0 {
-            if square0 == square1 && square1 == square2 {
-                return Some(team);
-            }
-        }
-    }
-
-    None
-}
-
 /// An `Iterator` over a Tic-Tac-Toe board.
 ///
 /// Using this is the easiest way to interact with tic-tac-toe states.
@@ -166,14 +282,6 @@ pub fn get_winner(state: u16) -> Option<TicTacToeTeam> {
 /// | 6 | 7 | 8 |
 /// *===*===*===*
 /// ```
-///
-/// Tic-Tac-Toe states are stored like this in a `u16`:
-/// `t * 3.pow(i)` where
-/// i is the index of the tic-tac-toe board.
-/// t is 0 <= t < 3.
-/// t == 0 is empty.
-/// t == 1 is X.
-/// t == 2 is O.
 #[derive(Debug)]
 pub struct TicTacToeIter {
     state: u16,
@@ -314,9 +422,4 @@ impl std::str::FromStr for TicTacToeTeam {
             s.chars().next().expect("missing char"),
         )?)
     }
-}
-
-/// Check if a game state is a tie
-pub fn is_tie(state: u16) -> bool {
-    TicTacToeIter::new(state).all(|s| s.is_some())
 }

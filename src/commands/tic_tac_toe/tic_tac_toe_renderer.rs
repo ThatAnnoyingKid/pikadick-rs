@@ -1,7 +1,7 @@
 use anyhow::Context;
 use log::info;
 use minimax::tic_tac_toe::{
-    TicTacToeIter,
+    TicTacToeState,
     TicTacToeTeam,
 };
 use std::{
@@ -30,12 +30,11 @@ pub(crate) struct TicTacToeRenderer {
 impl TicTacToeRenderer {
     /// Make a new [`TicTacToeRenderer`].
     pub(crate) fn new() -> anyhow::Result<Self> {
-        let font_face =
-            ttf_parser::Face::from_slice(FONT_BYTES, 0).with_context(|| "Invalid Font")?;
+        let font_face = ttf_parser::Face::from_slice(FONT_BYTES, 0).context("Invalid Font")?;
 
         let mut background_pixmap =
             tiny_skia::Pixmap::new(RENDERED_SIZE.into(), RENDERED_SIZE.into())
-                .with_context(|| "Failed to create background pixmap")?;
+                .context("Failed to create background pixmap")?;
 
         let mut paint = tiny_skia::Paint::default();
         for i in 0..3 {
@@ -48,7 +47,7 @@ impl TicTacToeRenderer {
                     SQUARE_SIZE as f32,
                     SQUARE_SIZE as f32,
                 )
-                .with_context(|| "Failed to make square")?;
+                .context("Failed to make square")?;
 
                 if (j * 3 + i) % 2 == 0 {
                     paint.set_color_rgba8(255, 0, 0, 255);
@@ -58,7 +57,7 @@ impl TicTacToeRenderer {
 
                 background_pixmap
                     .fill_rect(square, &paint, tiny_skia::Transform::identity(), None)
-                    .with_context(|| "Failed to fill square")?;
+                    .context("Failed to fill square")?;
             }
         }
 
@@ -89,7 +88,7 @@ impl TicTacToeRenderer {
     }
 
     /// Render a Tic-Tac-Toe board with `tiny_skia`.
-    pub(crate) fn render_board(&self, state: u16) -> anyhow::Result<Vec<u8>> {
+    pub(crate) fn render_board(&self, state: TicTacToeState) -> anyhow::Result<Vec<u8>> {
         let draw_start = Instant::now();
         let mut pixmap = self.background_pixmap.as_ref().as_ref().to_owned();
 
@@ -101,7 +100,7 @@ impl TicTacToeRenderer {
             paint.anti_alias = true;
             stroke.width = 4.0;
         }
-        for (i, team) in TicTacToeIter::new(state).enumerate() {
+        for (i, team) in state.iter().enumerate() {
             let transform = tiny_skia::Transform::from_translate(
                 ((i % 3) * usize::from(SQUARE_SIZE)) as f32,
                 ((i / 3) * usize::from(SQUARE_SIZE)) as f32,
@@ -133,7 +132,7 @@ impl TicTacToeRenderer {
                         tiny_skia::Transform::identity(),
                         None,
                     )
-                    .with_context(|| format!("Failed to draw path for teamt '{:?}'", team))?;
+                    .with_context(|| format!("Failed to draw path for team '{:?}'", team))?;
             } else {
                 paint.set_color_rgba8(255, 255, 255, 255);
                 let path = self.number_paths[i].clone();
@@ -171,7 +170,10 @@ impl TicTacToeRenderer {
     }
 
     /// Render a Tic-Tac-Toe board on a threadpool
-    pub(crate) async fn render_board_async(&self, state: u16) -> anyhow::Result<Vec<u8>> {
+    pub(crate) async fn render_board_async(
+        &self,
+        state: TicTacToeState,
+    ) -> anyhow::Result<Vec<u8>> {
         // TODO: LRU cache
         let _permit = self.render_semaphore.acquire().await?;
         let self_clone = self.clone();

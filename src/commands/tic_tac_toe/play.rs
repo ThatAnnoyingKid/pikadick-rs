@@ -94,7 +94,7 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     {
         Ok(file) => AttachmentType::Bytes {
             data: file.into(),
-            filename: format!("{}.png", game_state),
+            filename: format!("{}.png", game_state.into_u16()),
         },
         Err(e) => {
             error!("Failed to render Tic-Tac-Toe board: {}", e);
