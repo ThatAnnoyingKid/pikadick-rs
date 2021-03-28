@@ -436,6 +436,7 @@ impl std::fmt::Display for GamePlayerMention {
 }
 
 #[command("tic-tac-toe")]
+#[aliases("ttt")]
 #[sub_commands("play", "concede")]
 #[description("Play a game of Tic-Tac-Toe")]
 #[usage("<move #>")]
