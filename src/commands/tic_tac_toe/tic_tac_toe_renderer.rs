@@ -102,7 +102,7 @@ impl TicTacToeRenderer {
         let mut paint = tiny_skia::Paint::default();
         let mut stroke = tiny_skia::Stroke::default();
         paint.anti_alias = true;
-        stroke.width = PIECE_WIDTH.into();
+        stroke.width = f32::from(PIECE_WIDTH);
 
         for (i, team) in state.iter().enumerate() {
             let transform = tiny_skia::Transform::from_translate(
@@ -136,41 +136,25 @@ impl TicTacToeRenderer {
                         HALF_SQUARE_SIZE_F32 - f32::from(PIECE_WIDTH / 2),
                     ),
                 };
-                let path = path
-                    .with_context(|| format!("Failed to build path for team '{:?}'", team))?
-                    .transform(transform)
-                    .with_context(|| format!("Failed to transform path for team '{:?}'", team))?;
+                let path =
+                    path.with_context(|| format!("Failed to build path for team '{:?}'", team))?;
 
                 pixmap
-                    .stroke_path(
-                        &path,
-                        &paint,
-                        &stroke,
-                        tiny_skia::Transform::identity(),
-                        None,
-                    )
+                    .stroke_path(&path, &paint, &stroke, transform, None)
                     .with_context(|| format!("Failed to draw path for team '{:?}'", team))?;
             } else {
                 paint.set_color_rgba8(255, 255, 255, 255);
-                let path = self.number_paths[i + 1].clone();
+                let path = &self.number_paths[i + 1];
                 let bounds = path.bounds();
 
                 let ratio = ((SQUARE_SIZE / 2) as f32) / bounds.height().max(bounds.width());
-                let path = path
-                    .transform(transform.pre_scale(ratio, ratio).post_translate(
-                        (SQUARE_SIZE_F32 / 2.0) - (ratio * bounds.width() / 2.0),
-                        (SQUARE_SIZE_F32 / 2.0) - (ratio * bounds.height() / 2.0),
-                    ))
-                    .with_context(|| format!("Failed to transform path for digit '{}'", i))?;
+                let transform = transform.pre_scale(ratio, ratio).post_translate(
+                    (SQUARE_SIZE_F32 / 2.0) - (ratio * bounds.width() / 2.0),
+                    (SQUARE_SIZE_F32 / 2.0) - (ratio * bounds.height() / 2.0),
+                );
 
                 pixmap
-                    .fill_path(
-                        &path,
-                        &paint,
-                        Default::default(),
-                        tiny_skia::Transform::identity(),
-                        None,
-                    )
+                    .fill_path(path, &paint, Default::default(), transform, None)
                     .with_context(|| format!("Failed to draw path for digit '{}'", i))?;
             }
         }
@@ -212,9 +196,7 @@ impl TicTacToeRenderer {
         info!("Board draw time: {:?}", draw_end - draw_start);
 
         let encode_start = Instant::now();
-        let img = pixmap
-            .encode_png()
-            .with_context(|| "failed to encode board")?;
+        let img = pixmap.encode_png().context("failed to encode board")?;
         let encode_end = Instant::now();
 
         info!("Board png encode time: {:?}", encode_end - encode_start);
