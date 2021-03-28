@@ -10,10 +10,13 @@ use std::{
 };
 use tokio::sync::Semaphore;
 
-const FONT_BYTES: &[u8] = include_bytes!("../../../assets/Roboto/Roboto-Thin.ttf");
+const FONT_BYTES: &[u8] =
+    include_bytes!("../../../assets/Averia_Serif_Libre/AveriaSerifLibre-Light.ttf");
 
 const RENDERED_SIZE: u16 = 300;
 const SQUARE_SIZE: u16 = RENDERED_SIZE / 3;
+const SQUARE_SIZE_F32: f32 = SQUARE_SIZE as f32;
+const HALF_SQUARE_SIZE_F32: f32 = SQUARE_SIZE_F32 / 2.0;
 
 const MAX_PARALLEL_RENDER_LIMIT: usize = 4;
 
@@ -61,10 +64,10 @@ impl TicTacToeRenderer {
             }
         }
 
-        let mut number_paths = Vec::with_capacity(9);
+        let mut number_paths = Vec::with_capacity(10);
         let mut paint = tiny_skia::Paint::default();
         paint.set_color_rgba8(255, 255, 255, 255);
-        for i in b'0'..b'9' {
+        for i in b'0'..=b'9' {
             let glyph_id = font_face
                 .glyph_index(char::from(i))
                 .with_context(|| format!("Missing glyph for '{}'", char::from(i)))?;
@@ -94,10 +97,12 @@ impl TicTacToeRenderer {
         let draw_start = Instant::now();
         let mut pixmap = self.background_pixmap.as_ref().as_ref().to_owned();
 
+        const PIECE_WIDTH: u16 = 4;
+
         let mut paint = tiny_skia::Paint::default();
         let mut stroke = tiny_skia::Stroke::default();
         paint.anti_alias = true;
-        stroke.width = 4.0;
+        stroke.width = PIECE_WIDTH.into();
 
         for (i, team) in state.iter().enumerate() {
             let transform = tiny_skia::Transform::from_translate(
@@ -110,13 +115,26 @@ impl TicTacToeRenderer {
                 let path = match team {
                     TicTacToeTeam::X => {
                         let mut path_builder = tiny_skia::PathBuilder::new();
-                        path_builder.move_to(0.0, 0.0);
-                        path_builder.line_to(100.0, 100.0);
-                        path_builder.move_to(0.0, 100.0);
-                        path_builder.line_to(100.0, 0.0);
+                        path_builder.move_to((PIECE_WIDTH / 2).into(), (PIECE_WIDTH / 2).into());
+                        path_builder.line_to(
+                            SQUARE_SIZE_F32 - f32::from(PIECE_WIDTH / 2),
+                            SQUARE_SIZE_F32 - f32::from(PIECE_WIDTH / 2),
+                        );
+                        path_builder.move_to(
+                            (PIECE_WIDTH / 2).into(),
+                            SQUARE_SIZE_F32 - f32::from(PIECE_WIDTH / 2),
+                        );
+                        path_builder.line_to(
+                            SQUARE_SIZE_F32 - f32::from(PIECE_WIDTH / 2),
+                            f32::from(PIECE_WIDTH / 2),
+                        );
                         path_builder.finish()
                     }
-                    TicTacToeTeam::O => tiny_skia::PathBuilder::from_circle(50.0, 50.0, 50.0),
+                    TicTacToeTeam::O => tiny_skia::PathBuilder::from_circle(
+                        HALF_SQUARE_SIZE_F32,
+                        HALF_SQUARE_SIZE_F32,
+                        HALF_SQUARE_SIZE_F32 - f32::from(PIECE_WIDTH / 2),
+                    ),
                 };
                 let path = path
                     .with_context(|| format!("Failed to build path for team '{:?}'", team))?
@@ -134,12 +152,15 @@ impl TicTacToeRenderer {
                     .with_context(|| format!("Failed to draw path for team '{:?}'", team))?;
             } else {
                 paint.set_color_rgba8(255, 255, 255, 255);
-                let path = self.number_paths[i].clone();
+                let path = self.number_paths[i + 1].clone();
                 let bounds = path.bounds();
 
-                let ratio = SQUARE_SIZE as f32 / bounds.height().max(bounds.width());
+                let ratio = ((SQUARE_SIZE / 2) as f32) / bounds.height().max(bounds.width());
                 let path = path
-                    .transform(transform.pre_scale(ratio, ratio))
+                    .transform(transform.pre_scale(ratio, ratio).post_translate(
+                        (SQUARE_SIZE_F32 / 2.0) - (ratio * bounds.width() / 2.0),
+                        (SQUARE_SIZE_F32 / 2.0) - (ratio * bounds.height() / 2.0),
+                    ))
                     .with_context(|| format!("Failed to transform path for digit '{}'", i))?;
 
                 pixmap

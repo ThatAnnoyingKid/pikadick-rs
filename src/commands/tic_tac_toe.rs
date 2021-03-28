@@ -128,8 +128,7 @@ impl TicTacToeData {
 
             let maybe_opponent = game_state
                 .get_opponent(GamePlayer::User(author_id))
-                .map(GamePlayer::into_user_id)
-                .expect("author is not a player in this game");
+                .and_then(GamePlayer::into_user_id);
 
             if let Some(user_id) = maybe_opponent {
                 if game_states.remove(&(guild_id, user_id)).is_none() {
@@ -455,7 +454,7 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
     let guild_id = msg.guild_id;
     let author_id = msg.author.id;
 
-    let move_number = match args.single::<u8>() {
+    let mut move_number = match args.trimmed().single::<u8>() {
         Ok(num) => num,
         Err(e) => {
             let response = format!("That move is not a number: {}\nUse `tic-tac-toe play <computer/@user> <X/O> to start a game.`", e);
@@ -464,14 +463,16 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         }
     };
 
-    if move_number > 8 {
+    if !(1..=9).contains(&move_number) {
         let response = format!(
-            "Your move number must be between 0 and 8 {}",
+            "Your move number must be between 1 and 9 {}",
             author_id.mention()
         );
         msg.channel_id.say(&ctx.http, response).await?;
         return Ok(());
     }
+
+    move_number -= 1;
 
     let game_state = match tic_tac_toe_data.get_game_state(&(guild_id, author_id)) {
         Some(game_state) => game_state,

@@ -34,7 +34,7 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     let tic_tac_toe_data = client_data.tic_tac_toe_data.clone();
     drop(data_lock);
 
-    let opponent: GamePlayer = match args.single() {
+    let opponent: GamePlayer = match args.trimmed().single() {
         Ok(player) => player,
         Err(e) => {
             let response = format!(
@@ -46,7 +46,7 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         }
     };
 
-    let author_team: TicTacToeTeam = match args.single() {
+    let author_team: TicTacToeTeam = match args.trimmed().single() {
         Ok(team) => team,
         Err(e) => {
             let response = format!("Invalid team. Choose 'X' or 'O'. Error: {}", e);
