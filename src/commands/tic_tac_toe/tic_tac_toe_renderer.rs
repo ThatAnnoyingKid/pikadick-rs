@@ -155,6 +155,39 @@ impl TicTacToeRenderer {
             }
         }
 
+        stroke.width = 10.0;
+        paint.set_color_rgba8(48, 48, 48, 255);
+        if let Some(winner_info) = state.get_winning_info() {
+            let start = usize::from(winner_info.tile_indexes[0]);
+            let start_x =
+                ((start % 3) * usize::from(SQUARE_SIZE) + (usize::from(SQUARE_SIZE) / 2)) as f32;
+            let start_y =
+                ((start / 3) * usize::from(SQUARE_SIZE) + (usize::from(SQUARE_SIZE) / 2)) as f32;
+
+            let end = usize::from(winner_info.tile_indexes[2]);
+            let end_x =
+                ((end % 3) * usize::from(SQUARE_SIZE) + (usize::from(SQUARE_SIZE) / 2)) as f32;
+            let end_y =
+                ((end / 3) * usize::from(SQUARE_SIZE) + (usize::from(SQUARE_SIZE) / 2)) as f32;
+
+            let mut path_builder = tiny_skia::PathBuilder::new();
+            path_builder.move_to(start_x, start_y);
+            path_builder.line_to(end_x, end_y);
+            let path = path_builder
+                .finish()
+                .context("Failed to draw winning line")?;
+
+            pixmap
+                .stroke_path(
+                    &path,
+                    &paint,
+                    &stroke,
+                    tiny_skia::Transform::identity(),
+                    None,
+                )
+                .context("Failed to draw path for winning line")?;
+        }
+
         let draw_end = Instant::now();
         info!("Board draw time: {:?}", draw_end - draw_start);
 
