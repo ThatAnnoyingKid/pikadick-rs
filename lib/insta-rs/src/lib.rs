@@ -1,13 +1,13 @@
-/// Api Types
-pub mod types;
-
-pub use crate::types::Post;
-use select::document::Document;
+pub use open_graph::{
+    self,
+    OpenGraphObject,
+};
+pub use select::document::Document;
 
 /// Result type
 pub type InstaResult<T> = Result<T, InstaError>;
 
-/// Error
+/// Error type
 #[derive(Debug, thiserror::Error)]
 pub enum InstaError {
     /// Reqwest Http Error
@@ -18,35 +18,45 @@ pub enum InstaError {
     #[error("invalid status {0}")]
     InvalidStatus(reqwest::StatusCode),
 
-    /// Missing a HTML element. Internal string is mostly for debugging.
-    #[error("missing html element")]
-    MissingElement(&'static str),
+    /// A Tokio Task Panicked
+    #[error("{0}")]
+    JoinError(#[from] tokio::task::JoinError),
+
+    /// Failed to parse an [`OpenGraphObject`].
+    #[error("{0}")]
+    InvalidOpenGraphObject(#[from] open_graph::open_graph_object::FromDocError),
 }
 
-/// Client
+/// A Client
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client.
+    ///
+    /// Useful only for piggybacking requests off of. It's generally a bad idea to touch it.
+    pub client: reqwest::Client,
 }
 
 impl Client {
-    /// Make a new client
+    /// Make a new [`Client`].
     pub fn new() -> Self {
         Client {
             client: reqwest::Client::new(),
         }
     }
 
-    /// Get a post
-    pub async fn get_post(&self, url: &str) -> InstaResult<Post> {
+    /// Get a post by url.
+    pub async fn get_post(&self, url: &str) -> InstaResult<OpenGraphObject> {
         let res = self.client.get(url).send().await?;
         let status = res.status();
         if !status.is_success() {
             return Err(InstaError::InvalidStatus(status));
         }
         let text = res.text().await?;
-        let doc = Document::from(text.as_str());
-        let post = Post::from_doc(&doc)?;
+        let post = tokio::task::spawn_blocking(move || {
+            let doc = Document::from(text.as_str());
+            InstaResult::Ok(OpenGraphObject::from_doc(&doc)?)
+        })
+        .await??;
 
         Ok(post)
     }

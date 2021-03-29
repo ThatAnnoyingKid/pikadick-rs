@@ -5,10 +5,26 @@ authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 edition = "2018"
 license = "MIT/Apache-2.0"
 
+[[bin]]
+path = "src/main.rs"
+name = "insta"
+required-features = [ "cli" ]
+
 [dependencies]
-reqwest = "0.11.1"
+open-graph = { path = "../open-graph-rs" }
+reqwest = "0.11.2"
 select = "0.5.0"
 thiserror = "1.0.24"
+tokio = "1.4.0"
+
+# Optional
+argh = { version = "0.1.4", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.2.0", features = [ "macros" ] }
+tokio = { version = "1.4.0", features = [ "macros" ] }
+
+[features]
+cli = [ 
+    "argh",
+    "tokio/rt-multi-thread"
+]

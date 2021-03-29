@@ -282,9 +282,9 @@ pub struct RoomOptions {
     #[serde(rename = "showAnswers")]
     pub show_answers: bool,
 
-    /// Memeset hash
-    pub memeset: String,
-
+    // No longer present?
+    // /// Memeset hash
+    // pub memeset: String,
     /// Show Answers as str
     #[serde(rename = "showAnswers_2")]
     pub show_answers_2: String,

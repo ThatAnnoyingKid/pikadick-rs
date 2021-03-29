@@ -76,7 +76,9 @@ struct Handler;
 impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
         let data_lock = ctx.data.read().await;
-        let client_data = data_lock.get::<ClientDataKey>().unwrap();
+        let client_data = data_lock
+            .get::<ClientDataKey>()
+            .expect("missing client data");
         let config = client_data.config.clone();
         drop(data_lock);
 
@@ -104,7 +106,9 @@ impl EventHandler for Handler {
 
     async fn message(&self, ctx: Context, msg: Message) {
         let data_lock = ctx.data.read().await;
-        let client_data = data_lock.get::<ClientDataKey>().unwrap();
+        let client_data = data_lock
+            .get::<ClientDataKey>()
+            .expect("missing client data");
         let reddit_embed_data = client_data.reddit_embed_data.clone();
         drop(data_lock);
 
@@ -123,14 +127,16 @@ impl TypeMapKey for ClientDataKey {
 
 #[help]
 async fn help(
-    context: &Context,
+    ctx: &Context,
     msg: &Message,
     args: Args,
     help_options: &'static HelpOptions,
     groups: &[&'static CommandGroup],
     owners: HashSet<UserId>,
 ) -> CommandResult {
-    let _ = help_commands::with_embeds(context, msg, args, &help_options, groups, owners).await;
+    let _ = help_commands::with_embeds(ctx, msg, args, help_options, groups, owners)
+        .await
+        .is_some();
     Ok(())
 }
 
@@ -154,7 +160,10 @@ async fn help(
     uwuify,
     cache_stats,
     insta_dl,
-    deviantart
+    deviantart,
+    urban,
+    xkcd,
+    tic_tac_toe
 )]
 struct General;
 
@@ -247,32 +256,20 @@ async fn process_dispatch_error_future<'fut>(
             );
             let _ = msg.channel_id.say(&ctx.http, response_str).await.is_ok();
         }
-        DispatchError::CheckFailed(check_name, reason) => match check_name {
-            "Admin" => {
+        DispatchError::CheckFailed(check_name, reason) => match reason {
+            Reason::User(user_reason_str) => {
+                let _ = msg.channel_id.say(&ctx.http, user_reason_str).await.is_ok();
+            }
+            _ => {
                 let _ = msg
                     .channel_id
                     .say(
                         &ctx.http,
-                        "You need to be admin in order to use this command",
+                        format!("{} check failed: {:#?}", check_name, reason),
                     )
                     .await
                     .is_ok();
             }
-            _ => match reason {
-                Reason::User(user_reason_str) => {
-                    let _ = msg.channel_id.say(&ctx.http, user_reason_str).await.is_ok();
-                }
-                _ => {
-                    let _ = msg
-                        .channel_id
-                        .say(
-                            &ctx.http,
-                            format!("{} check failed: {:#?}", check_name, reason),
-                        )
-                        .await
-                        .is_ok();
-                }
-            },
         },
         e => {
             let _ = msg
@@ -305,7 +302,7 @@ fn main() {
                     error!("Failed to load {}. The path is not a file.", p.display());
                 }
                 _ => {
-                    error!("Failed to load ./config.toml: {}", e);
+                    error!("Failed to load `./config.toml`: {}", e);
                 }
             }
             return;
@@ -432,9 +429,9 @@ fn main() {
         };
 
         let client_data = match ClientData::init(client.shard_manager.clone(), config, db).await {
-            Ok(mut c) => {
+            Ok(c) => {
                 // Add all post-init client data changes here
-                c.enabled_check_data.groups.push(&GENERAL_GROUP);
+                c.enabled_check_data.add_groups(&[&GENERAL_GROUP]);
                 c
             }
             Err(e) => {

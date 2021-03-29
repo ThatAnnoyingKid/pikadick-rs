@@ -6,13 +6,13 @@ edition = "2018"
 license = "MIT/Apache-2.0"
 
 [dependencies]
-reqwest = { version = "0.11.1", features = [ "cookies" ] }
+reqwest = { version = "0.11.2", features = [ "cookies" ] }
 select = "0.5.0"
-serde = { version = "1.0.124", features = [ "derive" ] } 
+serde = { version = "1.0.125", features = [ "derive" ] } 
 serde_json = "1.0.64"
 thiserror = "1.0.24"
-tokio = { version = "1.2.0", features = [ "rt" ] }
+tokio = { version = "1.4.0", features = [ "rt" ] }
 url = { version = "2.2.1", features = [ "serde" ] }
 
 [dev-dependencies]
-tokio = { version = "1.2.0", features = [ "macros" ] }
+tokio = { version = "1.4.0", features = [ "macros" ] }

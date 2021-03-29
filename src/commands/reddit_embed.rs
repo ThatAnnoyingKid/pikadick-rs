@@ -313,6 +313,9 @@ pub enum GetVideoDataError {
     InvalidResponse(GetVideoResponseError),
 }
 
+// Broken in help:
+// #[required_permissions("ADMINISTRATOR")]
+
 #[command("reddit-embed")]
 #[description("Enable automaitc reddit embedding for this server")]
 #[usage("<enable/disable>")]

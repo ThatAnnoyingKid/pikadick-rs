@@ -17,6 +17,9 @@ use serenity::{
 };
 use std::fmt::Write;
 
+// Broken in help:
+// #[required_permissions("ADMINISTRATOR")]
+
 #[command]
 #[description("Disable a command")]
 #[usage("<enable/disable> <cmd>")]
@@ -24,7 +27,7 @@ use std::fmt::Write;
 #[min_args(2)]
 #[max_args(2)]
 #[sub_commands(list)]
-#[checks(Enabled, Admin)]
+#[checks(Admin, Enabled)]
 pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let guild_id = match msg.guild_id {
         Some(id) => id,
@@ -42,7 +45,7 @@ pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     let db = client_data.db.clone();
     drop(data_lock);
 
-    let disable = match args.current().expect("valid arg") {
+    let disable = match args.current().expect("invalid arg") {
         "enable" => false,
         "disable" => true,
         _ => {
@@ -59,7 +62,6 @@ pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     let is_valid_command = {
         let names = data.get_command_names();
-        let names = names.as_ref().unwrap();
         names.iter().any(|name| name == cmd_name)
     };
 
@@ -120,9 +122,8 @@ pub async fn list(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         let mut res = "Commands:\n".to_string();
 
         let names = data.get_command_names();
-        let names = names.as_ref().unwrap();
 
-        for name in names {
+        for name in names.iter() {
             let state = if disabled_commands.contains(name) {
                 "DISABLED"
             } else {
