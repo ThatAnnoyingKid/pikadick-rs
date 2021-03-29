@@ -32,7 +32,10 @@ pub async fn board(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild_id = msg.guild_id;
     let author_id = msg.author.id;
 
-    match tic_tac_toe_data.get_game(guild_id, author_id) {
+    match tic_tac_toe_data
+        .get_game_state(&(guild_id, author_id))
+        .map(|game| *game.lock())
+    {
         Some(game) => {
             let file = match tic_tac_toe_data
                 .renderer

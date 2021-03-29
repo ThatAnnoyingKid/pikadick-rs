@@ -82,8 +82,11 @@ pub enum TryMoveResponse {
     },
 }
 
-type GameStateKey = (Option<GuildId>, UserId);
-type ShareGameState = Arc<Mutex<GameState>>;
+/// A [`GuildId`]/[`UserId`] key to a [`GameState`].
+pub type GameStateKey = (Option<GuildId>, UserId);
+
+/// A [`GameState`] that is wrapped in a mutex and sharable via a rc'ed ptr.
+pub type ShareGameState = Arc<Mutex<GameState>>;
 
 /// Data pertaining to running tic_tac_toe games
 #[derive(Clone)]
@@ -140,14 +143,6 @@ impl TicTacToeData {
         }
 
         Some(shared_game_state)
-    }
-
-    /// Get a game
-    pub fn get_game(&self, guild_id: Option<GuildId>, author_id: UserId) -> Option<GameState> {
-        self.game_states
-            .lock()
-            .get(&(guild_id, author_id))
-            .map(|game| *game.lock())
     }
 
     /// Create a new [`GameState`].
@@ -317,7 +312,7 @@ pub struct GameState {
 }
 
 impl GameState {
-    /// Iterate over all [`GamePlayers`].
+    /// Iterate over all [`GamePlayer`]s.
     ///
     /// Order is X player, O player.
     /// This will include computer players.

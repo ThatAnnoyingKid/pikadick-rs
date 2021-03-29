@@ -50,7 +50,7 @@ pub enum FromDocError {
 
 /// An OpenGraphObject.
 ///
-/// See https://ogp.me/.
+/// See <https://ogp.me/>
 #[derive(Debug)]
 pub struct OpenGraphObject {
     /// Object Title
