@@ -1,14 +1,11 @@
 import os
 import subprocess
 
+# TODO: Run all this in a WSL shell on Windows. Look for native deps like perl.
+
 ##############
 ### CONFIG ###
 ##############
-
-# I'm putting this here since custom profiles are still nightly.
-USE_LTO = True # Bool: True/False
-NUM_CODEGEN_UNITS = 1 # 0 < n < 255
-OPT_LEVEL = 3 # 0 <= n <= 3
 
 # Hardcode for now
 TARGET = "armv7-unknown-linux-gnueabihf"
@@ -38,14 +35,6 @@ RUSTFLAGS += "-Clinker={} ".format(LINKER)
 # These are necessary for some reason?
 # RUSTFLAGS += "-Clink-args=-Xlinker -rpath=/usr/lib/arm-linux-gnueabihf " 
 
-RUSTFLAGS += "-Ccodegen-units={} ".format(NUM_CODEGEN_UNITS)
-RUSTFLAGS += "-Copt-level={} ".format(OPT_LEVEL)
-
-if USE_LTO:
-    RUSTFLAGS += "-Clto -Cembed-bitcode=yes"
-    # RUSTFLAGS += "-Clinker-plugin-lto " # This is used to make compilation emit llvm bitcode. 
-                                          # The linker must be able to understand that.
-
 # TODO: Load from env
 # dotenv.load_dotenv()
 # os.environ["TARGET"] = 
@@ -62,6 +51,7 @@ cmd_list.extend([ "--release" ])
 env = {}
 env.update(os.environ)
 env["RUSTFLAGS"] = RUSTFLAGS
+env["RUST_BACKTRACE"] = "1"
 
 subprocess.call(cmd_list, env=env)
 

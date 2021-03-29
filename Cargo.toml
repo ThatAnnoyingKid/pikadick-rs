@@ -95,3 +95,8 @@ opt-level = 3
 # To make image encoding times sane
 [profile.dev.package.deflate]
 opt-level = 3
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
