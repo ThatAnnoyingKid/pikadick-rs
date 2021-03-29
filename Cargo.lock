@@ -969,7 +969,7 @@ dependencies = [
  "mach",
  "nix",
  "pin-utils",
- "uom",
+ "uom 0.30.0",
  "winapi",
 ]
 
@@ -1743,7 +1743,7 @@ dependencies = [
  "tokio",
  "toml",
  "ttf-parser",
- "uom",
+ "uom 0.31.1",
  "urban-dictionary",
  "url",
  "xkcd",
@@ -3035,6 +3035,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e76503e636584f1e10b9b3b9498538279561adcef5412927ba00c2b32c4ce5ed"
 dependencies = [
  "num-rational",
+ "num-traits",
+ "typenum",
+]
+
+[[package]]
+name = "uom"
+version = "0.31.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1ee6bfd0a27bf614353809a035cf6880b74239ec6c5e39a7b2860ca16809137"
+dependencies = [
  "num-traits",
  "typenum",
 ]
