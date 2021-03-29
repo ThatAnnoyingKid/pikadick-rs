@@ -3,6 +3,7 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
+use log::error;
 use serenity::{
     client::Context,
     framework::standard::{
@@ -10,6 +11,7 @@ use serenity::{
         Args,
         CommandResult,
     },
+    http::AttachmentType,
     model::prelude::*,
 };
 
@@ -32,7 +34,7 @@ pub async fn concede(ctx: &Context, msg: &Message, _args: Args) -> CommandResult
     let author_id = msg.author.id;
 
     let game_state = match tic_tac_toe_data.remove_game_state(guild_id, author_id) {
-        Some(game_state) => game_state,
+        Some(game_state) => *game_state.lock(),
         None => {
             let response = "Failed to concede as you have no games in this server".to_string();
             msg.channel_id.say(&ctx.http, response).await?;
@@ -41,24 +43,39 @@ pub async fn concede(ctx: &Context, msg: &Message, _args: Args) -> CommandResult
     };
 
     let opponent = game_state
-        .lock()
         .get_opponent(GamePlayer::User(author_id))
         .expect("author is not playing the game");
 
-    let response = match opponent {
-        GamePlayer::User(user_id) => {
-            format!(
-                "{} has conceded to {}.",
-                author_id.mention(),
-                user_id.mention()
-            )
-        }
-        GamePlayer::Computer => {
-            format!("{} has conceded to the computer.", author_id.mention())
+    let file = match tic_tac_toe_data
+        .renderer
+        .render_board_async(game_state.state)
+        .await
+    {
+        Ok(file) => AttachmentType::Bytes {
+            data: file.into(),
+            filename: format!("ttt-{}.png", game_state.state.into_u16()),
+        },
+        Err(e) => {
+            error!("Failed to render Tic-Tac-Toe board: {}", e);
+            msg.channel_id
+                .say(
+                    &ctx.http,
+                    format!("Failed to render Tic-Tac-Toe board: {}", e),
+                )
+                .await?;
+            return Ok(());
         }
     };
 
-    msg.channel_id.say(&ctx.http, response).await?;
+    let content = format!(
+        "{} has conceded to {}.",
+        author_id.mention(),
+        opponent.mention()
+    );
+
+    msg.channel_id
+        .send_message(&ctx.http, |m| m.content(content).add_file(file))
+        .await?;
 
     Ok(())
 }

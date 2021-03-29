@@ -1,9 +1,11 @@
+mod board;
 mod concede;
 mod play;
 mod tic_tac_toe_renderer;
 
 use self::tic_tac_toe_renderer::TicTacToeRenderer;
 pub use self::{
+    board::BOARD_COMMAND,
     concede::CONCEDE_COMMAND,
     play::PLAY_COMMAND,
 };
@@ -131,13 +133,21 @@ impl TicTacToeData {
                 .and_then(GamePlayer::into_user_id);
 
             if let Some(user_id) = maybe_opponent {
-                if game_states.remove(&(guild_id, user_id)).is_none() {
+                if game_states.remove(&(guild_id, user_id)).is_none() && user_id != author_id {
                     error!("Tried to delete a non-existent opponent game.");
                 }
             }
         }
 
         Some(shared_game_state)
+    }
+
+    /// Get a game
+    pub fn get_game(&self, guild_id: Option<GuildId>, author_id: UserId) -> Option<GameState> {
+        self.game_states
+            .lock()
+            .get(&(guild_id, author_id))
+            .map(|game| *game.lock())
     }
 
     /// Create a new [`GameState`].
@@ -355,7 +365,7 @@ impl GameState {
             (false, false) => None,
             (false, true) => Some(self.x_player),
             (true, false) => Some(self.o_player),
-            (true, true) => None,
+            (true, true) => Some(player), // Player is playing themselves
         }
     }
 
@@ -437,7 +447,7 @@ impl std::fmt::Display for GamePlayerMention {
 
 #[command("tic-tac-toe")]
 #[aliases("ttt")]
-#[sub_commands("play", "concede")]
+#[sub_commands("play", "concede", "board")]
 #[description("Play a game of Tic-Tac-Toe")]
 #[usage("<move #>")]
 #[example("0")]
