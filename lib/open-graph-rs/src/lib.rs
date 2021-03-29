@@ -1,4 +1,4 @@
-//! https://ogp.me/
+//! <https://ogp.me/>
 
 /// [`OpenGraphObject`]
 ///
