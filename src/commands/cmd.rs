@@ -1,5 +1,8 @@
 use crate::{
-    checks::ENABLED_CHECK,
+    checks::{
+        ADMIN_CHECK,
+        ENABLED_CHECK,
+    },
     ClientDataKey,
 };
 use log::error;
@@ -14,6 +17,9 @@ use serenity::{
 };
 use std::fmt::Write;
 
+// Broken in help:
+// #[required_permissions("ADMINISTRATOR")]
+
 #[command]
 #[description("Disable a command")]
 #[usage("<enable/disable> <cmd>")]
@@ -21,8 +27,7 @@ use std::fmt::Write;
 #[min_args(2)]
 #[max_args(2)]
 #[sub_commands(list)]
-#[checks(Enabled)]
-#[required_permissions("ADMINISTRATOR")]
+#[checks(Admin, Enabled)]
 pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let guild_id = match msg.guild_id {
         Some(id) => id,
@@ -40,7 +45,7 @@ pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     let db = client_data.db.clone();
     drop(data_lock);
 
-    let disable = match args.current().expect("valid arg") {
+    let disable = match args.current().expect("invalid arg") {
         "enable" => false,
         "disable" => true,
         _ => {

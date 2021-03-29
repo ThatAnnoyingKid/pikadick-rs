@@ -1,5 +1,8 @@
 use crate::{
-    checks::ENABLED_CHECK,
+    checks::{
+        ADMIN_CHECK,
+        ENABLED_CHECK,
+    },
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
@@ -310,14 +313,16 @@ pub enum GetVideoDataError {
     InvalidResponse(GetVideoResponseError),
 }
 
+// Broken in help:
+// #[required_permissions("ADMINISTRATOR")]
+
 #[command("reddit-embed")]
 #[description("Enable automaitc reddit embedding for this server")]
 #[usage("<enable/disable>")]
 #[example("enable")]
 #[min_args(1)]
 #[max_args(1)]
-#[required_permissions("ADMINISTRATOR")]
-#[checks(Enabled)]
+#[checks(Admin, Enabled)]
 async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();

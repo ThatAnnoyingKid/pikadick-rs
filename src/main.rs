@@ -76,7 +76,9 @@ struct Handler;
 impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
         let data_lock = ctx.data.read().await;
-        let client_data = data_lock.get::<ClientDataKey>().unwrap();
+        let client_data = data_lock
+            .get::<ClientDataKey>()
+            .expect("missing client data");
         let config = client_data.config.clone();
         drop(data_lock);
 
@@ -104,7 +106,9 @@ impl EventHandler for Handler {
 
     async fn message(&self, ctx: Context, msg: Message) {
         let data_lock = ctx.data.read().await;
-        let client_data = data_lock.get::<ClientDataKey>().unwrap();
+        let client_data = data_lock
+            .get::<ClientDataKey>()
+            .expect("missing client data");
         let reddit_embed_data = client_data.reddit_embed_data.clone();
         drop(data_lock);
 
@@ -123,14 +127,16 @@ impl TypeMapKey for ClientDataKey {
 
 #[help]
 async fn help(
-    context: &Context,
+    ctx: &Context,
     msg: &Message,
     args: Args,
     help_options: &'static HelpOptions,
     groups: &[&'static CommandGroup],
     owners: HashSet<UserId>,
 ) -> CommandResult {
-    let _ = help_commands::with_embeds(context, msg, args, &help_options, groups, owners).await;
+    let _ = help_commands::with_embeds(ctx, msg, args, help_options, groups, owners)
+        .await
+        .is_some();
     Ok(())
 }
 
