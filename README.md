@@ -8,7 +8,7 @@ Yet another generic discord bot.
 
 ***Are your friends too mentally stable? We can fix that!***
 
-### Getting Started
+## Getting Started
 1. Download [Rust](https://rustup.rs/).
 2. Download this repository.
 3. Create your own `.env` file in the repo. See the [env template file](./.env.template) for info. You should be fine just renaming that file.
@@ -19,7 +19,9 @@ Yet another generic discord bot.
 7. ???
 8. Profit?
 
-NOTE: Make your own release profile if you want fancy things like LTO.
+## Builds
+We provide the following builds. Open an issue if they don't work or you want builds for a different platform.
+* [Raspberry Pi (armv7-unknown-linux-gnueabihf)](https://nightly.link/ThatAnnoyingKid/pikadick-rs/workflows/BuildRpi/master/pikadick.zip)
 
 ## Contributing
 Feel free to open an issue or PR. 
