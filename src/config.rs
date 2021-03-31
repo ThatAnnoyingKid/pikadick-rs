@@ -74,13 +74,13 @@ impl Config {
     /// Load a config from a path
     pub fn load_from_path(path: &Path) -> anyhow::Result<Self> {
         std::fs::read(path)
-            .with_context(|| format!("Failed to read config from '{}'", path.display()))
+            .with_context(|| format!("failed to read config from '{}'", path.display()))
             .and_then(|b| Self::load_from_bytes(&b))
     }
 
     /// Load a config from bytes
     pub fn load_from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
-        toml::from_slice(bytes).context("Failed to parse config")
+        toml::from_slice(bytes).context("failed to parse config")
     }
 
     /// Validate a config

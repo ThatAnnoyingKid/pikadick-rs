@@ -1,3 +1,4 @@
+use anyhow::Context;
 use fern::colors::{
     Color,
     ColoredLevelConfig,
@@ -111,20 +112,8 @@ impl Write for DelayWriter {
     }
 }
 
-/// An error that occurs while setting up a logger
-#[derive(Debug, thiserror::Error)]
-pub enum LoggerError {
-    /// Error initalizing the logger
-    #[error(transparent)]
-    SetLogger(#[from] log::SetLoggerError),
-
-    /// Io Error
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
-}
-
 /// Try to setup a logger
-pub fn setup() -> Result<DelayWriter, LoggerError> {
+pub fn setup() -> anyhow::Result<DelayWriter> {
     let colors_line = ColoredLevelConfig::new()
         .error(Color::Red)
         .warn(Color::Yellow)
@@ -169,7 +158,8 @@ pub fn setup() -> Result<DelayWriter, LoggerError> {
     fern::Dispatch::new()
         .chain(file_logger)
         .chain(term_logger)
-        .apply()?;
+        .apply()
+        .context("failed to set logger")?;
 
     Ok(file_writer)
 }
