@@ -92,7 +92,7 @@ pub struct ClientData {
     pub insta_client: InstaClient,
     /// The deviantart client
     pub deviantart_client: DeviantartClient,
-    /// The urban dictionary client 
+    /// The urban dictionary client
     pub urban_client: UrbanClient,
     /// The xkcd client
     pub xkcd_client: xkcd::Client,
