@@ -1,3 +1,4 @@
+use anyhow::Context;
 use serde::{
     Deserialize,
     Serialize,
@@ -11,28 +12,6 @@ use std::{
         PathBuf,
     },
 };
-
-#[derive(Debug)]
-pub enum ConfigError<'a> {
-    DoesNotExist(&'a Path),
-    IsNotFile(&'a Path),
-
-    Io(std::io::Error),
-    TomlDe(toml::de::Error),
-}
-
-impl std::fmt::Display for ConfigError<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ConfigError::DoesNotExist(path) => write!(f, "{} does not exist", path.display()),
-            ConfigError::IsNotFile(path) => write!(f, "{} is not a file", path.display()),
-            ConfigError::Io(e) => e.fmt(f),
-            ConfigError::TomlDe(e) => e.fmt(f),
-        }
-    }
-}
-
-impl std::error::Error for ConfigError<'_> {}
 
 fn default_prefix() -> String {
     "p!".to_string()
@@ -92,24 +71,19 @@ impl Config {
         &self.fml
     }
 
-    pub fn load_from_path(p: &Path) -> Result<Self, ConfigError<'_>> {
-        if !p.exists() {
-            return Err(ConfigError::DoesNotExist(p));
-        }
-
-        if !p.is_file() {
-            return Err(ConfigError::IsNotFile(p));
-        }
-
-        std::fs::read(p)
-            .map_err(ConfigError::Io)
+    /// Load a config from a path
+    pub fn load_from_path(path: &Path) -> anyhow::Result<Self> {
+        std::fs::read(path)
+            .with_context(|| format!("Failed to read config from '{}'", path.display()))
             .and_then(|b| Self::load_from_bytes(&b))
     }
 
-    pub fn load_from_bytes(bytes: &[u8]) -> Result<Self, ConfigError<'static>> {
-        toml::from_slice(bytes).map_err(ConfigError::TomlDe)
+    /// Load a config from bytes
+    pub fn load_from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
+        toml::from_slice(bytes).context("Failed to parse config")
     }
 
+    /// Validate a config
     pub fn validate(&mut self) -> Vec<ValidationMessage> {
         let mut errors = Vec::new();
 

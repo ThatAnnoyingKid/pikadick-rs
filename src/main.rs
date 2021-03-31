@@ -33,7 +33,6 @@ use crate::{
     config::{
         ActivityKind,
         Config,
-        ConfigError,
         Severity,
     },
     database::Database,
@@ -290,21 +289,11 @@ fn main() {
         }
     };
 
-    info!("Loading config.toml...");
+    info!("Loading `config.toml`...");
     let mut config = match Config::load_from_path("./config.toml".as_ref()) {
         Ok(c) => c,
         Err(e) => {
-            match e {
-                ConfigError::DoesNotExist(p) => {
-                    error!("Failed to load {}. The file does not exist.", p.display());
-                }
-                ConfigError::IsNotFile(p) => {
-                    error!("Failed to load {}. The path is not a file.", p.display());
-                }
-                _ => {
-                    error!("Failed to load `./config.toml`: {}", e);
-                }
-            }
+            error!("Failed to load `./config.toml`: {}", e);
             return;
         }
     };
