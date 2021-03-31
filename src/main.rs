@@ -280,6 +280,7 @@ async fn process_dispatch_error_future<'fut>(
     };
 }
 
+/// Main Entry
 fn main() {
     let log_file_writer = match crate::logger::setup() {
         Ok(file) => file,
