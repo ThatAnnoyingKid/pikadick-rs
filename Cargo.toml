@@ -58,6 +58,9 @@ use-openssl-vendored = [ "openssl" ]
 # Fix security advisory
 heim = { git = "https://github.com/heim-rs/heim", branch = "dependabot/cargo/raw-cpuid-approx-9.0" }
 
+# `servo_arc` has UB on crates.io
+servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca1468a1767e3cc294f824036c" }
+
 [workspace]
 members = [ 
 	"lib/fml-rs",
