@@ -2,13 +2,13 @@
 ///
 pub type RuleResult<T> = Result<T, RuleError>;
 
-/// The error that occurs when a SearchResult could not be parsed
+/// The error that occurs when a `SearchResult` could not be parsed.
 ///
-pub type SearchResultError = crate::types::search_result::FromDocError;
+pub type SearchResultError = crate::types::search_result::FromHtmlError;
 
-/// The Error that occurs when a post could not be parsed
+/// The Error that occurs when a `Post` could not be parsed.
 ///
-pub type PostError = crate::types::post::FromDocError;
+pub type PostError = crate::types::post::FromHtmlError;
 
 /// Crate Error Type
 ///
@@ -43,7 +43,7 @@ pub enum RuleError {
     #[error("invalid post: {0}")]
     InvalidPost(#[from] PostError),
 
-    /// A tokio task panicked
+    /// A tokio task failed to complete
     ///
     #[error("{0}")]
     TokioJoin(#[from] tokio::task::JoinError),

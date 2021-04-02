@@ -2237,7 +2237,7 @@ dependencies = [
  "argh",
  "itoa",
  "reqwest",
- "select",
+ "scraper",
  "serde",
  "serde_json",
  "thiserror",
