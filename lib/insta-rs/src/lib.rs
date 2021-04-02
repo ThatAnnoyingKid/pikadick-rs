@@ -2,7 +2,6 @@ pub use open_graph::{
     self,
     OpenGraphObject,
 };
-pub use select::document::Document;
 
 /// Result type
 pub type InstaResult<T> = Result<T, InstaError>;
@@ -24,7 +23,7 @@ pub enum InstaError {
 
     /// Failed to parse an [`OpenGraphObject`].
     #[error("{0}")]
-    InvalidOpenGraphObject(#[from] open_graph::open_graph_object::FromDocError),
+    InvalidOpenGraphObject(#[from] open_graph::open_graph_object::FromHtmlError),
 }
 
 /// A Client
@@ -53,8 +52,8 @@ impl Client {
         }
         let text = res.text().await?;
         let post = tokio::task::spawn_blocking(move || {
-            let doc = Document::from(text.as_str());
-            InstaResult::Ok(OpenGraphObject::from_doc(&doc)?)
+            let doc = open_graph::Html::parse_document(text.as_str());
+            InstaResult::Ok(OpenGraphObject::from_html(&doc)?)
         })
         .await??;
 

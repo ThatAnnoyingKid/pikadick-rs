@@ -1,16 +1,12 @@
-use select::{
-    document::Document,
-    predicate::{
-        And,
-        Attr,
-        Name,
-    },
+use scraper::{
+    Html,
+    Selector,
 };
 use url::Url;
 
 /// An error that may occur while parsing an [`OpenGraphObject`].
 #[derive(Debug, thiserror::Error)]
-pub enum FromDocError {
+pub enum FromHtmlError {
     /// Missing title field
     #[error("missing title")]
     MissingTitle,
@@ -51,7 +47,7 @@ pub enum FromDocError {
 /// An OpenGraphObject.
 ///
 /// See <https://ogp.me/>
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct OpenGraphObject {
     /// Object Title
     pub title: String,
@@ -76,18 +72,19 @@ pub struct OpenGraphObject {
 }
 
 impl OpenGraphObject {
-    /// Make a new [`OpenGraphObject`] from a [`Document`].
-    pub fn from_doc(doc: &Document) -> Result<Self, FromDocError> {
-        let title = lookup_meta_kv(doc, "og:title")
-            .ok_or(FromDocError::MissingTitle)?
+    /// Make a new [`OpenGraphObject`] from a [`Html`].
+    pub fn from_html(html: &Html) -> Result<Self, FromHtmlError> {
+        let title = lookup_meta_kv(html, "og:title")
+            .ok_or(FromHtmlError::MissingTitle)?
             .to_string();
-        let kind = lookup_meta_kv(doc, "og:type")
-            .ok_or(FromDocError::MissingType)?
+
+        let kind = lookup_meta_kv(html, "og:type")
+            .ok_or(FromHtmlError::MissingType)?
             .to_string();
 
         match kind.as_str() {
             "video.movie" | "video.tv_show" | "video.other" => {
-                //let video_actors = lookup_meta_kv(doc, "video:actor")
+                //let video_actors = lookup_meta_kv(html, "video:actor")
                 // video:actor:role
                 // video:director
                 // video:writer
@@ -96,35 +93,35 @@ impl OpenGraphObject {
                 // video:tag
             }
             "video.episode" => {
-                return Err(FromDocError::Unimplemented);
+                return Err(FromHtmlError::Unimplemented);
             }
             "video" => {
                 // Not in spec, but Instagram uses it.
                 // TODO: Fill fields though testing
             }
             _ => {
-                return Err(FromDocError::Unimplemented);
+                return Err(FromHtmlError::Unimplemented);
             }
         }
 
-        let image = lookup_meta_kv(doc, "og:image")
+        let image = lookup_meta_kv(html, "og:image")
             .map(Url::parse)
-            .ok_or(FromDocError::MissingImage)?
-            .map_err(FromDocError::InvalidImage)?;
+            .ok_or(FromHtmlError::MissingImage)?
+            .map_err(FromHtmlError::InvalidImage)?;
 
-        let url = lookup_meta_kv(doc, "og:url")
+        let url = lookup_meta_kv(html, "og:url")
             .map(Url::parse)
-            .ok_or(FromDocError::MissingUrl)?
-            .map_err(FromDocError::InvalidUrl)?;
+            .ok_or(FromHtmlError::MissingUrl)?
+            .map_err(FromHtmlError::InvalidUrl)?;
 
-        let audio_url = lookup_meta_kv(doc, "og:audio")
-            .map(|s| Url::parse(s).map_err(FromDocError::InvalidAudioUrl))
+        let audio_url = lookup_meta_kv(html, "og:audio")
+            .map(|s| Url::parse(s).map_err(FromHtmlError::InvalidAudioUrl))
             .transpose()?;
 
-        let description = lookup_meta_kv(doc, "og:description").map(ToString::to_string);
+        let description = lookup_meta_kv(html, "og:description").map(ToString::to_string);
 
-        let video_url = lookup_meta_kv(doc, "og:video")
-            .map(|s| Url::parse(s).map_err(FromDocError::InvalidVideoUrl))
+        let video_url = lookup_meta_kv(html, "og:video")
+            .map(|s| Url::parse(s).map_err(FromHtmlError::InvalidVideoUrl))
             .transpose()?;
 
         Ok(Self {
@@ -146,10 +143,9 @@ impl OpenGraphObject {
 }
 
 /// Lookup the value for a `<meta property = {name} content = {value} />`
-fn lookup_meta_kv<'a>(doc: &'a Document, name: &str) -> Option<&'a str> {
-    doc.find(And(Name("meta"), Attr("property", name)))
-        .next()?
-        .attr("content")
+fn lookup_meta_kv<'a>(html: &'a Html, name: &str) -> Option<&'a str> {
+    let selector = Selector::parse(&format!("meta[property=\"{}\"]", name)).ok()?;
+    html.select(&selector).next()?.value().attr("content")
 }
 
 #[cfg(test)]
@@ -160,8 +156,8 @@ mod test {
 
     #[test]
     fn parse_video_obj() {
-        let doc = Document::from(VIDEO_OBJ);
-        let obj = OpenGraphObject::from_doc(&doc).expect("invalid open graph object");
-        dbg!(obj);
+        let html = Html::parse_document(VIDEO_OBJ);
+        let obj = OpenGraphObject::from_html(&html).expect("invalid open graph object");
+        dbg!(&obj);
     }
 }

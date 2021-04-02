@@ -1,59 +1,49 @@
 /// Library Types
-///
 mod types;
 
 pub use crate::types::PostUrl;
 pub use open_graph::{
     self,
+    Html,
     OpenGraphObject,
 };
-use select::document::Document;
 use tokio::io::AsyncWriteExt;
 
 /// Error Type
-///
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Reqwest HTTP Error
-    ///
     #[error("{0}")]
     Reqwest(#[from] reqwest::Error),
 
     /// Invalid HTTP Status Code
-    ///
     #[error("invalid status code '{0}'")]
     InvalidStatus(reqwest::StatusCode),
 
     /// A Tokio Task Panicked
-    ///
     #[error("{0}")]
     TokioJoin(#[from] tokio::task::JoinError),
 
     /// Failed to parse an [`OpenGraphObject`].
-    ///
     #[error("{0}")]
-    InvalidOpenGraphObject(#[from] open_graph::open_graph_object::FromDocError),
+    InvalidOpenGraphObject(#[from] open_graph::open_graph_object::FromHtmlError),
 
     /// Io Error
-    ///
     #[error("{0}")]
     Io(#[from] std::io::Error),
 }
 
 /// A tiktok client
-///
 #[derive(Debug, Clone)]
 pub struct Client {
     /// The inner HTTP client.
     ///
     /// Should only be used if you want to piggyback off of this for HTTP requests
-    ///
     pub client: reqwest::Client,
 }
 
 impl Client {
     /// Make a new [`Client`]
-    ///
     pub fn new() -> Self {
         Self {
             client: reqwest::Client::builder()
@@ -65,7 +55,6 @@ impl Client {
     }
 
     /// Get a tiktock post.
-    ///
     pub async fn get_post(&self, url: &PostUrl) -> Result<OpenGraphObject, Error> {
         let res = self.client.get(url.as_str()).send().await?;
         let status = res.status();
@@ -76,8 +65,8 @@ impl Client {
         }
 
         let ret = tokio::task::spawn_blocking(move || {
-            let doc = Document::from(text.as_str());
-            OpenGraphObject::from_doc(&doc)
+            let doc = Html::parse_document(text.as_str());
+            OpenGraphObject::from_html(&doc)
         })
         .await??;
 
@@ -85,7 +74,6 @@ impl Client {
     }
 
     /// Send a HTTP request to the url and copy the response to the given writer
-    ///
     pub async fn get_to<W>(&self, url: &str, mut writer: W) -> Result<(), Error>
     where
         W: tokio::io::AsyncWrite + Unpin,
