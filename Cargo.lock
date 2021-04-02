@@ -2126,10 +2126,10 @@ dependencies = [
 
 [[package]]
 name = "reddit-tube"
-version = "0.0.1"
+version = "0.0.0"
 dependencies = [
  "reqwest",
- "select",
+ "scraper",
  "serde",
  "serde_json",
  "thiserror",
