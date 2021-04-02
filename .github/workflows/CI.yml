@@ -32,7 +32,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: '--tests --all -- -D warnings'
+          args: '--tests --all --all-features -- -D warnings'
         
   # We use nightly options for formatting,
   # so split linting to add freedom to choose toolchains for the rest of the linting steps.       
@@ -72,8 +72,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         
-      - name: Build
+      - name: Build Pikadick
         run: cargo build --verbose
+        
+      - name: Build All
+        run: cargo build --verbose --all --all-features
         
       - name: Run Tests
         run: cargo test --all --verbose
