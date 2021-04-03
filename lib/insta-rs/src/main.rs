@@ -45,7 +45,7 @@ async fn async_main(options: CommandOptions) {
             }
         };
 
-        let res = match client.client.get(video_url.as_str()).send().await {
+        let res = match client.client.client.get(video_url.as_str()).send().await {
             Ok(res) => res,
             Err(e) => {
                 eprintln!("Failed to send request: {}", e);
@@ -66,11 +66,18 @@ async fn async_main(options: CommandOptions) {
             }
         };
 
-        let extension = match Path::new(video_url.path()).extension() {
-            Some(extension) => extension,
+        let extension = match Path::new(video_url.path())
+            .extension()
+            .map(|extension| extension.to_str())
+        {
+            Some(Ok(extension)) => extension,
+            Some(Err(e)) => {
+                eprintln!("Invalid extension: {}, using 'mp4'", e);
+                "mp4"
+            }
             None => {
-                eprintln!("Unknown extention, using 'mp4'");
-                "mp4".as_ref()
+                eprintln!("Unknown extension, using 'mp4'");
+                "mp4"
             }
         };
 

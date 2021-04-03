@@ -72,7 +72,7 @@ pub struct OpenGraphObject {
 }
 
 impl OpenGraphObject {
-    /// Make a new [`OpenGraphObject`] from a [`Html`].
+    /// Make a new [`OpenGraphObject`] from [`Html`].
     pub fn from_html(html: &Html) -> Result<Self, FromHtmlError> {
         let title = lookup_meta_kv(html, "og:title")
             .ok_or(FromHtmlError::MissingTitle)?
@@ -142,6 +142,14 @@ impl OpenGraphObject {
     }
 }
 
+impl std::str::FromStr for OpenGraphObject {
+    type Err = FromHtmlError;
+
+    fn from_str(data: &str) -> Result<Self, Self::Err> {
+        OpenGraphObject::from_html(&Html::parse_document(data))
+    }
+}
+
 /// Lookup the value for a `<meta property = {name} content = {value} />`
 fn lookup_meta_kv<'a>(html: &'a Html, name: &str) -> Option<&'a str> {
     let selector = Selector::parse(&format!("meta[property=\"{}\"]", name)).ok()?;
@@ -156,8 +164,7 @@ mod test {
 
     #[test]
     fn parse_video_obj() {
-        let html = Html::parse_document(VIDEO_OBJ);
-        let obj = OpenGraphObject::from_html(&html).expect("invalid open graph object");
+        let obj: OpenGraphObject = VIDEO_OBJ.parse().expect("invalid open graph object");
         dbg!(&obj);
     }
 }
