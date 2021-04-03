@@ -1254,9 +1254,7 @@ dependencies = [
 name = "insta"
 version = "0.0.0"
 dependencies = [
- "argh",
  "open-graph",
- "reqwest",
  "thiserror",
  "tokio",
 ]
