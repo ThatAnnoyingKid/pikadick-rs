@@ -65,46 +65,13 @@ async fn async_main(options: CommandOptions) -> anyhow::Result<()> {
             .as_ref()
             .context("missing video url in object")?;
 
-        let extension = match Path::new(video_url.path())
-            .extension()
-            .map(|extension| extension.to_str())
-        {
-            Some(Some(extension)) => extension,
-            Some(None) => {
-                eprintln!("Invalid extension, using 'mp4'");
-                "mp4"
-            }
-            None => {
-                eprintln!("Unknown extension, using 'mp4'");
-                "mp4"
-            }
-        };
-
-        let filename = format!("video.{}", extension);
-
-        download(&client, video_url.as_str(), &filename).await?;
+        download(&client, video_url.as_str(), "mp4", "video").await?;
 
         return Ok(());
     }
 
     if object.kind == "instapp:photo" {
-        let extension = match Path::new(object.image.path())
-            .extension()
-            .map(|extension| extension.to_str())
-        {
-            Some(Some(extension)) => extension,
-            Some(None) => {
-                eprintln!("Invalid extension, using 'png'");
-                "png"
-            }
-            None => {
-                eprintln!("Unknown extension, using 'png'");
-                "png"
-            }
-        };
-
-        let filename = format!("image.{}", extension);
-        download(&client, object.image.as_str(), &filename).await?;
+        download(&client, object.image.as_str(), "png", "image").await?;
         return Ok(());
     }
 
@@ -112,25 +79,36 @@ async fn async_main(options: CommandOptions) -> anyhow::Result<()> {
 }
 
 /// Download a url's contents
-async fn download(client: &open_graph::Client, url: &str, filename: &str) -> anyhow::Result<()> {
-    let response = client
-        .client
-        .get(url)
-        .send()
+async fn download(
+    client: &open_graph::Client,
+    url: &str,
+    default_extension: &str,
+    filename: &str,
+) -> anyhow::Result<()> {
+    let extension = match Path::new(url)
+        .extension()
+        .map(|extension| extension.to_str())
+    {
+        Some(Some(extension)) => extension,
+        Some(None) => {
+            eprintln!("Invalid extension, using '{}'", default_extension);
+            default_extension
+        }
+        None => {
+            eprintln!("Unknown extension, using '{}'", default_extension);
+            default_extension
+        }
+    };
+
+    let filename = format!("{}.{}", filename, extension);
+
+    let mut buffer = Vec::with_capacity(1_000_000); // 1 MB
+    client
+        .get_and_copy_to(url, &mut buffer)
         .await
-        .context("Failed to start download request")?;
+        .with_context(|| format!("failed to download '{}'", url))?;
 
-    let status = response.status();
-    if !status.is_success() {
-        anyhow::bail!("invalid status code '{}'", status);
-    }
-
-    let data = response
-        .bytes()
-        .await
-        .context("failed to download request body")?;
-
-    std::fs::write(filename, data)
+    std::fs::write(&filename, buffer)
         .with_context(|| format!("failed to download to file '{}'", filename))?;
 
     Ok(())
