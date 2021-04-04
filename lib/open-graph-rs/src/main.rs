@@ -1,6 +1,6 @@
 use anyhow::Context;
-use std::path::Path;
 use open_graph::OpenGraphObject;
+use std::path::Path;
 
 #[derive(argh::FromArgs)]
 #[argh(description = "a tool to download media from open-graph compatible sources")]
@@ -10,7 +10,7 @@ struct CommandOptions {
         description = "the url to a open graph protocol compatible webpage"
     )]
     url: String,
-    
+
     #[argh(switch, description = "whether to print the debug open graph object")]
     debug_object: bool,
 }
@@ -50,10 +50,10 @@ async fn async_main(options: CommandOptions) -> anyhow::Result<()> {
         .get_object(&options.url)
         .await
         .context("failed to get object")?;
-        
+
     print_object(&object);
     println!();
-    
+
     if options.debug_object {
         println!("{:#?}", object);
         println!();
@@ -136,12 +136,12 @@ async fn download(client: &open_graph::Client, url: &str, filename: &str) -> any
     Ok(())
 }
 
-fn print_object(object: &OpenGraphObject){
+fn print_object(object: &OpenGraphObject) {
     println!("Title: {}", object.title);
     println!("Kind: {}", object.kind);
     println!("Image: {}", object.image.as_str());
-    
+
     if let Some(description) = object.description.as_ref() {
         println!("Description: {}", description);
-       }
+    }
 }
