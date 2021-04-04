@@ -1,49 +1,69 @@
+use anyhow::Context;
 use std::path::Path;
+use open_graph::OpenGraphObject;
 
 #[derive(argh::FromArgs)]
 #[argh(description = "a tool to download media from open-graph compatible sources")]
 struct CommandOptions {
-    /// the url to a ogp compatible webpage
-    #[argh(positional)]
+    #[argh(
+        positional,
+        description = "the url to a open graph protocol compatible webpage"
+    )]
     url: String,
+    
+    #[argh(switch, description = "whether to print the debug open graph object")]
+    debug_object: bool,
 }
 
 fn main() {
-    let options: CommandOptions = argh::from_env();
-    let tokio_rt = match tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-    {
-        Ok(tokio_rt) => tokio_rt,
-        Err(e) => {
-            eprintln!("Failed to start tokio runtime: {}", e);
-            return;
-        }
-    };
-
-    tokio_rt.block_on(async_main(options));
-    println!("Done");
-}
-
-async fn async_main(options: CommandOptions) {
-    let client = open_graph::Client::new();
-
-    let object = match client.get_object(&options.url).await {
-        Ok(object) => object,
-        Err(e) => {
-            eprintln!("Failed to get post: {}", e);
-            return;
-        }
-    };
-
-    if object.is_video() {
-        let video_url = match object.video_url.as_ref() {
-            Some(url) => url,
-            None => {
-                eprintln!("Missing video url");
+    let exit_code = {
+        let options: CommandOptions = argh::from_env();
+        let tokio_rt = match tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+        {
+            Ok(tokio_rt) => tokio_rt,
+            Err(e) => {
+                eprintln!("Failed to start tokio runtime: {}", e);
                 return;
             }
         };
+
+        let ret = tokio_rt.block_on(async_main(options));
+
+        match ret {
+            Ok(()) => 0,
+            Err(e) => {
+                eprintln!("{}", e);
+                1
+            }
+        }
+    };
+
+    std::process::exit(exit_code);
+}
+
+async fn async_main(options: CommandOptions) -> anyhow::Result<()> {
+    let client = open_graph::Client::new();
+
+    let object = client
+        .get_object(&options.url)
+        .await
+        .context("failed to get object")?;
+        
+    print_object(&object);
+    println!();
+    
+    if options.debug_object {
+        println!("{:#?}", object);
+        println!();
+    }
+
+    if object.is_video() {
+        let video_url = object
+            .video_url
+            .as_ref()
+            .context("missing video url in object")?;
 
         let extension = match Path::new(video_url.path())
             .extension()
@@ -62,9 +82,9 @@ async fn async_main(options: CommandOptions) {
 
         let filename = format!("video.{}", extension);
 
-        download(&client, video_url.as_str(), &filename).await;
+        download(&client, video_url.as_str(), &filename).await?;
 
-        return;
+        return Ok(());
     }
 
     if object.kind == "instapp:photo" {
@@ -84,40 +104,44 @@ async fn async_main(options: CommandOptions) {
         };
 
         let filename = format!("image.{}", extension);
-        download(&client, object.image.as_str(), &filename).await;
-        return;
+        download(&client, object.image.as_str(), &filename).await?;
+        return Ok(());
     }
 
-    eprintln!("Unsupported object type");
-    dbg!(object);
-
-    return;
+    anyhow::bail!("Unsupported Object Kind");
 }
 
 /// Download a url's contents
-async fn download(client: &open_graph::Client, url: &str, filename: &str) {
-    let response = match client.client.get(url).send().await {
-        Ok(res) => res,
-        Err(e) => {
-            eprintln!("Failed to send request: {}", e);
-            return;
-        }
-    };
+async fn download(client: &open_graph::Client, url: &str, filename: &str) -> anyhow::Result<()> {
+    let response = client
+        .client
+        .get(url)
+        .send()
+        .await
+        .context("Failed to start download request")?;
+
     let status = response.status();
     if !status.is_success() {
-        eprintln!("Invalid HTTP Status Code {}", status);
-        return;
+        anyhow::bail!("invalid status code '{}'", status);
     }
 
-    let data = match response.bytes().await {
-        Ok(data) => data,
-        Err(e) => {
-            eprintln!("Failed to download request body: {}", e);
-            return;
-        }
-    };
+    let data = response
+        .bytes()
+        .await
+        .context("failed to download request body")?;
 
-    if let Err(e) = std::fs::write(filename, data) {
-        eprintln!("Failed to save file '{}': {}", filename, e);
-    }
+    std::fs::write(filename, data)
+        .with_context(|| format!("failed to download to file '{}'", filename))?;
+
+    Ok(())
+}
+
+fn print_object(object: &OpenGraphObject){
+    println!("Title: {}", object.title);
+    println!("Kind: {}", object.kind);
+    println!("Image: {}", object.image.as_str());
+    
+    if let Some(description) = object.description.as_ref() {
+        println!("Description: {}", description);
+       }
 }
