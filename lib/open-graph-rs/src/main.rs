@@ -3,7 +3,7 @@ use std::path::Path;
 #[derive(argh::FromArgs)]
 #[argh(description = "a tool to download media from open-graph compatible sources")]
 struct CommandOptions {
-    /// the url
+    /// the url to a ogp compatible webpage
     #[argh(positional)]
     url: String,
 }
@@ -45,27 +45,6 @@ async fn async_main(options: CommandOptions) {
             }
         };
 
-        let res = match client.client.get(video_url.as_str()).send().await {
-            Ok(res) => res,
-            Err(e) => {
-                eprintln!("Failed to send request: {}", e);
-                return;
-            }
-        };
-        let status = res.status();
-        if !status.is_success() {
-            eprintln!("Invalid HTTP Status Code {}", status);
-            return;
-        }
-
-        let data = match res.bytes().await {
-            Ok(data) => data,
-            Err(e) => {
-                eprintln!("Failed to download request body: {}", e);
-                return;
-            }
-        };
-
         let extension = match Path::new(video_url.path())
             .extension()
             .map(|extension| extension.to_str())
@@ -81,13 +60,64 @@ async fn async_main(options: CommandOptions) {
             }
         };
 
-        if let Err(e) = std::fs::write(format!("video.{}", extension), data) {
-            eprintln!("Failed to save video: {}", e);
-        }
-    } else {
-        eprintln!("Unsupported object type");
-        dbg!(object);
+        let filename = format!("video.{}", extension);
+
+        download(&client, video_url.as_str(), &filename).await;
 
         return;
+    }
+
+    if object.kind == "instapp:photo" {
+        let extension = match Path::new(object.image.path())
+            .extension()
+            .map(|extension| extension.to_str())
+        {
+            Some(Some(extension)) => extension,
+            Some(None) => {
+                eprintln!("Invalid extension, using 'png'");
+                "png"
+            }
+            None => {
+                eprintln!("Unknown extension, using 'png'");
+                "png"
+            }
+        };
+
+        let filename = format!("image.{}", extension);
+        download(&client, object.image.as_str(), &filename).await;
+        return;
+    }
+
+    eprintln!("Unsupported object type");
+    dbg!(object);
+
+    return;
+}
+
+/// Download a url's contents
+async fn download(client: &open_graph::Client, url: &str, filename: &str) {
+    let response = match client.client.get(url).send().await {
+        Ok(res) => res,
+        Err(e) => {
+            eprintln!("Failed to send request: {}", e);
+            return;
+        }
+    };
+    let status = response.status();
+    if !status.is_success() {
+        eprintln!("Invalid HTTP Status Code {}", status);
+        return;
+    }
+
+    let data = match response.bytes().await {
+        Ok(data) => data,
+        Err(e) => {
+            eprintln!("Failed to download request body: {}", e);
+            return;
+        }
+    };
+
+    if let Err(e) = std::fs::write(filename, data) {
+        eprintln!("Failed to save file '{}': {}", filename, e);
     }
 }

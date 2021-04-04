@@ -40,8 +40,8 @@ pub enum FromHtmlError {
     InvalidVideoUrl(url::ParseError),
 
     /// Ran into unimplemented functionality
-    #[error("unimplemented")]
-    Unimplemented,
+    #[error("unimplemented: '{0}'")]
+    Unimplemented(String),
 }
 
 /// An OpenGraphObject.
@@ -83,6 +83,10 @@ impl OpenGraphObject {
             .to_string();
 
         match kind.as_str() {
+            "instapp:photo" => {
+                // Not in spec, but Instagram uses it.
+                // TODO: Fill fields though testing
+            }
             "video.movie" | "video.tv_show" | "video.other" => {
                 //let video_actors = lookup_meta_kv(html, "video:actor")
                 // video:actor:role
@@ -93,14 +97,15 @@ impl OpenGraphObject {
                 // video:tag
             }
             "video.episode" => {
-                return Err(FromHtmlError::Unimplemented);
+                return Err(FromHtmlError::Unimplemented("video.episode".into()));
             }
             "video" => {
                 // Not in spec, but Instagram uses it.
                 // TODO: Fill fields though testing
             }
-            _ => {
-                return Err(FromHtmlError::Unimplemented);
+            _unknown => {
+                // return Err(FromHtmlError::Unimplemented(format!("kind: {}", unknown)));
+                // Its better to not error out here and get as many fields as possible
             }
         }
 
