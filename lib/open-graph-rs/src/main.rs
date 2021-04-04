@@ -114,6 +114,7 @@ async fn download(
     Ok(())
 }
 
+/// Pretty-print an [`OpenGraphObject`].
 fn print_object(object: &OpenGraphObject) {
     println!("Title: {}", object.title);
     println!("Kind: {}", object.kind);

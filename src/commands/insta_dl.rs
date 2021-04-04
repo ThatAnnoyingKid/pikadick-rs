@@ -1,14 +1,6 @@
 use crate::{
     checks::ENABLED_CHECK,
-    client_data::{
-        CacheStatsBuilder,
-        CacheStatsProvider,
-    },
-    util::{
-        LoadingReaction,
-        TimedCache,
-        TimedCacheEntry,
-    },
+    util::LoadingReaction,
     ClientDataKey,
 };
 use log::info;
@@ -21,56 +13,9 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use std::sync::Arc;
-
-#[derive(Clone, Debug)]
-pub struct InstaClient {
-    client: insta::Client,
-    cache: TimedCache<String, insta::OpenGraphObject>,
-}
-
-impl InstaClient {
-    /// Make a new insta client with caching
-    pub fn new() -> Self {
-        InstaClient {
-            client: insta::Client::new(),
-            cache: TimedCache::new(),
-        }
-    }
-
-    /// Get maybe cached post data
-    pub async fn get_post(
-        &self,
-        url: &str,
-    ) -> Result<Arc<TimedCacheEntry<insta::OpenGraphObject>>, insta::InstaError> {
-        if let Some(entry) = self.cache.get_if_fresh(url) {
-            return Ok(entry);
-        }
-
-        let post = self.client.get_post(url).await?;
-        self.cache.insert(String::from(url), post);
-
-        Ok(self
-            .cache
-            .get_if_fresh(url)
-            .expect("invalid insta post data"))
-    }
-}
-
-impl Default for InstaClient {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl CacheStatsProvider for InstaClient {
-    fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("insta-dl", "cache", self.cache.len() as f32);
-    }
-}
 
 #[command("insta-dl")]
-#[description("Get a download url for a instagram video")]
+#[description("Download an instagram video or photo")]
 #[usage("<url>")]
 #[example("https://www.instagram.com/p/CIlZpXKFfNt/")]
 #[checks(Enabled)]
@@ -78,18 +23,20 @@ impl CacheStatsProvider for InstaClient {
 #[max_args(1)]
 async fn insta_dl(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
+    let client_data = data_lock
+        .get::<ClientDataKey>()
+        .expect("missing client data");
     let client = client_data.insta_client.clone();
     drop(data_lock);
 
-    let url = args.trimmed().current().expect("Valid Url");
+    let url = args.trimmed().current().expect("missing url");
 
     info!("Getting insta download url stats for '{}'", url);
     let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
 
     match client.get_post(url).await {
         Ok(post) => {
-            if let Some(video_url) = post.data().video_url.as_ref() {
+            if let Some(video_url) = post.video_url.as_ref() {
                 loading.send_ok();
                 msg.channel_id.say(&ctx.http, video_url).await?;
             } else {
@@ -107,8 +54,6 @@ async fn insta_dl(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
                 .await?;
         }
     }
-
-    client.cache.trim();
 
     Ok(())
 }

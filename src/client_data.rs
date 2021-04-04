@@ -3,7 +3,6 @@ use crate::{
     commands::{
         deviantart::DeviantartClient,
         fml::FmlClient,
-        insta_dl::InstaClient,
         nekos::NekosClient,
         quizizz::QuizizzClient,
         r6stats::R6StatsClient,
@@ -89,7 +88,7 @@ pub struct ClientData {
     /// The enabled check data
     pub enabled_check_data: EnabledCheckData,
     /// The insta client data
-    pub insta_client: InstaClient,
+    pub insta_client: insta::Client,
     /// The deviantart client
     pub deviantart_client: DeviantartClient,
     /// The urban dictionary client
@@ -127,7 +126,7 @@ impl ClientData {
             shift_client: ShiftClient::new(),
             reddit_embed_data: Default::default(),
             enabled_check_data: Default::default(),
-            insta_client: Default::default(),
+            insta_client: insta::Client::new(),
             deviantart_client: Default::default(),
             urban_client: Default::default(),
             xkcd_client: Default::default(),
@@ -153,7 +152,6 @@ impl ClientData {
             &self.reddit_embed_data,
             &self.rule34_client,
             &self.shift_client,
-            &self.insta_client,
             &self.deviantart_client,
             &self.urban_client,
         ];
