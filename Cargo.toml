@@ -32,7 +32,7 @@ reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.4.5"
 rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.125", features = [ "derive" ] }
-serenity = "0.10.4"
+serenity = "0.10.5"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "04e43f0670a681129164ac0ef90c898cdbb6695a" } 
 sqlx = { version = "0.5.1", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.7"
