@@ -400,6 +400,8 @@ fn main() {
             .await
             .bucket("quizizz", |b| b.delay(10))
             .await
+            .bucket("insta-dl", |b| b.delay(10))
+            .await
             .after(after_handler)
             .unrecognised_command(unrecognised_command_handler)
             .on_dispatch_error(process_dispatch_error);
