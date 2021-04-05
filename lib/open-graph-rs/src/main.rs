@@ -1,6 +1,5 @@
 use anyhow::Context;
 use open_graph::OpenGraphObject;
-use std::path::Path;
 
 #[derive(argh::FromArgs)]
 #[argh(description = "a tool to download media from open-graph compatible sources")]
@@ -59,54 +58,29 @@ async fn async_main(options: CommandOptions) -> anyhow::Result<()> {
         println!();
     }
 
-    if object.is_video() {
-        let video_url = object
-            .video_url
-            .as_ref()
-            .context("missing video url in object")?;
+    download_object(&client, &object).await?;
 
-        download(&client, video_url.as_str(), "mp4", "video").await?;
-
-        return Ok(());
-    }
-
-    if object.kind == "instapp:photo" {
-        download(&client, object.image.as_str(), "png", "image").await?;
-        return Ok(());
-    }
-
-    anyhow::bail!("Unsupported Object Kind");
+    Ok(())
 }
 
 /// Download a url's contents
-async fn download(
+async fn download_object(
     client: &open_graph::Client,
-    url: &str,
-    default_extension: &str,
-    filename: &str,
+    object: &OpenGraphObject,
 ) -> anyhow::Result<()> {
-    let extension = match Path::new(url)
-        .extension()
-        .map(|extension| extension.to_str())
-    {
-        Some(Some(extension)) => extension,
-        Some(None) => {
-            eprintln!("Invalid extension, using '{}'", default_extension);
-            default_extension
-        }
-        None => {
-            eprintln!("Unknown extension, using '{}'", default_extension);
-            default_extension
-        }
+    let filename = if object.is_video() {
+        object.get_video_url_file_name().unwrap_or("video.mp4")
+    } else if object.is_image() {
+        object.get_image_file_name().unwrap_or("image.png")
+    } else {
+        anyhow::bail!("Unsupported Object Kind '{}'", object.kind);
     };
-
-    let filename = format!("{}.{}", filename, extension);
 
     let mut buffer = Vec::with_capacity(1_000_000); // 1 MB
     client
-        .get_and_copy_to(url, &mut buffer)
+        .download_object_to(&object, &mut buffer)
         .await
-        .with_context(|| format!("failed to download '{}'", url))?;
+        .context("failed to download object")?;
 
     std::fs::write(&filename, buffer)
         .with_context(|| format!("failed to download to file '{}'", filename))?;

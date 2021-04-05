@@ -26,6 +26,14 @@ pub enum ClientError {
     /// An IO Error occured
     #[error(transparent)]
     Io(#[from] std::io::Error),
+
+    /// An OGP object is missing a video url
+    #[error("missing video url")]
+    MissingVideoUrl,
+
+    /// An OGP object has an unknown object kind
+    #[error("the object kind '{0}' is not supported")]
+    UnsupportedObjectKind(String),
 }
 
 /// A generic open graph protocol client
@@ -72,6 +80,36 @@ impl Client {
         while let Some(chunk) = response.chunk().await? {
             writer.write_all(&chunk).await?;
         }
+
+        Ok(())
+    }
+
+    /// Best-effort function to download an [`OpenGraphObject`] and copy it to an async writer.
+    ///
+    /// If its not good enough, you should probably look at its source and build a custom impl.
+    pub async fn download_object_to<W>(
+        &self,
+        object: &OpenGraphObject,
+        writer: W,
+    ) -> Result<(), ClientError>
+    where
+        W: AsyncWrite + Unpin,
+    {
+        let url = if object.is_video() {
+            let url = object
+                .video_url
+                .as_ref()
+                .ok_or(ClientError::MissingVideoUrl)?
+                .as_str();
+
+            url
+        } else if object.is_image() {
+            object.image.as_str()
+        } else {
+            return Err(ClientError::UnsupportedObjectKind(object.kind.clone()));
+        };
+
+        self.get_and_copy_to(url, writer).await?;
 
         Ok(())
     }

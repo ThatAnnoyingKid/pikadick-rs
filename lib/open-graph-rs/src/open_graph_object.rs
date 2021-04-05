@@ -2,6 +2,7 @@ use scraper::{
     Html,
     Selector,
 };
+use std::path::Path;
 use url::Url;
 
 /// An error that may occur while parsing an [`OpenGraphObject`].
@@ -144,6 +145,26 @@ impl OpenGraphObject {
     /// Check whether this is a video
     pub fn is_video(&self) -> bool {
         self.kind.split('.').next() == Some("video")
+    }
+
+    /// Check whether this is an image
+    pub fn is_image(&self) -> bool {
+        // instapp:photo is weird in the sense that it might be a slideshow.
+        // However, there isn't OGP data provided for anything but the first slide.
+        // The best we can do is let users at least download the first slide.
+        self.kind == "instapp:photo"
+    }
+
+    /// Try to get the video url's file name
+    pub fn get_image_file_name(&self) -> Option<&str> {
+        Path::new(self.image.path()).file_name()?.to_str()
+    }
+
+    /// Try to get the video url's file name
+    pub fn get_video_url_file_name(&self) -> Option<&str> {
+        Path::new(self.video_url.as_ref()?.path())
+            .file_name()?
+            .to_str()
     }
 }
 
