@@ -41,7 +41,7 @@ tiny-skia = { version = "0.5.1", features = [ "std", "simd", "png-format" ], def
 tokio = { version = "1.4.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"
 ttf-parser = "0.12.0"
-uom = "0.30.0"
+uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs" }
 url = "2.2.1"
 xkcd = { path = "lib/xkcd-rs" }
@@ -56,7 +56,7 @@ use-openssl-vendored = [ "openssl" ]
 
 [patch.crates-io]
 # Fix security advisory
-heim = { git = "https://github.com/heim-rs/heim", branch = "dependabot/cargo/raw-cpuid-approx-9.0" }
+heim = { git = "https://github.com/heim-rs/heim", rev = "1fb090576629cd2788dff993cc6ef77547f3df18" }
 
 # `servo_arc` has UB on crates.io
 servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca1468a1767e3cc294f824036c" }
