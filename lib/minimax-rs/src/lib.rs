@@ -230,18 +230,3 @@ where
         self.get_node(state).map(|node| node.score)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let map = compile_minimax_map::<TicTacToeRuleSet>();
-        dbg!(map.len());
-
-        let ai: MiniMaxAi<TicTacToeRuleSet> = MiniMaxAi::new(map);
-
-        dbg!(ai.get_move(&TicTacToeState::default(), &TicTacToeTeam::X));
-    }
-}

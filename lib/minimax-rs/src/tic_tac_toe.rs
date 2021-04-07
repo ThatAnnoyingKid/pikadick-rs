@@ -449,3 +449,35 @@ impl std::str::FromStr for TicTacToeTeam {
         )?)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{
+        compile_minimax_map,
+        MiniMaxAi,
+    };
+
+    #[test]
+    fn it_works() {
+        let map = compile_minimax_map::<TicTacToeRuleSet>();
+        dbg!(map.len());
+
+        let ai: MiniMaxAi<TicTacToeRuleSet> = MiniMaxAi::new(map);
+
+        dbg!(ai.get_move(&TicTacToeState::default(), &TicTacToeTeam::X));
+    }
+
+    #[test]
+    fn delayed_win() {
+        let map = compile_minimax_map::<TicTacToeRuleSet>();
+        let ai = MiniMaxAi::<TicTacToeRuleSet>::new(map);
+
+        let delayed_win_state = 13411;
+
+        let node = ai
+            .get_node(&TicTacToeState(delayed_win_state))
+            .expect("missing node");
+        assert_eq!(node.score, 1);
+    }
+}
