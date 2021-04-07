@@ -19,12 +19,9 @@ allow-osi-fsf-free = "neither"
 confidence-threshold = 0.93
 default = "deny"
 private = { ignore = true }
-allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause" ]
+allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0" ]
 exceptions = [
-    { name = "webpki-roots", allow = [ "MPL-2.0" ] },
-    { name = "wepoll-sys", allow = [ "MPL-2.0" ] },
     { name = "ring", allow = [ "MIT", "ISC", "OpenSSL" ] },
-    { name = "colored", allow = [ "MPL-2.0" ] },
 ]
 
 [[licenses.clarify]]
@@ -102,6 +99,10 @@ deny = [
     # The general idea seems unsound, and the current version does contain UB.
     # https://github.com/Kimundi/owning-ref-rs/issues/71
     { name = "owning_ref", version = "*" },
+    
+    # It's a crate only intended for testing; people insist on using it for some reason.
+    # https://crates.io/crates/markup5ever_rcdom/0.1.0
+    { name = "markup5ever_rcdom", version = "0.1.0" },
 ]
 
 [sources]
@@ -113,4 +114,5 @@ allow-git = [
     "https://github.com/adumbidiot/shift-client-rs",
     "https://github.com/adumbidiot/reddit-rs",
     "https://github.com/heim-rs/heim",
+    "https://github.com/servo/servo",
 ]

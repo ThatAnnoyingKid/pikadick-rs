@@ -32,8 +32,8 @@ reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.4.5"
 rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.125", features = [ "derive" ] }
-serenity = "0.10.4"
-shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "04e43f0670a681129164ac0ef90c898cdbb6695a" } 
+serenity = "0.10.5"
+shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
 sqlx = { version = "0.5.1", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.7"
 thiserror = "1.0.24"
@@ -57,6 +57,9 @@ use-openssl-vendored = [ "openssl" ]
 [patch.crates-io]
 # Fix security advisory
 heim = { git = "https://github.com/heim-rs/heim", branch = "dependabot/cargo/raw-cpuid-approx-9.0" }
+
+# `servo_arc` has UB on crates.io
+servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca1468a1767e3cc294f824036c" }
 
 [workspace]
 members = [ 

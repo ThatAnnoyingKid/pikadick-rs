@@ -90,6 +90,7 @@ impl CacheStatsProvider for Rule34Client {
 }
 
 #[command]
+#[aliases("r34")]
 #[description("Look up rule34 for almost anything")]
 #[usage("\"<query>\"")]
 #[example("\"test\"")]

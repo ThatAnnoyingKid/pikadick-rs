@@ -5,7 +5,32 @@ authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 edition = "2018"
 license = "MIT/Apache-2.0"
 
+[[bin]]
+name = "open-graph"
+path = "src/main.rs"
+required-features = [ "cli" ]
+
 [dependencies]
-select = "0.5.0"
+scraper = { version = "0.12.0", default-features = false }
 thiserror = "1.0.24"
 url = "2.2.1"
+
+# Optional
+anyhow = { version = "1.0.1", optional = true }
+argh = { version = "0.1.4", optional = true }
+reqwest = { version = "0.11.2", optional = true }
+tokio = { version = "1.4", optional = true }
+
+[features]
+default = []
+client = [
+    "reqwest",
+    "tokio",
+    "tokio/rt",
+]
+cli = [ 
+    "anyhow",
+    "argh",
+    "client",
+    "tokio/rt-multi-thread"
+]

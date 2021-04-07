@@ -3,12 +3,26 @@ use log::info;
 use minimax::tic_tac_toe::{
     TicTacToeState,
     TicTacToeTeam,
+    WinType,
 };
 use std::{
     sync::Arc,
     time::Instant,
 };
+use tiny_skia::{
+    Paint,
+    Path,
+    PathBuilder,
+    Pixmap,
+    Rect,
+    Stroke,
+    Transform,
+};
 use tokio::sync::Semaphore;
+use ttf_parser::{
+    Face,
+    OutlineBuilder,
+};
 
 const FONT_BYTES: &[u8] =
     include_bytes!("../../../assets/Averia_Serif_Libre/AveriaSerifLibre-Light.ttf");
@@ -24,8 +38,8 @@ const MAX_PARALLEL_RENDER_LIMIT: usize = 4;
 /// Render a Tic-Tac-Toe board
 #[derive(Debug, Clone)]
 pub(crate) struct TicTacToeRenderer {
-    background_pixmap: Arc<tiny_skia::Pixmap>,
-    number_paths: Arc<Vec<tiny_skia::Path>>,
+    background_pixmap: Arc<Pixmap>,
+    number_paths: Arc<Vec<Path>>,
 
     render_semaphore: Arc<Semaphore>,
 }
@@ -34,24 +48,18 @@ pub(crate) struct TicTacToeRenderer {
 impl TicTacToeRenderer {
     /// Make a new [`TicTacToeRenderer`].
     pub(crate) fn new() -> anyhow::Result<Self> {
-        let font_face = ttf_parser::Face::from_slice(FONT_BYTES, 0).context("Invalid Font")?;
+        let font_face = Face::from_slice(FONT_BYTES, 0).context("invalid font")?;
 
-        let mut background_pixmap =
-            tiny_skia::Pixmap::new(RENDERED_SIZE.into(), RENDERED_SIZE.into())
-                .context("Failed to create background pixmap")?;
+        let mut background_pixmap = Pixmap::new(RENDERED_SIZE.into(), RENDERED_SIZE.into())
+            .context("failed to create background pixmap")?;
 
-        let mut paint = tiny_skia::Paint::default();
+        let mut paint = Paint::default();
         for i in 0..3 {
             for j in 0..3 {
                 let x = i * SQUARE_SIZE;
                 let y = j * SQUARE_SIZE;
-                let square = tiny_skia::Rect::from_xywh(
-                    x as f32,
-                    y as f32,
-                    SQUARE_SIZE as f32,
-                    SQUARE_SIZE as f32,
-                )
-                .context("Failed to make square")?;
+                let square = Rect::from_xywh(x as f32, y as f32, SQUARE_SIZE_F32, SQUARE_SIZE_F32)
+                    .context("failed to make square")?;
 
                 if (j * 3 + i) % 2 == 0 {
                     paint.set_color_rgba8(255, 0, 0, 255);
@@ -60,25 +68,25 @@ impl TicTacToeRenderer {
                 }
 
                 background_pixmap
-                    .fill_rect(square, &paint, tiny_skia::Transform::identity(), None)
-                    .context("Failed to fill square")?;
+                    .fill_rect(square, &paint, Transform::identity(), None)
+                    .context("failed to fill square")?;
             }
         }
 
         let mut number_paths = Vec::with_capacity(10);
-        let mut paint = tiny_skia::Paint::default();
+        let mut paint = Paint::default();
         paint.set_color_rgba8(255, 255, 255, 255);
         for i in b'0'..=b'9' {
             let glyph_id = font_face
                 .glyph_index(char::from(i))
-                .with_context(|| format!("Missing glyph for '{}'", char::from(i)))?;
+                .with_context(|| format!("missing glyph for '{}'", char::from(i)))?;
 
             let mut builder = SkiaBuilder::new();
             let _bb = font_face
                 .outline_glyph(glyph_id, &mut builder)
-                .with_context(|| format!("Missing glyph bounds for '{}'", char::from(i)))?;
+                .with_context(|| format!("missing glyph bounds for '{}'", char::from(i)))?;
             let path = builder.into_path().with_context(|| {
-                format!("Failed to generate glyph path for '{}'", char::from(i))
+                format!("failed to generate glyph path for '{}'", char::from(i))
             })?;
 
             number_paths.push(path);
@@ -100,13 +108,13 @@ impl TicTacToeRenderer {
 
         const PIECE_WIDTH: u16 = 4;
 
-        let mut paint = tiny_skia::Paint::default();
-        let mut stroke = tiny_skia::Stroke::default();
+        let mut paint = Paint::default();
+        let mut stroke = Stroke::default();
         paint.anti_alias = true;
         stroke.width = f32::from(PIECE_WIDTH);
 
         for (i, team) in state.iter().enumerate() {
-            let transform = tiny_skia::Transform::from_translate(
+            let transform = Transform::from_translate(
                 ((i % 3) * SQUARE_SIZE_USIZE) as f32,
                 ((i / 3) * SQUARE_SIZE_USIZE) as f32,
             );
@@ -115,7 +123,7 @@ impl TicTacToeRenderer {
                 paint.set_color_rgba8(0, 0, 0, 255);
                 let path = match team {
                     TicTacToeTeam::X => {
-                        let mut path_builder = tiny_skia::PathBuilder::new();
+                        let mut path_builder = PathBuilder::new();
                         path_builder.move_to((PIECE_WIDTH / 2).into(), (PIECE_WIDTH / 2).into());
                         path_builder.line_to(
                             SQUARE_SIZE_F32 - f32::from(PIECE_WIDTH / 2),
@@ -131,18 +139,18 @@ impl TicTacToeRenderer {
                         );
                         path_builder.finish()
                     }
-                    TicTacToeTeam::O => tiny_skia::PathBuilder::from_circle(
+                    TicTacToeTeam::O => PathBuilder::from_circle(
                         HALF_SQUARE_SIZE_F32,
                         HALF_SQUARE_SIZE_F32,
                         HALF_SQUARE_SIZE_F32 - f32::from(PIECE_WIDTH / 2),
                     ),
                 };
                 let path =
-                    path.with_context(|| format!("Failed to build path for team '{:?}'", team))?;
+                    path.with_context(|| format!("failed to build path for team '{:?}'", team))?;
 
                 pixmap
                     .stroke_path(&path, &paint, &stroke, transform, None)
-                    .with_context(|| format!("Failed to draw path for team '{:?}'", team))?;
+                    .with_context(|| format!("failed to draw path for team '{:?}'", team))?;
             } else {
                 paint.set_color_rgba8(255, 255, 255, 255);
                 let path = &self.number_paths[i + 1];
@@ -156,7 +164,7 @@ impl TicTacToeRenderer {
 
                 pixmap
                     .fill_path(path, &paint, Default::default(), transform, None)
-                    .with_context(|| format!("Failed to draw path for digit '{}'", i))?;
+                    .with_context(|| format!("failed to draw path for digit '{}'", i))?;
             }
         }
 
@@ -164,64 +172,49 @@ impl TicTacToeRenderer {
             stroke.width = 10.0;
             paint.set_color_rgba8(48, 48, 48, 255);
 
-            let start_index = winner_info.tile_indexes[0];
+            let start_index = winner_info.start_tile_index();
             let start = usize::from(start_index);
             let mut start_x = ((start % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
             let mut start_y = ((start / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
 
-            let end_index = winner_info.tile_indexes[2];
+            let end_index = winner_info.end_tile_index();
             let end = usize::from(end_index);
             let mut end_x = ((end % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
             let mut end_y = ((end / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
 
-            if is_left_index(start_index) {
-                start_x -= SQUARE_SIZE_F32 / 4.0;
+            match winner_info.win_type {
+                WinType::Horizontal => {
+                    start_x -= SQUARE_SIZE_F32 / 4.0;
+                    end_x += SQUARE_SIZE_F32 / 4.0;
+                }
+                WinType::Vertical => {
+                    start_y -= SQUARE_SIZE_F32 / 4.0;
+                    end_y += SQUARE_SIZE_F32 / 4.0;
+                }
+                WinType::Diagonal => {
+                    start_x -= SQUARE_SIZE_F32 / 4.0;
+                    start_y -= SQUARE_SIZE_F32 / 4.0;
+                    end_x += SQUARE_SIZE_F32 / 4.0;
+                    end_y += SQUARE_SIZE_F32 / 4.0;
+                }
+                WinType::AntiDiagonal => {
+                    start_x += SQUARE_SIZE_F32 / 4.0;
+                    start_y -= SQUARE_SIZE_F32 / 4.0;
+                    end_x -= SQUARE_SIZE_F32 / 4.0;
+                    end_y += SQUARE_SIZE_F32 / 4.0;
+                }
             }
 
-            if is_left_index(end_index) {
-                end_x -= SQUARE_SIZE_F32 / 4.0;
-            }
-
-            if is_right_index(start_index) {
-                start_x += SQUARE_SIZE_F32 / 4.0;
-            }
-
-            if is_right_index(end_index) {
-                end_x += SQUARE_SIZE_F32 / 4.0;
-            }
-
-            if is_top_index(start_index) {
-                start_y -= SQUARE_SIZE_F32 / 4.0;
-            }
-
-            if is_top_index(end_index) {
-                end_y -= SQUARE_SIZE_F32 / 4.0;
-            }
-
-            if is_bottom_index(start_index) {
-                start_y += SQUARE_SIZE_F32 / 4.0;
-            }
-
-            if is_bottom_index(end_index) {
-                end_y += SQUARE_SIZE_F32 / 4.0;
-            }
-
-            let mut path_builder = tiny_skia::PathBuilder::new();
+            let mut path_builder = PathBuilder::new();
             path_builder.move_to(start_x, start_y);
             path_builder.line_to(end_x, end_y);
             let path = path_builder
                 .finish()
-                .context("Failed to draw winning line")?;
+                .context("failed to draw winning line")?;
 
             pixmap
-                .stroke_path(
-                    &path,
-                    &paint,
-                    &stroke,
-                    tiny_skia::Transform::identity(),
-                    None,
-                )
-                .context("Failed to draw path for winning line")?;
+                .stroke_path(&path, &paint, &stroke, Transform::identity(), None)
+                .context("failed to draw path for winning line")?;
         }
 
         let draw_end = Instant::now();
@@ -248,29 +241,9 @@ impl TicTacToeRenderer {
     }
 }
 
-/// Whether the index refers to a left tile
-fn is_left_index(index: u8) -> bool {
-    index == 0 || index == 3 || index == 6
-}
-
-/// Whether the index refers to a right tile
-fn is_right_index(index: u8) -> bool {
-    index == 2 || index == 5 || index == 8
-}
-
-/// Whether the index refers to a top tile
-fn is_top_index(index: u8) -> bool {
-    index == 0 || index == 1 || index == 2
-}
-
-/// Whether the index refers to a bottom tile
-fn is_bottom_index(index: u8) -> bool {
-    index == 6 || index == 7 || index == 8
-}
-
 /// Utility to draw a font glyph to a path.
 #[derive(Debug)]
-pub(crate) struct SkiaBuilder(tiny_skia::PathBuilder);
+pub(crate) struct SkiaBuilder(PathBuilder);
 
 impl SkiaBuilder {
     /// Make a new [`SkiaBuilder`].
@@ -279,12 +252,12 @@ impl SkiaBuilder {
     }
 
     /// Get the inner [`tiny_skia::Path`].
-    pub(crate) fn into_path(self) -> Option<tiny_skia::Path> {
+    pub(crate) fn into_path(self) -> Option<Path> {
         let mut path = self.0.finish()?;
 
         // This transform is needed to make ttf's coordinate system agree with tiny-skia's
         let bounds = path.bounds();
-        let transform = tiny_skia::Transform::from_scale(1.0, -1.0)
+        let transform = Transform::from_scale(1.0, -1.0)
             .post_translate(-bounds.x(), bounds.y() + bounds.height());
         path = path.transform(transform)?;
 
@@ -298,7 +271,7 @@ impl Default for SkiaBuilder {
     }
 }
 
-impl ttf_parser::OutlineBuilder for SkiaBuilder {
+impl OutlineBuilder for SkiaBuilder {
     fn move_to(&mut self, x: f32, y: f32) {
         self.0.move_to(x, y);
     }

@@ -1,16 +1,41 @@
 use crate::RuleSet;
 use std::convert::TryInto;
 
+/// The win type
+#[derive(Debug, Copy, Clone)]
+pub enum WinType {
+    Horizontal,
+    Vertical,
+    Diagonal,
+    AntiDiagonal,
+}
+
 /// Winner Info
 #[derive(Debug, Copy, Clone)]
 pub struct WinnerInfo {
     /// The winning team
     pub team: TicTacToeTeam,
 
-    /// The tile_indexes that are part of the win
+    /// The tile_indexes that are part of the win.
+    ///
+    /// Sorted from least to greatest.
     pub tile_indexes: [u8; 3],
+
+    /// The win type
+    pub win_type: WinType,
 }
 
+impl WinnerInfo {
+    /// Get the least tile index
+    pub fn start_tile_index(&self) -> u8 {
+        self.tile_indexes[0]
+    }
+
+    /// Get the highest tile index
+    pub fn end_tile_index(&self) -> u8 {
+        self.tile_indexes[2]
+    }
+}
 /// A Tic-Tac-Toe game state
 ///
 /// `0xFFFF > (3 ^ 9)`, so `u16` is good.
@@ -122,11 +147,12 @@ impl TicTacToeState {
     }
 
     /// Utility function for testing whether 3 indexes are populated and are the same team.
-    fn check_indexes(self, one: u8, two: u8, three: u8) -> Option<WinnerInfo> {
+    fn check_indexes(self, one: u8, two: u8, three: u8, win_type: WinType) -> Option<WinnerInfo> {
         let team = self.at(one)?;
         if self.at(one) == self.at(two) && self.at(two) == self.at(three) {
             return Some(WinnerInfo {
                 team,
+                win_type,
                 tile_indexes: [one, two, three],
             });
         }
@@ -137,42 +163,42 @@ impl TicTacToeState {
     /// Get the winning info, if there was a winner.
     pub fn get_winning_info(self) -> Option<WinnerInfo> {
         // Horizontal 1
-        if let Some(winner_info) = self.check_indexes(0, 1, 2) {
+        if let Some(winner_info) = self.check_indexes(0, 1, 2, WinType::Horizontal) {
             return Some(winner_info);
         }
 
         // Horizontal 2
-        if let Some(winner_info) = self.check_indexes(3, 4, 5) {
+        if let Some(winner_info) = self.check_indexes(3, 4, 5, WinType::Horizontal) {
             return Some(winner_info);
         }
 
         // Horizontal 3
-        if let Some(winner_info) = self.check_indexes(6, 7, 8) {
+        if let Some(winner_info) = self.check_indexes(6, 7, 8, WinType::Horizontal) {
             return Some(winner_info);
         }
 
         // Vertical 1
-        if let Some(winner_info) = self.check_indexes(0, 3, 6) {
+        if let Some(winner_info) = self.check_indexes(0, 3, 6, WinType::Vertical) {
             return Some(winner_info);
         }
 
         // Vertical 2
-        if let Some(winner_info) = self.check_indexes(1, 4, 7) {
+        if let Some(winner_info) = self.check_indexes(1, 4, 7, WinType::Vertical) {
             return Some(winner_info);
         }
 
         // Vertical 3
-        if let Some(winner_info) = self.check_indexes(2, 5, 8) {
+        if let Some(winner_info) = self.check_indexes(2, 5, 8, WinType::Vertical) {
             return Some(winner_info);
         }
 
-        // Diagonal 1
-        if let Some(winner_info) = self.check_indexes(0, 4, 8) {
+        // Diagonal
+        if let Some(winner_info) = self.check_indexes(0, 4, 8, WinType::Diagonal) {
             return Some(winner_info);
         }
 
-        // Diagonal 2
-        if let Some(winner_info) = self.check_indexes(2, 4, 6) {
+        // Anti Diagonal
+        if let Some(winner_info) = self.check_indexes(2, 4, 6, WinType::AntiDiagonal) {
             return Some(winner_info);
         }
 

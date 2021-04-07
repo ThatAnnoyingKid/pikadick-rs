@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use url::Url;
 
+/// The response for getting a video
 #[derive(Debug, serde::Deserialize)]
 #[serde(tag = "status")]
 pub enum GetVideoResponse {
@@ -11,6 +12,7 @@ pub enum GetVideoResponse {
     Error(GetVideoResponseError),
 }
 
+/// A good video response
 #[derive(Debug, serde::Deserialize)]
 pub struct GetVideoResponseOk {
     pub affected: i64,
@@ -32,34 +34,53 @@ pub struct GetVideoResponseOk {
     pub extra: HashMap<String, serde_json::Value>,
 }
 
+/// Video Data
 #[derive(Debug, serde::Deserialize)]
 pub struct VideoData {
+    /// Author
     pub author: String,
+    /// Video duration
     pub duration: u64,
+    /// Whether the post has audio
     pub has_audio: bool,
+    /// Whether the post is a gif
     pub is_gif: bool,
+    /// Whether the post is a video
     pub is_video: bool,
 
+    /// The post type?
     #[serde(rename = "type")]
     pub kind: String,
 
+    /// Whether the post is nsfw
     pub nsfw: bool,
+    /// ?
     pub provider_name: Option<String>,
+    /// The subreddit
     pub subreddit: String,
+    /// The thumbnail url
     pub thumbnail: Url,
+    /// The post title
     pub title: String,
+    /// The post url?
     pub url: Url,
 
+    /// Unknown data
     #[serde(flatten)]
     pub extra: HashMap<String, serde_json::Value>,
 }
 
+/// Error video response
 #[derive(Debug, serde::Deserialize)]
 pub struct GetVideoResponseError {
+    /// Errors
     pub errores: Option<HashMap<String, String>>,
+    /// Meme
     pub meme: Option<String>,
+    /// Error message
     pub msg: Option<String>,
 
+    /// Unknown data
     #[serde(flatten)]
     pub extra: HashMap<String, serde_json::Value>,
 }

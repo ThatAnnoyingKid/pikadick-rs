@@ -33,7 +33,6 @@ use crate::{
     config::{
         ActivityKind,
         Config,
-        ConfigError,
         Severity,
     },
     database::Database,
@@ -281,6 +280,7 @@ async fn process_dispatch_error_future<'fut>(
     };
 }
 
+/// Main Entry
 fn main() {
     let log_file_writer = match crate::logger::setup() {
         Ok(file) => file,
@@ -290,21 +290,11 @@ fn main() {
         }
     };
 
-    info!("Loading config.toml...");
+    info!("Loading `config.toml`...");
     let mut config = match Config::load_from_path("./config.toml".as_ref()) {
         Ok(c) => c,
         Err(e) => {
-            match e {
-                ConfigError::DoesNotExist(p) => {
-                    error!("Failed to load {}. The file does not exist.", p.display());
-                }
-                ConfigError::IsNotFile(p) => {
-                    error!("Failed to load {}. The path is not a file.", p.display());
-                }
-                _ => {
-                    error!("Failed to load `./config.toml`: {}", e);
-                }
-            }
+            error!("Failed to load `./config.toml`: {}", e);
             return;
         }
     };
@@ -409,6 +399,8 @@ fn main() {
             .bucket("system", |b| b.delay(30))
             .await
             .bucket("quizizz", |b| b.delay(10))
+            .await
+            .bucket("insta-dl", |b| b.delay(10))
             .await
             .after(after_handler)
             .unrecognised_command(unrecognised_command_handler)

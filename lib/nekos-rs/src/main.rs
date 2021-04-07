@@ -42,9 +42,8 @@ pub struct Command {
 
 fn main() -> Result<(), Error> {
     let command: Command = argh::from_env();
-    let mut tokio_rt = tokio::runtime::Builder::new()
+    let tokio_rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
-        .threaded_scheduler()
         .build()?;
     tokio_rt.block_on(async_main(command))
 }

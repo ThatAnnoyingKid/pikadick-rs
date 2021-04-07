@@ -1,16 +1,13 @@
-use select::{
-    document::Document,
-    predicate::{
-        And,
-        Attr,
-        Name,
-    },
+use scraper::{
+    Html,
+    Selector,
 };
+use std::path::Path;
 use url::Url;
 
 /// An error that may occur while parsing an [`OpenGraphObject`].
 #[derive(Debug, thiserror::Error)]
-pub enum FromDocError {
+pub enum FromHtmlError {
     /// Missing title field
     #[error("missing title")]
     MissingTitle,
@@ -44,14 +41,14 @@ pub enum FromDocError {
     InvalidVideoUrl(url::ParseError),
 
     /// Ran into unimplemented functionality
-    #[error("unimplemented")]
-    Unimplemented,
+    #[error("unimplemented: '{0}'")]
+    Unimplemented(String),
 }
 
 /// An OpenGraphObject.
 ///
 /// See <https://ogp.me/>
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct OpenGraphObject {
     /// Object Title
     pub title: String,
@@ -76,18 +73,23 @@ pub struct OpenGraphObject {
 }
 
 impl OpenGraphObject {
-    /// Make a new [`OpenGraphObject`] from a [`Document`].
-    pub fn from_doc(doc: &Document) -> Result<Self, FromDocError> {
-        let title = lookup_meta_kv(doc, "og:title")
-            .ok_or(FromDocError::MissingTitle)?
+    /// Make a new [`OpenGraphObject`] from [`Html`].
+    pub fn from_html(html: &Html) -> Result<Self, FromHtmlError> {
+        let title = lookup_meta_kv(html, "og:title")
+            .ok_or(FromHtmlError::MissingTitle)?
             .to_string();
-        let kind = lookup_meta_kv(doc, "og:type")
-            .ok_or(FromDocError::MissingType)?
+
+        let kind = lookup_meta_kv(html, "og:type")
+            .ok_or(FromHtmlError::MissingType)?
             .to_string();
 
         match kind.as_str() {
+            "instapp:photo" => {
+                // Not in spec, but Instagram uses it.
+                // TODO: Fill fields though testing
+            }
             "video.movie" | "video.tv_show" | "video.other" => {
-                //let video_actors = lookup_meta_kv(doc, "video:actor")
+                //let video_actors = lookup_meta_kv(html, "video:actor")
                 // video:actor:role
                 // video:director
                 // video:writer
@@ -96,35 +98,36 @@ impl OpenGraphObject {
                 // video:tag
             }
             "video.episode" => {
-                return Err(FromDocError::Unimplemented);
+                return Err(FromHtmlError::Unimplemented("video.episode".into()));
             }
             "video" => {
                 // Not in spec, but Instagram uses it.
                 // TODO: Fill fields though testing
             }
-            _ => {
-                return Err(FromDocError::Unimplemented);
+            _unknown => {
+                // return Err(FromHtmlError::Unimplemented(format!("kind: {}", unknown)));
+                // Its better to not error out here and get as many fields as possible
             }
         }
 
-        let image = lookup_meta_kv(doc, "og:image")
+        let image = lookup_meta_kv(html, "og:image")
             .map(Url::parse)
-            .ok_or(FromDocError::MissingImage)?
-            .map_err(FromDocError::InvalidImage)?;
+            .ok_or(FromHtmlError::MissingImage)?
+            .map_err(FromHtmlError::InvalidImage)?;
 
-        let url = lookup_meta_kv(doc, "og:url")
+        let url = lookup_meta_kv(html, "og:url")
             .map(Url::parse)
-            .ok_or(FromDocError::MissingUrl)?
-            .map_err(FromDocError::InvalidUrl)?;
+            .ok_or(FromHtmlError::MissingUrl)?
+            .map_err(FromHtmlError::InvalidUrl)?;
 
-        let audio_url = lookup_meta_kv(doc, "og:audio")
-            .map(|s| Url::parse(s).map_err(FromDocError::InvalidAudioUrl))
+        let audio_url = lookup_meta_kv(html, "og:audio")
+            .map(|s| Url::parse(s).map_err(FromHtmlError::InvalidAudioUrl))
             .transpose()?;
 
-        let description = lookup_meta_kv(doc, "og:description").map(ToString::to_string);
+        let description = lookup_meta_kv(html, "og:description").map(ToString::to_string);
 
-        let video_url = lookup_meta_kv(doc, "og:video")
-            .map(|s| Url::parse(s).map_err(FromDocError::InvalidVideoUrl))
+        let video_url = lookup_meta_kv(html, "og:video")
+            .map(|s| Url::parse(s).map_err(FromHtmlError::InvalidVideoUrl))
             .transpose()?;
 
         Ok(Self {
@@ -143,13 +146,40 @@ impl OpenGraphObject {
     pub fn is_video(&self) -> bool {
         self.kind.split('.').next() == Some("video")
     }
+
+    /// Check whether this is an image
+    pub fn is_image(&self) -> bool {
+        // instapp:photo is weird in the sense that it might be a slideshow.
+        // However, there isn't OGP data provided for anything but the first slide.
+        // The best we can do is let users at least download the first slide.
+        self.kind == "instapp:photo"
+    }
+
+    /// Try to get the video url's file name
+    pub fn get_image_file_name(&self) -> Option<&str> {
+        Path::new(self.image.path()).file_name()?.to_str()
+    }
+
+    /// Try to get the video url's file name
+    pub fn get_video_url_file_name(&self) -> Option<&str> {
+        Path::new(self.video_url.as_ref()?.path())
+            .file_name()?
+            .to_str()
+    }
+}
+
+impl std::str::FromStr for OpenGraphObject {
+    type Err = FromHtmlError;
+
+    fn from_str(data: &str) -> Result<Self, Self::Err> {
+        OpenGraphObject::from_html(&Html::parse_document(data))
+    }
 }
 
 /// Lookup the value for a `<meta property = {name} content = {value} />`
-fn lookup_meta_kv<'a>(doc: &'a Document, name: &str) -> Option<&'a str> {
-    doc.find(And(Name("meta"), Attr("property", name)))
-        .next()?
-        .attr("content")
+fn lookup_meta_kv<'a>(html: &'a Html, name: &str) -> Option<&'a str> {
+    let selector = Selector::parse(&format!("meta[property=\"{}\"]", name)).ok()?;
+    html.select(&selector).next()?.value().attr("content")
 }
 
 #[cfg(test)]
@@ -160,8 +190,7 @@ mod test {
 
     #[test]
     fn parse_video_obj() {
-        let doc = Document::from(VIDEO_OBJ);
-        let obj = OpenGraphObject::from_doc(&doc).expect("invalid open graph object");
-        dbg!(obj);
+        let obj: OpenGraphObject = VIDEO_OBJ.parse().expect("invalid open graph object");
+        dbg!(&obj);
     }
 }

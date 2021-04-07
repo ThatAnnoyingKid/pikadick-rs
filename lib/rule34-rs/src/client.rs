@@ -6,7 +6,7 @@ use crate::{
     RuleError,
     RuleResult,
 };
-use select::document::Document;
+use scraper::Html;
 use tokio::io::{
     AsyncWrite,
     AsyncWriteExt,
@@ -43,15 +43,16 @@ impl Client {
         Ok(text)
     }
 
-    /// Send a GET web request to a `uri` and get the result as a [`Document`],
+    /// Send a GET web request to a `uri` and get the result as [`Html`],
     /// then use the given func to process it.
-    pub async fn get_doc<F, T>(&self, uri: &str, f: F) -> RuleResult<T>
+    pub async fn get_html<F, T>(&self, uri: &str, f: F) -> RuleResult<T>
     where
-        F: FnOnce(Document) -> T + Send + 'static,
+        F: FnOnce(Html) -> T + Send + 'static,
         T: Send + 'static,
     {
         let text = self.get_text(uri).await?;
-        let ret = tokio::task::spawn_blocking(move || f(Document::from(text.as_str()))).await?;
+        let ret =
+            tokio::task::spawn_blocking(move || f(Html::parse_document(text.as_str()))).await?;
         Ok(ret)
     }
 
@@ -67,7 +68,7 @@ impl Client {
         )?;
 
         let ret = self
-            .get_doc(url.as_str(), |doc| SearchResult::from_doc(&doc))
+            .get_html(url.as_str(), |html| SearchResult::from_html(&html))
             .await??;
 
         Ok(ret)
@@ -82,14 +83,13 @@ impl Client {
         )?;
 
         let ret = self
-            .get_doc(url.as_str(), |doc| Post::from_doc(&doc))
+            .get_html(url.as_str(), |html| Post::from_html(&html))
             .await??;
 
         Ok(ret)
     }
 
     /// Send a GET web request to a `uri` and copy the result to the given async writer.
-    ///
     pub async fn get_to<W>(&self, url: &Url, mut writer: W) -> RuleResult<()>
     where
         W: AsyncWrite + Unpin,
@@ -151,6 +151,7 @@ mod test {
     #[tokio::test]
     async fn it_works_fbi() {
         let post = get_top_post("fbi").await;
+        assert!(post.thumb_url.is_some());
         dbg!(&post);
     }
 

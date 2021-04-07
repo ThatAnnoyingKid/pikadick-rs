@@ -1,12 +1,21 @@
-use select::{
-    document::Document,
-    node::Node,
-    predicate::{
-        Class,
-        Name,
-    },
+use scraper::{
+    ElementRef,
+    Html,
+    Selector,
 };
 use url::Url;
+
+/// Error that may occur while making a [`SearchResult`] from [`Html`]
+#[derive(Debug, thiserror::Error)]
+pub enum FromHtmlError {
+    /// Missing Content Div
+    #[error("missing content div")]
+    MissingContentDiv,
+
+    /// Invalid [`SearchEntry`]
+    #[error("invalid search result: {0}")]
+    InvalidSearchEntry(#[from] FromElementError),
+}
 
 /// Results for a search
 #[derive(Debug)]
@@ -16,53 +25,28 @@ pub struct SearchResult {
 }
 
 impl SearchResult {
-    /// Try to make a SearchResult from a Document
-    pub fn from_doc(doc: &Document) -> Result<Self, FromDocError> {
-        let content_div = doc
-            .find(Class("content"))
-            .last()
-            .ok_or(FromDocError::MissingContentDiv)?;
+    /// Try to make a [`SearchResult`] from [`Html`].
+    pub fn from_html(html: &Html) -> Result<Self, FromHtmlError> {
+        let content_div_selector =
+            Selector::parse(".content").expect("invalid content div selector");
+        let content_div = html
+            .select(&content_div_selector)
+            .next()
+            .ok_or(FromHtmlError::MissingContentDiv)?;
 
+        let span_selector = Selector::parse("span").expect("invalid span selector");
         let entries = content_div
-            .find(Name("span"))
-            .map(SearchEntry::from_node)
+            .select(&span_selector)
+            .map(SearchEntry::from_element)
             .collect::<Result<_, _>>()?;
 
         Ok(SearchResult { entries })
     }
 }
 
-/// Error that may occur while making a [`SearchResult`] from a [`Document`]
+/// The error that may occur if a [`SearchEntry`] could not be parsed from an [`ElementRef`]
 #[derive(Debug, thiserror::Error)]
-pub enum FromDocError {
-    /// Missing Content Div
-    #[error("missing content div")]
-    MissingContentDiv,
-
-    /// Invalid [`SearchEntry`]
-    #[error("invalid search result: {0}")]
-    InvalidSearchEntry(#[from] FromNodeError),
-}
-
-/// Search Result Entry
-#[derive(Debug)]
-pub struct SearchEntry {
-    /// Entry ID
-    pub id: u64,
-
-    /// Entry Url
-    pub link: Url,
-
-    /// Thumbnail URL
-    pub thumbnail: Url,
-
-    /// Description
-    pub description: String,
-}
-
-/// The error that may occur if a [`SearchEntry`] could not be parsed from a [`Node`]
-#[derive(Debug, thiserror::Error)]
-pub enum FromNodeError {
+pub enum FromElementError {
     /// Missing Attribute
     #[error("missing attribute '{1}' in element '{0}'")]
     MissingAttribute(&'static str, &'static str),
@@ -83,32 +67,54 @@ pub enum FromNodeError {
     InvalidThumbnailUrl(url::ParseError),
 }
 
+/// Search Result Entry
+#[derive(Debug)]
+pub struct SearchEntry {
+    /// Entry ID
+    pub id: u64,
+
+    /// Entry Url
+    pub link: Url,
+
+    /// Thumbnail URL
+    pub thumbnail: Url,
+
+    /// Description
+    pub description: String,
+}
+
 impl SearchEntry {
-    /// Try to make a [`SearchEntry`] from a [`Node`]
-    pub fn from_node(node: Node) -> Result<SearchEntry, FromNodeError> {
-        let id_str = node
+    /// Try to make a [`SearchEntry`] from an [`ElementRef`]
+    pub fn from_element(element: ElementRef) -> Result<SearchEntry, FromElementError> {
+        let id_str = element
+            .value()
             .attr("id")
-            .ok_or(FromNodeError::MissingAttribute("id", "node"))?
+            .ok_or(FromElementError::MissingAttribute("element", "id"))?
             .trim_start_matches('s');
-        let id: u64 = id_str.parse().map_err(FromNodeError::InvalidId)?;
+        let id: u64 = id_str.parse().map_err(FromElementError::InvalidId)?;
+
         let link = Url::parse_with_params(
             "https://rule34.xxx/index.php?page=post&s=view",
             &[("id", id_str)],
         )
-        .map_err(FromNodeError::InvalidLink)?;
+        .map_err(FromElementError::InvalidLink)?;
 
-        let img = node
-            .find(Name("img"))
+        let img_selector = Selector::parse("img").expect("invalid img selector");
+        let img = element
+            .select(&img_selector)
             .last()
-            .ok_or(FromNodeError::MissingElement("img"))?;
-        let thumbnail = Url::parse(
-            img.attr("src")
-                .ok_or(FromNodeError::MissingAttribute("src", "img"))?,
-        )
-        .map_err(FromNodeError::InvalidThumbnailUrl)?;
+            .ok_or(FromElementError::MissingElement("img"))?;
+
+        let thumbnail = img
+            .value()
+            .attr("src")
+            .ok_or(FromElementError::MissingAttribute("img", "src"))?;
+        let thumbnail = Url::parse(thumbnail).map_err(FromElementError::InvalidThumbnailUrl)?;
+
         let description = img
+            .value()
             .attr("alt")
-            .ok_or(FromNodeError::MissingAttribute("alt", "img"))?
+            .ok_or(FromElementError::MissingAttribute("img", "alt"))?
             .trim()
             .to_string();
 
@@ -125,11 +131,11 @@ impl SearchEntry {
 mod test {
     use super::*;
 
-    const GIF_DOC_STR: &str = include_str!("../../test_data/gif_search.html");
+    const GIF_HTML_STR: &str = include_str!("../../test_data/gif_search.html");
 
     #[test]
-    fn from_doc_gif() {
-        let doc = Document::from(GIF_DOC_STR);
-        SearchResult::from_doc(&doc).unwrap();
+    fn from_gif_html() {
+        let html = Html::parse_document(GIF_HTML_STR);
+        SearchResult::from_html(&html).expect("invalid gif search result");
     }
 }

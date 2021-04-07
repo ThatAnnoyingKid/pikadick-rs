@@ -45,12 +45,7 @@ async fn async_main(command: Command) -> Result<(), Error> {
     let client = rule34::Client::new();
     let results = client.search(&command.query).await?;
 
-    let first_result = results
-        .entries
-        .iter()
-        .next()
-        .and_then(|o| o.as_ref())
-        .ok_or(Error::NoResults)?;
+    let first_result = results.entries.get(0).ok_or(Error::NoResults)?;
 
     let post = client.get_post(first_result.id).await?;
 
