@@ -199,19 +199,13 @@ impl RuleSet for Connect4RuleSet {
     }
 
     fn get_winner(state: &Self::State) -> Option<Self::Team> {
-        if let Some(team) = state.get_winning_team() {
-            return Some(team);
-        }
-
-        // TODO: Anti-Diagonal
-
-        None
+        state.get_winning_team()
     }
 
     fn get_child_states(state: &Self::State) -> Vec<Self::State> {
         let mut ret = Vec::with_capacity(COLS.into());
 
-        // Assume states are valid
+        // Assume states passed here are valid
         for i in 0..COLS {
             let team = state.get_team_turn();
             let mut state = *state;

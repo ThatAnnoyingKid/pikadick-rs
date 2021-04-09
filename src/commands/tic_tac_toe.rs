@@ -1,9 +1,9 @@
 mod board;
 mod concede;
 mod play;
-mod tic_tac_toe_renderer;
+mod renderer;
 
-use self::tic_tac_toe_renderer::TicTacToeRenderer;
+use self::renderer::Renderer;
 pub use self::{
     board::BOARD_COMMAND,
     concede::CONCEDE_COMMAND,
@@ -13,7 +13,11 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
-use log::error;
+use anyhow::Context as _;
+use log::{
+    error,
+    info,
+};
 use minimax::{
     compile_minimax_map,
     tic_tac_toe::TicTacToeState,
@@ -40,6 +44,7 @@ use std::{
     collections::HashMap,
     str::FromStr,
     sync::Arc,
+    time::Instant,
 };
 
 /// Error that may occur while creating a game.
@@ -93,21 +98,28 @@ pub type ShareGameState = Arc<Mutex<GameState>>;
 pub struct TicTacToeData {
     game_states: Arc<Mutex<HashMap<GameStateKey, ShareGameState>>>,
     ai: Arc<MiniMaxAi<TicTacToeRuleSet>>,
-    renderer: Arc<TicTacToeRenderer>,
+    renderer: Arc<Renderer>,
 }
 
 impl TicTacToeData {
     /// Make a new [`TicTacToeData`].
-    pub fn new() -> Self {
+    pub fn new() -> anyhow::Result<Self> {
+        let start = Instant::now();
+        info!("Setting up tic-tac-toe AI");
+
         let map = compile_minimax_map::<TicTacToeRuleSet>();
         let ai = Arc::new(MiniMaxAi::new(map));
-        let renderer = TicTacToeRenderer::new().expect("failed to init renderer");
 
-        Self {
+        let end = Instant::now();
+        info!("Set up tic-tac-toe AI in {:?}", end - start);
+
+        let renderer = Renderer::new().context("failed to initialize tic-tac-toe renderer")?;
+
+        Ok(Self {
             game_states: Default::default(),
             ai,
             renderer: Arc::new(renderer),
-        }
+        })
     }
 
     /// Get a game state for a [`GameStateKey`].
@@ -289,12 +301,6 @@ impl TicTacToeData {
 impl std::fmt::Debug for TicTacToeData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TicTacToeData").finish()
-    }
-}
-
-impl Default for TicTacToeData {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
