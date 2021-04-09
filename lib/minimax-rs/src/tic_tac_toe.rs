@@ -119,7 +119,6 @@ impl TicTacToeIter {
     /// # Note
     /// This can accept invalid states, such as states longer than 9 items,
     /// but it will stop yielding items afer 9 items have been yielded.
-    ///
     pub fn new(state: u16) -> Self {
         Self { state, count: 0 }
     }
@@ -147,7 +146,6 @@ impl Iterator for TicTacToeIter {
 }
 
 /// The teams of Tic-Tac-Toe.
-///
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TicTacToeTeam {
     X,
@@ -155,7 +153,6 @@ pub enum TicTacToeTeam {
 }
 
 /// Failed to parse a [`TicTacToeTeam`] from a [`char`].
-///
 #[derive(Debug, Clone)]
 pub struct InvalidCharError(pub char);
 
@@ -168,18 +165,15 @@ impl std::fmt::Display for InvalidCharError {
 impl std::error::Error for InvalidCharError {}
 
 /// Failed to parse a [`TicTacToeTeam`] from a [`str`].
-///
 #[derive(Debug, Clone)]
 pub enum InvalidStrError {
     /// The string is the wrong length. It must contain exactly one ascii char.
     ///
     /// The length is in bytes.
     /// For another metric, just calculate it yourself on failure.
-    ///
     InvalidLength(usize),
 
     /// The char is not valid.
-    ///
     InvalidChar(InvalidCharError),
 }
 
@@ -214,7 +208,6 @@ impl std::error::Error for InvalidStrError {
 
 impl TicTacToeTeam {
     /// Invert the teams
-    ///
     pub fn inverse(self) -> Self {
         match self {
             Self::X => Self::O,
@@ -223,7 +216,6 @@ impl TicTacToeTeam {
     }
 
     /// Try to parse a [`TicTacToeTeam`] from a [`char`].
-    ///
     pub fn from_char(c: char) -> Result<Self, InvalidCharError> {
         match c {
             'x' | 'X' => Ok(Self::X),

@@ -1,11 +1,15 @@
+/// Built-in connect4 support
+pub mod connect4;
 /// Built-in tic-tac-toe support
-///
 pub mod tic_tac_toe;
 
-pub use self::tic_tac_toe::{
-    TicTacToeRuleSet,
-    TicTacToeState,
-    TicTacToeTeam,
+pub use self::{
+    connect4::Connect4RuleSet,
+    tic_tac_toe::{
+        TicTacToeRuleSet,
+        TicTacToeState,
+        TicTacToeTeam,
+    },
 };
 use std::{
     collections::{
@@ -18,44 +22,34 @@ use std::{
 };
 
 /// An abstract set of rules for a game.
-///
 pub trait RuleSet {
     /// The game state
-    ///
     type State: Debug + Eq + Hash + Clone;
 
     /// The game teams
-    ///
     type Team: Debug + Eq + Hash + Clone;
 
     /// Get the starting node for minimax-ing.
-    ///
     fn get_start_state() -> Self::State;
 
     /// Get the team from a [`Self::State`].
-    ///
     fn get_team(state: &Self::State) -> Self::Team;
 
     /// Get the winner for a [`Self::State`].
     ///
     /// Returns `None` if there is no winner yet.
-    ///
     fn get_winner(state: &Self::State) -> Option<Self::Team>;
 
     /// Get the child states for a given [`Self::State`].
-    ///
     fn get_child_states(state: &Self::State) -> Vec<Self::State>;
 
     /// Score a node's score based on a winner
-    ///
     fn score_winner(winner: &Self::Team, score: &mut i8);
 
     /// Score a state.
-    ///
     fn score_state(state: &Self::State, child_scores: &[i8]) -> i8;
 
     /// Choose the best state for a given state and team.
-    ///
     fn choose_best_state<'a>(
         state: &'a Self::State,
         score: i8,
@@ -66,7 +60,6 @@ pub trait RuleSet {
 }
 
 /// Compile a minimax map with a [`RuleSet`].
-///
 pub fn compile_minimax_map<R>() -> HashMap<R::State, Node<R::State>>
 where
     R: RuleSet,
@@ -147,7 +140,6 @@ where
 }
 
 /// A Node in a game graph.
-///
 #[derive(Debug, Clone)]
 pub struct Node<S> {
     state: S,
@@ -160,7 +152,6 @@ pub struct Node<S> {
 
 impl<S> Node<S> {
     /// Make a new [`Node`] from a `State`.
-    ///
     pub fn from_state(state: S) -> Self {
         Self {
             state,
@@ -173,7 +164,6 @@ impl<S> Node<S> {
 }
 
 /// A type that can use a compiled minimax map.
-///
 pub struct MiniMaxAi<R>
 where
     R: RuleSet,
@@ -188,7 +178,6 @@ where
     R: RuleSet,
 {
     /// Make a new [`MiniMaxAi`].
-    ///
     pub fn new(map: HashMap<R::State, Node<R::State>>) -> Self {
         Self {
             map,
@@ -197,13 +186,11 @@ where
     }
 
     /// Get a [`Node`] from a game state.
-    ///
     pub fn get_node(&self, state: &R::State) -> Option<&Node<R::State>> {
         self.map.get(state)
     }
 
     /// Get a move for a given team and state.
-    ///
     pub fn get_move(&self, state: &R::State, team: &R::Team) -> Option<&R::State> {
         let node = self.get_node(&state)?;
 
@@ -225,7 +212,6 @@ where
     }
 
     /// Get the score for a state
-    ///
     pub fn get_score(&self, state: &R::State) -> Option<i8> {
         self.get_node(state).map(|node| node.score)
     }
