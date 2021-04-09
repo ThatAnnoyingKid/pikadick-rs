@@ -117,13 +117,21 @@ impl TicTacToeState {
     }
 
     /// Utility function for testing whether 3 indexes are populated and are the same team.
-    fn check_indexes(self, one: u8, two: u8, three: u8, win_type: WinType) -> Option<WinnerInfo> {
-        let team = self.at(one)?;
-        if self.at(one) == self.at(two) && self.at(two) == self.at(three) {
+    fn check_indexes(
+        self,
+        one_index: u8,
+        two_index: u8,
+        three_index: u8,
+        win_type: WinType,
+    ) -> Option<WinnerInfo> {
+        let one = self.at(one_index)?;
+        let two = self.at(two_index)?;
+        let three = self.at(three_index)?;
+        if one == two && two == three {
             return Some(WinnerInfo {
-                team,
+                team: one,
                 win_type,
-                tile_indexes: [one, two, three],
+                tile_indexes: [one_index, two_index, three_index],
             });
         }
 

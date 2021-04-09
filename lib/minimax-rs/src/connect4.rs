@@ -112,12 +112,7 @@ impl Connect4State {
         // Vertical
         // For each column, do vertical check. Repeat 3 times.
         for i in 0..(COLS * 3) {
-            if let Some(team) = self.check_indexes(
-                i + (0 * COLS),
-                i + (1 * COLS),
-                i + (2 * COLS),
-                i + (3 * COLS),
-            ) {
+            if let Some(team) = self.check_indexes(i, i + COLS, i + (2 * COLS), i + (3 * COLS)) {
                 return Some(team);
             }
         }
@@ -127,7 +122,7 @@ impl Connect4State {
         // This checks for a horizontal win in the entire row.
         for i in 0..ROWS {
             for j in 0..4 {
-                if let Some(team) = self.check_indexes(i + j + 0, i + j + 1, i + j + 2, i + j + 3) {
+                if let Some(team) = self.check_indexes(i + j, i + j + 1, i + j + 2, i + j + 3) {
                     return Some(team);
                 }
             }
@@ -139,8 +134,8 @@ impl Connect4State {
         for row in 0..(ROWS - 3) {
             for i in 0..4 {
                 if let Some(team) = self.check_indexes(
-                    i + 0 + (0 * COLS) + (row * COLS),
-                    i + 1 + (1 * COLS) + (row * COLS),
+                    i + (row * COLS),
+                    i + 1 + COLS + (row * COLS),
                     i + 2 + (2 * COLS) + (row * COLS),
                     i + 3 + (3 * COLS) + (row * COLS),
                 ) {
@@ -155,8 +150,8 @@ impl Connect4State {
         for row in 3..ROWS {
             for i in 0..4 {
                 if let Some(team) = self.check_indexes(
-                    i + (row * COLS) - (0 * COLS),
-                    i + (row * COLS) - (1 * COLS),
+                    i + (row * COLS),
+                    i + (row * COLS) - COLS,
                     i + (row * COLS) - (2 * COLS),
                     i + (row * COLS) - (3 * COLS),
                 ) {
