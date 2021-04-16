@@ -130,7 +130,7 @@ impl ClientData {
             deviantart_client: Default::default(),
             urban_client: Default::default(),
             xkcd_client: Default::default(),
-            tic_tac_toe_data: Default::default(),
+            tic_tac_toe_data: TicTacToeData::new()?,
 
             db,
 

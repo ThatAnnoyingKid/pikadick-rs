@@ -35,19 +35,25 @@ const HALF_SQUARE_SIZE_F32: f32 = SQUARE_SIZE_F32 / 2.0;
 
 const MAX_PARALLEL_RENDER_LIMIT: usize = 4;
 
-/// Render a Tic-Tac-Toe board
+/// Renderer for a Tic-Tac-Toe board
 #[derive(Debug, Clone)]
-pub(crate) struct TicTacToeRenderer {
-    background_pixmap: Arc<Pixmap>,
-    number_paths: Arc<Vec<Path>>,
+pub(crate) struct Renderer(Arc<InnerRenderer>);
 
-    render_semaphore: Arc<Semaphore>,
+/// The inner Renderer
+#[derive(Debug)]
+pub(crate) struct InnerRenderer {
+    background_pixmap: Pixmap,
+    number_paths: Vec<Path>,
+
+    render_semaphore: Semaphore,
 }
 
-#[allow(clippy::new_without_default)]
-impl TicTacToeRenderer {
-    /// Make a new [`TicTacToeRenderer`].
+impl InnerRenderer {
+    /// Make a new [`InnerRenderer`].
     pub(crate) fn new() -> anyhow::Result<Self> {
+        let start = Instant::now();
+        info!("Setting up tic-tac-toe renderer");
+
         let font_face = Face::from_slice(FONT_BYTES, 0).context("invalid font")?;
 
         let mut background_pixmap = Pixmap::new(RENDERED_SIZE.into(), RENDERED_SIZE.into())
@@ -92,10 +98,15 @@ impl TicTacToeRenderer {
             number_paths.push(path);
         }
 
+        let render_semaphore = Semaphore::new(MAX_PARALLEL_RENDER_LIMIT);
+
+        let end = Instant::now();
+        info!("Set up tic-tac-toe renderer in {:?}", end - start);
+
         Ok(Self {
-            background_pixmap: Arc::new(background_pixmap),
-            number_paths: Arc::new(number_paths),
-            render_semaphore: Arc::new(Semaphore::new(MAX_PARALLEL_RENDER_LIMIT)),
+            background_pixmap,
+            number_paths,
+            render_semaphore,
         })
     }
 
@@ -104,7 +115,8 @@ impl TicTacToeRenderer {
     #[allow(clippy::field_reassign_with_default)]
     pub(crate) fn render_board(&self, state: TicTacToeState) -> anyhow::Result<Vec<u8>> {
         let draw_start = Instant::now();
-        let mut pixmap = self.background_pixmap.as_ref().as_ref().to_owned();
+        // TODO: Is caching the background actually worth it?
+        let mut pixmap = self.background_pixmap.as_ref().to_owned();
 
         const PIECE_WIDTH: u16 = 4;
 
@@ -228,6 +240,14 @@ impl TicTacToeRenderer {
 
         Ok(img)
     }
+}
+
+#[allow(clippy::new_without_default)]
+impl Renderer {
+    /// Make a new [`Renderer`].
+    pub(crate) fn new() -> anyhow::Result<Self> {
+        Ok(Self(Arc::new(InnerRenderer::new()?)))
+    }
 
     /// Render a Tic-Tac-Toe board on a threadpool
     pub(crate) async fn render_board_async(
@@ -235,9 +255,9 @@ impl TicTacToeRenderer {
         state: TicTacToeState,
     ) -> anyhow::Result<Vec<u8>> {
         // TODO: LRU cache
-        let _permit = self.render_semaphore.acquire().await?;
         let self_clone = self.clone();
-        tokio::task::spawn_blocking(move || self_clone.render_board(state)).await?
+        let _permit = self.0.render_semaphore.acquire().await?;
+        tokio::task::spawn_blocking(move || self_clone.0.render_board(state)).await?
     }
 }
 
