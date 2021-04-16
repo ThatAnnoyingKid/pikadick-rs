@@ -34,7 +34,7 @@ use std::{
 pub struct TicTacToeData {
     game_states: Arc<Mutex<HashMap<GameStateKey, ShareGameState>>>,
     ai: Arc<MiniMaxAi<TicTacToeRuleSet>>,
-    pub(crate) renderer: Arc<Renderer>,
+    pub(crate) renderer: Renderer,
 }
 
 impl TicTacToeData {
@@ -54,7 +54,7 @@ impl TicTacToeData {
         Ok(Self {
             game_states: Default::default(),
             ai,
-            renderer: Arc::new(renderer),
+            renderer,
         })
     }
 
