@@ -242,7 +242,7 @@ impl RedditEmbedData {
                                 Some(post.url)
                             } else {
                                 match self.get_video_data(&url).await {
-                                    Ok(video_data) => Some(video_data.url.into_string()),
+                                    Ok(video_data) => Some(video_data.url.into()),
                                     Err(e) => {
                                         warn!("Failed to get reddit video info, got error: {}", e);
                                         None
