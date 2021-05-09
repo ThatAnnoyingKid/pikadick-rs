@@ -95,9 +95,8 @@ impl CacheStatsProvider for Rule34Client {
 #[usage("\"<query>\"")]
 #[example("\"test\"")]
 #[min_args(1)]
-#[max_args(1)]
 #[checks(Enabled)]
-async fn rule34(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock
         .get::<ClientDataKey>()
@@ -107,20 +106,13 @@ async fn rule34(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
 
-    let query_str = args.single_quoted::<String>().expect("missing query arg");
-    let query = match rule34::build_search_query(query_str.split(|c| c == '_' || c == ' ')) {
-        Some(s) => s,
-        None => {
-            msg.channel_id
-                .say(&ctx.http, "Invalid characters in search query")
-                .await?;
-            return Ok(());
-        }
-    };
+    let query_str = rule34::SearchQueryBuilder::new()
+        .add_tag_iter(args.raw_quoted())
+        .take_query_string();
 
     info!("Searching rule34 for '{}'", query_str);
 
-    match client.search(&query).await {
+    match client.search(&query_str).await {
         Ok(search_results) => {
             let maybe_post_id = search_results
                 .data()
@@ -145,7 +137,10 @@ async fn rule34(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 }
             } else {
                 msg.channel_id
-                    .say(&ctx.http, format!("No results for '{}'", query_str))
+                    .say(
+                        &ctx.http,
+                        format!("No results for '{}'. Searching is tag based, so make sure to use quotes to seperate tag arguments. ", query_str),
+                    )
                     .await?;
             }
         }

@@ -15,32 +15,84 @@ pub use crate::{
 };
 pub use scraper::Html;
 
-/// Utility function to build a search query.
-///
-/// # Errors
-/// Returns `None` if a tag contains an underscore.
-pub fn build_search_query<I: Iterator<Item = S>, S: AsRef<str>>(tags: I) -> Option<String> {
-    let mut ret = String::new();
-    for tag in tags {
-        let tag = tag.as_ref();
-        if tag.contains('_') {
-            // A naiive way to let people get what they want. This will likely need to be improved in the future.
-            return None;
-        }
-        ret.push_str(tag);
-        ret.push('_');
+/// A helper to build a search query.
+#[derive(Debug)]
+pub struct SearchQueryBuilder(String);
+
+impl SearchQueryBuilder {
+    /// Make a new [`SearchQueryBuilder`].
+    pub fn new() -> Self {
+        SearchQueryBuilder(String::new())
     }
 
-    ret.pop(); // Remove ending '_'
+    /// Add a tag. Spaces are replaced with underscores, so this can only be one tag.
+    pub fn add_tag(&mut self, tag: &str) -> &mut Self {
+        self.0.reserve(tag.len());
+        for c in tag.chars() {
+            if c == ' ' {
+                self.0.push('_');
+            } else {
+                self.0.push(c);
+            }
+        }
+        self.0.push(' ');
 
-    Some(ret)
+        self
+    }
+
+    /// Call [`SearchQueryBuilder::add_tag`] on each element of the given iterator.
+    pub fn add_tag_iter<I, S>(&mut self, iter: I) -> &mut Self
+    where
+        I: Iterator<Item = S>,
+        S: AsRef<str>,
+    {
+        for s in iter {
+            self.add_tag(s.as_ref());
+        }
+
+        self
+    }
+
+    /// Take the built query string out, resetting this builder's state.
+    pub fn take_query_string(&mut self) -> String {
+        if self.0.ends_with(' ') {
+            self.0.pop();
+        }
+
+        std::mem::take(&mut self.0)
+    }
+
+    /// Convert into a usable query string.
+    pub fn into_query_string(mut self) -> String {
+        if self.0.ends_with(' ') {
+            self.0.pop();
+        }
+
+        self.0
+    }
+}
+
+impl From<SearchQueryBuilder> for String {
+    fn from(search_query_builder: SearchQueryBuilder) -> Self {
+        search_query_builder.into_query_string()
+    }
+}
+
+impl Default for SearchQueryBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
 mod test {
+    use super::*;
+
     #[test]
     fn build_search_query_works() {
-        let query = crate::build_search_query("deep space waifu".split(' ')).unwrap();
+        let query = SearchQueryBuilder::new()
+            .add_tag("deep space waifu")
+            .take_query_string();
         assert_eq!(query, "deep_space_waifu");
     }
 }
