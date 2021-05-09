@@ -127,7 +127,7 @@ impl TicTacToeState {
     pub fn get_team_turn(self) -> TicTacToeTeam {
         let mut x_num = 0;
         let mut o_num = 0;
-        for team in self.iter().filter_map(std::convert::identity) {
+        for team in self.iter().flatten() {
             match team {
                 TicTacToeTeam::X => x_num += 1,
                 TicTacToeTeam::O => o_num += 1,
