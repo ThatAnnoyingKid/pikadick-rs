@@ -106,10 +106,8 @@ impl Client {
         }
 
         while let Some(chunk) = res.chunk().await? {
-            writer.write(&chunk).await?;
+            writer.write_all(&chunk).await?;
         }
-
-        writer.flush().await?;
 
         Ok(())
     }
