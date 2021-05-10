@@ -19,6 +19,8 @@
 )]
 #![allow(missing_doc_code_examples)] // TODO: Document everything properly
 
+//! # Pikadick
+
 pub mod checks;
 pub mod client_data;
 pub mod commands;
