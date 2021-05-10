@@ -15,12 +15,17 @@ pub struct Command {
 }
 
 fn main() {
-    let command: Command = argh::from_env();
-    if let Err(e) = real_main(command) {
-        eprintln!("{:?}", e);
-        drop(e);
-        std::process::exit(1);
-    }
+    let exit_code = {
+        let command: Command = argh::from_env();
+        if let Err(e) = real_main(command) {
+            eprintln!("{:?}", e);
+            1
+        } else {
+            0
+        }
+    };
+
+    std::process::exit(exit_code);
 }
 
 fn real_main(command: Command) -> anyhow::Result<()> {
@@ -40,7 +45,7 @@ async fn async_main(command: Command) -> anyhow::Result<()> {
 
     let image_name = post.get_image_name().context("missing image name")?;
     let current_dir = command.out_dir.join(image_name);
-    std::fs::create_dir_all(&command.out_dir)?;
+    tokio::fs::create_dir_all(&command.out_dir).await?;
 
     println!("ID: {}", first_result.id);
     println!("Image Url: {}", post.image_url);

@@ -4,7 +4,6 @@ use crate::{
         SearchResult,
     },
     RuleError,
-    RuleResult,
 };
 use scraper::Html;
 use tokio::io::{
@@ -30,22 +29,21 @@ impl Client {
     }
 
     /// Send a GET web request to a `uri` and get the result as a [`String`].
-    pub async fn get_text(&self, uri: &str) -> RuleResult<String> {
-        let res = self
+    pub async fn get_text(&self, uri: &str) -> Result<String, RuleError> {
+        Ok(self
             .client
             .get(uri)
             .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT_STR)
             .send()
-            .await?;
-
-        let text = res.text().await?;
-
-        Ok(text)
+            .await?
+            .error_for_status()?
+            .text()
+            .await?)
     }
 
     /// Send a GET web request to a `uri` and get the result as [`Html`],
     /// then use the given func to process it.
-    pub async fn get_html<F, T>(&self, uri: &str, f: F) -> RuleResult<T>
+    pub async fn get_html<F, T>(&self, uri: &str, f: F) -> Result<T, RuleError>
     where
         F: FnOnce(Html) -> T + Send + 'static,
         T: Send + 'static,
@@ -61,7 +59,7 @@ impl Client {
     /// Querys are based on "tags".
     /// Tags are seperated by spaces, while words are seperated by underscores.
     /// Characters are automatically encoded.
-    pub async fn search(&self, query: &str) -> RuleResult<SearchResult> {
+    pub async fn search(&self, query: &str) -> Result<SearchResult, RuleError> {
         let url = Url::parse_with_params(
             "https://rule34.xxx/index.php?page=post&s=list",
             &[("tags", query)],
@@ -75,7 +73,7 @@ impl Client {
     }
 
     /// Get a [`Post`] by `id`.
-    pub async fn get_post(&self, id: u64) -> RuleResult<Post> {
+    pub async fn get_post(&self, id: u64) -> Result<Post, RuleError> {
         let mut id_str = itoa::Buffer::new();
         let url = Url::parse_with_params(
             "https://rule34.xxx/index.php?page=post&s=view",
@@ -90,7 +88,7 @@ impl Client {
     }
 
     /// Send a GET web request to a `uri` and copy the result to the given async writer.
-    pub async fn get_to<W>(&self, url: &Url, mut writer: W) -> RuleResult<()>
+    pub async fn get_to<W>(&self, url: &Url, mut writer: W) -> Result<(), RuleError>
     where
         W: AsyncWrite + Unpin,
     {
@@ -99,11 +97,8 @@ impl Client {
             .get(url.as_str())
             .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT_STR)
             .send()
-            .await?;
-        let status = res.status();
-        if !status.is_success() {
-            return Err(RuleError::InvalidStatus(status));
-        }
+            .await?
+            .error_for_status()?;
 
         while let Some(chunk) = res.chunk().await? {
             writer.write_all(&chunk).await?;

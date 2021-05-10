@@ -2197,7 +2197,7 @@ dependencies = [
 
 [[package]]
 name = "rule34"
-version = "0.0.1"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "argh",
