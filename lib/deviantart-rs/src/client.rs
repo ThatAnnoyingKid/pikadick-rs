@@ -11,7 +11,6 @@ use tokio::io::{
 use url::Url;
 
 /// A DeviantArt Client
-///
 #[derive(Debug, Clone)]
 pub struct Client {
     client: reqwest::Client,
@@ -19,7 +18,6 @@ pub struct Client {
 
 impl Client {
     /// Make a new [`Client`].
-    ///
     pub fn new() -> Self {
         Client {
             client: reqwest::Client::new(),
@@ -27,39 +25,41 @@ impl Client {
     }
 
     /// Search for deviations
-    ///
     pub async fn search(&self, query: &str) -> Result<SearchResults, Error> {
         let url = Url::parse_with_params(
             "https://www.deviantart.com/_napi/da-browse/api/networkbar/search/deviations",
             &[("q", query), ("page", "1")],
         )?;
-        let res = self.client.get(url.as_str()).send().await?;
-        let status = res.status();
-        if !status.is_success() {
-            return Err(Error::InvalidStatus(status));
-        }
-        let results: SearchResults = res.json().await?;
+        let results = self
+            .client
+            .get(url.as_str())
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
 
         Ok(results)
     }
 
     /// OEmbed API
-    ///
     pub async fn get_oembed(&self, url: &Url) -> Result<OEmbed, Error> {
         let url = Url::parse_with_params(
             "https://backend.deviantart.com/oembed",
             &[("url", url.as_str())],
         )?;
-        let res = self.client.get(url.as_str()).send().await?;
-        let status = res.status();
-        if !status.is_success() {
-            return Err(Error::InvalidStatus(status));
-        }
-        Ok(res.json().await?)
+        let res = self
+            .client
+            .get(url.as_str())
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(res)
     }
 
     /// Download a [`Deviation`].
-    ///
     pub async fn download_deviation(
         &self,
         deviation: &Deviation,
@@ -69,15 +69,17 @@ impl Client {
             .get_download_url()
             .or_else(|| deviation.get_media_url())
             .ok_or(Error::MissingMediaToken)?;
-        let mut res = self.client.get(url.as_str()).send().await?;
-        let status = res.status();
-        if !status.is_success() {
-            return Err(Error::InvalidStatus(status));
-        }
+
+        let mut res = self
+            .client
+            .get(url.as_str())
+            .send()
+            .await?
+            .error_for_status()?;
+
         while let Some(chunk) = res.chunk().await? {
-            writer.write(&chunk).await?;
+            writer.write_all(&chunk).await?;
         }
-        writer.flush().await?;
 
         Ok(())
     }
@@ -86,5 +88,21 @@ impl Client {
 impl Default for Client {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn it_works() {
+        let client = Client::new();
+        let results = client.search("sun").await.expect("failed to search");
+        // dbg!(&results);
+        let first = &results.deviations[0];
+        dbg!(first);
+        let image = tokio::fs::File::create("test.jpg").await.unwrap();
+        client.download_deviation(first, image).await.unwrap();
     }
 }
