@@ -46,9 +46,7 @@ impl Rule34Client {
         Default::default()
     }
 
-    /// Search for a query.
-    ///
-    /// No normalization is performed on the query, see [`rule34::build_search_query`] for more info.
+    /// Search for a query
     pub async fn search(
         &self,
         query: &str,
