@@ -72,6 +72,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         
+      - name: Install Latest Stable Rust
+        uses: actions-rs/toolchain@v1
+        with:
+            profile: minimal
+            toolchain: stable
+        
       - name: Build Pikadick
         run: cargo build --verbose
         

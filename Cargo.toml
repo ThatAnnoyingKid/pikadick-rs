@@ -7,14 +7,14 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.40"
-bincode = "1.3.2"
+bincode = "1.3.3"
 chrono = "0.4.19"
 crossbeam = "0.8.0"
 dashmap = "4.0.2"
 deviantart = { path = "./lib/deviantart-rs" }
 fern = { version = "0.6.0", features = [ "colored" ] }
 fml = { path = "./lib/fml-rs" }
-futures = { version = "0.3.13", default-features = false }
+futures = { version = "0.3.14", default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
 indexmap = "1.6.2"
 insta = { path = "./lib/insta-rs" }
@@ -29,26 +29,26 @@ r6tracker = { path = "./lib/r6tracker-rs" }
 rand = "0.8.3"
 reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "b7e79ccd5451be21540d54d5cff2cf76749a753a" }
 reddit-tube = { path = "./lib/reddit-tube-rs" }
-regex = "1.4.5"
+regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.125", features = [ "derive" ] }
 serenity = "0.10.5"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
-sqlx = { version = "0.5.1", features = [ "sqlite", "runtime-tokio-rustls" ] }
+sqlx = { version = "0.5.2", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.7"
 thiserror = "1.0.24"
 tiny-skia = { version = "0.5.1", features = [ "std", "simd", "png-format" ], default-features = false }
-tokio = { version = "1.4.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tokio = { version = "1.5.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"
 ttf-parser = "0.12.0"
-uom = "0.30.0"
+uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs" }
-url = "2.2.1"
+url = "2.2.2"
 xkcd = { path = "lib/xkcd-rs" }
 zalgo = { git = "https://github.com/adumbidiot/zalgo-rs", rev = "a5e0ce60cb37daee1f4b954c5270c30d1034c4af" }
 
 # Optional
-openssl = { version = "0.10.33", optional = true, features = [ "vendored" ] }
+openssl = { version = "0.10.34", optional = true, features = [ "vendored" ] }
 
 [features]
 # Note: This is needed for cross comp as sqlx has a hard, non-optional dependency on native-tls
@@ -56,7 +56,7 @@ use-openssl-vendored = [ "openssl" ]
 
 [patch.crates-io]
 # Fix security advisory
-heim = { git = "https://github.com/heim-rs/heim", branch = "dependabot/cargo/raw-cpuid-approx-9.0" }
+heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }
 
 # `servo_arc` has UB on crates.io
 servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca1468a1767e3cc294f824036c" }

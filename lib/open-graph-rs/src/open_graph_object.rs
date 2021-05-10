@@ -137,8 +137,8 @@ impl OpenGraphObject {
             url,
 
             audio_url,
-            video_url,
             description,
+            video_url,
         })
     }
 
