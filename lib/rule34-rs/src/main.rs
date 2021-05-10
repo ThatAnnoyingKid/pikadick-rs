@@ -94,9 +94,13 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             println!("Image Name: {}", image_name);
             println!("Out Path: {}", out_path.display());
             println!();
+            
+            if out_path.exists() {
+                anyhow::bail!("file already exists");
+            }
 
             println!("Downloading...");
-            let mut buffer = Vec::with_capacity(1_000_000); // 1 MB
+            let mut buffer = Vec::with_capacity(4_000_000); // 4 MB
             client
                 .get_to(&post.image_url, &mut buffer)
                 .await
