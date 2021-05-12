@@ -100,12 +100,13 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             }
 
             println!("Downloading...");
-            let mut buffer = Vec::with_capacity(4_000_000); // 4 MB
+            let mut buffer = Vec::with_capacity(16_000_000); // 16 MB
             client
                 .get_to(&post.image_url, &mut buffer)
                 .await
                 .context("failed to download image")?;
 
+            println!("Saving...");
             let mut file = File::create(out_path).await?;
             tokio::io::copy(&mut buffer.as_slice(), &mut file)
                 .await
