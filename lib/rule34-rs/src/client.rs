@@ -5,6 +5,7 @@ use crate::{
     },
     RuleError,
 };
+use bytes::Bytes;
 use scraper::Html;
 use tokio::io::{
     AsyncWrite,
@@ -17,7 +18,8 @@ const DEFAULT_USER_AGENT_STR: &str = "rule34-rs";
 /// A Rule34 Client
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client. This probably should't be used by you.
+    pub client: reqwest::Client,
 }
 
 impl Client {
@@ -85,6 +87,19 @@ impl Client {
             .await??;
 
         Ok(ret)
+    }
+
+    /// Send a GET web request to a `uri` and download the result as [`Bytes`].
+    pub async fn get_bytes(&self, url: &str) -> Result<Bytes, RuleError> {
+        Ok(self
+            .client
+            .get(url)
+            .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT_STR)
+            .send()
+            .await?
+            .error_for_status()?
+            .bytes()
+            .await?)
     }
 
     /// Send a GET web request to a `uri` and copy the result to the given async writer.

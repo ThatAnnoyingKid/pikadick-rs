@@ -94,21 +94,20 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             println!("Image Name: {}", image_name);
             println!("Out Path: {}", out_path.display());
             println!();
-            
+
             if out_path.exists() {
                 anyhow::bail!("file already exists");
             }
 
             println!("Downloading...");
-            let mut buffer = Vec::with_capacity(16_000_000); // 16 MB
-            client
-                .get_to(&post.image_url, &mut buffer)
+            let buffer = client
+                .get_bytes(post.image_url.as_str())
                 .await
                 .context("failed to download image")?;
 
             println!("Saving...");
             let mut file = File::create(out_path).await?;
-            tokio::io::copy(&mut buffer.as_slice(), &mut file)
+            tokio::io::copy(&mut buffer.as_ref(), &mut file)
                 .await
                 .context("failed to save image")?;
         }
