@@ -14,7 +14,7 @@ dashmap = "4.0.2"
 deviantart = { path = "./lib/deviantart-rs" }
 fern = { version = "0.6.0", features = [ "colored" ] }
 fml = { path = "./lib/fml-rs" }
-futures = { version = "0.3.14", default-features = false }
+futures = { version = "0.3.15", default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
 indexmap = "1.6.2"
 insta = { path = "./lib/insta-rs" }
