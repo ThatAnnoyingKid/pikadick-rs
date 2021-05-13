@@ -68,7 +68,10 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
 
     match options.subcommand {
         SubCommand::Search(options) => {
-            let results = client.search(&options.query).await?;
+            let results = client
+                .search(&options.query)
+                .await
+                .with_context(|| format!("failed to search for '{}'", &options.query))?;
 
             for (i, deviation) in results.deviations.iter().enumerate() {
                 println!("{}) {}", i + 1, deviation.title,);
@@ -173,14 +176,11 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     .bytes()
                     .await?;
 
-                tokio::fs::write(
-                    format!(
-                        "{}-{}.{}",
-                        current_deviation.title, current_deviation.deviation_id, extension
-                    ),
-                    bytes,
-                )
-                .await?;
+                let filename = escape_path(&format!(
+                    "{}-{}.{}",
+                    current_deviation.title, current_deviation.deviation_id, extension
+                ));
+                tokio::fs::write(filename, bytes).await?;
             } else {
                 anyhow::bail!("unknown deviation type: {}", current_deviation.kind);
             }
@@ -188,4 +188,8 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn escape_path(path: &str) -> String {
+    path.chars().filter(|&c| c != ':' && c != '?').collect()
 }
