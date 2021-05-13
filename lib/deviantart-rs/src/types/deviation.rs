@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    path::Path,
+};
 use url::Url;
 
 /// A Deviation
@@ -137,6 +140,13 @@ impl DeviationMedia {
     /// Try to get the fullview [`MediaType`].
     pub fn get_fullview_media_type(&self) -> Option<&MediaType> {
         self.types.iter().find(|t| t.is_fullview())
+    }
+
+    /// Try to get the extension of this [`Deviation`]
+    pub fn get_extension(&self) -> Option<&str> {
+        Path::new(self.base_uri.as_ref()?.as_str())
+            .extension()?
+            .to_str()
     }
 }
 

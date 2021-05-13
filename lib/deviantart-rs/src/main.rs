@@ -1,5 +1,4 @@
 use anyhow::Context;
-use mime_guess::Mime;
 use std::fmt::Write;
 
 #[derive(argh::FromArgs)]
@@ -30,6 +29,12 @@ struct SearchOptions {
 struct DownloadOptions {
     #[argh(positional, description = "the deviation url")]
     url: String,
+
+    #[argh(
+        switch,
+        description = "allow using  the fullview deviantart url, which is lower quality"
+    )]
+    allow_fullview: bool,
 }
 
 fn main() {
@@ -147,32 +152,27 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 .await?;
             } else if current_deviation.is_image() {
                 println!("Downloading image...");
-                let url = current_deviation
-                    .get_download_url()
-                    .context("missing download url")?;
-                let (bytes, mime) = {
-                    let res = client
-                        .client
-                        .get(url.as_str())
-                        .send()
-                        .await?
-                        .error_for_status()?;
-                    let mime: Mime = res
-                        .headers()
-                        .get(reqwest::header::CONTENT_TYPE)
-                        .context("missing content type header")?
-                        .to_str()
-                        .context("invalid content type header")?
-                        .parse()
-                        .context("failed to parse content type header")?;
-                    let bytes = res.bytes().await?;
+                let mut url = current_deviation.get_download_url();
 
-                    (bytes, mime)
-                };
+                if url.is_none() && options.allow_fullview {
+                    url = current_deviation.get_fullview_url();
+                }
 
-                let extension = mime_guess::get_mime_extensions(&mime)
-                    .and_then(|extensions| extensions.last())
-                    .with_context(|| format!("missing mime extensions for {}", mime))?;
+                let url = url.context("failed to select an image url")?;
+                let extension = current_deviation
+                    .media
+                    .get_extension()
+                    .context("could not determine image extension")?;
+
+                let bytes = client
+                    .client
+                    .get(url.as_str())
+                    .send()
+                    .await?
+                    .error_for_status()?
+                    .bytes()
+                    .await?;
+
                 tokio::fs::write(
                     format!(
                         "{}-{}.{}",

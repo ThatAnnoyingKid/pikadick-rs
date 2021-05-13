@@ -643,7 +643,6 @@ dependencies = [
  "argh",
  "itoa",
  "lazy_static",
- "mime_guess",
  "regex",
  "reqwest",
  "serde",
