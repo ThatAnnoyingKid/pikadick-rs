@@ -8,6 +8,7 @@ pub use crate::{
     types::{
         Deviation,
         OEmbed,
+        ScrapedDeviationInfo,
         SearchResults,
     },
 };
@@ -34,4 +35,12 @@ pub enum Error {
     /// Io Error
     #[error(transparent)]
     Io(#[from] std::io::Error),
+
+    /// Json failed to parse
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+
+    /// Missing the InitialState variable
+    #[error("missing initial state")]
+    MissingInitialState,
 }
