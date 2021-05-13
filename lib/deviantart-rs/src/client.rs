@@ -15,7 +15,8 @@ use url::Url;
 /// A DeviantArt Client
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client. You probably shouldn't touch this.
+    pub client: reqwest::Client,
 }
 
 impl Client {

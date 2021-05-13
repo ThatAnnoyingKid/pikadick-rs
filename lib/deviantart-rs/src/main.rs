@@ -1,4 +1,5 @@
 use anyhow::Context;
+use mime_guess::Mime;
 use std::fmt::Write;
 
 #[derive(argh::FromArgs)]
@@ -88,7 +89,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
 
             if current_deviation.is_literature() {
                 println!("Generating html page...");
-                
+
                 let text_content = current_deviation
                     .text_content
                     .as_ref()
@@ -142,6 +143,42 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                         current_deviation.title, current_deviation.deviation_id
                     ),
                     html,
+                )
+                .await?;
+            } else if current_deviation.is_image() {
+                println!("Downloading image...");
+                let url = current_deviation
+                    .get_download_url()
+                    .context("missing download url")?;
+                let (bytes, mime) = {
+                    let res = client
+                        .client
+                        .get(url.as_str())
+                        .send()
+                        .await?
+                        .error_for_status()?;
+                    let mime: Mime = res
+                        .headers()
+                        .get(reqwest::header::CONTENT_TYPE)
+                        .context("missing content type header")?
+                        .to_str()
+                        .context("invalid content type header")?
+                        .parse()
+                        .context("failed to parse content type header")?;
+                    let bytes = res.bytes().await?;
+
+                    (bytes, mime)
+                };
+
+                let extension = mime_guess::get_mime_extensions(&mime)
+                    .and_then(|extensions| extensions.last())
+                    .with_context(|| format!("missing mime extensions for {}", mime))?;
+                tokio::fs::write(
+                    format!(
+                        "{}-{}.{}",
+                        current_deviation.title, current_deviation.deviation_id, extension
+                    ),
+                    bytes,
                 )
                 .await?;
             } else {
