@@ -122,7 +122,7 @@ impl ClientData {
             r6tracker_client: Default::default(),
             rule34_client: Default::default(),
             quizizz_client: Default::default(),
-            fml_client: FmlClient::new(config.fml().key().to_string()),
+            fml_client: FmlClient::new(config.fml.key.to_string()),
             shift_client: ShiftClient::new(),
             reddit_embed_data: Default::default(),
             enabled_check_data: Default::default(),
