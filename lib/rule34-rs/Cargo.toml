@@ -1,6 +1,6 @@
 [package]
 name = "rule34"
-version = "0.0.1"
+version = "0.0.0"
 authors = [ "ProfessionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -11,17 +11,19 @@ required-features = [ "cli" ]
 path = "src/main.rs"
 
 [dependencies]
+bytes = "1.0.1"
 itoa = "0.4.7"
 reqwest = "0.11.3"
 scraper = { version = "0.12.0", default-features = false }
+serde = { version = "1.0.126", features = [ "derive" ] }
 serde_json = "1.0.64"
-serde = { version = "1.0.125", features = [ "derive" ] }
 thiserror = "1.0.24"
 tokio = "1.5.0"
 url = { version = "2.2.2", features = [ "serde" ] }
 
 # Optional
 argh = { version = "0.1.4", optional = true }
+anyhow = { version = "1.0.40", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.5.0", features = [ "macros" ] }
@@ -29,6 +31,7 @@ tokio = { version = "1.5.0", features = [ "macros" ] }
 [features]
 cli = [
     "argh",
+    "anyhow",
     "tokio/rt-multi-thread",
     "tokio/fs",
 ]

@@ -4,10 +4,7 @@ mod types;
 
 pub use crate::{
     client::Client,
-    error::{
-        RuleError,
-        RuleResult,
-    },
+    error::RuleError,
     types::{
         Post,
         SearchResult,

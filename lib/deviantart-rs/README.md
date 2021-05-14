@@ -4,3 +4,4 @@ A library to interact with https://deviantart.com. It tries to uses scraping bec
 ## References
  * https://www.deviantart.com/developers/
  * https://github.com/wix-incubator/DeviantArt-API/issues/153
+ * https://github.com/mikf/gallery-dl

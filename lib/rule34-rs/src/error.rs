@@ -1,50 +1,33 @@
-/// The crate Result Type
-///
-pub type RuleResult<T> = Result<T, RuleError>;
-
 /// The error that occurs when a `SearchResult` could not be parsed.
-///
 pub type SearchResultError = crate::types::search_result::FromHtmlError;
 
 /// The Error that occurs when a `Post` could not be parsed.
-///
 pub type PostError = crate::types::post::FromHtmlError;
 
 /// Crate Error Type
-///
 #[derive(Debug, thiserror::Error)]
 pub enum RuleError {
     /// Reqwest HTTP Error
-    ///
-    #[error("{0}")]
+    #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
 
     /// Invalid URL Error
-    #[error("{0}")]
+    #[error(transparent)]
     InvalidUrl(#[from] url::ParseError),
 
-    /// Invalid HTTP Status Code
-    ///
-    #[error("invalid status {0}")]
-    InvalidStatus(reqwest::StatusCode),
-
     /// IO Error
-    ///
-    #[error("{0}")]
+    #[error(transparent)]
     Io(#[from] std::io::Error),
 
     /// Invalid Search Result
-    ///
-    #[error("invalid search result: {0}")]
+    #[error("invalid search result")]
     InvalidSearchResult(#[from] SearchResultError),
 
     /// InvalidPost
-    ///
-    #[error("invalid post: {0}")]
+    #[error("invalid post")]
     InvalidPost(#[from] PostError),
 
     /// A tokio task failed to complete
-    ///
-    #[error("{0}")]
+    #[error("failed to join tokio task")]
     TokioJoin(#[from] tokio::task::JoinError),
 }
