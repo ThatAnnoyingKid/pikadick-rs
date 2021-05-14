@@ -296,7 +296,7 @@ fn main() {
     let mut config = match Config::load_from_path("./config.toml".as_ref()) {
         Ok(c) => c,
         Err(e) => {
-            error!("Failed to load `./config.toml`: {}", e);
+            error!("Failed to load `./config.toml`: {:?}", e);
             return;
         }
     };
@@ -322,7 +322,7 @@ fn main() {
     }
 
     info!("Opening data directory...");
-    let data_dir = config.data_dir();
+    let data_dir = &config.data_dir;
     let db_path = data_dir.join("pikadick.sqlite");
 
     if data_dir.is_file() {
@@ -385,10 +385,10 @@ fn main() {
             }
         };
 
-        let uppercase_prefix = config.prefix().to_uppercase();
+        let uppercase_prefix = config.prefix.to_uppercase();
         let framework = StandardFramework::new()
             .configure(|c| {
-                c.prefixes(&[config.prefix(), &uppercase_prefix])
+                c.prefixes(&[&config.prefix, &uppercase_prefix])
                     .case_insensitivity(true)
             })
             .help(&HELP)
@@ -408,9 +408,9 @@ fn main() {
             .unrecognised_command(unrecognised_command_handler)
             .on_dispatch_error(process_dispatch_error);
 
-        info!("Using prefix '{}'", config.prefix());
+        info!("Using prefix '{}'", &config.prefix);
 
-        let mut client = match Client::builder(config.token())
+        let mut client = match Client::builder(&config.token)
             .event_handler(Handler)
             .framework(framework)
             .await

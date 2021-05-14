@@ -17,58 +17,72 @@ fn default_prefix() -> String {
     "p!".to_string()
 }
 
+/// The bot config
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    token: String,
+    /// The discord token
+    pub token: String,
 
+    /// Prefix for the bot
     #[serde(default = "default_prefix")]
-    prefix: String,
+    pub prefix: String,
 
-    status: Option<StatusConfig>,
+    /// Status config
+    pub status: Option<StatusConfig>,
 
-    data_dir: PathBuf,
+    /// Data dir
+    pub data_dir: PathBuf,
 
-    fml: FmlConfig,
+    /// FML config
+    pub fml: FmlConfig,
 
+    /// DeviantArt config
+    pub deviantart: DeviantArtConfig,
+
+    /// Unknown extra data
     #[serde(flatten)]
-    extra: HashMap<String, toml::Value>,
+    pub extra: HashMap<String, toml::Value>,
 }
 
+/// FML config
 #[derive(Deserialize, Debug)]
 pub struct FmlConfig {
-    key: String,
+    /// FML API key
+    pub key: String,
 
+    /// Unknown extra data
     #[serde(flatten)]
-    extra: HashMap<String, toml::Value>,
+    pub extra: HashMap<String, toml::Value>,
+}
+
+/// Deviant Config
+#[derive(Deserialize, Debug)]
+pub struct DeviantArtConfig {
+    /// Username
+    pub username: String,
+
+    /// Password
+    pub password: String,
+
+    /// Unknown extra data
+    #[serde(flatten)]
+    pub extra: HashMap<String, toml::Value>,
 }
 
 impl Config {
-    pub fn token(&self) -> &str {
-        &self.token
-    }
-
-    pub fn prefix(&self) -> &str {
-        &self.prefix
-    }
-
+    /// Shortcut for getting the status name
     pub fn status_name(&self) -> Option<&str> {
         self.status.as_ref().map(|s| s.name.as_str())
     }
 
+    /// Shortcut for getting the status url
     pub fn status_url(&self) -> Option<&str> {
         self.status.as_ref().and_then(|s| s.url.as_deref())
     }
 
+    /// Shortcut for getting the status type
     pub fn status_type(&self) -> Option<ActivityKind> {
         self.status.as_ref().and_then(|s| s.kind)
-    }
-
-    pub fn data_dir(&self) -> &Path {
-        &self.data_dir
-    }
-
-    pub fn fml(&self) -> &FmlConfig {
-        &self.fml
     }
 
     /// Load a config from a path
@@ -85,7 +99,7 @@ impl Config {
 
     /// Validate a config
     pub fn validate(&mut self) -> Vec<ValidationMessage> {
-        let mut errors = Vec::new();
+        let mut errors = Vec::with_capacity(3);
 
         if let Err(_e) = validate_token(&self.token) {
             errors.push(ValidationMessage {
@@ -114,14 +128,8 @@ impl Config {
     }
 }
 
-impl FmlConfig {
-    pub fn key(&self) -> &str {
-        &self.key
-    }
-}
-
 #[derive(Deserialize, Debug)]
-struct StatusConfig {
+pub struct StatusConfig {
     #[serde(rename = "type")]
     #[serde(default)]
     kind: Option<ActivityKind>,

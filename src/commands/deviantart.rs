@@ -16,6 +16,7 @@ use log::{
     error,
     info,
 };
+use parking_lot::Mutex;
 use rand::seq::IteratorRandom;
 use serenity::{
     framework::standard::{
@@ -26,25 +27,46 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{
+        Duration,
+        Instant,
+    },
+};
 
 /// A caching deviantart client
-///
 #[derive(Clone, Default, Debug)]
 pub struct DeviantartClient {
     client: deviantart::Client,
     search_cache: TimedCache<String, SearchResults>,
+    last_update: Arc<Mutex<Option<Instant>>>,
 }
 
 impl DeviantartClient {
     /// Make a new [`DeviantartClient`].
-    ///
     pub fn new() -> Self {
         Default::default()
     }
 
+    /// Signsin if necessary
+    pub async fn signin(&self, username: &str, password: &str) -> Result<(), deviantart::Error> {
+        let do_update = {
+            let last_update = self.last_update.lock();
+            last_update.map_or(false, |last_update| {
+                Instant::elapsed(&last_update) > Duration::from_secs(60 * 30)
+            })
+        };
+
+        if do_update {
+            self.client.signin(username, password).await?;
+            *self.last_update.lock() = Some(Instant::now());
+        }
+
+        Ok(())
+    }
+
     /// Search for deviantart images with a cache.
-    ///
     pub async fn search(
         &self,
         query: &str,
@@ -82,15 +104,28 @@ impl CacheStatsProvider for DeviantartClient {
 #[checks(Enabled)]
 async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
+    let client_data = data_lock
+        .get::<ClientDataKey>()
+        .expect("missing clientdata");
     let client = client_data.deviantart_client.clone();
+    let config = client_data.config.clone();
     drop(data_lock);
 
-    let query = args.trimmed().quoted().current().unwrap();
+    let query = args.trimmed().quoted().current().expect("missing query");
 
     info!("Searching for '{}' on deviantart", query);
 
     let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
+
+    if let Err(e) = client
+        .signin(&config.deviantart.username, &config.deviantart.password)
+        .await
+    {
+        error!("Failed to log into deviantart: {}", e);
+        msg.channel_id
+            .say(&ctx.http, "Failed to log in to deviantart")
+            .await?;
+    }
 
     match client.search(&query).await {
         Ok(entry) => {
