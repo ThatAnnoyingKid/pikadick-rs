@@ -1,5 +1,8 @@
 use anyhow::Context;
-use std::fmt::Write;
+use std::{
+    fmt::Write,
+    path::Path,
+};
 
 #[derive(argh::FromArgs)]
 #[argh(description = "a tool to interact with deviantart")]
@@ -108,6 +111,15 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     .context("deviation is missing markup")?
                     .context("failed to parse markup")?;
 
+                let filename = escape_path(&format!(
+                    "{}-{}.html",
+                    current_deviation.title, current_deviation.deviation_id
+                ));
+
+                if Path::new(&filename).exists() {
+                    anyhow::bail!("file already exists");
+                }
+
                 let mut html = String::with_capacity(1_000_000); // 1 MB
 
                 html.push_str("<html>");
@@ -145,14 +157,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 html.push_str("</body>");
                 html.push_str("</html>");
 
-                tokio::fs::write(
-                    format!(
-                        "{}-{}.html",
-                        current_deviation.title, current_deviation.deviation_id
-                    ),
-                    html,
-                )
-                .await?;
+                tokio::fs::write(filename, html).await?;
             } else if current_deviation.is_image() {
                 println!("Downloading image...");
                 let mut url = current_deviation.get_download_url();
@@ -167,6 +172,15 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     .get_extension()
                     .context("could not determine image extension")?;
 
+                let filename = escape_path(&format!(
+                    "{}-{}.{}",
+                    current_deviation.title, current_deviation.deviation_id, extension
+                ));
+
+                if Path::new(&filename).exists() {
+                    anyhow::bail!("file already exists");
+                }
+
                 let bytes = client
                     .client
                     .get(url.as_str())
@@ -176,10 +190,6 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     .bytes()
                     .await?;
 
-                let filename = escape_path(&format!(
-                    "{}-{}.{}",
-                    current_deviation.title, current_deviation.deviation_id, extension
-                ));
                 tokio::fs::write(filename, bytes).await?;
             } else {
                 anyhow::bail!("unknown deviation type: {}", current_deviation.kind);
