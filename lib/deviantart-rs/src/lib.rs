@@ -8,7 +8,7 @@ pub use crate::{
     types::{
         Deviation,
         OEmbed,
-        ScrapedDeviationInfo,
+        ScrapedWebPageInfo,
         SearchResults,
     },
 };

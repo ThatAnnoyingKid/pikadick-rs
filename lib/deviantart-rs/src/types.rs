@@ -26,7 +26,11 @@ pub struct OEmbed {
 
 /// Info scraped from a deviation url
 #[derive(Debug, serde::Deserialize)]
-pub struct ScrapedDeviationInfo {
+pub struct ScrapedWebPageInfo {
+    /// ?
+    #[serde(rename = "@@config")]
+    pub config: Config,
+
     /// ?
     #[serde(rename = "@@entities")]
     pub entities: Entities,
@@ -40,14 +44,26 @@ pub struct ScrapedDeviationInfo {
     pub unknown: HashMap<String, serde_json::Value>,
 }
 
-impl ScrapedDeviationInfo {
+impl ScrapedWebPageInfo {
     /// Get the [`Deviation`] for this page.
     pub fn get_current_deviation(&self) -> Option<&Deviation> {
-        let id = self.duper_browse.root_stream.current_open_item;
+        let id = self.duper_browse.root_stream.as_ref()?.current_open_item;
 
         let mut buffer = itoa::Buffer::new();
         self.entities.deviation.get(buffer.format(id))
     }
+}
+
+/// ?
+#[derive(Debug, serde::Deserialize)]
+pub struct Config {
+    /// The page's csrf token
+    #[serde(rename = "csrfToken")]
+    pub csrf_token: String,
+
+    /// Unknown data
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
 }
 
 /// ?
@@ -66,7 +82,7 @@ pub struct Entities {
 pub struct DuperBrowse {
     /// ?
     #[serde(rename = "rootStream")]
-    pub root_stream: RootStream,
+    pub root_stream: Option<RootStream>,
 
     /// Unknown data
     #[serde(flatten)]
@@ -89,20 +105,19 @@ pub struct RootStream {
 mod test {
     use super::*;
 
-    const SCRAPED_DEVIATION: &str = include_str!("../test_data/scraped_deviation.json");
+    const SCRAPED_WEBPAGE: &str = include_str!("../test_data/scraped_webpage.json");
 
     #[test]
     fn parse_scraped_deviation() {
-        let scraped_deviation_info: ScrapedDeviationInfo = serde_json::from_str(SCRAPED_DEVIATION)
-            .expect("failed to parse scraped deviation info");
+        let scraped_webpage_info: ScrapedWebPageInfo =
+            serde_json::from_str(SCRAPED_WEBPAGE).expect("failed to parse scraped webpage info");
+        let root_stream = scraped_webpage_info
+            .duper_browse
+            .root_stream
+            .as_ref()
+            .expect("missing root stream");
 
-        assert_eq!(
-            scraped_deviation_info
-                .duper_browse
-                .root_stream
-                .current_open_item,
-            119577071
-        );
+        assert_eq!(root_stream.current_open_item, 119577071);
         // dbg!(scraped_deviation_info.entities.deviation);
     }
 }

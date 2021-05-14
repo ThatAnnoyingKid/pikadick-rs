@@ -24,6 +24,12 @@ enum SubCommand {
 struct SearchOptions {
     #[argh(positional, description = "the query string")]
     query: String,
+
+    #[argh(option, description = "your username", short = 'u', long = "username")]
+    username: Option<String>,
+
+    #[argh(option, description = "your password", short = 'p', long = "password")]
+    password: Option<String>,
 }
 
 #[derive(argh::FromArgs)]
@@ -76,6 +82,23 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 .await
                 .with_context(|| format!("failed to search for '{}'", &options.query))?;
 
+            match (options.username.as_ref(), options.password.as_ref()) {
+                (Some(username), Some(password)) => {
+                    client
+                        .signin(username, password)
+                        .await
+                        .context("failed to login")?;
+                    println!("logged in.");
+                }
+                (None, Some(_password)) => {
+                    anyhow::bail!("missing username");
+                }
+                (Some(_username), None) => {
+                    anyhow::bail!("missing password");
+                }
+                (None, None) => {}
+            }
+
             for (i, deviation) in results.deviations.iter().enumerate() {
                 println!("{}) {}", i + 1, deviation.title,);
                 println!("Id: {}", deviation.deviation_id);
@@ -85,11 +108,11 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             }
         }
         SubCommand::Download(options) => {
-            let scraped_deviation_info = client
-                .scrape_deviation(&options.url)
+            let scraped_webpage_info = client
+                .scrape_webpage(&options.url)
                 .await
-                .context("failed to scrape deviation")?;
-            let current_deviation = scraped_deviation_info
+                .context("failed to scrape webpage")?;
+            let current_deviation = scraped_webpage_info
                 .get_current_deviation()
                 .context("failed to get current deviation")?;
 

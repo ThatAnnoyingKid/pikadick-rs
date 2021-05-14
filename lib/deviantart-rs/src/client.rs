@@ -2,7 +2,7 @@ use crate::{
     Deviation,
     Error,
     OEmbed,
-    ScrapedDeviationInfo,
+    ScrapedWebPageInfo,
     SearchResults,
 };
 use regex::Regex;
@@ -23,8 +23,34 @@ impl Client {
     /// Make a new [`Client`].
     pub fn new() -> Self {
         Client {
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .cookie_store(true)
+                .build()
+                .expect("failed to build deviantart client"),
         }
+    }
+
+    /// Sign in to get access to more results from apis
+    pub async fn signin(&self, username: &str, password: &str) -> Result<(), Error> {
+        let scraped_webpage = self.scrape_webpage("https://www.deviantart.com").await?;
+        let res = self
+            .client
+            .post("https://www.deviantart.com/_sisu/do/signin")
+            .form(&[
+                ("referer", "https://www.deviantart.com/"),
+                ("csrf_token", &scraped_webpage.config.csrf_token),
+                ("username", username),
+                ("password", password),
+                ("challenge", "0"),
+                ("remember", "on"),
+            ])
+            .send()
+            .await?
+            .error_for_status()?;
+
+        let _text = res.text().await?;
+
+        Ok(())
     }
 
     /// Search for deviations
@@ -59,8 +85,8 @@ impl Client {
         Ok(res)
     }
 
-    /// Scrape a deviation from a deviation page url
-    pub async fn scrape_deviation(&self, url: &str) -> Result<ScrapedDeviationInfo, Error> {
+    /// Scrape a webpage for info
+    pub async fn scrape_webpage(&self, url: &str) -> Result<ScrapedWebPageInfo, Error> {
         lazy_static::lazy_static! {
             static ref REGEX: Regex = Regex::new(r#"window\.__INITIAL_STATE__ = JSON\.parse\("(.*)"\);"#).expect("invalid `scrape_deviation` regex");
         }
@@ -74,19 +100,19 @@ impl Client {
             .text()
             .await?;
 
-        let scraped_deviation = tokio::task::spawn_blocking(move || {
+        let scraped_webpage = tokio::task::spawn_blocking(move || {
             let capture = REGEX
                 .captures(&text)
                 .and_then(|captures| captures.get(1))
                 .ok_or(Error::MissingInitialState)?;
             let capture = capture.as_str().replace("\\\"", "\"").replace("\\\\", "\\");
-            let scraped_deviation: ScrapedDeviationInfo = serde_json::from_str(&capture)?;
+            let scraped_webpage: ScrapedWebPageInfo = serde_json::from_str(&capture)?;
 
-            Result::<_, Error>::Ok(scraped_deviation)
+            Result::<_, Error>::Ok(scraped_webpage)
         })
         .await??;
 
-        Ok(scraped_deviation)
+        Ok(scraped_webpage)
     }
 
     /// Download a [`Deviation`].
@@ -127,6 +153,19 @@ impl Default for Client {
 mod tests {
     use super::*;
 
+    #[derive(serde::Deserialize)]
+    struct Config {
+        username: String,
+        password: String,
+    }
+
+    impl Config {
+        fn from_path(path: &str) -> Config {
+            let file = std::fs::read(path).expect("failed to read config");
+            serde_json::from_reader(file.as_slice()).expect("failed to parse config")
+        }
+    }
+
     #[tokio::test]
     async fn it_works() {
         let client = Client::new();
@@ -141,20 +180,20 @@ mod tests {
     #[tokio::test]
     async fn scrape_deviation() {
         let client = Client::new();
-        let _scraped_deviation = client
-            .scrape_deviation("https://www.deviantart.com/zilla774/art/chaos-gerbil-RAWR-119577071")
+        let _scraped_webpage = client
+            .scrape_webpage("https://www.deviantart.com/zilla774/art/chaos-gerbil-RAWR-119577071")
             .await
-            .expect("failed to scrape deviation");
+            .expect("failed to scrape webpage");
     }
 
     #[tokio::test]
-    async fn scrape_deviation_literature() {
+    async fn scrape_webpage_literature() {
         let client = Client::new();
-        let scraped_deviation = client
-            .scrape_deviation("https://www.deviantart.com/tohokari-steel/art/A-Fictorian-Tale-Chapter-11-879180914")
+        let scraped_webpage = client
+            .scrape_webpage("https://www.deviantart.com/tohokari-steel/art/A-Fictorian-Tale-Chapter-11-879180914")
             .await
-            .expect("failed to scrape deviation");
-        let current_deviation = scraped_deviation
+            .expect("failed to scrape webpage");
+        let current_deviation = scraped_webpage
             .get_current_deviation()
             .expect("missing current deviation");
         let text_content = current_deviation
@@ -167,5 +206,20 @@ mod tests {
             .expect("missing markup")
             .expect("failed to parse markup");
         // dbg!(&markup);
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn signin() {
+        let config: Config = Config::from_path("config.json");
+
+        let client = Client::new();
+        client
+            .signin(&config.username, &config.password)
+            .await
+            .expect("failed to sign in");
+        let res = client.search("furry").await.expect("test");
+
+        dbg!(res.deviations.len());
     }
 }
