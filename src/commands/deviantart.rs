@@ -49,16 +49,18 @@ impl DeviantartClient {
         Default::default()
     }
 
-    /// Signsin if necessary
+    /// Signs in if necessary
     pub async fn signin(&self, username: &str, password: &str) -> Result<(), deviantart::Error> {
         let do_update = {
             let last_update = self.last_update.lock();
-            last_update.map_or(false, |last_update| {
+            last_update.map_or(true, |last_update| {
                 Instant::elapsed(&last_update) > Duration::from_secs(60 * 30)
             })
         };
 
         if do_update {
+            info!("Re-signing in");
+            
             self.client.signin(username, password).await?;
             *self.last_update.lock() = Some(Instant::now());
         }
