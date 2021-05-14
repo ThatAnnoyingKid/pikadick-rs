@@ -77,18 +77,14 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
 
     match options.subcommand {
         SubCommand::Search(options) => {
-            let results = client
-                .search(&options.query)
-                .await
-                .with_context(|| format!("failed to search for '{}'", &options.query))?;
-
             match (options.username.as_ref(), options.password.as_ref()) {
                 (Some(username), Some(password)) => {
                     client
                         .signin(username, password)
                         .await
                         .context("failed to login")?;
-                    println!("logged in.");
+                    println!("logged in");
+                    println!();
                 }
                 (None, Some(_password)) => {
                     anyhow::bail!("missing username");
@@ -98,6 +94,11 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 }
                 (None, None) => {}
             }
+            
+             let results = client
+                .search(&options.query)
+                .await
+                .with_context(|| format!("failed to search for '{}'", &options.query))?;
 
             for (i, deviation) in results.deviations.iter().enumerate() {
                 println!("{}) {}", i + 1, deviation.title,);
