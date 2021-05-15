@@ -72,7 +72,9 @@ impl Config {
     async fn get_config_path() -> anyhow::Result<PathBuf> {
         let base_dirs = directories_next::BaseDirs::new().context("failed to get base dirs")?;
         let dir_path = base_dirs.config_dir().join("deviantart");
-        tokio::fs::create_dir_all(&dir_path).await.context("failed to create config dir")?;
+        tokio::fs::create_dir_all(&dir_path)
+            .await
+            .context("failed to create config dir")?;
         let config_path = dir_path.join("config.toml");
         Ok(config_path)
     }
