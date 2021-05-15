@@ -226,7 +226,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     .html
                     .get_markup()
                     .context("deviation is missing markup")?
-                    .context("failed to parse markup")?;
+                    .context("failed to parse markup");
 
                 let filename = escape_path(&format!(
                     "{}-{}.html",
@@ -256,19 +256,30 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 html.push_str("<div style=\"width:780px;margin:auto;\">");
                 write!(&mut html, "<h1>{}</h1>", &current_deviation.title)?;
 
-                for block in markup.blocks.iter() {
-                    write!(&mut html, "<div id = \"{}\">", block.key)?;
+                match markup {
+                    Ok(markup) => {
+                        for block in markup.blocks.iter() {
+                            write!(&mut html, "<div id = \"{}\">", block.key)?;
 
-                    html.push_str("<span>");
-                    if block.text.is_empty() {
-                        html.push_str("<br>");
-                    } else {
-                        html.push_str(&block.text);
+                            html.push_str("<span>");
+                            if block.text.is_empty() {
+                                html.push_str("<br>");
+                            } else {
+                                html.push_str(&block.text);
+                            }
+                            html.push_str("</span>");
+
+                            html.push_str("</div>");
+                        }
                     }
-                    html.push_str("</span>");
-
-                    html.push_str("</div>");
+                    Err(e) => {
+                        println!("Failed to parse markdown block format: {:?}", e);
+                        println!("Interpeting as raw html");
+                        
+                        write!(&mut html, "<div style=\"color: #b1b1b9; font-size: 18px; line-height: 1.5; letter-spacing: .3px;\">{}</div>", text_content.html.markup.as_ref().context("missing markdown")?)?;
+                    }
                 }
+                        
 
                 html.push_str("</div>");
                 html.push_str("</body>");

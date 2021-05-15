@@ -60,7 +60,7 @@ impl DeviantartClient {
 
         if do_update {
             info!("Re-signing in");
-            
+
             self.client.signin(username, password).await?;
             *self.last_update.lock() = Some(Instant::now());
         }
