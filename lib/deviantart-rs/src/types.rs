@@ -45,12 +45,21 @@ pub struct ScrapedWebPageInfo {
 }
 
 impl ScrapedWebPageInfo {
+    /// Get the current deviation's id
+    pub fn get_current_deviation_id(&self) -> Option<u64> {
+        Some(self.duper_browse.root_stream.as_ref()?.current_open_item)
+    }
+
     /// Get the [`Deviation`] for this page.
     pub fn get_current_deviation(&self) -> Option<&Deviation> {
-        let id = self.duper_browse.root_stream.as_ref()?.current_open_item;
+        let id = self.get_current_deviation_id()?;
+        self.entities.deviation.get(&id)
+    }
 
-        let mut buffer = itoa::Buffer::new();
-        self.entities.deviation.get(buffer.format(id))
+    /// Get the [`DeviationExtended`] for this page.
+    pub fn get_current_deviation_extended(&self) -> Option<&DeviationExtended> {
+        let id = self.get_current_deviation_id()?;
+        self.entities.deviation_extended.as_ref()?.get(&id)
     }
 }
 
@@ -70,7 +79,45 @@ pub struct Config {
 #[derive(Debug, serde::Deserialize)]
 pub struct Entities {
     /// Deviations
-    pub deviation: HashMap<String, Deviation>,
+    pub deviation: HashMap<u64, Deviation>,
+
+    /// Extended Deviation Info
+    #[serde(rename = "deviationExtended")]
+    pub deviation_extended: Option<HashMap<u64, DeviationExtended>>,
+
+    /// Unknown data
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+/// Extended Info about a deviation
+#[derive(Debug, serde::Deserialize)]
+pub struct DeviationExtended {
+    /// Download info
+    pub download: Option<Download>,
+
+    /// Unknown data
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct Download {
+    /// The file size
+    pub filesize: u64,
+
+    /// The image height
+    pub height: u32,
+
+    /// The image width
+    pub width: u32,
+
+    /// ?
+    #[serde(rename = "type")]
+    pub kind: String,
+
+    /// The url
+    pub url: Url,
 
     /// Unknown data
     #[serde(flatten)]

@@ -44,6 +44,12 @@ struct DownloadOptions {
         description = "allow using  the fullview deviantart url, which is lower quality"
     )]
     allow_fullview: bool,
+
+    #[argh(option, description = "your username", short = 'u', long = "username")]
+    username: Option<String>,
+
+    #[argh(option, description = "your password", short = 'p', long = "password")]
+    password: Option<String>,
 }
 
 fn main() {
@@ -77,38 +83,35 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
 
     match options.subcommand {
         SubCommand::Search(options) => {
-            match (options.username.as_ref(), options.password.as_ref()) {
-                (Some(username), Some(password)) => {
-                    client
-                        .signin(username, password)
-                        .await
-                        .context("failed to login")?;
-                    println!("logged in");
-                    println!();
-                }
-                (None, Some(_password)) => {
-                    anyhow::bail!("missing username");
-                }
-                (Some(_username), None) => {
-                    anyhow::bail!("missing password");
-                }
-                (None, None) => {}
-            }
-            
-             let results = client
+            try_signin_cli(
+                &client,
+                options.username.as_deref(),
+                options.password.as_deref(),
+            )
+            .await?;
+
+            let results = client
                 .search(&options.query)
                 .await
                 .with_context(|| format!("failed to search for '{}'", &options.query))?;
 
             for (i, deviation) in results.deviations.iter().enumerate() {
-                println!("{}) {}", i + 1, deviation.title,);
+                println!("{}) {}", i + 1, deviation.title);
                 println!("Id: {}", deviation.deviation_id);
                 println!("Kind: {}", deviation.kind);
                 println!("Url: {}", deviation.url);
+                println!("Is downloadable: {}", deviation.is_downloadable);
                 println!();
             }
         }
         SubCommand::Download(options) => {
+            let signed_in = try_signin_cli(
+                &client,
+                options.username.as_deref(),
+                options.password.as_deref(),
+            )
+            .await?;
+
             let scraped_webpage_info = client
                 .scrape_webpage(&options.url)
                 .await
@@ -119,7 +122,9 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
 
             println!("Title: {}", current_deviation.title);
             println!("ID: {}", current_deviation.deviation_id);
-            println!("Type: {}", current_deviation.kind);
+            println!("Kind: {}", current_deviation.kind);
+            println!("Url: {}", current_deviation.url);
+            println!("Is downloadable: {}", current_deviation.is_downloadable);
             println!();
 
             if current_deviation.is_literature() {
@@ -184,7 +189,13 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 tokio::fs::write(filename, html).await?;
             } else if current_deviation.is_image() {
                 println!("Downloading image...");
-                let mut url = current_deviation.get_download_url();
+                let mut url = if signed_in {
+                    scraped_webpage_info
+                        .get_current_deviation_extended()
+                        .and_then(|deviation_extended| deviation_extended.download.as_ref()).map(|download| download.url.clone())
+                } else {
+                    current_deviation.get_download_url()
+                };
 
                 if url.is_none() && options.allow_fullview {
                     url = current_deviation.get_fullview_url();
@@ -222,6 +233,32 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+async fn try_signin_cli(
+    client: &deviantart::Client,
+    username: Option<&str>,
+    password: Option<&str>,
+) -> anyhow::Result<bool> {
+    match (username, password) {
+        (Some(username), Some(password)) => {
+            client
+                .signin(username, password)
+                .await
+                .context("failed to login")?;
+            println!("logged in");
+            println!();
+
+            Ok(true)
+        }
+        (None, Some(_password)) => {
+            anyhow::bail!("missing username");
+        }
+        (Some(_username), None) => {
+            anyhow::bail!("missing password");
+        }
+        (None, None) => Ok(false),
+    }
 }
 
 fn escape_path(path: &str) -> String {

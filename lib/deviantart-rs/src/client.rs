@@ -6,6 +6,10 @@ use crate::{
     SearchResults,
 };
 use regex::Regex;
+use reqwest::header::{
+    HeaderMap,
+    HeaderValue,
+};
 use tokio::io::{
     AsyncWrite,
     AsyncWriteExt,
@@ -22,9 +26,17 @@ pub struct Client {
 impl Client {
     /// Make a new [`Client`].
     pub fn new() -> Self {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            reqwest::header::ACCEPT_ENCODING,
+            HeaderValue::from_static("identity"),
+        );
+
         Client {
             client: reqwest::Client::builder()
                 .cookie_store(true)
+                .user_agent("deviantart-rs")
+                .default_headers(headers)
                 .build()
                 .expect("failed to build deviantart client"),
         }

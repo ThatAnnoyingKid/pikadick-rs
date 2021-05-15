@@ -36,6 +36,10 @@ pub struct Deviation {
     #[serde(rename = "textContent")]
     pub text_content: Option<TextContext>,
 
+    /// Whether this is downloadable
+    #[serde(rename = "isDownloadable")]
+    pub is_downloadable: bool,
+
     /// Unknown K/Vs
     #[serde(flatten)]
     pub unknown: HashMap<String, serde_json::Value>,
