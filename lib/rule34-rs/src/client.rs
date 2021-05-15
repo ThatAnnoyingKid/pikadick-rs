@@ -60,11 +60,14 @@ impl Client {
     ///
     /// Querys are based on "tags".
     /// Tags are seperated by spaces, while words are seperated by underscores.
-    /// Characters are automatically encoded.
-    pub async fn search(&self, query: &str) -> Result<SearchResult, RuleError> {
+    /// Characters are automatically url-encoded.
+    ///
+    /// Offset is the starting offset in number of results.
+    pub async fn search(&self, query: &str, offset: u64) -> Result<SearchResult, RuleError> {
+        let mut pid_buffer = itoa::Buffer::new();
         let url = Url::parse_with_params(
             "https://rule34.xxx/index.php?page=post&s=list",
-            &[("tags", query)],
+            &[("tags", query), ("pid", pid_buffer.format(offset))],
         )?;
 
         let ret = self
@@ -136,18 +139,27 @@ mod test {
     #[tokio::test]
     async fn search() {
         let client = Client::new();
-        let res = client.search("rust").await.unwrap();
+        let res = client
+            .search("rust", 0)
+            .await
+            .expect("failed to search rule34 for `rust`");
         dbg!(&res);
         assert!(!res.entries.is_empty());
     }
 
     async fn get_top_post(query: &str) -> Post {
         let client = Client::new();
-        let res = client.search(query).await.unwrap();
+        let res = client
+            .search(query, 0)
+            .await
+            .expect(&format!("failed to search rule34 for `{}`", query));
         assert!(!res.entries.is_empty());
 
-        let last = res.entries.last().unwrap();
-        client.get_post(last.id).await.unwrap()
+        let first = res.entries.first().expect("missing first entry");
+        client
+            .get_post(first.id)
+            .await
+            .expect("failed to get first post")
     }
 
     #[tokio::test]

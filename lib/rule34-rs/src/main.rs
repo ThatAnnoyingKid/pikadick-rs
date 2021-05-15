@@ -21,6 +21,14 @@ enum SubCommand {
 pub struct SearchOptions {
     #[argh(positional, description = "the query string")]
     query: String,
+
+    #[argh(
+        option,
+        long = "offset",
+        default = "0",
+        description = "the starting offset"
+    )]
+    offset: u64,
 }
 
 #[derive(argh::FromArgs)]
@@ -32,6 +40,7 @@ pub struct DownloadOptions {
     #[argh(
         option,
         short = 'o',
+        long = "out-dir",
         default = "PathBuf::from(\".\")",
         description = "the path to save images"
     )]
@@ -66,7 +75,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
 
     match options.subcommand {
         SubCommand::Search(options) => {
-            let results = client.search(&options.query).await?;
+            let results = client.search(&options.query, options.offset).await?;
 
             if results.entries.is_empty() {
                 println!("No Results");
