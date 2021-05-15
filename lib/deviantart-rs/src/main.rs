@@ -1,7 +1,10 @@
 use anyhow::Context;
 use std::{
     fmt::Write,
-    path::Path,
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
 #[derive(argh::FromArgs)]
@@ -14,8 +17,20 @@ struct Options {
 #[derive(argh::FromArgs)]
 #[argh(subcommand)]
 enum SubCommand {
+    Login(LoginOptions),
     Search(SearchOptions),
     Download(DownloadOptions),
+}
+
+#[derive(argh::FromArgs)]
+#[argh(subcommand, name = "login")]
+#[argh(description = "login on deviantart")]
+struct LoginOptions {
+    #[argh(option, description = "your username", short = 'u', long = "username")]
+    username: String,
+
+    #[argh(option, description = "your password", short = 'p', long = "password")]
+    password: String,
 }
 
 #[derive(argh::FromArgs)]
@@ -24,12 +39,6 @@ enum SubCommand {
 struct SearchOptions {
     #[argh(positional, description = "the query string")]
     query: String,
-
-    #[argh(option, description = "your username", short = 'u', long = "username")]
-    username: Option<String>,
-
-    #[argh(option, description = "your password", short = 'p', long = "password")]
-    password: Option<String>,
 }
 
 #[derive(argh::FromArgs)]
@@ -44,12 +53,59 @@ struct DownloadOptions {
         description = "allow using  the fullview deviantart url, which is lower quality"
     )]
     allow_fullview: bool,
+}
 
-    #[argh(option, description = "your username", short = 'u', long = "username")]
-    username: Option<String>,
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct Config {
+    pub username: Option<String>,
+    pub password: Option<String>,
+}
 
-    #[argh(option, description = "your password", short = 'p', long = "password")]
-    password: Option<String>,
+impl Config {
+    fn new() -> Self {
+        Config {
+            username: None,
+            password: None,
+        }
+    }
+
+    async fn get_config_path() -> anyhow::Result<PathBuf> {
+        let base_dirs = directories_next::BaseDirs::new().context("failed to get base dirs")?;
+        let dir_path = base_dirs.config_dir().join("deviantart");
+        tokio::fs::create_dir_all(&dir_path).await.context("failed to create config dir")?;
+        let config_path = dir_path.join("config.toml");
+        Ok(config_path)
+    }
+
+    async fn save(&self) -> anyhow::Result<()> {
+        let config_path = Self::get_config_path().await?;
+        let mut new_config = Self::load().await.unwrap_or_else(|_| Self::new());
+
+        if let Some(username) = self.username.clone() {
+            new_config.username = Some(username);
+        }
+
+        if let Some(password) = self.password.clone() {
+            new_config.password = Some(password);
+        }
+
+        let toml_str = toml::to_string_pretty(&new_config).context("failed to serialize config")?;
+
+        tokio::fs::write(config_path, toml_str)
+            .await
+            .context("failed to write config")?;
+
+        Ok(())
+    }
+
+    async fn load() -> anyhow::Result<Self> {
+        let config_path = Self::get_config_path().await?;
+
+        let config_str = tokio::fs::read_to_string(config_path)
+            .await
+            .context("failed to read config file")?;
+        toml::from_str(&config_str).context("failed to parse config")
+    }
 }
 
 fn main() {
@@ -82,11 +138,29 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
     let client = deviantart::Client::new();
 
     match options.subcommand {
+        SubCommand::Login(options) => {
+            let mut config = Config::new();
+            config.username = Some(options.username);
+            config.password = Some(options.password);
+            config.save().await.context("failed to save config")?;
+        }
         SubCommand::Search(options) => {
+            let config = Config::load()
+                .await
+                .map(|config| {
+                    println!("Loaded config");
+                    config
+                })
+                .unwrap_or_else(|e| {
+                    println!("Failed to load config: {:?}", e);
+                    Config::new()
+                });
+            println!();
+
             try_signin_cli(
                 &client,
-                options.username.as_deref(),
-                options.password.as_deref(),
+                config.username.as_deref(),
+                config.password.as_deref(),
             )
             .await?;
 
@@ -105,10 +179,22 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             }
         }
         SubCommand::Download(options) => {
+            let config = Config::load()
+                .await
+                .map(|config| {
+                    println!("Loaded config");
+                    config
+                })
+                .unwrap_or_else(|e| {
+                    println!("Failed to load config: {:?}", e);
+                    Config::new()
+                });
+            println!();
+
             let signed_in = try_signin_cli(
                 &client,
-                options.username.as_deref(),
-                options.password.as_deref(),
+                config.username.as_deref(),
+                config.password.as_deref(),
             )
             .await?;
 
@@ -192,7 +278,8 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 let mut url = if signed_in {
                     scraped_webpage_info
                         .get_current_deviation_extended()
-                        .and_then(|deviation_extended| deviation_extended.download.as_ref()).map(|download| download.url.clone())
+                        .and_then(|deviation_extended| deviation_extended.download.as_ref())
+                        .map(|download| download.url.clone())
                 } else {
                     current_deviation.get_download_url()
                 };
