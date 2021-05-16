@@ -641,6 +641,9 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "argh",
+ "bytes 1.0.1",
+ "cookie",
+ "cookie_store",
  "directories-next",
  "lazy_static",
  "regex",

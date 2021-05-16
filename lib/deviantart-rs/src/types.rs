@@ -27,17 +27,21 @@ pub struct OEmbed {
 /// Info scraped from a deviation url
 #[derive(Debug, serde::Deserialize)]
 pub struct ScrapedWebPageInfo {
-    /// ?
+    /// Page config like csrf tokens
     #[serde(rename = "@@config")]
     pub config: Config,
 
-    /// ?
+    /// Deviations extended deviations maybe?
     #[serde(rename = "@@entities")]
-    pub entities: Entities,
+    pub entities: Option<Entities>,
 
     /// ?
     #[serde(rename = "@@DUPERBROWSE")]
-    pub duper_browse: DuperBrowse,
+    pub duper_browse: Option<DuperBrowse>,
+
+    /// Info about the current session
+    #[serde(rename = "@@publicSession")]
+    pub public_session: PublicSession,
 
     /// Unknown data
     #[serde(flatten)]
@@ -47,19 +51,29 @@ pub struct ScrapedWebPageInfo {
 impl ScrapedWebPageInfo {
     /// Get the current deviation's id
     pub fn get_current_deviation_id(&self) -> Option<u64> {
-        Some(self.duper_browse.root_stream.as_ref()?.current_open_item)
+        Some(
+            self.duper_browse
+                .as_ref()?
+                .root_stream
+                .as_ref()?
+                .current_open_item,
+        )
     }
 
     /// Get the [`Deviation`] for this page.
     pub fn get_current_deviation(&self) -> Option<&Deviation> {
         let id = self.get_current_deviation_id()?;
-        self.entities.deviation.get(&id)
+        self.entities.as_ref()?.deviation.get(&id)
     }
 
     /// Get the [`DeviationExtended`] for this page.
     pub fn get_current_deviation_extended(&self) -> Option<&DeviationExtended> {
         let id = self.get_current_deviation_id()?;
-        self.entities.deviation_extended.as_ref()?.get(&id)
+        self.entities
+            .as_ref()?
+            .deviation_extended
+            .as_ref()?
+            .get(&id)
     }
 }
 
@@ -148,23 +162,41 @@ pub struct RootStream {
     pub unknown: HashMap<String, serde_json::Value>,
 }
 
+/// ?
+#[derive(Debug, serde::Deserialize)]
+pub struct PublicSession {
+    /// Whether the user is logged in
+    #[serde(rename = "isLoggedIn")]
+    pub is_logged_in: bool,
+
+    /// Unknown data
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
     const SCRAPED_WEBPAGE: &str = include_str!("../test_data/scraped_webpage.json");
+    const LOGIN_WEBPAGE: &str = include_str!("../test_data/login_webpage.json");
 
     #[test]
-    fn parse_scraped_deviation() {
+    fn parse_scraped_webpage() {
         let scraped_webpage_info: ScrapedWebPageInfo =
             serde_json::from_str(SCRAPED_WEBPAGE).expect("failed to parse scraped webpage info");
-        let root_stream = scraped_webpage_info
-            .duper_browse
-            .root_stream
-            .as_ref()
-            .expect("missing root stream");
-
-        assert_eq!(root_stream.current_open_item, 119577071);
+        assert_eq!(
+            scraped_webpage_info
+                .get_current_deviation_id()
+                .expect("missing current deviation id"),
+            119577071
+        );
         // dbg!(scraped_deviation_info.entities.deviation);
+    }
+
+    #[test]
+    fn parse_login_webpage() {
+        let _scraped_webpage_info: ScrapedWebPageInfo =
+            serde_json::from_str(LOGIN_WEBPAGE).expect("failed to parse scraped webpage info");
     }
 }

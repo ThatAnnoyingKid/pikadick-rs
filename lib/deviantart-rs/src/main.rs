@@ -39,6 +39,9 @@ struct LoginOptions {
 struct SearchOptions {
     #[argh(positional, description = "the query string")]
     query: String,
+
+    #[argh(switch, long = "no-login", description = "do not try to log in")]
+    no_login: bool,
 }
 
 #[derive(argh::FromArgs)]
@@ -53,6 +56,9 @@ struct DownloadOptions {
         description = "allow using  the fullview deviantart url, which is lower quality"
     )]
     allow_fullview: bool,
+
+    #[argh(switch, long = "no-login", description = "do not try to log in")]
+    no_login: bool,
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -145,6 +151,9 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             config.username = Some(options.username);
             config.password = Some(options.password);
             config.save().await.context("failed to save config")?;
+            if let Err(e) = tokio::fs::remove_file(get_cookie_file_path()?).await {
+                eprintln!("Failed to delete old cookie file: {}", e);
+            }
         }
         SubCommand::Search(options) => {
             let config = Config::load()
@@ -159,12 +168,14 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 });
             println!();
 
-            try_signin_cli(
-                &client,
-                config.username.as_deref(),
-                config.password.as_deref(),
-            )
-            .await?;
+            if !options.no_login {
+                try_signin_cli(
+                    &client,
+                    config.username.as_deref(),
+                    config.password.as_deref(),
+                )
+                .await?;
+            }
 
             let results = client
                 .search(&options.query)
@@ -174,7 +185,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             if results.deviations.is_empty() {
                 println!("no results for '{}'", &options.query);
             } else {
-                println!("results");
+                println!("Results");
                 for (i, deviation) in results.deviations.iter().enumerate() {
                     println!("{}) {}", i + 1, deviation.title);
                     println!("Id: {}", deviation.deviation_id);
@@ -183,6 +194,10 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     println!("Is downloadable: {}", deviation.is_downloadable);
                     println!();
                 }
+            }
+
+            if !options.no_login {
+                save_cookie_jar(&client).context("failed to save cookies")?;
             }
         }
         SubCommand::Download(options) => {
@@ -198,12 +213,14 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 });
             println!();
 
-            let signed_in = try_signin_cli(
-                &client,
-                config.username.as_deref(),
-                config.password.as_deref(),
-            )
-            .await?;
+            if !options.no_login {
+                try_signin_cli(
+                    &client,
+                    config.username.as_deref(),
+                    config.password.as_deref(),
+                )
+                .await?;
+            }
 
             let scraped_webpage_info = client
                 .scrape_webpage(&options.url)
@@ -292,7 +309,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 tokio::fs::write(filename, html).await?;
             } else if current_deviation.is_image() {
                 println!("Downloading image...");
-                let mut url = if signed_in {
+                let mut url = if !options.no_login {
                     scraped_webpage_info
                         .get_current_deviation_extended()
                         .and_then(|deviation_extended| deviation_extended.download.as_ref())
@@ -316,6 +333,8 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     current_deviation.title, current_deviation.deviation_id, extension
                 ));
 
+                println!("Out Path: {}", filename);
+
                 if Path::new(&filename).exists() {
                     anyhow::bail!("file already exists");
                 }
@@ -333,6 +352,10 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             } else {
                 anyhow::bail!("unknown deviation type: {}", current_deviation.kind);
             }
+
+            if !options.no_login {
+                save_cookie_jar(&client).context("failed to save cookies")?;
+            }
         }
     }
 
@@ -343,29 +366,68 @@ async fn try_signin_cli(
     client: &deviantart::Client,
     username: Option<&str>,
     password: Option<&str>,
-) -> anyhow::Result<bool> {
-    match (username, password) {
-        (Some(username), Some(password)) => {
-            println!("logging in...");
-            client
-                .signin(username, password)
-                .await
-                .context("failed to login")?;
-            println!("logged in");
-            println!();
-
-            Ok(true)
-        }
-        (None, Some(_password)) => {
-            anyhow::bail!("missing username");
-        }
-        (Some(_username), None) => {
-            anyhow::bail!("missing password");
-        }
-        (None, None) => Ok(false),
+) -> anyhow::Result<()> {
+    if let Err(e) = load_cookie_jar(&client) {
+        eprintln!("Failed to load cookie jar: {}", e);
     }
+
+    if !client
+        .is_logged_in_online()
+        .await
+        .context("failed to check if logged in")?
+    {
+        match (username, password) {
+            (Some(username), Some(password)) => {
+                println!("logging in...");
+                client
+                    .signin(username, password)
+                    .await
+                    .context("failed to login")?;
+                println!("logged in");
+                println!();
+            }
+            (None, Some(_password)) => {
+                anyhow::bail!("missing username");
+            }
+            (Some(_username), None) => {
+                anyhow::bail!("missing password");
+            }
+            (None, None) => {
+                anyhow::bail!("missing username and password");
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn get_cookie_file_path() -> anyhow::Result<PathBuf> {
+    let base_dirs = directories_next::BaseDirs::new().context("failed to get base dirs")?;
+    Ok(base_dirs.data_dir().join("deviantart/cookies.json"))
+}
+
+fn load_cookie_jar(client: &deviantart::Client) -> anyhow::Result<()> {
+    let cookie_file =
+        std::fs::File::open(get_cookie_file_path()?).context("failed to read cookies")?;
+
+    client
+        .cookie_store
+        .load_json(std::io::BufReader::new(cookie_file))?;
+
+    Ok(())
+}
+
+fn save_cookie_jar(client: &deviantart::Client) -> anyhow::Result<()> {
+    let cookie_file =
+        std::fs::File::create(get_cookie_file_path()?).context("failed to create cookie file")?;
+
+    client.cookie_store.save_json(cookie_file)?;
+
+    Ok(())
 }
 
 fn escape_path(path: &str) -> String {
-    path.chars().filter(|&c| c != ':' && c != '?').collect()
+    path.chars()
+        .filter(|&c| c != ':' && c != '?' && c != '/')
+        .collect()
 }

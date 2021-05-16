@@ -4,7 +4,10 @@ pub mod client;
 pub mod types;
 
 pub use crate::{
-    client::Client,
+    client::{
+        Client,
+        CookieJar,
+    },
     types::{
         Deviation,
         OEmbed,
@@ -43,4 +46,8 @@ pub enum Error {
     /// Missing the InitialState variable
     #[error("missing initial state")]
     MissingInitialState,
+
+    /// A Cookie Store error
+    #[error(transparent)]
+    CookieStore(cookie_store::Error),
 }
