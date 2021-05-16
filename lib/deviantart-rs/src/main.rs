@@ -150,11 +150,11 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             let config = Config::load()
                 .await
                 .map(|config| {
-                    println!("Loaded config");
+                    println!("loaded config");
                     config
                 })
                 .unwrap_or_else(|e| {
-                    println!("Failed to load config: {:?}", e);
+                    println!("failed to load config: {:?}", e);
                     Config::new()
                 });
             println!();
@@ -171,20 +171,25 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 .await
                 .with_context(|| format!("failed to search for '{}'", &options.query))?;
 
-            for (i, deviation) in results.deviations.iter().enumerate() {
-                println!("{}) {}", i + 1, deviation.title);
-                println!("Id: {}", deviation.deviation_id);
-                println!("Kind: {}", deviation.kind);
-                println!("Url: {}", deviation.url);
-                println!("Is downloadable: {}", deviation.is_downloadable);
-                println!();
+            if results.deviations.is_empty() {
+                println!("no results for '{}'", &options.query);
+            } else {
+                println!("results");
+                for (i, deviation) in results.deviations.iter().enumerate() {
+                    println!("{}) {}", i + 1, deviation.title);
+                    println!("Id: {}", deviation.deviation_id);
+                    println!("Kind: {}", deviation.kind);
+                    println!("Url: {}", deviation.url);
+                    println!("Is downloadable: {}", deviation.is_downloadable);
+                    println!();
+                }
             }
         }
         SubCommand::Download(options) => {
             let config = Config::load()
                 .await
                 .map(|config| {
-                    println!("Loaded config");
+                    println!("loaded config");
                     config
                 })
                 .unwrap_or_else(|e| {
@@ -274,12 +279,11 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     }
                     Err(e) => {
                         println!("Failed to parse markdown block format: {:?}", e);
-                        println!("Interpeting as raw html");
-                        
+                        println!("Interpeting as raw html...");
+
                         write!(&mut html, "<div style=\"color: #b1b1b9; font-size: 18px; line-height: 1.5; letter-spacing: .3px;\">{}</div>", text_content.html.markup.as_ref().context("missing markdown")?)?;
                     }
                 }
-                        
 
                 html.push_str("</div>");
                 html.push_str("</body>");
@@ -342,6 +346,7 @@ async fn try_signin_cli(
 ) -> anyhow::Result<bool> {
     match (username, password) {
         (Some(username), Some(password)) => {
+            println!("logging in...");
             client
                 .signin(username, password)
                 .await

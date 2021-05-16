@@ -158,10 +158,10 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         }
         Err(e) => {
             msg.channel_id
-                .say(&ctx.http, format!("Failed to search '{}': {}", query, e))
+                .say(&ctx.http, format!("Failed to search '{}': {:?}", query, e))
                 .await?;
 
-            error!("Failed to search for {} on deviantart: {}", query, e);
+            error!("Failed to search for {} on deviantart: {:?}", query, e);
         }
     }
 
