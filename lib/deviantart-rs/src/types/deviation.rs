@@ -75,7 +75,7 @@ impl Deviation {
 
     /// Get the GIF url for this [`Deviation`].
     pub fn get_gif_url(&self) -> Option<Url> {
-        let mut url = self.media.types.iter().find_map(|c| c.b.clone())?;
+        let mut url = self.media.get_gif_media_type()?.b.clone()?;
         url.query_pairs_mut()
             .append_pair("token", self.media.token.get(0)?);
         Some(url)
@@ -146,11 +146,18 @@ impl DeviationMedia {
         self.types.iter().find(|t| t.is_fullview())
     }
 
+    /// Try to get the gif [`MediaType`].
+    pub fn get_gif_media_type(&self) -> Option<&MediaType> {
+        self.types.iter().find(|t| t.is_gif())
+    }
+
     /// Try to get the extension of this [`Deviation`]
     pub fn get_extension(&self) -> Option<&str> {
-        Path::new(self.base_uri.as_ref()?.as_str())
-            .extension()?
-            .to_str()
+        let url = self
+            .get_gif_media_type()
+            .and_then(|media_type| media_type.b.as_ref())
+            .or_else(|| self.base_uri.as_ref())?;
+        Path::new(url.as_str()).extension()?.to_str()
     }
 }
 
@@ -191,6 +198,11 @@ impl MediaType {
     /// Whether this is the fullview
     pub fn is_fullview(&self) -> bool {
         self.kind == "fullview"
+    }
+
+    /// Whether this is a gif
+    pub fn is_gif(&self) -> bool {
+        self.kind == "gif"
     }
 }
 
