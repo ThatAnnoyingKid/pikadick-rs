@@ -81,6 +81,12 @@ impl Deviation {
         Some(url)
     }
 
+    /// Get the best video url
+    pub fn get_best_video_url(&self) -> Option<&Url> {
+        let url = self.media.get_best_video_media_type()?.b.as_ref()?;
+        Some(url)
+    }
+
     /// Whether this is an image
     pub fn is_image(&self) -> bool {
         self.kind == "image"
@@ -89,6 +95,30 @@ impl Deviation {
     /// Whether this is literature
     pub fn is_literature(&self) -> bool {
         self.kind == "literature"
+    }
+
+    /// Whether this is a film
+    pub fn is_film(&self) -> bool {
+        self.kind == "film"
+    }
+
+    /// Try to get the original extension of this [`Deviation`]
+    pub fn get_extension(&self) -> Option<&str> {
+        if self.is_image() {
+            let url = self
+                .media
+                .get_gif_media_type()
+                .and_then(|media_type| media_type.b.as_ref())
+                .or_else(|| self.media.base_uri.as_ref())?;
+            Path::new(url.as_str()).extension()?.to_str()
+        } else if self.is_literature() {
+            None
+        } else if self.is_film() {
+            let url = self.media.get_best_video_media_type()?.b.as_ref()?;
+            Path::new(url.as_str()).extension()?.to_str()
+        } else {
+            None
+        }
     }
 }
 
@@ -151,13 +181,12 @@ impl DeviationMedia {
         self.types.iter().find(|t| t.is_gif())
     }
 
-    /// Try to get the extension of this [`Deviation`]
-    pub fn get_extension(&self) -> Option<&str> {
-        let url = self
-            .get_gif_media_type()
-            .and_then(|media_type| media_type.b.as_ref())
-            .or_else(|| self.base_uri.as_ref())?;
-        Path::new(url.as_str()).extension()?.to_str()
+    /// Try to get the video [`MediaType`]
+    pub fn get_best_video_media_type(&self) -> Option<&MediaType> {
+        self.types
+            .iter()
+            .filter(|media_type| media_type.is_video())
+            .max_by_key(|media_type| media_type.width)
     }
 }
 
@@ -203,6 +232,11 @@ impl MediaType {
     /// Whether this is a gif
     pub fn is_gif(&self) -> bool {
         self.kind == "gif"
+    }
+
+    /// Whether this is a video
+    pub fn is_video(&self) -> bool {
+        self.kind == "video"
     }
 }
 
