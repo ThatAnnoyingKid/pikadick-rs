@@ -250,7 +250,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     .context("deviation is missing markup")?
                     .context("failed to parse markup");
 
-                let filename = escape_path(&format!(
+                let filename = escape_filename(&format!(
                     "{}-{}.html",
                     current_deviation.title, current_deviation.deviation_id
                 ));
@@ -309,35 +309,31 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 tokio::fs::write(filename, html).await?;
             } else if current_deviation.is_image() {
                 println!("Downloading image...");
-                let mut url = if !options.no_login {
-                    scraped_webpage_info
-                        .get_current_deviation_extended()
-                        .and_then(|deviation_extended| deviation_extended.download.as_ref())
-                        .map(|download| download.url.clone())
-                } else {
-                    current_deviation.get_download_url()
-                };
+
+                let extension = current_deviation
+                    .media
+                    .get_extension()
+                    .context("could not determine image extension")?;
+                let filename = escape_filename(&format!(
+                    "{}-{}.{}",
+                    current_deviation.title, current_deviation.deviation_id, extension
+                ));
+                println!("Out Path: {}", filename);
+                if Path::new(&filename).exists() {
+                    anyhow::bail!("file already exists");
+                }
+
+                let mut url = scraped_webpage_info
+                    .get_current_deviation_extended()
+                    .and_then(|deviation_extended| deviation_extended.download.as_ref())
+                    .map(|download| download.url.clone())
+                    .or_else(|| current_deviation.get_download_url());
 
                 if url.is_none() && options.allow_fullview {
                     url = current_deviation.get_fullview_url();
                 }
 
                 let url = url.context("failed to select an image url")?;
-                let extension = current_deviation
-                    .media
-                    .get_extension()
-                    .context("could not determine image extension")?;
-
-                let filename = escape_path(&format!(
-                    "{}-{}.{}",
-                    current_deviation.title, current_deviation.deviation_id, extension
-                ));
-
-                println!("Out Path: {}", filename);
-
-                if Path::new(&filename).exists() {
-                    anyhow::bail!("file already exists");
-                }
 
                 let bytes = client
                     .client
@@ -426,8 +422,14 @@ fn save_cookie_jar(client: &deviantart::Client) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn escape_path(path: &str) -> String {
+fn escape_filename(path: &str) -> String {
     path.chars()
-        .filter(|&c| c != ':' && c != '?' && c != '/')
+        .map(|c| {
+            if [':', '?', '/', '|', '*'].contains(&c) {
+                '-'
+            } else {
+                c
+            }
+        })
         .collect()
 }
