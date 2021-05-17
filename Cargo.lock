@@ -645,6 +645,7 @@ dependencies = [
  "cookie",
  "cookie_store",
  "directories-next",
+ "itoa",
  "lazy_static",
  "regex",
  "reqwest",

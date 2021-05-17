@@ -50,9 +50,10 @@ pub struct ScrapedWebPageInfo {
 
 impl ScrapedWebPageInfo {
     /// Get the current deviation's id
-    pub fn get_current_deviation_id(&self) -> Option<u64> {
+    pub fn get_current_deviation_id(&self) -> Option<&serde_json::Value> {
         Some(
-            self.duper_browse
+            &self
+                .duper_browse
                 .as_ref()?
                 .root_stream
                 .as_ref()?
@@ -63,17 +64,35 @@ impl ScrapedWebPageInfo {
     /// Get the [`Deviation`] for this page.
     pub fn get_current_deviation(&self) -> Option<&Deviation> {
         let id = self.get_current_deviation_id()?;
-        self.entities.as_ref()?.deviation.get(&id)
+        let mut key_buffer = itoa::Buffer::new();
+        let key = match id {
+            serde_json::Value::Number(n) => {
+                let n = n.as_u64()?;
+                key_buffer.format(n)
+            }
+            serde_json::Value::String(s) => s,
+            _ => return None,
+        };
+        self.entities.as_ref()?.deviation.get(key)
     }
 
     /// Get the [`DeviationExtended`] for this page.
     pub fn get_current_deviation_extended(&self) -> Option<&DeviationExtended> {
         let id = self.get_current_deviation_id()?;
+        let mut key_buffer = itoa::Buffer::new();
+        let key = match id {
+            serde_json::Value::Number(n) => {
+                let n = n.as_u64()?;
+                key_buffer.format(n)
+            }
+            serde_json::Value::String(s) => s,
+            _ => return None,
+        };
         self.entities
             .as_ref()?
             .deviation_extended
             .as_ref()?
-            .get(&id)
+            .get(key)
     }
 }
 
@@ -93,11 +112,11 @@ pub struct Config {
 #[derive(Debug, serde::Deserialize)]
 pub struct Entities {
     /// Deviations
-    pub deviation: HashMap<u64, Deviation>,
+    pub deviation: HashMap<String, Deviation>,
 
     /// Extended Deviation Info
     #[serde(rename = "deviationExtended")]
-    pub deviation_extended: Option<HashMap<u64, DeviationExtended>>,
+    pub deviation_extended: Option<HashMap<String, DeviationExtended>>,
 
     /// Unknown data
     #[serde(flatten)]
@@ -153,9 +172,9 @@ pub struct DuperBrowse {
 /// ?
 #[derive(Debug, serde::Deserialize)]
 pub struct RootStream {
-    /// The id of the current deviation
+    /// The id of the current deviation. This is either a number or string.
     #[serde(rename = "currentOpenItem")]
-    pub current_open_item: u64,
+    pub current_open_item: serde_json::Value,
 
     /// Unknown data
     #[serde(flatten)]
