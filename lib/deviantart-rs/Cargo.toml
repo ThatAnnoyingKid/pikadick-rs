@@ -7,7 +7,7 @@ license = "MIT/Apache-2.0"
 
 [[bin]]
 name = "deviantart"
-path = "src/main.rs"
+path = "src/cli/main.rs"
 required-features = [ "cli" ]
 
 [dependencies]

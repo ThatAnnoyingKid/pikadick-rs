@@ -1,3 +1,6 @@
+mod config;
+
+use self::config::Config;
 use anyhow::Context;
 use std::{
     fmt::Write,
@@ -60,61 +63,6 @@ struct DownloadOptions {
 
     #[argh(switch, long = "no-login", description = "do not try to log in")]
     no_login: bool,
-}
-
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct Config {
-    pub username: Option<String>,
-    pub password: Option<String>,
-}
-
-impl Config {
-    fn new() -> Self {
-        Config {
-            username: None,
-            password: None,
-        }
-    }
-
-    async fn get_config_path() -> anyhow::Result<PathBuf> {
-        let base_dirs = directories_next::BaseDirs::new().context("failed to get base dirs")?;
-        let dir_path = base_dirs.config_dir().join("deviantart");
-        tokio::fs::create_dir_all(&dir_path)
-            .await
-            .context("failed to create config dir")?;
-        let config_path = dir_path.join("config.toml");
-        Ok(config_path)
-    }
-
-    async fn save(&self) -> anyhow::Result<()> {
-        let config_path = Self::get_config_path().await?;
-        let mut new_config = Self::load().await.unwrap_or_else(|_| Self::new());
-
-        if let Some(username) = self.username.clone() {
-            new_config.username = Some(username);
-        }
-
-        if let Some(password) = self.password.clone() {
-            new_config.password = Some(password);
-        }
-
-        let toml_str = toml::to_string_pretty(&new_config).context("failed to serialize config")?;
-
-        tokio::fs::write(config_path, toml_str)
-            .await
-            .context("failed to write config")?;
-
-        Ok(())
-    }
-
-    async fn load() -> anyhow::Result<Self> {
-        let config_path = Self::get_config_path().await?;
-
-        let config_str = tokio::fs::read_to_string(config_path)
-            .await
-            .context("failed to read config file")?;
-        toml::from_str(&config_str).context("failed to parse config")
-    }
 }
 
 fn main() {
