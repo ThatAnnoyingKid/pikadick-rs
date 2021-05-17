@@ -152,7 +152,7 @@ mod test {
         let res = client
             .search(query, 0)
             .await
-            .expect(&format!("failed to search rule34 for `{}`", query));
+            .unwrap_or_else(|_| panic!("failed to search rule34 for `{}`", query));
         assert!(!res.entries.is_empty());
 
         let first = res.entries.first().expect("missing first entry");
