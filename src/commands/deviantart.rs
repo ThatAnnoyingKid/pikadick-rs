@@ -16,7 +16,6 @@ use log::{
     error,
     info,
 };
-use parking_lot::Mutex;
 use rand::seq::IteratorRandom;
 use serenity::{
     framework::standard::{
@@ -27,42 +26,29 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use std::{
-    sync::Arc,
-    time::{
-        Duration,
-        Instant,
-    },
-};
+use std::sync::Arc;
 
 /// A caching deviantart client
 #[derive(Clone, Default, Debug)]
 pub struct DeviantartClient {
     client: deviantart::Client,
     search_cache: TimedCache<String, SearchResults>,
-    last_update: Arc<Mutex<Option<Instant>>>,
 }
 
 impl DeviantartClient {
     /// Make a new [`DeviantartClient`].
     pub fn new() -> Self {
-        Default::default()
+        DeviantartClient {
+            client: deviantart::Client::new(),
+            search_cache: TimedCache::new(),
+        }
     }
 
     /// Signs in if necessary
     pub async fn signin(&self, username: &str, password: &str) -> Result<(), deviantart::Error> {
-        let do_update = {
-            let last_update = self.last_update.lock();
-            last_update.map_or(true, |last_update| {
-                Instant::elapsed(&last_update) > Duration::from_secs(60 * 30)
-            })
-        };
-
-        if do_update {
+        if !self.client.is_logged_in_online().await? {
             info!("Re-signing in");
-
             self.client.signin(username, password).await?;
-            *self.last_update.lock() = Some(Instant::now());
         }
 
         Ok(())
