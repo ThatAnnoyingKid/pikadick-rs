@@ -197,15 +197,18 @@ impl Client {
             .is_logged_in)
     }
 
-    /// Search for deviations
-    pub async fn search(&self, query: &str) -> Result<SearchResults, Error> {
+    /// Search for deviations with the given query.
+    ///
+    /// Page numbering starts at 1.
+    pub async fn search(&self, query: &str, page: u64) -> Result<SearchResults, Error> {
+        let mut page_buffer = itoa::Buffer::new();
         let url = Url::parse_with_params(
             "https://www.deviantart.com/_napi/da-browse/api/networkbar/search/deviations",
-            &[("q", query), ("page", "1")],
+            &[("q", query), ("page", page_buffer.format(page))],
         )?;
         let results = self
             .client
-            .get(url.as_str())
+            .get(url)
             .send()
             .await?
             .error_for_status()?

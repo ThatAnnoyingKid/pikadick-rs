@@ -77,7 +77,7 @@ impl DeviantartClient {
             return Ok(entry);
         }
 
-        let list = self.client.search(query).await?;
+        let list = self.client.search(query, 1).await?;
         self.search_cache.insert(String::from(query), list);
 
         Ok(self

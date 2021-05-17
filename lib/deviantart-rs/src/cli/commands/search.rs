@@ -11,6 +11,15 @@ pub struct Options {
     #[argh(positional, description = "the query string")]
     pub query: String,
 
+    #[argh(
+        option,
+        short = 'p',
+        long = "page",
+        default = "1",
+        description = "the page to view results for"
+    )]
+    pub page: u64,
+
     #[argh(switch, long = "no-login", description = "do not try to log in")]
     pub no_login: bool,
 }
@@ -28,7 +37,7 @@ pub async fn execute(client: deviantart::Client, options: Options) -> anyhow::Re
     }
 
     let results = client
-        .search(&options.query)
+        .search(&options.query, options.page)
         .await
         .with_context(|| format!("failed to search for '{}'", &options.query))?;
 
