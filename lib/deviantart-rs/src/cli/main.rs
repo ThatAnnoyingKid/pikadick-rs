@@ -120,20 +120,22 @@ fn get_cookie_file_path() -> anyhow::Result<PathBuf> {
 }
 
 fn load_cookie_jar(client: &deviantart::Client) -> anyhow::Result<()> {
-    let cookie_file =
-        std::fs::File::open(get_cookie_file_path()?).context("failed to read cookies")?;
+    use std::{
+        fs::File,
+        io::BufReader,
+    };
 
-    client
-        .cookie_store
-        .load_json(std::io::BufReader::new(cookie_file))?;
+    let cookie_file = File::open(get_cookie_file_path()?).context("failed to read cookies")?;
+    client.cookie_store.load_json(BufReader::new(cookie_file))?;
 
     Ok(())
 }
 
 fn save_cookie_jar(client: &deviantart::Client) -> anyhow::Result<()> {
-    let cookie_file =
-        std::fs::File::create(get_cookie_file_path()?).context("failed to create cookie file")?;
+    use std::fs::File;
 
+    let cookie_file =
+        File::create(get_cookie_file_path()?).context("failed to create cookie file")?;
     client.cookie_store.save_json(cookie_file)?;
 
     Ok(())

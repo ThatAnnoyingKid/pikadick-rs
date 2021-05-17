@@ -8,7 +8,13 @@ use std::{
     fmt::Write as _,
     path::Path,
 };
-use tokio::io::AsyncWriteExt;
+use tokio::{
+    fs::File,
+    io::{
+        AsyncWriteExt,
+        BufWriter,
+    },
+};
 
 #[derive(argh::FromArgs)]
 #[argh(subcommand, name = "download")]
@@ -51,154 +57,180 @@ pub async fn execute(client: deviantart::Client, options: Options) -> anyhow::Re
     println!("ID: {}", current_deviation.deviation_id);
     println!("Kind: {}", current_deviation.kind);
     println!("Url: {}", current_deviation.url);
-    println!("Is downloadable: {}", current_deviation.is_downloadable);
+    println!("Is Downloadable: {}", current_deviation.is_downloadable);
     println!();
 
     if current_deviation.is_literature() {
-        println!("Generating html page...");
-
-        let text_content = current_deviation
-            .text_content
-            .as_ref()
-            .context("deviation is missing text content")?;
-        let markup = text_content
-            .html
-            .get_markup()
-            .context("deviation is missing markup")?
-            .context("failed to parse markup");
-
-        let filename = escape_filename(&format!(
-            "{}-{}.html",
-            current_deviation.title, current_deviation.deviation_id
-        ));
-
-        if Path::new(&filename).exists() {
-            anyhow::bail!("file already exists");
-        }
-
-        let mut html = String::with_capacity(1_000_000); // 1 MB
-
-        html.push_str("<html>");
-        html.push_str("<head>");
-        html.push_str("<meta charset=\"UTF-8\">");
-        write!(&mut html, "<title>{}</title>", &current_deviation.title)?;
-        html.push_str("<style>");
-        html.push_str("html { font-family: devioussans02extrabold,Helvetica Neue,Helvetica,Arial,メイリオ, meiryo,ヒラギノ角ゴ pro w3,hiragino kaku gothic pro,sans-serif; }");
-        html.push_str("body { background-color: #06070d; margin: 0; padding-bottom: 56px; padding-top: 56px; }");
-        html.push_str("h1 { color: #f2f2f2; font-weight: 400; font-size: 48px; line-height: 1.22; letter-spacing: .3px;}");
-        html.push_str(
-            "span { color: #b1b1b9; font-size: 18px; line-height: 1.5; letter-spacing: .3px; }",
-        );
-        html.push_str("</style>");
-        html.push_str("</head>");
-
-        html.push_str("<body>");
-
-        html.push_str("<div style=\"width:780px;margin:auto;\">");
-        write!(&mut html, "<h1>{}</h1>", &current_deviation.title)?;
-
-        match markup {
-            Ok(markup) => {
-                for block in markup.blocks.iter() {
-                    write!(&mut html, "<div id = \"{}\">", block.key)?;
-
-                    html.push_str("<span>");
-                    if block.text.is_empty() {
-                        html.push_str("<br>");
-                    } else {
-                        html.push_str(&block.text);
-                    }
-                    html.push_str("</span>");
-
-                    html.push_str("</div>");
-                }
-            }
-            Err(e) => {
-                println!("Failed to parse markdown block format: {:?}", e);
-                println!("Interpeting as raw html...");
-
-                write!(&mut html, "<div style=\"color: #b1b1b9; font-size: 18px; line-height: 1.5; letter-spacing: .3px;\">{}</div>", text_content.html.markup.as_ref().context("missing markdown")?)?;
-            }
-        }
-
-        html.push_str("</div>");
-        html.push_str("</body>");
-        html.push_str("</html>");
-
-        tokio::fs::write(filename, html).await?;
+        download_literature_cli(current_deviation).await?;
     } else if current_deviation.is_image() {
-        println!("Downloading image...");
-
-        let extension = current_deviation
-            .get_extension()
-            .context("could not determine image extension")?;
-        let filename = escape_filename(&format!(
-            "{}-{}.{}",
-            current_deviation.title, current_deviation.deviation_id, extension
-        ));
-        println!("Out Path: {}", filename);
-        if Path::new(&filename).exists() {
-            anyhow::bail!("file already exists");
-        }
-
-        let mut url = scraped_webpage_info
-            .get_current_deviation_extended()
-            .and_then(|deviation_extended| deviation_extended.download.as_ref())
-            .map(|download| download.url.clone())
-            .or_else(|| current_deviation.get_download_url());
-
-        if url.is_none() && options.allow_fullview {
-            url = current_deviation.get_fullview_url();
-        }
-
-        let url = url.context("failed to select an image url")?;
-
-        let bytes = client
-            .client
-            .get(url.as_str())
-            .send()
-            .await?
-            .error_for_status()?
-            .bytes()
-            .await?;
-
-        tokio::fs::write(filename, bytes).await?;
+        download_image_cli(&client, &scraped_webpage_info, current_deviation, &options).await?;
     } else if current_deviation.is_film() {
-        println!("Downloading video...");
-
-        let extension = current_deviation
-            .get_extension()
-            .context("could not determine video extension")?;
-        let filename = escape_filename(&format!(
-            "{}-{}.{}",
-            current_deviation.title, current_deviation.deviation_id, extension
-        ));
-        println!("Out Path: {}", filename);
-        if Path::new(&filename).exists() {
-            anyhow::bail!("file already exists");
-        }
-
-        let url = current_deviation
-            .get_best_video_url()
-            .context("missing video url")?;
-
-        let mut res = client
-            .client
-            .get(url.as_str())
-            .send()
-            .await?
-            .error_for_status()?;
-
-        let mut file = tokio::io::BufWriter::new(tokio::fs::File::create(filename).await?);
-
-        while let Some(chunk) = res.chunk().await? {
-            file.write(&chunk).await?;
-        }
-
-        file.flush().await?;
+        download_film_cli(&client, current_deviation).await?;
     } else {
         anyhow::bail!("unknown deviation type: {}", current_deviation.kind);
     }
+
+    Ok(())
+}
+
+async fn download_literature_cli(current_deviation: &deviantart::Deviation) -> anyhow::Result<()> {
+    println!("Generating html page...");
+
+    let text_content = current_deviation
+        .text_content
+        .as_ref()
+        .context("deviation is missing text content")?;
+    let markup = text_content
+        .html
+        .get_markup()
+        .context("deviation is missing markup")?
+        .context("failed to parse markup");
+
+    let filename = escape_filename(&format!(
+        "{}-{}.html",
+        current_deviation.title, current_deviation.deviation_id
+    ));
+
+    if Path::new(&filename).exists() {
+        anyhow::bail!("file already exists");
+    }
+
+    let mut html = String::with_capacity(1_000_000); // 1 MB
+
+    html.push_str("<html>");
+    html.push_str("<head>");
+    html.push_str("<meta charset=\"UTF-8\">");
+    write!(&mut html, "<title>{}</title>", &current_deviation.title)?;
+    html.push_str("<style>");
+    html.push_str("html { font-family: devioussans02extrabold,Helvetica Neue,Helvetica,Arial,メイリオ, meiryo,ヒラギノ角ゴ pro w3,hiragino kaku gothic pro,sans-serif; }");
+    html.push_str(
+        "body { background-color: #06070d; margin: 0; padding-bottom: 56px; padding-top: 56px; }",
+    );
+    html.push_str("h1 { color: #f2f2f2; font-weight: 400; font-size: 48px; line-height: 1.22; letter-spacing: .3px;}");
+    html.push_str(
+        "span { color: #b1b1b9; font-size: 18px; line-height: 1.5; letter-spacing: .3px; }",
+    );
+    html.push_str("</style>");
+    html.push_str("</head>");
+
+    html.push_str("<body>");
+
+    html.push_str("<div style=\"width:780px;margin:auto;\">");
+    write!(&mut html, "<h1>{}</h1>", &current_deviation.title)?;
+
+    match markup {
+        Ok(markup) => {
+            for block in markup.blocks.iter() {
+                write!(&mut html, "<div id = \"{}\">", block.key)?;
+
+                html.push_str("<span>");
+                if block.text.is_empty() {
+                    html.push_str("<br>");
+                } else {
+                    html.push_str(&block.text);
+                }
+                html.push_str("</span>");
+
+                html.push_str("</div>");
+            }
+        }
+        Err(e) => {
+            println!("Failed to parse markdown block format: {:?}", e);
+            println!("Interpeting as raw html...");
+
+            write!(&mut html, "<div style=\"color: #b1b1b9; font-size: 18px; line-height: 1.5; letter-spacing: .3px;\">{}</div>", text_content.html.markup.as_ref().context("missing markdown")?)?;
+        }
+    }
+
+    html.push_str("</div>");
+    html.push_str("</body>");
+    html.push_str("</html>");
+
+    tokio::fs::write(filename, html).await?;
+
+    Ok(())
+}
+
+async fn download_image_cli(
+    client: &deviantart::Client,
+    scraped_webpage_info: &deviantart::ScrapedWebPageInfo,
+    current_deviation: &deviantart::Deviation,
+    options: &Options,
+) -> anyhow::Result<()> {
+    println!("Downloading image...");
+
+    let extension = current_deviation
+        .get_extension()
+        .context("could not determine image extension")?;
+    let filename = escape_filename(&format!(
+        "{}-{}.{}",
+        current_deviation.title, current_deviation.deviation_id, extension
+    ));
+    println!("Out Path: {}", filename);
+    if Path::new(&filename).exists() {
+        anyhow::bail!("file already exists");
+    }
+
+    let mut url = scraped_webpage_info
+        .get_current_deviation_extended()
+        .and_then(|deviation_extended| deviation_extended.download.as_ref())
+        .map(|download| download.url.clone())
+        .or_else(|| current_deviation.get_download_url());
+
+    if url.is_none() && options.allow_fullview {
+        url = current_deviation.get_fullview_url();
+    }
+
+    let url = url.context("failed to select an image url")?;
+
+    let bytes = client
+        .client
+        .get(url.as_str())
+        .send()
+        .await?
+        .error_for_status()?
+        .bytes()
+        .await?;
+
+    tokio::fs::write(filename, bytes).await?;
+
+    Ok(())
+}
+
+async fn download_film_cli(
+    client: &deviantart::Client,
+    current_deviation: &deviantart::Deviation,
+) -> anyhow::Result<()> {
+    println!("Downloading video...");
+
+    let extension = current_deviation
+        .get_extension()
+        .context("could not determine video extension")?;
+    let filename = escape_filename(&format!(
+        "{}-{}.{}",
+        current_deviation.title, current_deviation.deviation_id, extension
+    ));
+    println!("Out Path: {}", filename);
+    if Path::new(&filename).exists() {
+        anyhow::bail!("file already exists");
+    }
+
+    let url = current_deviation
+        .get_best_video_url()
+        .context("missing video url")?;
+
+    let mut res = client
+        .client
+        .get(url.as_str())
+        .send()
+        .await?
+        .error_for_status()?;
+
+    let mut file = BufWriter::new(File::create(filename).await?);
+    while let Some(chunk) = res.chunk().await? {
+        file.write(&chunk).await?;
+    }
+    file.flush().await?;
 
     Ok(())
 }
