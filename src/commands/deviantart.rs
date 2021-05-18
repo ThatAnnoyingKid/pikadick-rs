@@ -179,9 +179,8 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
                     if deviation.is_image() {
                         Some(
                             deviation
-                                .get_download_url()
-                                .or_else(|| deviation.get_fullview_url())
-                                .or_else(|| deviation.get_gif_url()),
+                                .get_image_download_url()
+                                .or_else(|| deviation.get_fullview_url()),
                         )
                     } else if deviation.is_film() {
                         Some(deviation.get_best_video_url().cloned())

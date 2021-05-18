@@ -54,7 +54,7 @@ impl Deviation {
         Some(url)
     }
 
-    /// Get the download url for this [`Deviation`].
+    /// Get the "download" url for this [`Deviation`].
     pub fn get_download_url(&self) -> Option<Url> {
         let mut url = self.media.base_uri.as_ref()?.clone();
         url.query_pairs_mut()
@@ -65,11 +65,20 @@ impl Deviation {
     /// Get the fullview url for this [`Deviation`].
     pub fn get_fullview_url(&self) -> Option<Url> {
         let mut url = self.media.base_uri.as_ref()?.clone();
-        url.path_segments_mut()
-            .ok()?
-            .push(&self.media.get_fullview_media_type()?.content.as_ref()?);
-        url.query_pairs_mut()
-            .append_pair("token", self.media.token.get(0)?);
+
+        // Allow the "content" section of the path to not exist, but the fullview data MUST exist.
+        if let Some(path) = self.media.get_fullview_media_type()?.content.as_ref() {
+            url.path_segments_mut().ok()?.push(path);
+        }
+
+        // We assume that a token is not provided in cases where it is not needed.
+        // As such, this part is optional.
+        // So far, a token is allowed to be missing when the "content" section of the fullview data is missing
+        // Correct this if these assumptions are wrong.
+        if let Some(token) = self.media.token.get(0) {
+            url.query_pairs_mut().append_pair("token", token);
+        }
+
         Some(url)
     }
 
@@ -100,6 +109,24 @@ impl Deviation {
     /// Whether this is a film
     pub fn is_film(&self) -> bool {
         self.kind == "film"
+    }
+
+    /// Get the most "fitting" url to download an image.
+    ///
+    /// Usually, [`DeviationExtended`] holds better data than a [`Deviation`], so prefer that instead.
+    pub fn get_image_download_url(&self) -> Option<Url> {
+        // Try to get the download url.
+        if let Some(url) = self.get_download_url() {
+            return Some(url);
+        }
+
+        // If that fails, this is probably a gif, so we try to get the gif url.
+        if let Some(url) = self.get_gif_url() {
+            return Some(url);
+        }
+
+        // Otherwise, assume failure
+        None
     }
 
     /// Try to get the original extension of this [`Deviation`]

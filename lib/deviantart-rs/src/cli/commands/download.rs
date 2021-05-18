@@ -175,9 +175,10 @@ async fn download_image_cli(
         .get_current_deviation_extended()
         .and_then(|deviation_extended| deviation_extended.download.as_ref())
         .map(|download| download.url.clone())
-        .or_else(|| current_deviation.get_download_url())
-        .or_else(|| current_deviation.get_gif_url());
+        .or_else(|| current_deviation.get_image_download_url());
 
+    // This is not default as a "fullview" can be thought of as a "preview".
+    // It's not an actual download, but helps when downloads are disabled.
     if url.is_none() && options.allow_fullview {
         url = current_deviation.get_fullview_url();
     }
