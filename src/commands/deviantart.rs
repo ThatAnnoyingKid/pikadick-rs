@@ -15,7 +15,6 @@ use crate::{
 use anyhow::Context as _;
 use deviantart::SearchResults;
 use log::{
-    debug,
     error,
     info,
 };
