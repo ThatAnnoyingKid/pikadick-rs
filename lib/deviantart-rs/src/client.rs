@@ -316,7 +316,7 @@ mod tests {
     #[tokio::test]
     async fn it_works() {
         let client = Client::new();
-        let results = client.search("sun").await.expect("failed to search");
+        let results = client.search("sun", 1).await.expect("failed to search");
         // dbg!(&results);
         let first = &results.deviations[0];
         // dbg!(first);
@@ -365,7 +365,7 @@ mod tests {
             .signin(&config.username, &config.password)
             .await
             .expect("failed to sign in");
-        let res = client.search("furry").await.expect("test");
+        let res = client.search("furry", 1).await.expect("test");
 
         dbg!(res.deviations.len());
     }
