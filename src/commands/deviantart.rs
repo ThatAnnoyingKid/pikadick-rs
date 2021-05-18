@@ -102,23 +102,33 @@ impl DeviantartClient {
     /// Search for deviantart images with a cache.
     pub async fn search(
         &self,
+        db: &Database,
+        username: &str,
+        password: &str,
         query: &str,
-    ) -> Result<Arc<TimedCacheEntry<SearchResults>>, deviantart::Error> {
+    ) -> anyhow::Result<Arc<TimedCacheEntry<SearchResults>>> {
         if let Some(entry) = self.search_cache.get_if_fresh(query) {
             return Ok(entry);
         }
 
         let start = Instant::now();
-        let list = self.client.search(query, 1).await?;
+        self.signin(&db, username, password)
+            .await
+            .context("failed to log in to deviantart")?;
+
+        let list = self
+            .client
+            .search(query, 1)
+            .await
+            .context("failed to search")?;
         self.search_cache.insert(String::from(query), list);
         let end = Instant::now();
 
         info!("Searched deviantart in {:?}", end - start);
 
-        Ok(self
-            .search_cache
+        self.search_cache
             .get_if_fresh(query)
-            .expect("invalid entry"))
+            .context("missing entry")
     }
 }
 
@@ -155,22 +165,15 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 
     let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
 
-    if let Err(e) = client
-        .signin(
+    match client
+        .search(
             &db,
             &config.deviantart.username,
             &config.deviantart.password,
+            &query,
         )
         .await
     {
-        error!("Failed to log into deviantart: {:?}", e);
-        msg.channel_id
-            .say(&ctx.http, "Failed to log in to deviantart")
-            .await?;
-        return Ok(());
-    }
-
-    match client.search(&query).await {
         Ok(entry) => {
             let data = entry.data();
             let choice = data
