@@ -163,10 +163,11 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         )
         .await
     {
-        error!("Failed to log into deviantart: {}", e);
+        error!("Failed to log into deviantart: {:?}", e);
         msg.channel_id
             .say(&ctx.http, "Failed to log in to deviantart")
             .await?;
+        return Ok(());
     }
 
     match client.search(&query).await {
