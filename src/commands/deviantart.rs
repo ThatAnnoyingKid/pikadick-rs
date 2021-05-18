@@ -10,9 +10,12 @@ use crate::{
         TimedCacheEntry,
     },
     ClientDataKey,
+    Database,
 };
+use anyhow::Context as _;
 use deviantart::SearchResults;
 use log::{
+    debug,
     error,
     info,
 };
@@ -26,10 +29,16 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::Instant,
+};
+
+const DATA_STORE_NAME: &str = "deviantart";
+const COOKIE_KEY: &str = "cookie-store";
 
 /// A caching deviantart client
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Debug)]
 pub struct DeviantartClient {
     client: deviantart::Client,
     search_cache: TimedCache<String, SearchResults>,
@@ -37,18 +46,55 @@ pub struct DeviantartClient {
 
 impl DeviantartClient {
     /// Make a new [`DeviantartClient`].
-    pub fn new() -> Self {
-        DeviantartClient {
-            client: deviantart::Client::new(),
-            search_cache: TimedCache::new(),
+    pub async fn new(db: &Database) -> anyhow::Result<Self> {
+        use std::io::BufReader;
+
+        let client = deviantart::Client::new();
+
+        let store = db.get_store(DATA_STORE_NAME).await;
+        let cookie_data: Option<Vec<u8>> = store
+            .get(COOKIE_KEY)
+            .await
+            .context("failed to get cookie data")?;
+
+        match cookie_data {
+            Some(cookie_data) => {
+                client
+                    .cookie_store
+                    .load_json(BufReader::new(cookie_data.as_slice()))?;
+            }
+            None => {
+                info!("Could not load cookie data");
+            }
         }
+
+        Ok(DeviantartClient {
+            client,
+            search_cache: TimedCache::new(),
+        })
     }
 
     /// Signs in if necessary
-    pub async fn signin(&self, username: &str, password: &str) -> Result<(), deviantart::Error> {
+    pub async fn signin(
+        &self,
+        db: &Database,
+        username: &str,
+        password: &str,
+    ) -> anyhow::Result<()> {
         if !self.client.is_logged_in_online().await? {
             info!("Re-signing in");
             self.client.signin(username, password).await?;
+
+            // Store the new cookies
+            let store = db.get_store(DATA_STORE_NAME).await;
+            let cookie_store = self.client.cookie_store.clone();
+            let cookie_data = tokio::task::spawn_blocking(move || {
+                let mut cookie_data = Vec::with_capacity(1_000_000); // 1 MB
+                cookie_store.save_json(&mut cookie_data)?;
+                anyhow::Result::<_>::Ok(cookie_data)
+            })
+            .await??;
+            store.put(COOKIE_KEY, cookie_data).await?;
         }
 
         Ok(())
@@ -63,8 +109,12 @@ impl DeviantartClient {
             return Ok(entry);
         }
 
+        let start = Instant::now();
         let list = self.client.search(query, 1).await?;
         self.search_cache.insert(String::from(query), list);
+        let end = Instant::now();
+
+        info!("Searched deviantart in {:?}", end - start);
 
         Ok(self
             .search_cache
@@ -96,6 +146,7 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         .get::<ClientDataKey>()
         .expect("missing clientdata");
     let client = client_data.deviantart_client.clone();
+    let db = client_data.db.clone();
     let config = client_data.config.clone();
     drop(data_lock);
 
@@ -106,7 +157,11 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
     let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
 
     if let Err(e) = client
-        .signin(&config.deviantart.username, &config.deviantart.password)
+        .signin(
+            &db,
+            &config.deviantart.username,
+            &config.deviantart.password,
+        )
         .await
     {
         error!("Failed to log into deviantart: {}", e);
@@ -121,15 +176,24 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
             let choice = data
                 .deviations
                 .iter()
-                .filter(|d| d.is_image())
+                .filter_map(|deviation| {
+                    if deviation.is_image() {
+                        Some(
+                            deviation
+                                .get_download_url()
+                                .or_else(|| deviation.get_fullview_url())
+                                .or_else(|| deviation.get_gif_url()),
+                        )
+                    } else if deviation.is_film() {
+                        Some(deviation.get_best_video_url().cloned())
+                    } else {
+                        None
+                    }
+                })
                 .choose(&mut rand::thread_rng());
 
             if let Some(choice) = choice {
-                if let Some(url) = choice
-                    .get_download_url()
-                    .or_else(|| choice.get_fullview_url())
-                    .or_else(|| choice.get_gif_url())
-                {
+                if let Some(url) = choice {
                     loading.send_ok();
                     msg.channel_id.say(&ctx.http, url).await?;
                 } else {

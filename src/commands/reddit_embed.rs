@@ -47,7 +47,7 @@ const DATA_STORE_NAME: &str = "reddit-embed";
 
 lazy_static! {
     /// Source: https://urlregex.com/
-    static ref URL_REGEX: Regex = Regex::new(include_str!("./url_regex.txt")).unwrap();
+    static ref URL_REGEX: Regex = Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex");
 }
 
 #[derive(Clone, Default)]
