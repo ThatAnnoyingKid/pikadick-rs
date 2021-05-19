@@ -52,18 +52,28 @@ pub async fn execute(client: deviantart::Client, options: Options) -> anyhow::Re
     let current_deviation = scraped_webpage_info
         .get_current_deviation()
         .context("failed to get current deviation")?;
+    let current_deviation_extended = scraped_webpage_info
+        .get_current_deviation_extended()
+        .context("failed to get current deviation extended")?;
 
     println!("Title: {}", current_deviation.title);
     println!("ID: {}", current_deviation.deviation_id);
     println!("Kind: {}", current_deviation.kind);
     println!("Url: {}", current_deviation.url);
     println!("Is Downloadable: {}", current_deviation.is_downloadable);
+    println!("Description: {}", current_deviation_extended.description);
     println!();
 
     if current_deviation.is_literature() {
         download_literature_cli(current_deviation).await?;
     } else if current_deviation.is_image() {
-        download_image_cli(&client, &scraped_webpage_info, current_deviation, &options).await?;
+        download_image_cli(
+            &client,
+            current_deviation,
+            current_deviation_extended,
+            &options,
+        )
+        .await?;
     } else if current_deviation.is_film() {
         download_film_cli(&client, current_deviation).await?;
     } else {
@@ -153,8 +163,8 @@ async fn download_literature_cli(current_deviation: &deviantart::Deviation) -> a
 
 async fn download_image_cli(
     client: &deviantart::Client,
-    scraped_webpage_info: &deviantart::ScrapedWebPageInfo,
     current_deviation: &deviantart::Deviation,
+    current_deviation_extended: &deviantart::DeviationExtended,
     options: &Options,
 ) -> anyhow::Result<()> {
     println!("Downloading image...");
@@ -171,9 +181,9 @@ async fn download_image_cli(
         anyhow::bail!("file already exists");
     }
 
-    let mut url = scraped_webpage_info
-        .get_current_deviation_extended()
-        .and_then(|deviation_extended| deviation_extended.download.as_ref())
+    let mut url = current_deviation_extended
+        .download
+        .as_ref()
         .map(|download| download.url.clone())
         .or_else(|| current_deviation.get_image_download_url());
 

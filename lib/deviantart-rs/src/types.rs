@@ -129,6 +129,9 @@ pub struct DeviationExtended {
     /// Download info
     pub download: Option<Download>,
 
+    /// HTML description
+    pub description: String,
+
     /// Unknown data
     #[serde(flatten)]
     pub unknown: HashMap<String, serde_json::Value>,

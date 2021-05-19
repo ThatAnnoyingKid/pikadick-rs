@@ -10,6 +10,7 @@ pub use crate::{
     },
     types::{
         Deviation,
+        DeviationExtended,
         OEmbed,
         ScrapedWebPageInfo,
         SearchResults,
