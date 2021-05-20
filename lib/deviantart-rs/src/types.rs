@@ -130,7 +130,7 @@ pub struct DeviationExtended {
     pub download: Option<Download>,
 
     /// HTML description
-    pub description: String,
+    pub description: Option<String>,
 
     /// Unknown data
     #[serde(flatten)]
