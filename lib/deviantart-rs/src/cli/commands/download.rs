@@ -240,9 +240,8 @@ async fn download_film_cli(
 
     let mut file = BufWriter::new(File::create(filename).await?);
     while let Some(chunk) = res.chunk().await? {
-        file.write(&chunk).await?;
+        file.write_all(&chunk).await?;
     }
-    file.flush().await?;
 
     Ok(())
 }
