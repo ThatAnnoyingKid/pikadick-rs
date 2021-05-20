@@ -8,10 +8,7 @@ use crate::{
 use bytes::Bytes;
 use cookie_store::CookieStore;
 use regex::Regex;
-use reqwest::header::{
-    HeaderMap,
-    HeaderValue,
-};
+use reqwest::header::HeaderValue;
 use std::{
     fmt::Write,
     sync::{
@@ -142,19 +139,17 @@ pub struct Client {
 impl Client {
     /// Make a new [`Client`].
     pub fn new() -> Self {
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            reqwest::header::ACCEPT_ENCODING,
-            HeaderValue::from_static("identity"),
-        );
+        Self::new_with_user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4514.0 Safari/537.36")
+    }
 
+    /// Make a new [`Client`] with the given user agent.
+    pub fn new_with_user_agent(user_agent: &str) -> Self {
         let cookie_store = Arc::new(CookieJar::new());
 
         Client {
             client: reqwest::Client::builder()
                 .cookie_provider(cookie_store.clone())
-                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4508.0 Safari/537.36")
-                .default_headers(headers)
+                .user_agent(user_agent)
                 .build()
                 .expect("failed to build deviantart client"),
             cookie_store,
