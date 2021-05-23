@@ -61,7 +61,13 @@ pub async fn execute(client: deviantart::Client, options: Options) -> anyhow::Re
     println!("Kind: {}", current_deviation.kind);
     println!("Url: {}", current_deviation.url);
     println!("Is Downloadable: {}", current_deviation.is_downloadable);
-    println!("Description: {}", current_deviation_extended.description.as_deref().unwrap_or("(none)"));
+    println!(
+        "Description: {}",
+        current_deviation_extended
+            .description
+            .as_deref()
+            .unwrap_or("(none)")
+    );
     println!();
 
     if current_deviation.is_literature() {
