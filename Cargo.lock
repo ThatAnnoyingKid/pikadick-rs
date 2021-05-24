@@ -2609,9 +2609,8 @@ dependencies = [
 
 [[package]]
 name = "sqlx"
-version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9afe158b605b31939140192b5200a51ec05b67341543d695cfbde96ebd1c6852"
+version = "0.5.3"
+source = "git+https://github.com/toshokan/sqlx?rev=b233ce4bc737e10dd1233524214267fe362d5da7#b233ce4bc737e10dd1233524214267fe362d5da7"
 dependencies = [
  "sqlx-core",
  "sqlx-macros",
@@ -2619,9 +2618,8 @@ dependencies = [
 
 [[package]]
 name = "sqlx-core"
-version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17cfe78ad35ca74fb7b7683d5053733bec97603442fa39194e71043437e28f1b"
+version = "0.5.3"
+source = "git+https://github.com/toshokan/sqlx?rev=b233ce4bc737e10dd1233524214267fe362d5da7#b233ce4bc737e10dd1233524214267fe362d5da7"
 dependencies = [
  "ahash",
  "atoi",
@@ -2662,9 +2660,8 @@ dependencies = [
 
 [[package]]
 name = "sqlx-macros"
-version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb648b3b0d87a7388bec90576f52f23230eb7e29b73deb4966aa32886b6609c9"
+version = "0.5.3"
+source = "git+https://github.com/toshokan/sqlx?rev=b233ce4bc737e10dd1233524214267fe362d5da7#b233ce4bc737e10dd1233524214267fe362d5da7"
 dependencies = [
  "dotenv",
  "either",
@@ -2682,9 +2679,8 @@ dependencies = [
 
 [[package]]
 name = "sqlx-rt"
-version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b974f6fec75b4d8c7349210277533f82ed711d5fd832d210fa0c59d20999edb"
+version = "0.5.3"
+source = "git+https://github.com/toshokan/sqlx?rev=b233ce4bc737e10dd1233524214267fe362d5da7#b233ce4bc737e10dd1233524214267fe362d5da7"
 dependencies = [
  "once_cell",
  "tokio",
