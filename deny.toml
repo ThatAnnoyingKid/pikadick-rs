@@ -81,6 +81,37 @@ deny = [
     # It's a crate only intended for testing; people insist on using it for some reason.
     # https://crates.io/crates/markup5ever_rcdom/0.1.0
     { name = "markup5ever_rcdom", version = "0.1.0" },
+    
+    # https://github.com/RustSec/advisory-db/issues/867
+    { name = "rusttype", version = "*" },
+    
+    # https://github.com/RustSec/advisory-db/issues/826
+    { name = "totally-safe-transmute", version = "*" },
+    
+    # https://github.com/RustSec/advisory-db/issues/743
+    { name = "fast-floats", version = "*" },
+    
+    # https://github.com/RustSec/advisory-db/issues/880
+    { name = "nalgebra", version = "<0.26.2" },
+    
+    # https://github.com/RustSec/advisory-db/issues/913
+    { name = "hexchat", version = ">=0.3.0" },
+    
+    # https://github.com/RustSec/advisory-db/issues/613
+    { name = "out-reference", version = "*" },
+    
+    # https://github.com/RustSec/advisory-db/issues/235
+    { name = "shamir", version = "<2.0.0" },
+    
+    # https://github.com/RustSec/advisory-db/pull/671/files
+    # This is currently disabled as it is used by heim
+    # { name = "raw-cpuid", version = ">3.1.0" },
+    
+    # https://github.com/RustSec/advisory-db/pull/649
+    { name = "derive-com-impl", version = "<=0.1.1" },
+    
+    # https://github.com/RustSec/advisory-db/pull/593
+    { name = "bite", version = "*" },
 ]
 
 [sources]
