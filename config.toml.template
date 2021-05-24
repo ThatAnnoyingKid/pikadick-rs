@@ -8,3 +8,7 @@ type = "[Status Type]" # EX: Playing, Listening, Streaming
 
 [fml]
 key = "4dccf019bdfac" # Use this
+
+[deviantart]
+username = "[DEVIANT_USERNAME]"
+password = "[DEVIANT_PASSWORD]"
