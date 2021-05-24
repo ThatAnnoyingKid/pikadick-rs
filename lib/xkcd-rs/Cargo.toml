@@ -7,7 +7,7 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 reqwest = "0.11.3"
-thiserror = "1.0.24"
+thiserror = "1.0.25"
 
 [dev-dependencies]
 tokio = { version = "1.5.0", features = [ "macros" ] }
