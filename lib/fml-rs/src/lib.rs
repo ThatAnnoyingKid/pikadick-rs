@@ -1,4 +1,6 @@
+/// Client type
 pub mod client;
+/// API Types
 pub mod types;
 
 pub use crate::client::Client;
@@ -7,20 +9,20 @@ pub use crate::client::Client;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Reqwest HTTP Error
-    #[error("{0}")]
+    #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
 
-    /// Invalid HTTP Status
-    #[error("{0}")]
-    InvalidStatus(reqwest::StatusCode),
-
     /// Invalid Json
-    #[error("{0}")]
+    #[error(transparent)]
     Json(#[from] serde_json::Error),
 
     /// Invalid Api Error
     #[error("api error ({0})")]
     Api(String),
+
+    /// An API response was invalid
+    #[error("invalid api response")]
+    InvalidApiResponse,
 }
 
 /// Result Type
@@ -35,7 +37,7 @@ mod test {
     #[tokio::test]
     async fn random() {
         let client = Client::new(KEY.into());
-        let data = client.list_random(5).await.unwrap();
+        let data = client.list_random(5).await.expect("invalid list");
         println!("{:#?}", data);
         assert!(!data.is_empty());
     }
