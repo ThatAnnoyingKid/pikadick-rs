@@ -17,8 +17,11 @@ use tokio::{
 };
 
 #[derive(argh::FromArgs)]
-#[argh(subcommand, name = "download")]
-#[argh(description = "download from deviantart")]
+#[argh(
+    subcommand,
+    name = "download",
+    description = "download from deviantart"
+)]
 pub struct Options {
     #[argh(positional, description = "the deviation url")]
     pub url: String,

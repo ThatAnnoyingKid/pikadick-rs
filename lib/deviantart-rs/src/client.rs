@@ -2,6 +2,7 @@ use crate::{
     Deviation,
     Error,
     OEmbed,
+    ScrapedStashInfo,
     ScrapedWebPageInfo,
     SearchResults,
 };
@@ -271,6 +272,35 @@ impl Client {
         .await??;
 
         Ok(scraped_webpage)
+    }
+
+    /// Scrape a sta.sh link for info
+    pub async fn scrape_stash_info(&self, url: &str) -> Result<ScrapedStashInfo, Error> {
+        lazy_static::lazy_static! {
+            static ref REGEX: Regex = Regex::new(r#"deviantART.pageData=(.*);"#).expect("invalid `scrape_deviation` regex");
+        }
+
+        let text = self
+            .client
+            .get(url)
+            .send()
+            .await?
+            .error_for_status()?
+            .text()
+            .await?;
+
+        let scraped_stash = tokio::task::spawn_blocking(move || {
+            let capture = REGEX
+                .captures(&text)
+                .and_then(|captures| captures.get(1))
+                .ok_or(Error::MissingPageData)?;
+            let scraped_stash: ScrapedStashInfo = serde_json::from_str(capture.as_str())?;
+
+            Result::<_, Error>::Ok(scraped_stash)
+        })
+        .await??;
+
+        Ok(scraped_stash)
     }
 
     /// Download a [`Deviation`].

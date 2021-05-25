@@ -12,6 +12,7 @@ pub use crate::{
         Deviation,
         DeviationExtended,
         OEmbed,
+        ScrapedStashInfo,
         ScrapedWebPageInfo,
         SearchResults,
     },
@@ -47,6 +48,10 @@ pub enum Error {
     /// Missing the InitialState variable
     #[error("missing initial state")]
     MissingInitialState,
+
+    /// Missing the pageData variable
+    #[error("missing pageData variable")]
+    MissingPageData,
 
     /// A Cookie Store error
     #[error(transparent)]

@@ -1,10 +1,13 @@
 /// Deviation
 pub mod deviation;
+/// Scraped stash info
+pub mod scraped_stash_info;
 /// Search Results
 pub mod search_results;
 
 pub use self::{
     deviation::Deviation,
+    scraped_stash_info::ScrapedStashInfo,
     search_results::SearchResults,
 };
 use std::collections::HashMap;
@@ -18,6 +21,9 @@ pub struct OEmbed {
 
     /// Url of the thumbnail
     pub thumbnail_url: Option<Url>,
+
+    /// Title
+    pub title: String,
 
     /// Unknown K/Vs
     #[serde(flatten)]

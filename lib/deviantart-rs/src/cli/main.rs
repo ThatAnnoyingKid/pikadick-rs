@@ -18,6 +18,7 @@ enum SubCommand {
     Login(self::commands::login::Options),
     Search(self::commands::search::Options),
     Download(self::commands::download::Options),
+    DownloadStash(self::commands::download_stash::Options),
 }
 
 fn main() {
@@ -58,6 +59,9 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
         }
         SubCommand::Download(options) => {
             self::commands::download::execute(client, options).await?;
+        }
+        SubCommand::DownloadStash(options) => {
+            self::commands::download_stash::execute(client, options).await?;
         }
     }
 
