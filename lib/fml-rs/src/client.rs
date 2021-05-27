@@ -3,7 +3,6 @@ use crate::{
         ApiResponse,
         Article,
     },
-    Error,
     FmlResult,
 };
 
@@ -15,7 +14,7 @@ pub struct Client {
 }
 
 impl Client {
-    /// Make a new Client from an api_key
+    /// Make a new Client from an api key
     pub fn new(api_key: String) -> Self {
         Client {
             client: reqwest::Client::new(),
@@ -23,27 +22,19 @@ impl Client {
         }
     }
 
-    /// Get a list of random articles
+    /// Get a list of random articles.
     pub async fn list_random(&self, n: usize) -> FmlResult<Vec<Article>> {
         let url = format!("https://www.fmylife.com/api/v2/article/list?page[number]=1&page[bypage]={}&orderby[RAND()]=ASC", n);
-        let res = self
+        let text = self
             .client
             .get(&url)
             .header("X-VDM-Api-Key", &self.api_key)
             .send()
+            .await?
+            .error_for_status()?
+            .text()
             .await?;
-
-        let status = res.status();
-        if !status.is_success() {
-            return Err(Error::InvalidStatus(status));
-        }
-
-        let text = res.text().await?;
-        let res = serde_json::from_str(&text)?;
-
-        match res {
-            ApiResponse::Ok { data, .. } => Ok(data),
-            ApiResponse::Err { error, .. } => Err(Error::Api(error)),
-        }
+        let api_response: ApiResponse<_> = serde_json::from_str(&text)?;
+        api_response.into()
     }
 }

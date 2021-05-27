@@ -114,6 +114,8 @@ impl ClientData {
     ) -> anyhow::Result<Self> {
         // TODO: Standardize an async init system with allocated data per command somehow. Maybe boxes?
 
+        let deviantart_client = DeviantartClient::new(&db).await?;
+
         Ok(ClientData {
             shard_manager,
 
@@ -127,7 +129,7 @@ impl ClientData {
             reddit_embed_data: Default::default(),
             enabled_check_data: Default::default(),
             insta_client: insta::Client::new(),
-            deviantart_client: Default::default(),
+            deviantart_client,
             urban_client: Default::default(),
             xkcd_client: Default::default(),
             tic_tac_toe_data: Default::default(),

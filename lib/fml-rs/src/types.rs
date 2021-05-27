@@ -1,19 +1,63 @@
+use crate::{
+    Error,
+    FmlResult,
+};
 use serde::Deserialize;
 use std::collections::HashMap;
 
+/// An API Response
 #[derive(Deserialize)]
-#[serde(untagged)]
-pub enum ApiResponse<T> {
-    Err {
-        error: String,
-    },
-    Ok {
-        data: T,
-        #[serde(flatten)]
-        unknown: HashMap<String, serde_json::Value>,
-    },
+pub struct ApiResponse<T> {
+    /// A potential API error.
+    ///
+    /// Populated on error.
+    pub error: Option<String>,
+
+    /// A potential response payload.
+    ///
+    /// Populated if successful.
+    pub data: Option<T>,
+
+    /// Unknown data
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
 }
 
+impl<T> ApiResponse<T> {
+    /// Whether the response is an error.
+    ///
+    /// This performs a check on the error field.
+    pub fn is_error(&self) -> bool {
+        self.error.is_some()
+    }
+
+    /// Whether the response is a success.
+    ///
+    /// This performs a check on the data field.
+    pub fn is_success(&self) -> bool {
+        self.error.is_none() && self.data.is_some()
+    }
+
+    /// Checks whether the data contained is valid.
+    ///
+    /// This looks to see if this is both an error and succes or neither.
+    pub fn is_valid_response(&self) -> bool {
+        self.is_error() || self.is_success()
+    }
+}
+
+impl<T> From<ApiResponse<T>> for FmlResult<T> {
+    fn from(response: ApiResponse<T>) -> Self {
+        match (response.data, response.error) {
+            (Some(_data), Some(_e)) => Err(Error::InvalidApiResponse),
+            (Some(data), None) => Ok(data),
+            (None, Some(e)) => Err(Error::Api(e)),
+            (None, None) => Err(Error::InvalidApiResponse),
+        }
+    }
+}
+
+/// An FML article
 #[derive(Debug, Deserialize)]
 pub struct Article {
     pub apikey: Option<String>,

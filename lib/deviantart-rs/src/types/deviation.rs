@@ -36,6 +36,10 @@ pub struct Deviation {
     #[serde(rename = "textContent")]
     pub text_content: Option<TextContext>,
 
+    /// Whether this is downloadable
+    #[serde(rename = "isDownloadable")]
+    pub is_downloadable: bool,
+
     /// Unknown K/Vs
     #[serde(flatten)]
     pub unknown: HashMap<String, serde_json::Value>,
@@ -50,7 +54,7 @@ impl Deviation {
         Some(url)
     }
 
-    /// Get the download url for this [`Deviation`].
+    /// Get the "download" url for this [`Deviation`].
     pub fn get_download_url(&self) -> Option<Url> {
         let mut url = self.media.base_uri.as_ref()?.clone();
         url.query_pairs_mut()
@@ -61,19 +65,34 @@ impl Deviation {
     /// Get the fullview url for this [`Deviation`].
     pub fn get_fullview_url(&self) -> Option<Url> {
         let mut url = self.media.base_uri.as_ref()?.clone();
-        url.path_segments_mut()
-            .ok()?
-            .push(&self.media.get_fullview_media_type()?.content.as_ref()?);
-        url.query_pairs_mut()
-            .append_pair("token", self.media.token.get(0)?);
+
+        // Allow the "content" section of the path to not exist, but the fullview data MUST exist.
+        if let Some(path) = self.media.get_fullview_media_type()?.content.as_ref() {
+            url.path_segments_mut().ok()?.push(path);
+        }
+
+        // We assume that a token is not provided in cases where it is not needed.
+        // As such, this part is optional.
+        // So far, a token is allowed to be missing when the "content" section of the fullview data is missing
+        // Correct this if these assumptions are wrong.
+        if let Some(token) = self.media.token.get(0) {
+            url.query_pairs_mut().append_pair("token", token);
+        }
+
         Some(url)
     }
 
     /// Get the GIF url for this [`Deviation`].
     pub fn get_gif_url(&self) -> Option<Url> {
-        let mut url = self.media.types.iter().find_map(|c| c.b.clone())?;
+        let mut url = self.media.get_gif_media_type()?.b.clone()?;
         url.query_pairs_mut()
             .append_pair("token", self.media.token.get(0)?);
+        Some(url)
+    }
+
+    /// Get the best video url
+    pub fn get_best_video_url(&self) -> Option<&Url> {
+        let url = self.media.get_best_video_media_type()?.b.as_ref()?;
         Some(url)
     }
 
@@ -85,6 +104,48 @@ impl Deviation {
     /// Whether this is literature
     pub fn is_literature(&self) -> bool {
         self.kind == "literature"
+    }
+
+    /// Whether this is a film
+    pub fn is_film(&self) -> bool {
+        self.kind == "film"
+    }
+
+    /// Get the most "fitting" url to download an image.
+    ///
+    /// Usually, [`DeviationExtended`] holds better data than a [`Deviation`], so prefer that instead.
+    pub fn get_image_download_url(&self) -> Option<Url> {
+        // Try to get the download url.
+        if let Some(url) = self.get_download_url() {
+            return Some(url);
+        }
+
+        // If that fails, this is probably a gif, so we try to get the gif url.
+        if let Some(url) = self.get_gif_url() {
+            return Some(url);
+        }
+
+        // Otherwise, assume failure
+        None
+    }
+
+    /// Try to get the original extension of this [`Deviation`]
+    pub fn get_extension(&self) -> Option<&str> {
+        if self.is_image() {
+            let url = self
+                .media
+                .get_gif_media_type()
+                .and_then(|media_type| media_type.b.as_ref())
+                .or_else(|| self.media.base_uri.as_ref())?;
+            Path::new(url.as_str()).extension()?.to_str()
+        } else if self.is_literature() {
+            None
+        } else if self.is_film() {
+            let url = self.media.get_best_video_media_type()?.b.as_ref()?;
+            Path::new(url.as_str()).extension()?.to_str()
+        } else {
+            None
+        }
     }
 }
 
@@ -142,11 +203,17 @@ impl DeviationMedia {
         self.types.iter().find(|t| t.is_fullview())
     }
 
-    /// Try to get the extension of this [`Deviation`]
-    pub fn get_extension(&self) -> Option<&str> {
-        Path::new(self.base_uri.as_ref()?.as_str())
-            .extension()?
-            .to_str()
+    /// Try to get the gif [`MediaType`].
+    pub fn get_gif_media_type(&self) -> Option<&MediaType> {
+        self.types.iter().find(|t| t.is_gif())
+    }
+
+    /// Try to get the video [`MediaType`]
+    pub fn get_best_video_media_type(&self) -> Option<&MediaType> {
+        self.types
+            .iter()
+            .filter(|media_type| media_type.is_video())
+            .max_by_key(|media_type| media_type.width)
     }
 }
 
@@ -187,6 +254,16 @@ impl MediaType {
     /// Whether this is the fullview
     pub fn is_fullview(&self) -> bool {
         self.kind == "fullview"
+    }
+
+    /// Whether this is a gif
+    pub fn is_gif(&self) -> bool {
+        self.kind == "gif"
+    }
+
+    /// Whether this is a video
+    pub fn is_video(&self) -> bool {
+        self.kind == "video"
     }
 }
 

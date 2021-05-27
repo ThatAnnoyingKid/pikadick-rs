@@ -32,15 +32,15 @@ reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.126", features = [ "derive" ] }
-serenity = "0.10.6"
+serenity = "0.10.7"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
-sqlx = { version = "0.5.2", features = [ "sqlite", "runtime-tokio-rustls" ] }
+sqlx = { version = "0.5.5", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.7"
-thiserror = "1.0.24"
+thiserror = "1.0.25"
 tiny-skia = { version = "0.5.1", features = [ "std", "simd", "png-format" ], default-features = false }
-tokio = { version = "1.5.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tokio = { version = "1.6.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"
-ttf-parser = "0.12.0"
+ttf-parser = "0.12.1"
 uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs" }
 url = "2.2.2"
@@ -55,11 +55,16 @@ openssl = { version = "0.10.34", optional = true, features = [ "vendored" ] }
 use-openssl-vendored = [ "openssl" ]
 
 [patch.crates-io]
-# Fix security advisory
+# Fix security advisory.
 heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }
 
-# `servo_arc` has UB on crates.io
+# `servo_arc` has UB on crates.io. This still has UB, but less and I haven't seen any issues with it yet.
+# To fix this, I think https://doc.rust-lang.org/std/mem/fn.size_of_val_raw.html needs to stabilize.
 servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca1468a1767e3cc294f824036c" }
+
+# Update hashbrown dep. 
+# This is a PR that updates hashbrown to the latest version, allowing us to use only one hashbrown version.
+indexmap = { git = "https://github.com/cuviper/indexmap", rev = "57c125806b6fedec0427fe5dd5a9fd03fe2f526d" }
 
 [workspace]
 members = [ 

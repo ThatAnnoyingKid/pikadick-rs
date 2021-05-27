@@ -55,7 +55,8 @@ impl Rule34Client {
             return Ok(entry);
         }
 
-        let results = self.client.search(query).await?;
+        let offset = 0;
+        let results = self.client.search(query, offset).await?;
         self.search_cache.insert(String::from(query), results);
 
         Ok(self

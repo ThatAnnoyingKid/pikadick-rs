@@ -13,19 +13,15 @@ use crate::{
     },
     ClientDataKey,
 };
+use anyhow::Context as _;
 use lazy_static::lazy_static;
 use log::{
     error,
     warn,
 };
-use reddit::RedditError;
 use reddit_tube::{
-    types::get_video_response::{
-        GetVideoResponseError,
-        GetVideoResponseOk,
-    },
+    types::get_video_response::GetVideoResponseOk,
     GetVideoResponse,
-    TubeError,
 };
 use regex::Regex;
 use serenity::{
@@ -47,7 +43,7 @@ const DATA_STORE_NAME: &str = "reddit-embed";
 
 lazy_static! {
     /// Source: https://urlregex.com/
-    static ref URL_REGEX: Regex = Regex::new(include_str!("./url_regex.txt")).unwrap();
+    static ref URL_REGEX: Regex = Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex");
 }
 
 #[derive(Clone, Default)]
@@ -102,34 +98,33 @@ impl RedditEmbedData {
     }
 
     /// Gets the original post. Resolves crossposts.
-    ///
     pub async fn get_original_post(
         &self,
         subreddit: &str,
         post_id: &str,
-    ) -> Result<Box<reddit::Link>, GetPostError> {
+    ) -> anyhow::Result<Box<reddit::Link>> {
         let mut post_data = self.reddit_client.get_post(subreddit, post_id).await?;
 
         if post_data.is_empty() {
-            return Err(GetPostError::MissingPost);
+            anyhow::bail!("missing post");
         }
 
         let mut post_data = post_data
             .swap_remove(0)
             .data
             .into_listing()
-            .ok_or(GetPostError::MissingPost)?
+            .ok_or_else(|| anyhow::anyhow!("missing post"))?
             .children;
 
         if post_data.is_empty() {
-            return Err(GetPostError::MissingPost);
+            anyhow::bail!("missing post");
         }
 
         let mut post = post_data
             .swap_remove(0)
             .data
             .into_link()
-            .ok_or(GetPostError::MissingPost)?;
+            .ok_or_else(|| anyhow::anyhow!("missing post"))?;
 
         // If cross post, resolve one level. Is it possible to crosspost a crosspost?
 
@@ -151,25 +146,30 @@ impl RedditEmbedData {
     }
 
     /// Get video data from reddit.tube. Takes a reddit url.
-    ///
-    pub async fn get_video_data(&self, url: &Url) -> Result<GetVideoResponseOk, GetVideoDataError> {
-        let main_page = self.reddit_tube_client.get_main_page().await?;
+    pub async fn get_video_data(&self, url: &Url) -> anyhow::Result<GetVideoResponseOk> {
+        let main_page = self
+            .reddit_tube_client
+            .get_main_page()
+            .await
+            .context("failed to get main page")?;
         let video_data = self
             .reddit_tube_client
             .get_video(&main_page, url.as_str())
-            .await?;
+            .await
+            .context("failed to get video data")?;
 
         match video_data {
             GetVideoResponse::Ok(video_data) => Ok(video_data),
-            GetVideoResponse::Error(e) => Err(GetVideoDataError::InvalidResponse(e)),
+            GetVideoResponse::Error(e) => Err(anyhow::anyhow!(e)),
         }
     }
 
     /// Process a message and insert an embed if neccesary
-    ///
     pub async fn process_msg(&self, ctx: &Context, msg: &Message) -> CommandResult {
         let data_lock = ctx.data.read().await;
-        let client_data = data_lock.get::<ClientDataKey>().unwrap();
+        let client_data = data_lock
+            .get::<ClientDataKey>()
+            .expect("missing client data");
         let db = client_data.db.clone();
         drop(data_lock);
 
@@ -293,24 +293,6 @@ impl std::fmt::Debug for RedditEmbedData {
             .field("cache", &self.cache)
             .finish()
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum GetPostError {
-    #[error(transparent)]
-    Reddit(#[from] RedditError),
-
-    #[error("missing post")]
-    MissingPost,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum GetVideoDataError {
-    #[error(transparent)]
-    RedditTube(#[from] TubeError),
-
-    #[error(transparent)]
-    InvalidResponse(GetVideoResponseError),
 }
 
 // Broken in help:
