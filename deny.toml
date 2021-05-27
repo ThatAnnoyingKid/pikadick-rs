@@ -125,5 +125,4 @@ allow-git = [
     "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
     "https://github.com/cuviper/indexmap",
-    "https://github.com/toshokan/sqlx",
 ]

@@ -34,7 +34,7 @@ rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.126", features = [ "derive" ] }
 serenity = "0.10.7"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
-sqlx = { version = "=0.5.3", features = [ "sqlite", "runtime-tokio-rustls" ] }
+sqlx = { version = "0.5.5", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.7"
 thiserror = "1.0.25"
 tiny-skia = { version = "0.5.1", features = [ "std", "simd", "png-format" ], default-features = false }
@@ -65,9 +65,6 @@ servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca146
 # Update hashbrown dep. 
 # This is a PR that updates hashbrown to the latest version, allowing us to use only one hashbrown version.
 indexmap = { git = "https://github.com/cuviper/indexmap", rev = "57c125806b6fedec0427fe5dd5a9fd03fe2f526d" }
-
-# Fix for hanging build.
-sqlx = { git = "https://github.com/toshokan/sqlx", rev = "b233ce4bc737e10dd1233524214267fe362d5da7" }
 
 [workspace]
 members = [ 
