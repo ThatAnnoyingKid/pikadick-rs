@@ -10,4 +10,4 @@ reqwest = "0.11.3"
 thiserror = "1.0.25"
 
 [dev-dependencies]
-tokio = { version = "1.6.0", features = [ "macros" ] }
+tokio = { version = "1.6.1", features = [ "macros" ] }
