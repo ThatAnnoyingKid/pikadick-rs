@@ -886,9 +886,9 @@ checksum = "acc499defb3b348f8d8f3f66415835a9131856ff7714bf10dadfc4ec4bdb29a1"
 
 [[package]]
 name = "futures-lite"
-version = "1.11.3"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4481d0cd0de1d204a4fa55e7d45f07b1d958abcb06714b3446438e2eff695fb"
+checksum = "7694489acd39452c77daa48516b894c153f192c3578d5a839b62c58099fcbf48"
 dependencies = [
  "fastrand",
  "futures-core",
@@ -1037,9 +1037,9 @@ dependencies = [
 
 [[package]]
 name = "heck"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87cbf45460356b7deeb5e3415b5563308c0a9b057c85e12b06ad551f98d0a6ac"
+checksum = "6d621efb26863f0e9924c6ac577e8275e5e6b77455db64ffa6c65c904e9e132c"
 dependencies = [
  "unicode-segmentation",
 ]
@@ -2342,9 +2342,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework"
-version = "2.2.0"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3670b1d2fdf6084d192bc71ead7aabe6c06aa2ea3fbd9cc3ac111fa5c2b1bd84"
+checksum = "b239a3d5db51252f6f48f42172c65317f37202f4a21021bf5f9d40a408f4592c"
 dependencies = [
  "bitflags",
  "core-foundation",
@@ -2355,9 +2355,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework-sys"
-version = "2.2.0"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3676258fd3cfe2c9a0ec99ce3038798d847ce3e4bb17746373eb9f0f1ac16339"
+checksum = "7e4effb91b4b8b6fb7732e670b6cee160278ff8e6bf485c7805d9e319d76e284"
 dependencies = [
  "core-foundation-sys",
  "libc",
@@ -2524,9 +2524,9 @@ dependencies = [
 
 [[package]]
 name = "signal-hook"
-version = "0.3.8"
+version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef33d6d0cd06e0840fba9985aab098c147e67e05cee14d412d3345ed14ff30ac"
+checksum = "470c5a6397076fae0094aaf06a08e6ba6f37acb77d3b1b91ea92b4d6c8650c39"
 dependencies = [
  "libc",
  "signal-hook-registry",
@@ -2534,9 +2534,9 @@ dependencies = [
 
 [[package]]
 name = "signal-hook-registry"
-version = "1.3.0"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16f1d0fef1604ba8f7a073c7e701f213e056707210e9020af4528e0101ce11a6"
+checksum = "e51e73328dc4ac0c7ccbda3a494dfa03df1de2f46018127f60c693f2648455b0"
 dependencies = [
  "libc",
 ]
@@ -2808,9 +2808,9 @@ dependencies = [
 
 [[package]]
 name = "systemstat"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c31c241679f72241744c20d064a4db7feeb2caa214a8d6e2d4243b8c674a29a5"
+checksum = "a934f8fe2f893260080fdde71e840b35308f48bf3bd3b261cb24e668c4b48db3"
 dependencies = [
  "bytesize",
  "chrono",
@@ -3157,9 +3157,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.18"
+version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33717dca7ac877f497014e10d73f3acf948c342bee31b5ca7892faf94ccc6b49"
+checksum = "d54590932941a9e9266f0832deed84ebe1bf2e4c9e4a3554d393d18f5e854bf9"
 dependencies = [
  "tinyvec",
 ]
