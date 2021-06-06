@@ -6,7 +6,6 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
-use log::error;
 use minimax::TicTacToeTeam;
 use serenity::{
     client::Context,
@@ -18,6 +17,7 @@ use serenity::{
     http::AttachmentType,
     model::prelude::*,
 };
+use tracing::error;
 
 #[command]
 #[description("Start a game of Tic-Tac-Toe")]

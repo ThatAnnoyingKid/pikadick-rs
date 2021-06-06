@@ -2,7 +2,6 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
-use log::info;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -14,6 +13,7 @@ use serenity::{
     utils::Colour,
 };
 use std::fmt::Write;
+use tracing::info;
 
 #[command("cache-stats")]
 #[description("Get cache usage stats")]

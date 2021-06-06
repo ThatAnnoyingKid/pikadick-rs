@@ -1,4 +1,3 @@
-use log::error;
 use serenity::{
     client::Context,
     framework::standard::{
@@ -9,6 +8,7 @@ use serenity::{
     },
     model::prelude::*,
 };
+use tracing::error;
 
 #[check]
 #[name("Admin")]

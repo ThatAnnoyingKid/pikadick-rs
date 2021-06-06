@@ -39,11 +39,6 @@ use crate::{
     },
     database::Database,
 };
-use log::{
-    error,
-    info,
-    warn,
-};
 use serenity::{
     client::bridge::gateway::ShardManager,
     framework::standard::{
@@ -70,6 +65,11 @@ use std::{
     sync::Arc,
 };
 use tokio::runtime::Builder as RuntimeBuilder;
+use tracing::{
+    error,
+    info,
+    warn,
+};
 
 struct Handler;
 
@@ -287,7 +287,7 @@ fn main() {
     let log_file_writer = match crate::logger::setup() {
         Ok(file) => file,
         Err(e) => {
-            error!("Failed to init logger: {}", e);
+            error!("Failed to init logger: {:?}", e);
             return;
         }
     };

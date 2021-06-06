@@ -15,10 +15,6 @@ use crate::{
 };
 use anyhow::Context as _;
 use lazy_static::lazy_static;
-use log::{
-    error,
-    warn,
-};
 use reddit_tube::{
     types::get_video_response::GetVideoResponseOk,
     GetVideoResponse,
@@ -34,6 +30,10 @@ use serenity::{
     prelude::*,
 };
 use std::sync::Arc;
+use tracing::{
+    error,
+    warn,
+};
 use url::Url;
 
 type SubReddit = String;

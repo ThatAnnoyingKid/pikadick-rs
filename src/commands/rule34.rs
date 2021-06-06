@@ -11,10 +11,6 @@ use crate::{
     },
     ClientDataKey,
 };
-use log::{
-    error,
-    info,
-};
 use rand::seq::SliceRandom;
 use rule34::{
     Post,
@@ -31,6 +27,10 @@ use serenity::{
     prelude::*,
 };
 use std::sync::Arc;
+use tracing::{
+    error,
+    info,
+};
 
 /// A caching rule34 client
 #[derive(Clone, Default, Debug)]

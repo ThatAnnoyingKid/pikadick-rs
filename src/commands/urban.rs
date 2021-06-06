@@ -11,7 +11,6 @@ use crate::{
     },
     ClientDataKey,
 };
-use log::error;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -22,6 +21,7 @@ use serenity::{
     prelude::*,
 };
 use std::sync::Arc;
+use tracing::error;
 
 /// A Caching Urban Dictionary Client
 ///

@@ -13,7 +13,6 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
-use log::error;
 use minimax::{
     compile_minimax_map,
     tic_tac_toe::TicTacToeState,
@@ -41,6 +40,7 @@ use std::{
     str::FromStr,
     sync::Arc,
 };
+use tracing::error;
 
 /// Error that may occur while creating a game.
 #[derive(Debug, Clone, Copy, thiserror::Error)]

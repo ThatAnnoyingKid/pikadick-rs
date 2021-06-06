@@ -3,7 +3,6 @@ use crate::{
     util::LoadingReaction,
     ClientDataKey,
 };
-use log::info;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -13,6 +12,7 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
+use tracing::info;
 
 #[command("insta-dl")]
 #[description("Download an instagram video or photo")]

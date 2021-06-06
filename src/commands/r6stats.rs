@@ -11,10 +11,6 @@ use crate::{
     },
     ClientDataKey,
 };
-use log::{
-    error,
-    info,
-};
 use r6stats::{
     Error as R6Error,
     UserData,
@@ -29,6 +25,10 @@ use serenity::{
     prelude::*,
 };
 use std::sync::Arc;
+use tracing::{
+    error,
+    info,
+};
 
 #[derive(Clone, Default, Debug)]
 pub struct R6StatsClient {

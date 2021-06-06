@@ -14,10 +14,6 @@ use crate::{
 };
 use anyhow::Context as _;
 use deviantart::SearchResults;
-use log::{
-    error,
-    info,
-};
 use rand::seq::IteratorRandom;
 use serenity::{
     framework::standard::{
@@ -31,6 +27,10 @@ use serenity::{
 use std::{
     sync::Arc,
     time::Instant,
+};
+use tracing::{
+    error,
+    info,
 };
 
 const DATA_STORE_NAME: &str = "deviantart";
