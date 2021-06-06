@@ -32,5 +32,6 @@ cli = [
     "anyhow",
     "argh",
     "client",
-    "tokio/rt-multi-thread"
+    "tokio/rt-multi-thread",
+    "tokio/fs",
 ]
