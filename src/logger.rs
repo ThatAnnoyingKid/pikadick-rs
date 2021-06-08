@@ -1,7 +1,6 @@
 use anyhow::Context;
 use parking_lot::Mutex;
 use std::{
-    fs::File,
     io::Write,
     sync::Arc,
 };
@@ -136,7 +135,7 @@ impl<W> Clone for DelayWriter<W> {
 
 /// Try to setup a logger
 pub fn setup() -> anyhow::Result<(
-    DelayWriter<File>,
+    DelayWriter<tracing_appender::rolling::RollingFileAppender>,
     tracing_appender::non_blocking::WorkerGuard,
 )> {
     let file_writer = DelayWriter::new();

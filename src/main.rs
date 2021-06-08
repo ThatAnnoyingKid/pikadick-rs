@@ -343,18 +343,7 @@ fn main() {
     }
 
     info!("Initalizing File Logger...");
-    let log_file = match std::fs::OpenOptions::new()
-        .create(true)
-        .write(true)
-        .truncate(true)
-        .open(data_dir.join("log.txt"))
-    {
-        Ok(f) => f,
-        Err(e) => {
-            error!("Failed to initalize file logger: {}", e);
-            return;
-        }
-    };
+    let log_file = tracing_appender::rolling::hourly(&data_dir, "log.txt");
 
     if let Err(e) = log_file_writer.init(log_file) {
         error!("Failed to initalize file logger: {}", e);
