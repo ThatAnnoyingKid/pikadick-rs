@@ -1,17 +1,8 @@
-use crate::DefinitionList;
+use crate::{
+    DefinitionList,
+    Error,
+};
 use url::Url;
-
-/// Library Error Type
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    /// A reqwest http error
-    #[error(transparent)]
-    Reqwest(#[from] reqwest::Error),
-
-    /// A url parse error
-    #[error(transparent)]
-    Url(#[from] url::ParseError),
-}
 
 /// Client
 #[derive(Debug, Clone)]
