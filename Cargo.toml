@@ -72,13 +72,13 @@ indexmap = { git = "https://github.com/cuviper/indexmap", branch = "hashbrown-0.
 
 [workspace]
 members = [ 
-	"lib/fml-rs",
-	"lib/nekos-rs", 
-	"lib/quizizz-rs",
-	"lib/r6stats-rs", 
-	"lib/r6tracker-rs", 
-	"lib/reddit-tube-rs",
-	"lib/rule34-rs",
+    "lib/fml-rs",
+    "lib/nekos-rs", 
+    "lib/quizizz-rs",
+    "lib/r6stats-rs", 
+    "lib/r6tracker-rs", 
+    "lib/reddit-tube-rs",
+    "lib/rule34-rs",
     "lib/insta-rs",
     "lib/deviantart-rs",
     "lib/urban-dictionary-rs",
