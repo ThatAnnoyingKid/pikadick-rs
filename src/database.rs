@@ -2,6 +2,7 @@ use anyhow::Context;
 use serenity::model::prelude::*;
 use sqlx::{
     sqlite::SqliteConnectOptions,
+    ConnectOptions,
     SqlitePool,
     Transaction,
 };
@@ -35,9 +36,10 @@ pub struct Database {
 impl Database {
     //// Make a new [`Database`].
     pub async fn new(db_path: &Path, create_if_missing: bool) -> anyhow::Result<Self> {
-        let connect_options = SqliteConnectOptions::new()
+        let mut connect_options = SqliteConnectOptions::new()
             .filename(&db_path)
             .create_if_missing(create_if_missing);
+        connect_options.disable_statement_logging();
         let db = SqlitePool::connect_with(connect_options)
             .await
             .context("failed to open database")?;

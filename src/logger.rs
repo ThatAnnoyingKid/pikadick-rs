@@ -115,6 +115,7 @@ pub fn setup() -> anyhow::Result<DelayWriter> {
     let file_writer_clone = file_writer.clone();
 
     let env_filter = tracing_subscriber::filter::EnvFilter::default()
+        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into())
         .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into());
     let stderr_formatting_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
     let file_formatting_layer = tracing_subscriber::fmt::layer()
@@ -127,28 +128,19 @@ pub fn setup() -> anyhow::Result<DelayWriter> {
         .with(stderr_formatting_layer);
 
     tracing::subscriber::set_global_default(subscriber).context("failed to set subscriber")?;
+    tracing_log::LogTracer::init().context("failed to init log tracer")?;
 
     /*
-    let term_logger = fern::Dispatch::new()
-        .format(move |out, message, record| {
-            out.finish(format_args!(
-                "{}[{}][{}] {}",
-                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
-                record.target(),
-                colors_line.color(record.level()),
-                message
-            ))
-        })
-        .level(log::LevelFilter::Info)
-        .level_for("tracing", log::LevelFilter::Warn)
-        .level_for("serenity", log::LevelFilter::Warn)
-        .level_for(
-            "serenity::client::bridge::gateway::shard_runner",
-            log::LevelFilter::Error,
-        )
-        .level_for("sqlx::query", log::LevelFilter::Error)
-        .chain(std::io::stdout());
-        */
+    .format(move |out, message, record| {
+        out.finish(format_args!(
+            "{}[{}][{}] {}",
+            chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+            record.target(),
+            colors_line.color(record.level()),
+            message
+        ))
+    })
+    */
 
     Ok(file_writer)
 }
