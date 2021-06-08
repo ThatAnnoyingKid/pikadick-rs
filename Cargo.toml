@@ -40,8 +40,8 @@ thiserror = "1.0.25"
 tiny-skia = { version = "0.5.1", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.6.1", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"
-tracing = { version = "0.1.0", features = [ "log", "log-always" ] }
-tracing-subscriber = "0.2.0"
+tracing = "0.1.0"
+tracing-subscriber = { version = "0.2.18", features = [ "env-filter", "fmt", "parking_lot" ] }
 ttf-parser = "0.12.1"
 uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs" }

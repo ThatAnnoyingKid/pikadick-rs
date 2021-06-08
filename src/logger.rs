@@ -1,14 +1,11 @@
 use anyhow::Context;
-use fern::colors::{
-    Color,
-    ColoredLevelConfig,
-};
 use parking_lot::Mutex as PMutex;
 use std::{
     fs::File,
     io::Write,
     sync::Arc,
 };
+use tracing_subscriber::layer::SubscriberExt;
 
 /// The mut impl of a DelayWriter
 #[derive(Debug)]
@@ -114,27 +111,24 @@ impl Write for DelayWriter {
 
 /// Try to setup a logger
 pub fn setup() -> anyhow::Result<DelayWriter> {
-    let colors_line = ColoredLevelConfig::new()
-        .error(Color::Red)
-        .warn(Color::Yellow)
-        .info(Color::Cyan)
-        .debug(Color::White)
-        .trace(Color::BrightBlack);
-
     let file_writer = DelayWriter::new();
-    let file_logger = fern::Dispatch::new()
-        .format(move |out, message, record| {
-            out.finish(format_args!(
-                "{}[{}][{}] {}",
-                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
-                record.target(),
-                record.level(),
-                message
-            ))
-        })
-        .level(log::LevelFilter::Info)
-        .chain(Box::new(file_writer.clone()) as Box<dyn Write + Send>);
+    let file_writer_clone = file_writer.clone();
 
+    let env_filter = tracing_subscriber::filter::EnvFilter::default()
+        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into());
+    let stderr_formatting_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
+    let file_formatting_layer = tracing_subscriber::fmt::layer()
+        .with_ansi(false)
+        .with_writer(move || file_writer_clone.clone());
+
+    let subscriber = tracing_subscriber::Registry::default()
+        .with(env_filter)
+        .with(file_formatting_layer)
+        .with(stderr_formatting_layer);
+
+    tracing::subscriber::set_global_default(subscriber).context("failed to set subscriber")?;
+
+    /*
     let term_logger = fern::Dispatch::new()
         .format(move |out, message, record| {
             out.finish(format_args!(
@@ -154,12 +148,7 @@ pub fn setup() -> anyhow::Result<DelayWriter> {
         )
         .level_for("sqlx::query", log::LevelFilter::Error)
         .chain(std::io::stdout());
-
-    fern::Dispatch::new()
-        .chain(file_logger)
-        .chain(term_logger)
-        .apply()
-        .context("failed to set logger")?;
+        */
 
     Ok(file_writer)
 }
