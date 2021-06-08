@@ -68,7 +68,7 @@ servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca146
 
 # Update hashbrown dep. 
 # This is a PR that updates hashbrown to the latest version, allowing us to use only one hashbrown version.
-indexmap = { git = "https://github.com/cuviper/indexmap", rev = "57c125806b6fedec0427fe5dd5a9fd03fe2f526d" }
+indexmap = { git = "https://github.com/cuviper/indexmap", branch = "hashbrown-0.11" }
 
 [workspace]
 members = [ 
