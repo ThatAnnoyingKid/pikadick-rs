@@ -283,8 +283,9 @@ async fn process_dispatch_error_future<'fut>(
 }
 
 /// Main Entry
+#[tracing::instrument]
 fn main() {
-    let log_file_writer = match crate::logger::setup() {
+    let (log_file_writer, _guard) = match crate::logger::setup() {
         Ok(file) => file,
         Err(e) => {
             error!("Failed to init logger: {:?}", e);

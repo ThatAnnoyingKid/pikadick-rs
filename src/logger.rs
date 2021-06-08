@@ -1,5 +1,5 @@
 use anyhow::Context;
-use parking_lot::Mutex as PMutex;
+use parking_lot::Mutex;
 use std::{
     fs::File,
     io::Write,
@@ -9,87 +9,106 @@ use tracing_subscriber::layer::SubscriberExt;
 
 /// The mut impl of a DelayWriter
 #[derive(Debug)]
-pub enum DelayWriterInner {
+pub enum DelayWriterInner<W> {
     /// The buffered data.
     Buffer(Vec<u8>),
 
     /// The file being written to.
-    File(File),
+    Writer(W),
 }
 
-impl DelayWriterInner {
+impl<W> DelayWriterInner<W> {
     /// Make a new DelayWriterInner with an empty buffer
     fn new() -> Self {
-        Self::Buffer(Vec::new())
+        Self::Buffer(Vec::with_capacity(1_000_000))
     }
+}
 
-    /// Try to init this DelayWriterInner with a file. Will return an error if this is already initalized.
-    fn init(&mut self, mut file: File) -> Result<(), std::io::Error> {
+impl<W> DelayWriterInner<W>
+where
+    W: Write,
+{
+    /// Try to init this DelayWriterInner with a file.
+    ///
+    /// # Error
+    /// Will return an error if this is already initalized.
+    fn init(&mut self, mut writer: W) -> Result<(), std::io::Error> {
         let buffer = match self {
             Self::Buffer(bytes) => bytes,
-            Self::File(_) => {
+            Self::Writer(_) => {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::Other,
-                    "Already Initalized",
+                    "already initalized",
                 ));
             }
         };
 
-        file.write_all(buffer)?;
+        writer.write_all(buffer)?;
 
-        *self = Self::File(file);
+        *self = Self::Writer(writer);
 
         Ok(())
     }
 }
 
-impl Write for DelayWriterInner {
+impl<W> Write for DelayWriterInner<W>
+where
+    W: Write,
+{
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         match self {
             Self::Buffer(buffer) => buffer.write(buf),
-            Self::File(file) => file.write(buf),
+            Self::Writer(writer) => writer.write(buf),
         }
     }
 
     fn flush(&mut self) -> std::io::Result<()> {
         match self {
             Self::Buffer(buffer) => buffer.flush(),
-            Self::File(file) => file.flush(),
+            Self::Writer(writer) => writer.flush(),
         }
     }
 
     fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
         match self {
             Self::Buffer(buffer) => buffer.write_all(buf),
-            Self::File(file) => file.write_all(buf),
+            Self::Writer(writer) => writer.write_all(buf),
         }
     }
 }
 
-/// A writer that buffers data until it is assigned a file to write to.
-#[derive(Clone, Debug)]
-pub struct DelayWriter(Arc<PMutex<DelayWriterInner>>);
-
-impl DelayWriter {
+impl<W> DelayWriter<W> {
     /// Create a new DelayWriter
     pub fn new() -> Self {
-        Self(Arc::new(PMutex::new(DelayWriterInner::new())))
-    }
-
-    /// Try to init this DelayWriter
-    pub fn init(&self, file: File) -> Result<(), std::io::Error> {
-        let mut lock = self.0.lock();
-        lock.init(file)
+        Self(Arc::new(Mutex::new(DelayWriterInner::new())))
     }
 }
 
-impl Default for DelayWriter {
+/// A writer that buffers data until it is assigned a file to write to.
+#[derive(Debug)]
+pub struct DelayWriter<W>(Arc<Mutex<DelayWriterInner<W>>>);
+
+impl<W> DelayWriter<W>
+where
+    W: Write,
+{
+    /// Try to init this DelayWriter
+    pub fn init(&self, writer: W) -> Result<(), std::io::Error> {
+        let mut lock = self.0.lock();
+        lock.init(writer)
+    }
+}
+
+impl<W> Default for DelayWriter<W> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Write for DelayWriter {
+impl<W> Write for DelayWriter<W>
+where
+    W: Write,
+{
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let mut lock = self.0.lock();
 
@@ -109,10 +128,19 @@ impl Write for DelayWriter {
     }
 }
 
+impl<W> Clone for DelayWriter<W> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
 /// Try to setup a logger
-pub fn setup() -> anyhow::Result<DelayWriter> {
+pub fn setup() -> anyhow::Result<(
+    DelayWriter<File>,
+    tracing_appender::non_blocking::WorkerGuard,
+)> {
     let file_writer = DelayWriter::new();
-    let file_writer_clone = file_writer.clone();
+    let (nonblocking_file_writer, guard) = tracing_appender::non_blocking(file_writer.clone());
 
     let env_filter = tracing_subscriber::filter::EnvFilter::default()
         .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into())
@@ -120,7 +148,7 @@ pub fn setup() -> anyhow::Result<DelayWriter> {
     let stderr_formatting_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
     let file_formatting_layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
-        .with_writer(move || file_writer_clone.clone());
+        .with_writer(nonblocking_file_writer);
 
     let subscriber = tracing_subscriber::Registry::default()
         .with(env_filter)
@@ -130,17 +158,5 @@ pub fn setup() -> anyhow::Result<DelayWriter> {
     tracing::subscriber::set_global_default(subscriber).context("failed to set subscriber")?;
     tracing_log::LogTracer::init().context("failed to init log tracer")?;
 
-    /*
-    .format(move |out, message, record| {
-        out.finish(format_args!(
-            "{}[{}][{}] {}",
-            chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
-            record.target(),
-            colors_line.color(record.level()),
-            message
-        ))
-    })
-    */
-
-    Ok(file_writer)
+    Ok((file_writer, guard))
 }
