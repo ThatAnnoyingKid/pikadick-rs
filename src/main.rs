@@ -318,7 +318,7 @@ fn load_config() -> anyhow::Result<Config> {
 }
 
 /// Pre-main setup
-fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config)> {
+fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool)> {
     eprintln!("Starting tokio runtime...");
     let tokio_rt = RuntimeBuilder::new_multi_thread()
         .enable_all()
@@ -328,7 +328,20 @@ fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config)> {
 
     let config = load_config().context("failed to load config")?;
 
-    Ok((tokio_rt, config))
+    eprintln!("Opening data directory...");
+    if config.data_dir.is_file() {
+        anyhow::bail!("failed to create or open data directory, the path is a file");
+    }
+
+    let missing_data_dir = !config.data_dir.exists();
+    if missing_data_dir {
+        eprintln!("Data directory does not exist. Creating...");
+        std::fs::create_dir_all(&config.data_dir).context("failed to create data directory")?;
+    } else if config.data_dir.is_dir() {
+        eprintln!("Data directory already exists.");
+    }
+
+    Ok((tokio_rt, config, missing_data_dir))
 }
 
 /// The main entry.
@@ -338,8 +351,8 @@ fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config)> {
 /// This also calls setup operations like loading config and setting up the tokio runtime,
 /// logging errors to the stderr instead of the loggers, which are not initialized yet.
 fn main() {
-    let (tokio_rt, config) = match pre_main_setup() {
-        Ok(config) => config,
+    let (tokio_rt, config, missing_data_dir) = match pre_main_setup() {
+        Ok(data) => data,
         Err(e) => {
             eprintln!("{:?}", e);
             drop(e);
@@ -348,7 +361,7 @@ fn main() {
         }
     };
 
-    let exit_code = match real_main(tokio_rt, config) {
+    let exit_code = match real_main(tokio_rt, config, missing_data_dir) {
         Ok(()) => 0,
         Err(e) => {
             error!("{:?}", e);
@@ -360,8 +373,12 @@ fn main() {
 }
 
 /// The actual entry point
-fn real_main(tokio_rt: tokio::runtime::Runtime, config: Config) -> anyhow::Result<()> {
-    tokio_rt.block_on(async_main(config));
+fn real_main(
+    tokio_rt: tokio::runtime::Runtime,
+    config: Config,
+    missing_data_dir: bool,
+) -> anyhow::Result<()> {
+    tokio_rt.block_on(async_main(config, missing_data_dir));
 
     info!("Stopping Tokio Runtime...");
     // TODO: Add a timeout to always shut down properly / Can i report when this fails?
@@ -375,41 +392,22 @@ fn real_main(tokio_rt: tokio::runtime::Runtime, config: Config) -> anyhow::Resul
 }
 
 /// The async entry
-async fn async_main(config: Config){
-    let (log_file_writer, _guard) = 
-        crate::logger::setup().context("failed to initialize logger").unwrap();
-        
-    info!("Opening data directory...");
-    let data_dir = &config.data_dir;
-    let db_path = data_dir.join("pikadick.sqlite");
+async fn async_main(config: Config, missing_data_dir: bool) {
+    let (log_file_writer, _guard) = crate::logger::setup()
+        .context("failed to initialize logger")
+        .unwrap();
 
-    if data_dir.is_file() {
-        error!("Failed to create or open data directory, the path is a file.");
+    info!("Initalizing File Logger...");
+    let log_file = tracing_appender::rolling::hourly(&config.data_dir, "log.txt");
+    if let Err(e) = log_file_writer.init(log_file) {
+        error!("Failed to initalize file logger: {}", e);
         return;
     }
 
-    let missing_data_dir = !data_dir.exists();
-    if missing_data_dir {
-        info!("Data directory does not exist. Creating...");
-        if let Err(e) = std::fs::create_dir_all(&data_dir) {
-            error!("Failed to create data directory: {}", e);
-            return;
-        };
-    } else if data_dir.is_dir() {
-        info!("Data directory already exists.");
-    }
-
-    info!("Initalizing File Logger...");
-    let log_file = tracing_appender::rolling::hourly(&data_dir, "log.txt");
-
-    if let Err(e) = log_file_writer.init(log_file) {
-         error!("Failed to initalize file logger: {}", e);
-         return;
-    }
-    
     drop(log_file_writer);
 
     info!("Opening database...");
+    let db_path = config.data_dir.join("pikadick.sqlite");
     let db = match Database::new(&db_path, missing_data_dir).await {
         Ok(db) => db,
         Err(e) => {
