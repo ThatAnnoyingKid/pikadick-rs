@@ -39,6 +39,7 @@ use crate::{
     },
     database::Database,
 };
+use anyhow::Context as _;
 use serenity::{
     client::bridge::gateway::ShardManager,
     framework::standard::{
@@ -62,6 +63,7 @@ use serenity::{
 };
 use std::{
     collections::HashSet,
+    path::Path,
     sync::Arc,
 };
 use tokio::runtime::Builder as RuntimeBuilder;
@@ -282,46 +284,101 @@ async fn process_dispatch_error_future<'fut>(
     };
 }
 
-/// Main Entry
-#[tracing::instrument]
-fn main() {
-    let (log_file_writer, _guard) = match crate::logger::setup() {
-        Ok(file) => file,
-        Err(e) => {
-            error!("Failed to init logger: {:?}", e);
-            return;
-        }
-    };
+/// Load a config.
+///
+/// This prints to the stderr directly.
+/// It is intended to be called BEFORE the loggers are set up.
+fn load_config() -> anyhow::Result<Config> {
+    let config_path: &Path = "./config.toml".as_ref();
 
-    info!("Loading `config.toml`...");
-    let mut config = match Config::load_from_path("./config.toml".as_ref()) {
-        Ok(c) => c,
-        Err(e) => {
-            error!("Failed to load `./config.toml`: {:?}", e);
-            return;
-        }
-    };
+    eprintln!("Loading `{}`...", config_path.display());
+    let mut config = Config::load_from_path(config_path)
+        .with_context(|| format!("failed to load `{}`", config_path.display()))?;
 
-    info!("Validating config.toml...");
+    eprintln!("Validating config...");
     let errors = config.validate();
     let mut error_count = 0;
     for e in errors {
         match e.severity() {
             Severity::Warn => {
-                warn!("Validation Warning: {}", e.error());
+                eprintln!("Validation Warning: {}", e.error());
             }
             Severity::Error => {
-                error!("Validation Error: {}", e.error());
+                eprintln!("Validation Error: {}", e.error());
                 error_count += 1;
             }
         }
     }
 
     if error_count != 0 {
-        error!("Validation failed with {} errors.", error_count);
-        return;
+        anyhow::bail!("validation failed with {} errors.", error_count);
     }
 
+    Ok(config)
+}
+
+/// Pre-main setup
+fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config)> {
+    eprintln!("Starting tokio runtime...");
+    let tokio_rt = RuntimeBuilder::new_multi_thread()
+        .enable_all()
+        .thread_name("pikadick-tokio-worker")
+        .build()
+        .context("failed to start Tokio Runtime")?;
+
+    let config = load_config().context("failed to load config")?;
+
+    Ok((tokio_rt, config))
+}
+
+/// The main entry.
+///
+/// Calls `real_main` and prints the error, exiting with 1 of needed.
+/// This allows more things to drop correctly.
+/// This also calls setup operations like loading config and setting up the tokio runtime,
+/// logging errors to the stderr instead of the loggers, which are not initialized yet.
+fn main() {
+    let (tokio_rt, config) = match pre_main_setup() {
+        Ok(config) => config,
+        Err(e) => {
+            eprintln!("{:?}", e);
+            drop(e);
+
+            std::process::exit(1);
+        }
+    };
+
+    let exit_code = match real_main(tokio_rt, config) {
+        Ok(()) => 0,
+        Err(e) => {
+            error!("{:?}", e);
+            1
+        }
+    };
+
+    std::process::exit(exit_code);
+}
+
+/// The actual entry point
+fn real_main(tokio_rt: tokio::runtime::Runtime, config: Config) -> anyhow::Result<()> {
+    tokio_rt.block_on(async_main(config));
+
+    info!("Stopping Tokio Runtime...");
+    // TODO: Add a timeout to always shut down properly / Can i report when this fails?
+    // tokio_rt.shutdown_timeout(TOKIO_RT_SHUTDOWN_DURATION);
+    // Avoid using shutdown_timeout. Blocked on: https://github.com/tokio-rs/tokio/issues/2314
+    drop(tokio_rt);
+
+    info!("Successful Shutdown");
+
+    Ok(())
+}
+
+/// The async entry
+async fn async_main(config: Config){
+    let (log_file_writer, _guard) = 
+        crate::logger::setup().context("failed to initialize logger").unwrap();
+        
     info!("Opening data directory...");
     let data_dir = &config.data_dir;
     let db_path = data_dir.join("pikadick.sqlite");
@@ -346,105 +403,82 @@ fn main() {
     let log_file = tracing_appender::rolling::hourly(&data_dir, "log.txt");
 
     if let Err(e) = log_file_writer.init(log_file) {
-        error!("Failed to initalize file logger: {}", e);
-        return;
+         error!("Failed to initalize file logger: {}", e);
+         return;
     }
-
+    
     drop(log_file_writer);
 
-    info!("Starting Tokio Runtime...");
-    let tokio_rt = match RuntimeBuilder::new_multi_thread()
-        .enable_all()
-        .thread_name("pikadick-tokio-worker")
-        .build()
-    {
-        Ok(rt) => rt,
+    info!("Opening database...");
+    let db = match Database::new(&db_path, missing_data_dir).await {
+        Ok(db) => db,
         Err(e) => {
-            error!("Failed to start Tokio Runtime: {}", e);
+            error!("Failed to open database: {}", e);
             return;
         }
     };
 
-    tokio_rt.block_on(async {
-        info!("Opening database...");
-        let db = match Database::new(&db_path, missing_data_dir).await {
-            Ok(db) => db,
-            Err(e) => {
-                error!("Failed to open database: {}", e);
-                return;
-            }
-        };
+    let uppercase_prefix = config.prefix.to_uppercase();
+    let framework = StandardFramework::new()
+        .configure(|c| {
+            c.prefixes(&[&config.prefix, &uppercase_prefix])
+                .case_insensitivity(true)
+        })
+        .help(&HELP)
+        .group(&GENERAL_GROUP)
+        // .bucket("nekos", |b| b.delay(1)) // TODO: Consider better ratelimit strategy
+        .bucket("r6stats", |b| b.delay(7))
+        .await
+        .bucket("r6tracker", |b| b.delay(7))
+        .await
+        .bucket("system", |b| b.delay(30))
+        .await
+        .bucket("quizizz", |b| b.delay(10))
+        .await
+        .bucket("insta-dl", |b| b.delay(10))
+        .await
+        .after(after_handler)
+        .unrecognised_command(unrecognised_command_handler)
+        .on_dispatch_error(process_dispatch_error);
 
-        let uppercase_prefix = config.prefix.to_uppercase();
-        let framework = StandardFramework::new()
-            .configure(|c| {
-                c.prefixes(&[&config.prefix, &uppercase_prefix])
-                    .case_insensitivity(true)
-            })
-            .help(&HELP)
-            .group(&GENERAL_GROUP)
-            // .bucket("nekos", |b| b.delay(1)) // TODO: Consider better ratelimit strategy
-            .bucket("r6stats", |b| b.delay(7))
-            .await
-            .bucket("r6tracker", |b| b.delay(7))
-            .await
-            .bucket("system", |b| b.delay(30))
-            .await
-            .bucket("quizizz", |b| b.delay(10))
-            .await
-            .bucket("insta-dl", |b| b.delay(10))
-            .await
-            .after(after_handler)
-            .unrecognised_command(unrecognised_command_handler)
-            .on_dispatch_error(process_dispatch_error);
+    info!("Using prefix '{}'", &config.prefix);
 
-        info!("Using prefix '{}'", &config.prefix);
-
-        let mut client = match Client::builder(&config.token)
-            .event_handler(Handler)
-            .framework(framework)
-            .await
-        {
-            Ok(c) => c,
-            Err(e) => {
-                error!("Failed to create client: {}", e);
-                return;
-            }
-        };
-
-        let client_data = match ClientData::init(client.shard_manager.clone(), config, db).await {
-            Ok(c) => {
-                // Add all post-init client data changes here
-                c.enabled_check_data.add_groups(&[&GENERAL_GROUP]);
-                c
-            }
-            Err(e) => {
-                error!("Client Data Initialization failed: {}", e);
-                return;
-            }
-        };
-
-        {
-            let mut data = client.data.write().await;
-            data.insert::<ClientDataKey>(client_data);
+    let mut client = match Client::builder(&config.token)
+        .event_handler(Handler)
+        .framework(framework)
+        .await
+    {
+        Ok(c) => c,
+        Err(e) => {
+            error!("Failed to create client: {}", e);
+            return;
         }
+    };
 
-        info!("Logging in...");
-
-        tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
-
-        if let Err(why) = client.start().await {
-            error!("Error while running client: {}", why);
+    let client_data = match ClientData::init(client.shard_manager.clone(), config, db).await {
+        Ok(c) => {
+            // Add all post-init client data changes here
+            c.enabled_check_data.add_groups(&[&GENERAL_GROUP]);
+            c
         }
+        Err(e) => {
+            error!("Client Data Initialization failed: {}", e);
+            return;
+        }
+    };
 
-        drop(client);
-    });
+    {
+        let mut data = client.data.write().await;
+        data.insert::<ClientDataKey>(client_data);
+    }
 
-    info!("Stopping Tokio Runtime...");
-    // TODO: Add a timeout to always shut down properly / Can i report when this fails?
-    // tokio_rt.shutdown_timeout(TOKIO_RT_SHUTDOWN_DURATION);
-    // Avoid using shutdown_timeout. Blocked on: https://github.com/tokio-rs/tokio/issues/2314
-    drop(tokio_rt);
+    info!("Logging in...");
 
-    info!("Successful Shutdown");
+    tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
+
+    if let Err(why) = client.start().await {
+        error!("Error while running client: {}", why);
+    }
+
+    drop(client);
 }
