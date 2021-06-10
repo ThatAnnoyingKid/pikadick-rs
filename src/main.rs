@@ -225,6 +225,8 @@ fn unrecognised_command_handler<'fut>(
     command_name: &'fut str,
 ) -> BoxFuture<'fut, ()> {
     async move {
+        error!("Unrecognized command '{}'", command_name);
+
         let _ = msg
             .channel_id
             .say(

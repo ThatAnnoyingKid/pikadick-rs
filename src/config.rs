@@ -187,28 +187,19 @@ impl ValidationMessage {
     }
 }
 
-#[derive(Debug)]
+/// Validation Errors
+#[derive(Debug, thiserror::Error)]
 pub enum ValidationError {
+    #[error("invalid token")]
     InvalidToken,
+    #[error("missing status type")]
     MissingStatusType,
+    #[error("missing stream url type")]
     MissingStreamUrl,
 
-    #[allow(dead_code)]
+    #[error("{0}")]
     Generic(Cow<'static, str>),
 }
-
-impl std::fmt::Display for ValidationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ValidationError::InvalidToken => write!(f, "Invalid Token"),
-            ValidationError::MissingStatusType => write!(f, "Missing Status Type"),
-            ValidationError::MissingStreamUrl => write!(f, "Missing Stream Url"),
-            ValidationError::Generic(err) => write!(f, "{}", err),
-        }
-    }
-}
-
-impl std::error::Error for ValidationError {}
 
 #[derive(Copy, Clone, Debug)]
 pub enum Severity {
