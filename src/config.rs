@@ -39,6 +39,9 @@ pub struct Config {
     /// DeviantArt config
     pub deviantart: DeviantArtConfig,
 
+    /// The log config
+    pub log: Option<LogConfig>,
+
     /// Unknown extra data
     #[serde(flatten)]
     pub extra: HashMap<String, toml::Value>,
@@ -63,6 +66,21 @@ pub struct DeviantArtConfig {
 
     /// Password
     pub password: String,
+
+    /// Unknown extra data
+    #[serde(flatten)]
+    pub extra: HashMap<String, toml::Value>,
+}
+
+/// Log Config
+#[derive(Deserialize, Debug)]
+pub struct LogConfig {
+    /// The OTLP endpoint
+    pub endpoint: Option<String>,
+
+    /// Headers
+    #[serde(default)]
+    pub headers: HashMap<String, String>,
 
     /// Unknown extra data
     #[serde(flatten)]

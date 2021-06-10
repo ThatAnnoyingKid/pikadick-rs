@@ -393,9 +393,14 @@ fn real_main(
 
 /// The async entry
 async fn async_main(config: Config, missing_data_dir: bool) {
-    let (log_file_writer, _guard) = crate::logger::setup()
-        .context("failed to initialize logger")
-        .unwrap();
+    let (log_file_writer, _guard) =
+        match crate::logger::setup(config.log.as_ref()).context("failed to initialize logger") {
+            Ok(data) => data,
+            Err(e) => {
+                eprintln!("{:?}", e);
+                return;
+            }
+        };
 
     info!("Initalizing File Logger...");
     let log_file = tracing_appender::rolling::hourly(&config.data_dir, "log.txt");
