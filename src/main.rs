@@ -71,6 +71,7 @@ use tracing::{
     error,
     info,
     warn,
+    Instrument,
 };
 use tracing_appender::non_blocking::WorkerGuard;
 
@@ -104,8 +105,8 @@ impl EventHandler for Handler {
         info!("Logged in as '{}'", ready.user.name);
     }
 
-    async fn resume(&self, _ctx: Context, _resumed: ResumedEvent) {
-        warn!("Resumed connection");
+    async fn resume(&self, _ctx: Context, resumed: ResumedEvent) {
+        warn!("Resumed connection. Trace: {:?}", resumed.trace);
     }
 
     async fn message(&self, ctx: Context, msg: Message) {
@@ -116,7 +117,19 @@ impl EventHandler for Handler {
         let reddit_embed_data = client_data.reddit_embed_data.clone();
         drop(data_lock);
 
-        if let Err(e) = reddit_embed_data.process_msg(&ctx, &msg).await {
+        let message_span = tracing::info_span!(
+            "Processing a message",
+            author = %msg.author.id,
+            guild = ?msg.guild_id,
+            content = %msg.content,
+        );
+        let _message_span_guard = message_span.enter();
+        let reddit_scan_span = tracing::info_span!("Scanning for reddit urls");
+        if let Err(e) = reddit_embed_data
+            .process_msg(&ctx, &msg)
+            .instrument(reddit_scan_span)
+            .await
+        {
             error!("Failed to generate reddit embed: {}", e);
         }
     }

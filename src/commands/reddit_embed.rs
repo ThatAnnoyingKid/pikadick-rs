@@ -62,42 +62,9 @@ impl RedditEmbedData {
         }
     }
 
-    /// Gets the subreddit and post id from a reddit url and returns a tuple or the two in that order.
-    pub fn parse_post_url<'a>(&self, url: &'a Url) -> Option<(&'a str, &'a str)> {
-        // Reddit path:
-        // /r/dankmemes/comments/h966lq/davie_is_shookt/
-
-        // Template:
-        // /r/<subreddit>/comments/<post_id>/<post_title (irrelevant)>/
-
-        // Parts:
-        // r
-        // <subreddit>
-        // comments
-        // <post_id>
-        // <post_title>
-        // (Nothing, should be empty or not existent)
-
-        let mut iter = url.path_segments()?;
-
-        if iter.next()? != "r" {
-            return None;
-        }
-
-        let subreddit = iter.next()?;
-
-        if iter.next()? != "comments" {
-            return None;
-        }
-
-        let post_id = iter.next()?;
-
-        // TODO: Should we reject urls with the wrong ending?
-
-        Some((subreddit, post_id))
-    }
-
-    /// Gets the original post. Resolves crossposts.
+    /// Get the original post from a given subreddit and post id.
+    ///
+    /// This resolves crossposts. Currently only resolves 1 layer.
     pub async fn get_original_post(
         &self,
         subreddit: &str,
@@ -164,7 +131,8 @@ impl RedditEmbedData {
         }
     }
 
-    /// Process a message and insert an embed if neccesary
+    /// Process a message and insert an embed if neccesary.
+    #[tracing::instrument(level = "info", skip(self, ctx, msg))]
     pub async fn process_msg(&self, ctx: &Context, msg: &Message) -> CommandResult {
         let data_lock = ctx.data.read().await;
         let client_data = data_lock
@@ -176,6 +144,7 @@ impl RedditEmbedData {
         let guild_id = match msg.guild_id {
             Some(id) => id,
             None => {
+                // Only embed guild links
                 return Ok(());
             }
         };
@@ -197,10 +166,13 @@ impl RedditEmbedData {
         };
 
         if !is_enabled_for_guild || msg.author.bot {
+            // Don't process if it isn't enabled or the author is a bot
             return Ok(());
         }
 
-        // NOTE: Regex doesn't HAVE to be perfect. Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
+        // NOTE: Regex doesn't HAVE to be perfect.
+        // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
+        // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
         let urls: Vec<Url> = URL_REGEX
             .find_iter(&msg.content)
             .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
@@ -222,11 +194,11 @@ impl RedditEmbedData {
 
         // Embed for each url
         // NOTE: we short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem,
-        // esp. since serenity retries each req once
+        // especially since serenity retries each req once
         for url in urls.iter() {
             // This is sometimes TOO smart and finds data for invalid urls...
             // TODO: Consider making parsing stricter
-            if let Some((subreddit, post_id)) = self.parse_post_url(&url) {
+            if let Some((subreddit, post_id)) = parse_post_url(&url) {
                 // Try cache
                 let maybe_url = self
                     .cache
@@ -277,6 +249,44 @@ impl RedditEmbedData {
 
         Ok(())
     }
+}
+
+/// Gets the subreddit and post id from a reddit url.
+///
+/// # Returns
+/// Returns a tuple or the the subreddit and post id in that order.
+pub fn parse_post_url(url: &Url) -> Option<(&str, &str)> {
+    // Reddit path:
+    // /r/dankmemes/comments/h966lq/davie_is_shookt/
+
+    // Template:
+    // /r/<subreddit>/comments/<post_id>/<post_title (irrelevant)>/
+
+    // Parts:
+    // r
+    // <subreddit>
+    // comments
+    // <post_id>
+    // <post_title>
+    // (Nothing, should be empty or not existent)
+
+    let mut iter = url.path_segments()?;
+
+    if iter.next()? != "r" {
+        return None;
+    }
+
+    let subreddit = iter.next()?;
+
+    if iter.next()? != "comments" {
+        return None;
+    }
+
+    let post_id = iter.next()?;
+
+    // TODO: Should we reject urls with the wrong ending?
+
+    Some((subreddit, post_id))
 }
 
 impl CacheStatsProvider for RedditEmbedData {
