@@ -19,7 +19,6 @@ heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] 
 indexmap = "1.6.2"
 insta = { path = "./lib/insta-rs" }
 lazy_static = "1.4.0"
-log = "0.4.14"
 minimax = { path = "./lib/minimax-rs" }
 nekos = { path = "./lib/nekos-rs" }
 opentelemetry = { version = "0.14.0", features = [ "rt-tokio" ] }

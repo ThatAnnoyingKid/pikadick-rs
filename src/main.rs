@@ -184,6 +184,27 @@ async fn handle_ctrl_c(shard_manager: Arc<Mutex<ShardManager>>) {
     };
 }
 
+fn before_handler<'fut>(
+    _ctx: &'fut Context,
+    msg: &'fut Message,
+    cmd_name: &'fut str,
+) -> BoxFuture<'fut, bool> {
+    async move {
+        let request_span = tracing::info_span!(
+            "Processing a command",
+            cmd_name = %cmd_name,
+            author = %msg.author.id,
+            guild = ?msg.guild_id,
+            content = %msg.content,
+        );
+        let _request_span_guard = request_span.enter();
+        info!("Allowing command to process");
+
+        true
+    }
+    .boxed()
+}
+
 fn after_handler<'fut>(
     _ctx: &'fut Context,
     _msg: &'fut Message,
@@ -440,6 +461,7 @@ async fn async_main(config: Config, missing_data_dir: bool) {
         .await
         .bucket("insta-dl", |b| b.delay(10))
         .await
+        .before(before_handler)
         .after(after_handler)
         .unrecognised_command(unrecognised_command_handler)
         .on_dispatch_error(process_dispatch_error);
