@@ -148,8 +148,12 @@ pub fn setup(
     let file_writer = DelayWriter::new();
     let (nonblocking_file_writer, guard) = tracing_appender::non_blocking(file_writer.clone());
 
-    let env_filter = tracing_subscriber::filter::EnvFilter::default()
-        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into());
+    // Only enable pikadick since serenity like puking in the logs during connection failures
+    let env_filter = tracing_subscriber::filter::EnvFilter::default().add_directive(
+        "pikadick=info"
+            .parse()
+            .context("failed to parse logging directive")?,
+    );
     let stderr_formatting_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
     let file_formatting_layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
