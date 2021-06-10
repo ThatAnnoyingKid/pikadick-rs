@@ -72,6 +72,7 @@ use tracing::{
     info,
     warn,
 };
+use tracing_appender::non_blocking::WorkerGuard;
 
 struct Handler;
 
@@ -341,7 +342,7 @@ fn load_config() -> anyhow::Result<Config> {
 }
 
 /// Pre-main setup
-fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool)> {
+fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, WorkerGuard)> {
     eprintln!("Starting tokio runtime...");
     let tokio_rt = RuntimeBuilder::new_multi_thread()
         .enable_all()
@@ -364,7 +365,12 @@ fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool)> {
         eprintln!("Data directory already exists.");
     }
 
-    Ok((tokio_rt, config, missing_data_dir))
+    eprintln!("Setting up logger...");
+    let guard = tokio_rt
+        .block_on(async { crate::logger::setup(&config) })
+        .context("failed to initialize logger")?;
+
+    Ok((tokio_rt, config, missing_data_dir, guard))
 }
 
 /// The main entry.
@@ -374,7 +380,7 @@ fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool)> {
 /// This also calls setup operations like loading config and setting up the tokio runtime,
 /// logging errors to the stderr instead of the loggers, which are not initialized yet.
 fn main() {
-    let (tokio_rt, config, missing_data_dir) = match pre_main_setup() {
+    let (tokio_rt, config, missing_data_dir, worker_guard) = match pre_main_setup() {
         Ok(data) => data,
         Err(e) => {
             eprintln!("{:?}", e);
@@ -384,7 +390,7 @@ fn main() {
         }
     };
 
-    let exit_code = match real_main(tokio_rt, config, missing_data_dir) {
+    let exit_code = match real_main(tokio_rt, config, missing_data_dir, worker_guard) {
         Ok(()) => 0,
         Err(e) => {
             error!("{:?}", e);
@@ -400,6 +406,7 @@ fn real_main(
     tokio_rt: tokio::runtime::Runtime,
     config: Config,
     missing_data_dir: bool,
+    _worker_guard: WorkerGuard,
 ) -> anyhow::Result<()> {
     tokio_rt.block_on(async_main(config, missing_data_dir));
 
@@ -416,24 +423,6 @@ fn real_main(
 
 /// The async entry
 async fn async_main(config: Config, missing_data_dir: bool) {
-    let (log_file_writer, _guard) =
-        match crate::logger::setup(config.log.as_ref()).context("failed to initialize logger") {
-            Ok(data) => data,
-            Err(e) => {
-                eprintln!("{:?}", e);
-                return;
-            }
-        };
-
-    info!("Initalizing File Logger...");
-    let log_file = tracing_appender::rolling::hourly(&config.data_dir, "log.txt");
-    if let Err(e) = log_file_writer.init(log_file) {
-        error!("Failed to initalize file logger: {}", e);
-        return;
-    }
-
-    drop(log_file_writer);
-
     info!("Opening database...");
     let db_path = config.data_dir.join("pikadick.sqlite");
     let db = match Database::new(&db_path, missing_data_dir).await {

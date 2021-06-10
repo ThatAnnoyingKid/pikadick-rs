@@ -1,26 +1,28 @@
 mod delay_writer;
 
 pub use self::delay_writer::DelayWriter;
-use crate::config::LogConfig;
+use crate::config::Config;
 use anyhow::Context;
 use tonic::metadata::{
     MetadataKey,
     MetadataMap,
 };
-use tracing_subscriber::layer::SubscriberExt;
+use tracing_appender::non_blocking::WorkerGuard;
+use tracing_log::LogTracer;
+use tracing_subscriber::{
+    filter::EnvFilter,
+    layer::SubscriberExt,
+};
 
-/// Try to setup a logger
-pub fn setup(
-    config: Option<&LogConfig>,
-) -> anyhow::Result<(
-    DelayWriter<tracing_appender::rolling::RollingFileAppender>,
-    tracing_appender::non_blocking::WorkerGuard,
-)> {
-    let file_writer = DelayWriter::new();
-    let (nonblocking_file_writer, guard) = tracing_appender::non_blocking(file_writer.clone());
+/// Try to setup a logger.
+///
+/// Must be called from a tokio runtime.
+pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
+    let file_writer = tracing_appender::rolling::hourly(&config.data_dir, "log.txt");
+    let (nonblocking_file_writer, guard) = tracing_appender::non_blocking(file_writer);
 
     // Only enable pikadick since serenity like puking in the logs during connection failures
-    let env_filter = tracing_subscriber::filter::EnvFilter::default().add_directive(
+    let env_filter = EnvFilter::default().add_directive(
         "pikadick=info"
             .parse()
             .context("failed to parse logging directive")?,
@@ -30,7 +32,7 @@ pub fn setup(
         .with_ansi(false)
         .with_writer(nonblocking_file_writer);
 
-    let opentelemetry_layer = if let Some(config) = config {
+    let opentelemetry_layer = if let Some(config) = config.log.as_ref() {
         let mut map = MetadataMap::with_capacity(config.headers.len());
         for (k, v) in config.headers.iter() {
             let k = MetadataKey::from_bytes(k.as_bytes()).context("invalid header name")?;
@@ -70,7 +72,7 @@ pub fn setup(
         tracing::subscriber::set_global_default(subscriber).context("failed to set subscriber")?;
     }
 
-    tracing_log::LogTracer::init().context("failed to init log tracer")?;
+    LogTracer::init().context("failed to init log tracer")?;
 
-    Ok((file_writer, guard))
+    Ok(guard)
 }
