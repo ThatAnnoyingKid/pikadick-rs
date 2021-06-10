@@ -21,12 +21,19 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
     let file_writer = tracing_appender::rolling::hourly(&config.data_dir, "log.txt");
     let (nonblocking_file_writer, guard) = tracing_appender::non_blocking(file_writer);
 
-    // Only enable pikadick since serenity like puking in the logs during connection failures
-    let env_filter = EnvFilter::default().add_directive(
-        "pikadick=info"
-            .parse()
-            .context("failed to parse logging directive")?,
-    );
+    // Only enable pikadick since serenity likes puking in the logs during connection failures
+    // serenity's framework section seems ok as well
+    let env_filter = EnvFilter::default()
+        .add_directive(
+            "pikadick=info"
+                .parse()
+                .context("failed to parse logging directive")?,
+        )
+        .add_directive(
+            "serenity::framework::standard=info"
+                .parse()
+                .context("failed to parse logging directive")?,
+        );
     let stderr_formatting_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
     let file_formatting_layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
