@@ -11,10 +11,10 @@ use crate::{
     },
     ClientDataKey,
 };
+use anyhow::Context as _;
 use rand::seq::SliceRandom;
 use rule34::{
     Post,
-    RuleError,
     SearchResult,
 };
 use serenity::{
@@ -43,41 +43,48 @@ pub struct Rule34Client {
 impl Rule34Client {
     /// Make a new [`Rule34Client`].
     pub fn new() -> Rule34Client {
-        Default::default()
+        Rule34Client {
+            client: rule34::Client::new(),
+            search_cache: TimedCache::new(),
+            post_cache: TimedCache::new(),
+        }
     }
 
-    /// Search for a query
-    pub async fn search(
-        &self,
-        query: &str,
-    ) -> Result<Arc<TimedCacheEntry<SearchResult>>, RuleError> {
+    /// Search for a query.
+    #[tracing::instrument(skip(self))]
+    pub async fn search(&self, query: &str) -> anyhow::Result<Arc<TimedCacheEntry<SearchResult>>> {
         if let Some(entry) = self.search_cache.get_if_fresh(query) {
             return Ok(entry);
         }
 
         let offset = 0;
-        let results = self.client.search(query, offset).await?;
+        let results = self
+            .client
+            .search(query, offset)
+            .await
+            .context("failed to search rule34")?;
         self.search_cache.insert(String::from(query), results);
-
-        Ok(self
-            .search_cache
+        self.search_cache
             .get_if_fresh(query)
-            .expect("search cache entry expired"))
+            .context("search cache entry expired")
     }
 
     /// Get the [`Post`] for a given post id.
-    pub async fn get_post(&self, id: u64) -> Result<Arc<TimedCacheEntry<Post>>, RuleError> {
+    #[tracing::instrument(skip(self))]
+    pub async fn get_post(&self, id: u64) -> anyhow::Result<Arc<TimedCacheEntry<Post>>> {
         if let Some(entry) = self.post_cache.get_if_fresh(&id) {
             return Ok(entry);
         }
 
-        let post = self.client.get_post(id).await?;
+        let post = self
+            .client
+            .get_post(id)
+            .await
+            .context("failed to get post")?;
         self.post_cache.insert(id, post);
-
-        Ok(self
-            .post_cache
+        self.post_cache
             .get_if_fresh(&id)
-            .expect("post cache entry expired"))
+            .context("post cache entry expired")
     }
 }
 
@@ -122,19 +129,24 @@ async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             if let Some(post_id) = maybe_post_id {
                 match client.get_post(post_id).await {
                     Ok(post) => {
-                        msg.channel_id
-                            .say(&ctx.http, post.data().image_url.as_str())
-                            .await?;
+                        let post_data = post.data();
+                        let image_url = post_data.image_url.as_str();
+                        info!("Sending {}", image_url);
+
+                        msg.channel_id.say(&ctx.http, image_url).await?;
                         loading.send_ok();
                     }
                     Err(e) => {
+                        error!("{:?}", e);
+
                         msg.channel_id
-                            .say(&ctx.http, format!("Failed to get rule34 post, got: {}", e))
+                            .say(&ctx.http, format!("Failed to get rule34 post: {:?}", e))
                             .await?;
-                        error!("Failed to get rule34 post: {}", e);
                     }
                 }
             } else {
+                info!("No results");
+
                 msg.channel_id
                     .say(
                         &ctx.http,
@@ -144,10 +156,10 @@ async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             }
         }
         Err(e) => {
+            error!("Failed to get search results: {:?}", e);
             msg.channel_id
                 .say(&ctx.http, format!("Failed to get rule34 post, got: {}", e))
                 .await?;
-            error!("Failed to get rule34 search result: {}", e);
         }
     }
 

@@ -71,7 +71,6 @@ use tracing::{
     error,
     info,
     warn,
-    Instrument,
 };
 use tracing_appender::non_blocking::WorkerGuard;
 
@@ -109,6 +108,7 @@ impl EventHandler for Handler {
         warn!("Resumed connection. Trace: {:?}", resumed.trace);
     }
 
+    #[tracing::instrument(skip(self, ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
     async fn message(&self, ctx: Context, msg: Message) {
         let data_lock = ctx.data.read().await;
         let client_data = data_lock
@@ -117,19 +117,7 @@ impl EventHandler for Handler {
         let reddit_embed_data = client_data.reddit_embed_data.clone();
         drop(data_lock);
 
-        let message_span = tracing::info_span!(
-            "Processing a message",
-            author = %msg.author.id,
-            guild = ?msg.guild_id,
-            content = %msg.content,
-        );
-        let _message_span_guard = message_span.enter();
-        let reddit_scan_span = tracing::info_span!("Scanning for reddit urls");
-        if let Err(e) = reddit_embed_data
-            .process_msg(&ctx, &msg)
-            .instrument(reddit_scan_span)
-            .await
-        {
+        if let Err(e) = reddit_embed_data.process_msg(&ctx, &msg).await {
             error!("Failed to generate reddit embed: {}", e);
         }
     }
@@ -198,25 +186,14 @@ async fn handle_ctrl_c(shard_manager: Arc<Mutex<ShardManager>>) {
     };
 }
 
+#[tracing::instrument(skip(_ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
 fn before_handler<'fut>(
     _ctx: &'fut Context,
     msg: &'fut Message,
     cmd_name: &'fut str,
 ) -> BoxFuture<'fut, bool> {
-    async move {
-        let request_span = tracing::info_span!(
-            "Processing a command",
-            cmd_name = %cmd_name,
-            author = %msg.author.id,
-            guild = ?msg.guild_id,
-            content = %msg.content,
-        );
-        let _request_span_guard = request_span.enter();
-        info!("Allowing command to process");
-
-        true
-    }
-    .boxed()
+    info!("Allowing command to process");
+    async move { true }.boxed()
 }
 
 fn after_handler<'fut>(

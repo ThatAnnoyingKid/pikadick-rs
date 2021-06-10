@@ -13,7 +13,7 @@ pub enum FromHtmlError {
     MissingContentDiv,
 
     /// Invalid [`SearchEntry`]
-    #[error("invalid search result: {0}")]
+    #[error("invalid search entry")]
     InvalidSearchEntry(#[from] FromElementError),
 }
 
@@ -55,15 +55,15 @@ pub enum FromElementError {
     #[error("missing element '{0}'")]
     MissingElement(&'static str),
 
-    #[error("invalid id: '{0}'")]
+    #[error("invalid id")]
     InvalidId(std::num::ParseIntError),
 
     /// Invalid Link Url
-    #[error("invalid link: {0}")]
+    #[error("invalid link")]
     InvalidLink(url::ParseError),
 
     /// Invalid Thumbnail Url
-    #[error("invalid thumbnail: {0}")]
+    #[error("invalid thumbnail")]
     InvalidThumbnailUrl(url::ParseError),
 }
 
