@@ -65,6 +65,10 @@ use std::{
     collections::HashSet,
     path::Path,
     sync::Arc,
+    time::{
+        Duration,
+        Instant,
+    },
 };
 use tokio::runtime::Builder as RuntimeBuilder;
 use tracing::{
@@ -73,6 +77,8 @@ use tracing::{
     warn,
 };
 use tracing_appender::non_blocking::WorkerGuard;
+
+const TOKIO_RT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
 
 struct Handler;
 
@@ -400,14 +406,15 @@ fn real_main(
 ) -> anyhow::Result<()> {
     tokio_rt.block_on(async_main(config, missing_data_dir));
 
-    info!("Stopping Tokio Runtime...");
-    // TODO: Add a timeout to always shut down properly / Can i report when this fails?
-    // tokio_rt.shutdown_timeout(TOKIO_RT_SHUTDOWN_DURATION);
-    // Avoid using shutdown_timeout. Blocked on: https://github.com/tokio-rs/tokio/issues/2314
-    drop(tokio_rt);
+    let shutdown_start = Instant::now();
+    info!(
+        "Shutting down tokio runtime (shutdown timeout is {:?})...",
+        TOKIO_RT_SHUTDOWN_TIMEOUT
+    );
+    tokio_rt.shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
+    info!("Shutdown tokio runtime in {:?}", shutdown_start.elapsed());
 
     info!("Successful Shutdown");
-
     Ok(())
 }
 
