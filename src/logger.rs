@@ -40,6 +40,13 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
         .with_writer(nonblocking_file_writer);
 
     let opentelemetry_layer = if let Some(config) = config.log.as_ref() {
+        opentelemetry::global::set_error_handler(|e| {
+            // Print to stderr.
+            // There was an error logging something, so we avoid using the logging system.
+            eprintln!("opentelemetry error: {:?}", anyhow::anyhow!(e));
+        })
+        .context("failed to set opentelemetry error handler")?;
+
         let mut map = MetadataMap::with_capacity(config.headers.len());
         for (k, v) in config.headers.iter() {
             let k = MetadataKey::from_bytes(k.as_bytes()).context("invalid header name")?;
