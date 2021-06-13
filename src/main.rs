@@ -366,6 +366,7 @@ fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, Wo
         .block_on(async { crate::logger::setup(&config) })
         .context("failed to initialize logger")?;
 
+    eprintln!();
     Ok((tokio_rt, config, missing_data_dir, guard))
 }
 
@@ -468,6 +469,8 @@ async fn async_main(config: Config, missing_data_dir: bool) {
         }
     };
 
+    tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
+
     let client_data = match ClientData::init(client.shard_manager.clone(), config, db).await {
         Ok(c) => {
             // Add all post-init client data changes here
@@ -486,9 +489,6 @@ async fn async_main(config: Config, missing_data_dir: bool) {
     }
 
     info!("Logging in...");
-
-    tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
-
     if let Err(why) = client.start().await {
         error!("Error while running client: {}", why);
     }
