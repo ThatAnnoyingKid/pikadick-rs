@@ -73,6 +73,9 @@ servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca146
 # This is a PR that updates hashbrown to the latest version, allowing us to use only one hashbrown version.
 indexmap = { git = "https://github.com/cuviper/indexmap", branch = "hashbrown-0.11" }
 
+# Fix bug in token validation
+serenity = { git = "https://github.com/adumbidiot/serenity", branch = "fix-validate-token" }
+
 [workspace]
 members = [ 
     "lib/fml-rs",
