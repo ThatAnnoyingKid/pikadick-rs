@@ -331,7 +331,7 @@ fn load_config() -> anyhow::Result<Config> {
     }
 
     if error_count != 0 {
-        anyhow::bail!("validation failed with {} errors.", error_count);
+        anyhow::bail!("Validation failed with {} errors.", error_count);
     }
 
     Ok(config)
