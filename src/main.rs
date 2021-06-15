@@ -338,7 +338,7 @@ fn load_config() -> anyhow::Result<Config> {
 }
 
 /// Pre-main setup
-fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, WorkerGuard)> {
+fn setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, WorkerGuard)> {
     eprintln!("Starting tokio runtime...");
     let tokio_rt = RuntimeBuilder::new_multi_thread()
         .enable_all()
@@ -377,7 +377,7 @@ fn pre_main_setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, Wo
 /// This also calls setup operations like loading config and setting up the tokio runtime,
 /// logging errors to the stderr instead of the loggers, which are not initialized yet.
 fn main() {
-    let (tokio_rt, config, missing_data_dir, worker_guard) = match pre_main_setup() {
+    let (tokio_rt, config, missing_data_dir, worker_guard) = match setup() {
         Ok(data) => data,
         Err(e) => {
             eprintln!("{:?}", e);
