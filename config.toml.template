@@ -12,3 +12,10 @@ key = "4dccf019bdfac" # Use this
 [deviantart]
 username = "[DEVIANT_USERNAME]"
 password = "[DEVIANT_PASSWORD]"
+
+# This section is optional
+[log]
+endpoint = "[ENDPOINT_URL]" # Endpoint for OTLP GRPC telemetry
+
+# Headers for telemetry 
+[log.headers]

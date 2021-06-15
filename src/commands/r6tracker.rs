@@ -11,10 +11,6 @@ use crate::{
     },
     ClientDataKey,
 };
-use log::{
-    error,
-    info,
-};
 use r6tracker::Error as R6Error;
 use serenity::{
     framework::standard::{
@@ -26,6 +22,10 @@ use serenity::{
     prelude::*,
 };
 use std::sync::Arc;
+use tracing::{
+    error,
+    info,
+};
 
 /// R6Tracker stats for a user
 #[derive(Debug)]

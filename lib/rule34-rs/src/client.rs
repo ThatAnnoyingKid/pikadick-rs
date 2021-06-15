@@ -6,6 +6,10 @@ use crate::{
     RuleError,
 };
 use bytes::Bytes;
+use reqwest::header::{
+    HeaderMap,
+    HeaderValue,
+};
 use scraper::Html;
 use tokio::io::{
     AsyncWrite,
@@ -13,20 +17,34 @@ use tokio::io::{
 };
 use url::Url;
 
-const DEFAULT_USER_AGENT_STR: &str = "rule34-rs";
-
 /// A Rule34 Client
 #[derive(Debug, Clone)]
 pub struct Client {
-    /// The inner http client. This probably should't be used by you.
+    /// The inner http client.
+    ///
+    /// This probably shouldn't be used by you.
     pub client: reqwest::Client,
 }
 
 impl Client {
     /// Make a new [`Client`]
     pub fn new() -> Self {
+        let mut default_headers = HeaderMap::new();
+        default_headers.insert(
+            reqwest::header::ACCEPT_LANGUAGE,
+            HeaderValue::from_static("en,en-US;q=0,5"),
+        );
+        default_headers.insert(reqwest::header::ACCEPT, HeaderValue::from_static("*/*"));
+        default_headers.insert(
+            reqwest::header::REFERER,
+            HeaderValue::from_static("https://rule34.xxx/"),
+        );
+
         Client {
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4514.0 Safari/537.36")
+                .default_headers(default_headers).build()
+                .expect("failed to build rule34 client"),
         }
     }
 
@@ -35,7 +53,6 @@ impl Client {
         Ok(self
             .client
             .get(uri)
-            .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT_STR)
             .send()
             .await?
             .error_for_status()?
@@ -97,7 +114,6 @@ impl Client {
         Ok(self
             .client
             .get(url)
-            .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT_STR)
             .send()
             .await?
             .error_for_status()?
@@ -113,7 +129,6 @@ impl Client {
         let mut res = self
             .client
             .get(url.as_str())
-            .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT_STR)
             .send()
             .await?
             .error_for_status()?;

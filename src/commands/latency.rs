@@ -2,7 +2,6 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
-use log::warn;
 use serenity::{
     client::bridge::gateway::ShardId,
     framework::standard::{
@@ -13,6 +12,7 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
+use tracing::warn;
 
 #[command]
 #[description("Get the bot's latency in this server")]

@@ -9,7 +9,7 @@ use url::Url;
 #[derive(Debug, thiserror::Error)]
 pub enum FromHtmlError {
     /// Invalid thumbnail url
-    #[error("invalid thumbnail url: {0}")]
+    #[error("invalid thumbnail url")]
     InvalidThumbUrl(url::ParseError),
 
     /// Missing the options section
@@ -21,7 +21,7 @@ pub enum FromHtmlError {
     MissingImageUrl,
 
     /// invalid image url
-    #[error("{0}")]
+    #[error("invalid image url")]
     InvalidImageUrl(url::ParseError),
 }
 

@@ -18,7 +18,6 @@ use heim::{
         Frequency,
     },
 };
-use log::warn;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -38,6 +37,7 @@ use systemstat::{
     platform::common::Platform,
     System,
 };
+use tracing::warn;
 use uom::{
     fmt::DisplayStyle,
     si::f32::{

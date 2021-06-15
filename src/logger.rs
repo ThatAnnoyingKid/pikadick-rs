@@ -1,165 +1,92 @@
+mod delay_writer;
+
+pub use self::delay_writer::DelayWriter;
+use crate::config::Config;
 use anyhow::Context;
-use fern::colors::{
-    Color,
-    ColoredLevelConfig,
+use tonic::metadata::{
+    MetadataKey,
+    MetadataMap,
 };
-use parking_lot::Mutex as PMutex;
-use std::{
-    fs::File,
-    io::Write,
-    sync::Arc,
+use tracing_appender::non_blocking::WorkerGuard;
+use tracing_log::LogTracer;
+use tracing_subscriber::{
+    filter::EnvFilter,
+    layer::SubscriberExt,
 };
 
-/// The mut impl of a DelayWriter
-#[derive(Debug)]
-pub enum DelayWriterInner {
-    /// The buffered data.
-    Buffer(Vec<u8>),
+/// Try to setup a logger.
+///
+/// Must be called from a tokio runtime.
+pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
+    let file_writer = tracing_appender::rolling::hourly(&config.data_dir, "log.txt");
+    let (nonblocking_file_writer, guard) = tracing_appender::non_blocking(file_writer);
 
-    /// The file being written to.
-    File(File),
-}
+    // Only enable pikadick since serenity likes puking in the logs during connection failures
+    // serenity's framework section seems ok as well
+    let env_filter = EnvFilter::default()
+        .add_directive(
+            "pikadick=info"
+                .parse()
+                .context("failed to parse logging directive")?,
+        )
+        .add_directive(
+            "serenity::framework::standard=info"
+                .parse()
+                .context("failed to parse logging directive")?,
+        );
+    let stderr_formatting_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
+    let file_formatting_layer = tracing_subscriber::fmt::layer()
+        .with_ansi(false)
+        .with_writer(nonblocking_file_writer);
 
-impl DelayWriterInner {
-    /// Make a new DelayWriterInner with an empty buffer
-    fn new() -> Self {
-        Self::Buffer(Vec::new())
-    }
+    let opentelemetry_layer = if let Some(config) = config.log.as_ref() {
+        opentelemetry::global::set_error_handler(|e| {
+            // Print to stderr.
+            // There was an error logging something, so we avoid using the logging system.
+            eprintln!("opentelemetry error: {:?}", anyhow::anyhow!(e));
+        })
+        .context("failed to set opentelemetry error handler")?;
 
-    /// Try to init this DelayWriterInner with a file. Will return an error if this is already initalized.
-    fn init(&mut self, mut file: File) -> Result<(), std::io::Error> {
-        let buffer = match self {
-            Self::Buffer(bytes) => bytes,
-            Self::File(_) => {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Already Initalized",
-                ));
+        let mut map = MetadataMap::with_capacity(config.headers.len());
+        for (k, v) in config.headers.iter() {
+            let k = MetadataKey::from_bytes(k.as_bytes()).context("invalid header name")?;
+            map.insert(k, v.parse().context("invalid header value")?);
+        }
+
+        let tracer = {
+            let mut tracer = opentelemetry_otlp::new_pipeline();
+
+            if let Some(endpoint) = config.endpoint.as_ref() {
+                tracer = tracer.with_endpoint(endpoint);
             }
+
+            tracer
+                .with_tonic()
+                .with_metadata(map)
+                .with_tls_config(Default::default())
+                .install_batch(opentelemetry::runtime::Tokio)
+                .context("failed to install otlp opentelemetry exporter")?
         };
 
-        file.write_all(buffer)?;
+        Some(tracing_opentelemetry::layer().with_tracer(tracer))
+    } else {
+        None
+    };
 
-        *self = Self::File(file);
+    let subscriber = tracing_subscriber::Registry::default()
+        .with(env_filter)
+        .with(file_formatting_layer)
+        .with(stderr_formatting_layer);
 
-        Ok(())
-    }
-}
+    if let Some(opentelemetry_layer) = opentelemetry_layer {
+        let subscriber = subscriber.with(opentelemetry_layer);
 
-impl Write for DelayWriterInner {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        match self {
-            Self::Buffer(buffer) => buffer.write(buf),
-            Self::File(file) => file.write(buf),
-        }
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        match self {
-            Self::Buffer(buffer) => buffer.flush(),
-            Self::File(file) => file.flush(),
-        }
+        tracing::subscriber::set_global_default(subscriber).context("failed to set subscriber")?;
+    } else {
+        tracing::subscriber::set_global_default(subscriber).context("failed to set subscriber")?;
     }
 
-    fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
-        match self {
-            Self::Buffer(buffer) => buffer.write_all(buf),
-            Self::File(file) => file.write_all(buf),
-        }
-    }
-}
+    LogTracer::init().context("failed to init log tracer")?;
 
-/// A writer that buffers data until it is assigned a file to write to.
-#[derive(Clone, Debug)]
-pub struct DelayWriter(Arc<PMutex<DelayWriterInner>>);
-
-impl DelayWriter {
-    /// Create a new DelayWriter
-    pub fn new() -> Self {
-        Self(Arc::new(PMutex::new(DelayWriterInner::new())))
-    }
-
-    /// Try to init this DelayWriter
-    pub fn init(&self, file: File) -> Result<(), std::io::Error> {
-        let mut lock = self.0.lock();
-        lock.init(file)
-    }
-}
-
-impl Default for DelayWriter {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Write for DelayWriter {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let mut lock = self.0.lock();
-
-        lock.write(buf)
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        let mut lock = self.0.lock();
-
-        lock.flush()
-    }
-
-    fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
-        let mut lock = self.0.lock();
-
-        lock.write_all(buf)
-    }
-}
-
-/// Try to setup a logger
-pub fn setup() -> anyhow::Result<DelayWriter> {
-    let colors_line = ColoredLevelConfig::new()
-        .error(Color::Red)
-        .warn(Color::Yellow)
-        .info(Color::Cyan)
-        .debug(Color::White)
-        .trace(Color::BrightBlack);
-
-    let file_writer = DelayWriter::new();
-    let file_logger = fern::Dispatch::new()
-        .format(move |out, message, record| {
-            out.finish(format_args!(
-                "{}[{}][{}] {}",
-                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
-                record.target(),
-                record.level(),
-                message
-            ))
-        })
-        .level(log::LevelFilter::Info)
-        .chain(Box::new(file_writer.clone()) as Box<dyn Write + Send>);
-
-    let term_logger = fern::Dispatch::new()
-        .format(move |out, message, record| {
-            out.finish(format_args!(
-                "{}[{}][{}] {}",
-                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
-                record.target(),
-                colors_line.color(record.level()),
-                message
-            ))
-        })
-        .level(log::LevelFilter::Info)
-        .level_for("tracing", log::LevelFilter::Warn)
-        .level_for("serenity", log::LevelFilter::Warn)
-        .level_for(
-            "serenity::client::bridge::gateway::shard_runner",
-            log::LevelFilter::Error,
-        )
-        .level_for("sqlx::query", log::LevelFilter::Error)
-        .chain(std::io::stdout());
-
-    fern::Dispatch::new()
-        .chain(file_logger)
-        .chain(term_logger)
-        .apply()
-        .context("failed to set logger")?;
-
-    Ok(file_writer)
+    Ok(guard)
 }

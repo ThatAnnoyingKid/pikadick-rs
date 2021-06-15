@@ -5,7 +5,6 @@ use crate::{
     },
     ClientDataKey,
 };
-use log::error;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -16,6 +15,7 @@ use serenity::{
     prelude::*,
 };
 use std::fmt::Write;
+use tracing::error;
 
 // Broken in help:
 // #[required_permissions("ADMINISTRATOR")]

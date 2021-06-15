@@ -12,7 +12,6 @@ use fml::{
     types::Article,
     FmlResult,
 };
-use log::error;
 use serenity::{
     client::Context,
     framework::standard::{
@@ -23,6 +22,7 @@ use serenity::{
     model::channel::Message,
 };
 use std::sync::Arc;
+use tracing::error;
 
 /// A caching fml client
 #[derive(Clone, Debug)]

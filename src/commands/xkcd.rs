@@ -2,7 +2,6 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
-use log::error;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -12,6 +11,7 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
+use tracing::error;
 
 #[command]
 #[description("Get a random comic from Xkcd")]

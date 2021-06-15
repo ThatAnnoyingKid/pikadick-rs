@@ -1,5 +1,4 @@
 use crate::ClientDataKey;
-use log::error;
 use parking_lot::Mutex;
 use serenity::{
     client::Context,
@@ -17,6 +16,7 @@ use std::{
     collections::HashMap,
     sync::Arc,
 };
+use tracing::error;
 
 type MutexGuard<'a, T> = parking_lot::lock_api::MutexGuard<'a, parking_lot::RawMutex, T>;
 

@@ -1,5 +1,4 @@
 use anyhow::Context;
-use log::info;
 use minimax::tic_tac_toe::{
     TicTacToeState,
     TicTacToeTeam,
@@ -19,6 +18,7 @@ use tiny_skia::{
     Transform,
 };
 use tokio::sync::Semaphore;
+use tracing::info;
 use ttf_parser::{
     Face,
     OutlineBuilder,

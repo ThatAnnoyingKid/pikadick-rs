@@ -9,7 +9,6 @@ use crate::{
 };
 use crossbeam::queue::ArrayQueue;
 use indexmap::set::IndexSet;
-use log::error;
 use nekos::NekosError;
 use parking_lot::RwLock;
 use rand::Rng;
@@ -26,6 +25,7 @@ use std::{
     str::FromStr,
     sync::Arc,
 };
+use tracing::error;
 use url::Url;
 
 /// Max images per single request

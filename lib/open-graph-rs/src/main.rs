@@ -15,31 +15,25 @@ struct CommandOptions {
 }
 
 fn main() {
-    let exit_code = {
-        let options: CommandOptions = argh::from_env();
-        let tokio_rt = match tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()
-        {
-            Ok(tokio_rt) => tokio_rt,
-            Err(e) => {
-                eprintln!("Failed to start tokio runtime: {}", e);
-                return;
-            }
-        };
-
-        let ret = tokio_rt.block_on(async_main(options));
-
-        match ret {
-            Ok(()) => 0,
-            Err(e) => {
-                eprintln!("{}", e);
-                1
-            }
+    let options: CommandOptions = argh::from_env();
+    let exit_code = match real_main(options) {
+        Ok(()) => 0,
+        Err(e) => {
+            eprintln!("{:?}", e);
+            1
         }
     };
 
     std::process::exit(exit_code);
+}
+
+fn real_main(options: CommandOptions) -> anyhow::Result<()> {
+    let tokio_rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .context("failed to start tokio runtime")?;
+    tokio_rt.block_on(async_main(options))?;
+    Ok(())
 }
 
 async fn async_main(options: CommandOptions) -> anyhow::Result<()> {
@@ -82,7 +76,8 @@ async fn download_object(
         .await
         .context("failed to download object")?;
 
-    std::fs::write(&filename, buffer)
+    tokio::fs::write(&filename, buffer)
+        .await
         .with_context(|| format!("failed to download to file '{}'", filename))?;
 
     Ok(())

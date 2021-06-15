@@ -3,7 +3,6 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
-use log::error;
 use serenity::{
     client::Context,
     framework::standard::{
@@ -14,6 +13,7 @@ use serenity::{
     http::AttachmentType,
     model::prelude::*,
 };
+use tracing::error;
 
 #[command]
 #[description("Concede a game of Tic-Tac-Toe")]

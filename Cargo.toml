@@ -6,10 +6,10 @@ edition = "2018"
 license = "MIT/Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.40"
+anyhow = "1.0.41"
 bincode = "1.3.3"
 chrono = "0.4.19"
-crossbeam = "0.8.0"
+crossbeam = "0.8.1"
 dashmap = "4.0.2"
 deviantart = { path = "./lib/deviantart-rs" }
 fern = { version = "0.6.0", features = [ "colored" ] }
@@ -19,9 +19,10 @@ heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] 
 indexmap = "1.6.2"
 insta = { path = "./lib/insta-rs" }
 lazy_static = "1.4.0"
-log = "0.4.14"
 minimax = { path = "./lib/minimax-rs" }
 nekos = { path = "./lib/nekos-rs" }
+opentelemetry = { version = "0.14.0", features = [ "rt-tokio" ] }
+opentelemetry-otlp = { version = "0.7.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.11.1"
 quizizz = { path = "./lib/quizizz-rs" }
 r6stats = { path = "./lib/r6stats-rs" }
@@ -32,15 +33,21 @@ reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.126", features = [ "derive" ] }
-serenity = "0.10.7"
+serenity = "0.10.8"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
 sqlx = { version = "0.5.5", features = [ "sqlite", "runtime-tokio-rustls" ] }
-systemstat = "0.1.7"
+systemstat = "0.1.8"
 thiserror = "1.0.25"
 tiny-skia = { version = "0.5.1", features = [ "std", "simd", "png-format" ], default-features = false }
-tokio = { version = "1.6.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tokio = { version = "1.6.1", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"
-ttf-parser = "0.12.1"
+tonic = "0.4.3"
+tracing = "0.1.26"
+tracing-appender = "0.1.2"
+tracing-log = "0.1.2"
+tracing-opentelemetry = "0.13.0"
+tracing-subscriber = { version = "0.2.18", features = [ "env-filter", "fmt", "parking_lot" ] }
+ttf-parser = "0.12.2"
 uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs" }
 url = "2.2.2"
@@ -64,17 +71,20 @@ servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca146
 
 # Update hashbrown dep. 
 # This is a PR that updates hashbrown to the latest version, allowing us to use only one hashbrown version.
-indexmap = { git = "https://github.com/cuviper/indexmap", rev = "57c125806b6fedec0427fe5dd5a9fd03fe2f526d" }
+indexmap = { git = "https://github.com/cuviper/indexmap", branch = "hashbrown-0.11" }
+
+# Fix bug in token validation
+serenity = { git = "https://github.com/adumbidiot/serenity", branch = "fix-validate-token" }
 
 [workspace]
 members = [ 
-	"lib/fml-rs",
-	"lib/nekos-rs", 
-	"lib/quizizz-rs",
-	"lib/r6stats-rs", 
-	"lib/r6tracker-rs", 
-	"lib/reddit-tube-rs",
-	"lib/rule34-rs",
+    "lib/fml-rs",
+    "lib/nekos-rs", 
+    "lib/quizizz-rs",
+    "lib/r6stats-rs", 
+    "lib/r6tracker-rs", 
+    "lib/reddit-tube-rs",
+    "lib/rule34-rs",
     "lib/insta-rs",
     "lib/deviantart-rs",
     "lib/urban-dictionary-rs",
