@@ -74,7 +74,7 @@ servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca146
 indexmap = { git = "https://github.com/cuviper/indexmap", branch = "hashbrown-0.11" }
 
 # Fix bug in token validation
-serenity = { git = "https://github.com/adumbidiot/serenity", branch = "fix-validate-token" }
+serenity = { git = "https://github.com/serenity-rs/serenity", rev = "3fba3726b2726c83c0e2a8a4e9862a214e7751da" }
 
 [workspace]
 members = [ 
