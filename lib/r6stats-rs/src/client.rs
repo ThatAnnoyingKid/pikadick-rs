@@ -3,7 +3,7 @@ use crate::{
         ApiResponse,
         UserData,
     },
-    R6Result,
+    Error,
 };
 
 /// An R6Stats client
@@ -20,11 +20,11 @@ impl Client {
         }
     }
 
+    // TODO: Add non-pc support
     /// Search for a PC user's profile by name.
-    pub async fn search(&self, name: &str) -> R6Result<Vec<UserData>> {
+    pub async fn search(&self, name: &str) -> Result<Vec<UserData>, Error> {
         let url = format!("https://r6stats.com/api/player-search/{}/pc", name);
-        let res = self.client.get(&url).send().await?;
-        let text = res.text().await?;
+        let text = self.client.get(&url).send().await?.text().await?;
         let res: ApiResponse<Vec<UserData>> = serde_json::from_str(&text)?;
 
         Ok(res.data)
