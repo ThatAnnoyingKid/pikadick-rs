@@ -1,7 +1,6 @@
 import os
 import subprocess
-
-# TODO: Run all this in a WSL shell on Windows. Look for native deps like perl.
+import tomli
 
 ##############
 ### CONFIG ###
@@ -10,14 +9,8 @@ import subprocess
 # Hardcode for now
 TARGET = "armv7-unknown-linux-gnueabihf"
 
-# Hardcode for now
-LINKER = "arm-linux-gnueabihf-gcc"
-
-# Runs 'strip' on the final binary
+# Run 'strip' on the final binary
 USE_STRIP = True
-
-# Hardcode for now
-STRIP_BIN = "arm-linux-gnueabihf-strip"
 
 #################
 ### INTERNALS ###
@@ -29,8 +22,19 @@ RUSTFLAGS = ""
 #############
 ### SETUP ###
 #############
+is_ci = os.getenv("CI") is not None
 
-RUSTFLAGS += "-Clinker={} ".format(LINKER)
+# Load cross compile config. See `cross-compile-info.toml.template` for syntax.
+cross_compile_info_file_name = "cross-compile-info.toml"
+if is_ci:
+    cross_compile_info_file_name = "cross-compile-info.ci.toml."
+print("Parsing `{}`".format(cross_compile_info_file_name))
+cross_compile_info_file = open(cross_compile_info_file_name, encoding="utf-8")
+cross_compile_info = tomli.load(cross_compile_info_file)
+
+linker = cross_compile_info[TARGET]['linker']
+strip_bin = cross_compile_info[TARGET]['strip']
+RUSTFLAGS += "-Clinker={} ".format(linker)
 
 # These are necessary for some reason?
 # RUSTFLAGS += "-Clink-args=-Xlinker -rpath=/usr/lib/arm-linux-gnueabihf " 
@@ -42,7 +46,7 @@ RUSTFLAGS += "-Clinker={} ".format(LINKER)
 ###############
 ### RUNNING ###
 ###############
-
+print("Compiling")
 cmd_list = [ "cargo", "build" ]
 cmd_list.extend([ "--target", TARGET ])
 cmd_list.extend([ "--features", "use-openssl-vendored" ])
@@ -50,11 +54,12 @@ cmd_list.extend([ "--release" ])
 
 env = {}
 env.update(os.environ)
+env.update(cross_compile_info[TARGET]['env'])
 env["RUSTFLAGS"] = RUSTFLAGS
 env["RUST_BACKTRACE"] = "1"
 
 subprocess.call(cmd_list, env=env)
 
+print("Stripping")
 if USE_STRIP:
-    subprocess.call([ STRIP_BIN, 'target/{}/release/pikadick'.format(TARGET) ])
-
+    subprocess.call([ strip_bin, 'target/{}/release/pikadick'.format(TARGET) ])

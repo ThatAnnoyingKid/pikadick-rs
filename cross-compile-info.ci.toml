@@ -1,0 +1,8 @@
+# This is the cross compile config for CI.
+[armv7-unknown-linux-gnueabihf]
+linker = "arm-linux-gnueabihf-gcc"
+strip = "arm-linux-gnueabihf-strip"
+
+[armv7-unknown-linux-gnueabihf.env]
+# This is empty as the default env is fine.
+# The default perl does not need to be overridden.

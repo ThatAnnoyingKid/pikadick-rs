@@ -4,3 +4,4 @@ config.toml
 data
 .env
 artifacts
+cross-compile-info.toml
