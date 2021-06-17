@@ -13,10 +13,10 @@ pub type R6Result<T> = Result<T, Error>;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Reqwest HTTP Error
-    #[error("{0}")]
+    #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
 
     /// Json Error
-    #[error("{0}")]
+    #[error(transparent)]
     Json(#[from] serde_json::Error),
 }
