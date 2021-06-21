@@ -20,10 +20,10 @@ url = "2.2.2"
 
 # Optional
 argh = { version = "0.1.4", optional = true }
-tokio = { version = "1.6.1", optional = true }
+tokio = { version = "1.7.1", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.6.1", features = [ "macros" ] }
+tokio = { version = "1.7.1", features = [ "macros" ] }
 
 [features]
 cli = [
