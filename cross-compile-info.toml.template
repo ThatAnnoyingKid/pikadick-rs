@@ -1,0 +1,11 @@
+# Utilities for a target
+[armv7-unknown-linux-gnueabihf]
+linker = "[LINKER EXE NAME]" # Example: "arm-linux-gnueabihf-gcc"
+strip = "[STRIP_EXE_NAME]" # Example: "arm-linux-gnueabihf-strip"
+
+# Env vars for a target
+[armv7-unknown-linux-gnueabihf.env]
+# An env var. For this project, this is used to tell openssl which perl to use.
+# Windows and Linux versions are incompatible because of course they are.
+# As a result, the architecture of the perl binary does not need to match the target's.
+PERL = "[PERL_EXE_NAME]" # Example: "C:/Users/username/scoop/apps/msys2/current/usr/bin/perl"
