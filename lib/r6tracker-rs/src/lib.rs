@@ -23,30 +23,18 @@ pub type R6Result<T> = Result<T, Error>;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Reqwest HTTP error
-    #[error("{0}")]
+    #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
 
-    /// Invalid HTTP Status
-    #[error("invalid http status {0}")]
-    InvalidStatus(reqwest::StatusCode),
-
-    /// Json Error
-    #[error("{0}")]
-    Json(#[from] serde_json::Error),
-
     /// Url Parse Error
-    #[error("{0}")]
+    #[error(transparent)]
     Url(#[from] url::ParseError),
 
     /// An API Response returned an error
-    #[error("{0}")]
+    #[error("invalid api response")]
     InvalidApiResponse(#[from] InvalidApiResponseError),
 
     /// An Overwolf Response returned an error.
-    #[error("{0}")]
+    #[error("invalid overwolf response")]
     InvalidOverwolfResponse(#[from] InvalidOverwolfResponseError),
-
-    /// Too short of a name was provided. The member is the length of the erroneous name
-    #[error("the name is too short")]
-    InvalidNameLength(usize),
 }
