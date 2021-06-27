@@ -186,7 +186,6 @@ mod test {
     #[tokio::test]
     async fn it_works_fbi() {
         let post = get_top_post("fbi").await;
-        assert!(post.thumb_url.is_some());
         dbg!(&post);
     }
 
