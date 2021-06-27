@@ -28,6 +28,7 @@ is_ci = os.getenv("CI") is not None
 cross_compile_info_file_name = "cross-compile-info.toml"
 if is_ci:
     cross_compile_info_file_name = "cross-compile-info.ci.toml"
+cross_compile_info_file_name = os.path.join(os.getcwd(), cross_compile_info_file_name)
 print("Parsing `{}`".format(cross_compile_info_file_name))
 cross_compile_info_file = open(cross_compile_info_file_name, encoding="utf-8")
 cross_compile_info = tomli.load(cross_compile_info_file)
