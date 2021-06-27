@@ -75,7 +75,7 @@ async fn fml(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let client = client_data.fml_client.clone();
     drop(data_lock);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
+    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
     if client.should_repopulate() {
         if let Err(e) = client.repopulate().await {

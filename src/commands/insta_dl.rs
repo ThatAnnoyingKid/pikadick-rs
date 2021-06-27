@@ -33,7 +33,7 @@ async fn insta_dl(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     let url = args.trimmed().current().expect("missing url");
 
     info!("Downloading instagram post '{}'", url);
-    let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
+    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
     match client.get_post(url).await {
         Ok(object) => {

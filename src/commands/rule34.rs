@@ -110,7 +110,7 @@ async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let client = client_data.rule34_client.clone();
     drop(data_lock);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
+    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
     let query_str = rule34::SearchQueryBuilder::new()
         .add_tag_iter(args.raw_quoted())
