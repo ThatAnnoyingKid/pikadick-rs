@@ -23,6 +23,9 @@ jobs:
         profile: minimal
         override: true
         components: rustfmt, rust-src
+        
+    - name: Update Package Lists
+      run: sudo apt-get update
 
     - name: Install GCC Cross Compilation Toolchain
       run: sudo apt-get install gcc-arm-linux-gnueabihf
