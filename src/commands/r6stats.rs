@@ -88,9 +88,9 @@ async fn r6stats(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     info!("Getting r6 stats for '{}' using r6stats", name);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
+    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
-    match client.get_stats(&name).await {
+    match client.get_stats(name).await {
         Ok(Some(entry)) => {
             loading.send_ok();
 

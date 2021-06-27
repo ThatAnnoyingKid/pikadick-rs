@@ -214,7 +214,7 @@ async fn nekos(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let nekos_client = client_data.nekos_client.clone();
     drop(data_lock);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
+    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
     match nekos_client.get_rand(nsfw).await {
         Ok(Some(url)) => {

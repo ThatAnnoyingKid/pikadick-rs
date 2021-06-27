@@ -101,9 +101,9 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
 
     info!("Getting r6 stats for '{}' using R6Tracker", name);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
+    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
-    match client.get_stats(&name).await {
+    match client.get_stats(name).await {
         Ok(entry) => {
             loading.send_ok();
             msg.channel_id

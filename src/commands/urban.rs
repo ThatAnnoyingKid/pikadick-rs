@@ -78,10 +78,10 @@ pub async fn urban(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
     let client = client_data.urban_client.clone();
     drop(data_lock);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
+    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
     let query = args.quoted().trimmed().current().expect("missing arg");
 
-    match client.search(&query).await {
+    match client.search(query).await {
         Ok(entry) => {
             if let Some(entry) = entry.data().list.first() {
                 msg.channel_id

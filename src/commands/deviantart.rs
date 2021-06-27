@@ -112,7 +112,7 @@ impl DeviantartClient {
         }
 
         let start = Instant::now();
-        self.signin(&db, username, password)
+        self.signin(db, username, password)
             .await
             .context("failed to log in to deviantart")?;
 
@@ -163,14 +163,14 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 
     info!("Searching for '{}' on deviantart", query);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
+    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
     match client
         .search(
             &db,
             &config.deviantart.username,
             &config.deviantart.password,
-            &query,
+            query,
         )
         .await
     {

@@ -39,7 +39,7 @@ async fn quizizz(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     drop(data_lock);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), &msg);
+    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
     let mut code: u32 = rand::random::<u32>() % MAX_CODE;
     let mut tries = 0;

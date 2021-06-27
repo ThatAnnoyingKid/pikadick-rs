@@ -198,7 +198,7 @@ impl RedditEmbedData {
         for url in urls.iter() {
             // This is sometimes TOO smart and finds data for invalid urls...
             // TODO: Consider making parsing stricter
-            if let Some((subreddit, post_id)) = parse_post_url(&url) {
+            if let Some((subreddit, post_id)) = parse_post_url(url) {
                 // Try cache
                 let maybe_url = self
                     .cache
@@ -213,7 +213,7 @@ impl RedditEmbedData {
                             if !post.is_video {
                                 Some(post.url)
                             } else {
-                                match self.get_video_data(&url).await {
+                                match self.get_video_data(url).await {
                                     Ok(video_data) => Some(video_data.url.into()),
                                     Err(e) => {
                                         warn!("Failed to get reddit video info, got error: {}", e);
