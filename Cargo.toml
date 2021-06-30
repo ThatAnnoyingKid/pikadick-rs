@@ -16,7 +16,7 @@ fern = { version = "0.6.0", features = [ "colored" ] }
 fml = { path = "./lib/fml-rs" }
 futures = { version = "0.3.15", default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
-indexmap = "1.6.2"
+indexmap = "1.7.0"
 insta = { path = "./lib/insta-rs" }
 lazy_static = "1.4.0"
 minimax = { path = "./lib/minimax-rs" }
@@ -68,10 +68,6 @@ heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7
 # `servo_arc` has UB on crates.io. This still has UB, but less and I haven't seen any issues with it yet.
 # To fix this, I think https://doc.rust-lang.org/std/mem/fn.size_of_val_raw.html needs to stabilize.
 servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca1468a1767e3cc294f824036c" }
-
-# Update hashbrown dep. 
-# This is a PR that updates hashbrown to the latest version, allowing us to use only one hashbrown version.
-indexmap = { git = "https://github.com/cuviper/indexmap", branch = "hashbrown-0.11" }
 
 # Fix bug in token validation
 serenity = { git = "https://github.com/serenity-rs/serenity", rev = "3fba3726b2726c83c0e2a8a4e9862a214e7751da" }

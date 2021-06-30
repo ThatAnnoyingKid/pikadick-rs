@@ -1311,7 +1311,8 @@ dependencies = [
 [[package]]
 name = "indexmap"
 version = "1.7.0"
-source = "git+https://github.com/cuviper/indexmap?branch=hashbrown-0.11#7819c6ddd733c8c527c1c26d2fd2bc3f506226b0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc633605454125dec4b66843673f01c7df2b89479b32e0ed634e43a91cff62a5"
 dependencies = [
  "autocfg",
  "hashbrown",
