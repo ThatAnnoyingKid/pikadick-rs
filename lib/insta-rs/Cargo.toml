@@ -7,7 +7,7 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 open-graph = { path = "../open-graph-rs", features = [ "client" ] }
-thiserror = "1.0.25"
+thiserror = "1.0.26"
 
 [dev-dependencies]
 tokio = { version = "1.7.1", features = [ "macros" ] }
