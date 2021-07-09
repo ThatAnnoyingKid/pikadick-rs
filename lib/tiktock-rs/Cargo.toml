@@ -17,7 +17,7 @@ tokio = "1.7.1"
 url = "2.2.2"
 
 # Optional
-argh = { version = "0.1.4", optional = true }
+argh = { version = "0.1.5", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.7.1", features = [ "macros" ] }

@@ -17,7 +17,7 @@ url = "2.2.2"
 
 # Optional
 anyhow = { version = "1.0.41", optional = true }
-argh = { version = "0.1.4", optional = true }
+argh = { version = "0.1.5", optional = true }
 reqwest = { version = "0.11.4", optional = true }
 tokio = { version = "1.7.1", optional = true }
 
