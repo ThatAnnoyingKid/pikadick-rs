@@ -1791,6 +1791,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "opentelemetry"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff27b33e30432e7b9854936693ca103d8591b0501f7ae9f633de48cda3bf2a67"
+dependencies = [
+ "async-trait",
+ "crossbeam-channel",
+ "futures",
+ "js-sys",
+ "lazy_static",
+ "percent-encoding",
+ "pin-project",
+ "rand 0.8.4",
+ "thiserror",
+]
+
+[[package]]
 name = "opentelemetry-otlp"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1799,7 +1816,7 @@ dependencies = [
  "async-trait",
  "futures",
  "http",
- "opentelemetry",
+ "opentelemetry 0.14.0",
  "prost",
  "thiserror",
  "tokio",
@@ -1928,7 +1945,7 @@ dependencies = [
  "minimax",
  "nekos",
  "openssl",
- "opentelemetry",
+ "opentelemetry 0.14.0",
  "opentelemetry-otlp",
  "parking_lot",
  "quizizz",
@@ -3399,11 +3416,11 @@ dependencies = [
 
 [[package]]
 name = "tracing-opentelemetry"
-version = "0.13.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2f4cb277b92a8ba1170b3b911056428ce2ef9993351baf5965bb0359a2e5963"
+checksum = "c47440f2979c4cd3138922840eec122e3c0ba2148bc290f756bd7fd60fc97fff"
 dependencies = [
- "opentelemetry",
+ "opentelemetry 0.15.0",
  "tracing",
  "tracing-core",
  "tracing-log",
