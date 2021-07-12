@@ -23,7 +23,7 @@ url = { version = "2.2.2", features = [ "serde" ] }
 
 # Optional
 argh = { version = "0.1.4", optional = true }
-anyhow = { version = "1.0.41", optional = true }
+anyhow = { version = "1.0.42", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.7.1", features = [ "macros" ] }
