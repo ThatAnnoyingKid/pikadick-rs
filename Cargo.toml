@@ -21,8 +21,8 @@ insta = { path = "./lib/insta-rs" }
 lazy_static = "1.4.0"
 minimax = { path = "./lib/minimax-rs" }
 nekos = { path = "./lib/nekos-rs" }
-opentelemetry = { version = "0.14.0", features = [ "rt-tokio" ] }
-opentelemetry-otlp = { version = "0.7.0", features = [ "tls", "tls-roots" ] }
+opentelemetry = { version = "0.15.0", features = [ "rt-tokio" ] }
+opentelemetry-otlp = { version = "0.8.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.11.1"
 quizizz = { path = "./lib/quizizz-rs" }
 r6stats = { path = "./lib/r6stats-rs" }
@@ -45,7 +45,7 @@ tonic = "0.4.3"
 tracing = "0.1.26"
 tracing-appender = "0.1.2"
 tracing-log = "0.1.2"
-tracing-opentelemetry = "0.13.0"
+tracing-opentelemetry = "0.14.0"
 tracing-subscriber = { version = "0.2.19", features = [ "env-filter", "fmt", "parking_lot" ] }
 ttf-parser = "0.12.3"
 uom = "0.31.1"
