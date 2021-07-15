@@ -22,7 +22,7 @@ tokio = "1.8.1"
 url = { version = "2.2.2", features = [ "serde" ] }
 
 # Optional
-argh = { version = "0.1.4", optional = true }
+argh = { version = "0.1.5", optional = true }
 anyhow = { version = "1.0.42", optional = true }
 
 [dev-dependencies]

@@ -19,7 +19,7 @@ thiserror = "1.0.26"
 url = "2.2.2"
 
 # Optional
-argh = { version = "0.1.4", optional = true }
+argh = { version = "0.1.5", optional = true }
 tokio = { version = "1.8.1", optional = true }
 
 [dev-dependencies]
