@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["cmd",""],["list",""]],"static":[["CMD_COMMAND",""],["CMD_COMMAND_OPTIONS",""],["LIST_COMMAND",""],["LIST_COMMAND_OPTIONS",""]]});

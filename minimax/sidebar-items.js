@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["compile_minimax_map","Compile a minimax map with a [`RuleSet`]."]],"mod":[["tic_tac_toe","Built-in tic-tac-toe support"]],"struct":[["MiniMaxAi","A type that can use a compiled minimax map."],["Node","A Node in a game graph."]],"trait":[["RuleSet","An abstract set of rules for a game."]]});

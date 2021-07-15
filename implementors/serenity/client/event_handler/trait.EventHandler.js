@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["pikadick"] = [{"text":"impl <a class=\"trait\" href=\"https://docs.rs/serenity/*/serenity/client/event_handler/trait.EventHandler.html\" title=\"trait serenity::client::event_handler::EventHandler\">EventHandler</a> for <a class=\"struct\" href=\"pikadick/struct.Handler.html\" title=\"struct pikadick::Handler\">Handler</a>","synthetic":false,"types":["pikadick::Handler"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

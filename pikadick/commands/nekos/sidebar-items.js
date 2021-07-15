@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["BUFFER_SIZE","Max images per single request"]],"fn":[["nekos",""]],"static":[["NEKOS_COMMAND",""],["NEKOS_COMMAND_OPTIONS",""]],"struct":[["Cache",""],["CacheInner",""],["NekosClient",""],["NsfwArg",""],["NsfwArgParseError",""]]});

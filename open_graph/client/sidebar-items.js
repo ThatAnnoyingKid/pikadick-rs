@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ClientError","An error that may occur while using a [`Client`]."]],"struct":[["Client","A generic open graph protocol client"]]});

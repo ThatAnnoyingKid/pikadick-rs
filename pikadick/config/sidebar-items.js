@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ActivityKind",""],["Severity",""],["ValidationError","Validation Errors"]],"fn":[["default_prefix",""]],"struct":[["Config","The bot config"],["DeviantArtConfig","Deviant Config"],["FmlConfig","FML config"],["LogConfig","Log Config"],["StatusConfig",""],["ValidationMessage",""]]});

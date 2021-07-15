@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Metadata",""],["Season","A representation of a ranked season/region"]]});

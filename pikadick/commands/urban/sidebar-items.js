@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["urban",""]],"static":[["URBAN_COMMAND",""],["URBAN_COMMAND_OPTIONS",""]],"struct":[["UrbanClient","A Caching Urban Dictionary Client"]]});

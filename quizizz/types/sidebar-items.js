@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["CheckRoomJsonRequest","Check Room Request"],["GenericResponse","Api Response"],["GenericResponseError","Api Response Error"],["GroupsInfo","Groups Info"],["GroupsInfoData","Groups Info Data"],["Room","A quiz Room"],["RoomOptions","Room Options"],["RoomSubscription","Room subscription info"],["RoomVersion","Room Version Info"],["Traits","Traits"]]});

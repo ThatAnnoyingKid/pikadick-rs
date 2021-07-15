@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["CacheStatsBuilder","A tool to build cache stats"],["ClientData","The [`ClientData`]."]],"trait":[["CacheStatsProvider","A type that can provide cache stats"]]});

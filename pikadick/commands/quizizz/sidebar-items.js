@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["MAX_CODE",""],["MAX_TRIES",""]],"fn":[["quizizz",""]],"static":[["QUIZIZZ_COMMAND",""],["QUIZIZZ_COMMAND_OPTIONS",""]],"struct":[["QuizizzClient",""]]});

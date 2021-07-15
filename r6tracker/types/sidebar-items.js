@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["overwolf","Overwolf API Types"],["platform",""],["sessions_data",""],["stat","Stat Data Type"],["user_data","User Data Type"]]});

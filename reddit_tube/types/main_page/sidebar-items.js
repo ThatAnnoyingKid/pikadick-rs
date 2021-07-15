@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["FromHtmlError","Error that may occur while parsing a [`MainPage`] from [`Html`]."]],"struct":[["MainPage","The main page"]]});

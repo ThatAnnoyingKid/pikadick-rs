@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Error","Library Error type"]],"struct":[["Client","An XKCD client"]]});

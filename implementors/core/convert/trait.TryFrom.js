@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["r6tracker"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html\" title=\"trait core::convert::TryFrom\">TryFrom</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.u32.html\">u32</a>&gt; for <a class=\"enum\" href=\"r6tracker/types/platform/enum.Platform.html\" title=\"enum r6tracker::types::platform::Platform\">Platform</a>","synthetic":false,"types":["r6tracker::types::platform::Platform"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

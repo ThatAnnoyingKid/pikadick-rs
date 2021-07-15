@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["GetVideoResponse","The response for getting a video"]],"struct":[["GetVideoResponseError","Error video response"],["GetVideoResponseOk","A good video response"],["VideoData","Video Data"]]});

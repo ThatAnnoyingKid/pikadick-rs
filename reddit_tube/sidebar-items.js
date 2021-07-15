@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["TubeError","Client Error"]],"mod":[["types",""]],"struct":[["Client","Client"],["StatusCode","An HTTP status code (`status-code` in RFC 7230 et al.)."]],"type":[["TubeResult","Result Type"]]});

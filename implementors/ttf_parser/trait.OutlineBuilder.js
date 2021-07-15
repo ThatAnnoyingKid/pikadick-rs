@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["pikadick"] = [{"text":"impl <a class=\"trait\" href=\"https://docs.rs/ttf-parser/0.12.3/ttf_parser/trait.OutlineBuilder.html\" title=\"trait ttf_parser::OutlineBuilder\">OutlineBuilder</a> for <a class=\"struct\" href=\"pikadick/commands/tic_tac_toe/tic_tac_toe_renderer/struct.SkiaBuilder.html\" title=\"struct pikadick::commands::tic_tac_toe::tic_tac_toe_renderer::SkiaBuilder\">SkiaBuilder</a>","synthetic":false,"types":["pikadick::commands::tic_tac_toe::tic_tac_toe_renderer::SkiaBuilder"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

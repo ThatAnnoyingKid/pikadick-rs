@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Error","Library Error Type"]],"struct":[["Client","Client"],["Definition","A [`Definition`] for a term."],["DefinitionList","A List of [`Definition`]."]]});

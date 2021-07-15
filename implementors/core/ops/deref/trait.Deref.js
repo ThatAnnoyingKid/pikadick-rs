@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["pikadick"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/deref/trait.Deref.html\" title=\"trait core::ops::deref::Deref\">Deref</a> for <a class=\"struct\" href=\"pikadick/commands/reddit_embed/struct.URL_REGEX.html\" title=\"struct pikadick::commands::reddit_embed::URL_REGEX\">URL_REGEX</a>","synthetic":false,"types":["pikadick::commands::reddit_embed::URL_REGEX"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

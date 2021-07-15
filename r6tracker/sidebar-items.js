@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Error","Error Type"]],"mod":[["types",""]],"struct":[["Client","R6tracker Client"],["StatusCode","An HTTP status code (`status-code` in RFC 7230 et al.)."]],"type":[["R6Result","Result type"]]});

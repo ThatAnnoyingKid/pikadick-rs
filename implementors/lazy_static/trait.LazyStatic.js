@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["pikadick"] = [{"text":"impl <a class=\"trait\" href=\"https://docs.rs/lazy_static/1.4.0/lazy_static/trait.LazyStatic.html\" title=\"trait lazy_static::LazyStatic\">LazyStatic</a> for <a class=\"struct\" href=\"pikadick/commands/reddit_embed/struct.URL_REGEX.html\" title=\"struct pikadick::commands::reddit_embed::URL_REGEX\">URL_REGEX</a>","synthetic":false,"types":["pikadick::commands::reddit_embed::URL_REGEX"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["FACES",""]],"fn":[["uwuify",""],["uwuify_str","A rust-optimized version of:"]],"static":[["UWUIFY_COMMAND",""],["UWUIFY_COMMAND_OPTIONS",""]]});

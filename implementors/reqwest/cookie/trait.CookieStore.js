@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["deviantart"] = [{"text":"impl <a class=\"trait\" href=\"https://docs.rs/reqwest/0.11.4/reqwest/cookie/trait.CookieStore.html\" title=\"trait reqwest::cookie::CookieStore\">CookieStore</a> for <a class=\"struct\" href=\"deviantart/client/struct.CookieJar.html\" title=\"struct deviantart::client::CookieJar\">CookieJar</a>","synthetic":false,"types":["deviantart::client::CookieJar"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

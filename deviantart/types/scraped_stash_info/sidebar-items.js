@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Film","Film data from a sta.sh link"],["ScrapedStashInfo","Scraped info from a sta.sh link"],["Size","Film size"]]});

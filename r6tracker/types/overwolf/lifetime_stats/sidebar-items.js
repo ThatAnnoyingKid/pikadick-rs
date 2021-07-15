@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["BestMmr","Best Overwolf Lifetime MMR"],["LifetimeStats","Player Lifetime Stats"]]});

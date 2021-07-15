@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["InstaError","Error type"]],"struct":[["Client","A Client"],["OpenGraphObject","An OpenGraphObject."]],"type":[["InstaResult","Result type"]]});

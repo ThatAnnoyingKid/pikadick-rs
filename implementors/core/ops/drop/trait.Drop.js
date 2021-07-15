@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["pikadick"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html\" title=\"trait core::ops::drop::Drop\">Drop</a> for <a class=\"struct\" href=\"pikadick/util/struct.LoadingReaction.html\" title=\"struct pikadick::util::LoadingReaction\">LoadingReaction</a>","synthetic":false,"types":["pikadick::util::LoadingReaction"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

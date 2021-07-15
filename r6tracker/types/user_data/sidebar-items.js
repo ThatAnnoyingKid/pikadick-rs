@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ApiResponse","A json response from the UserData API."],["Rank","An R6 Rank."]],"mod":[["season","Season data type"]],"struct":[["ApiError","Errors that occured while procesing an API Request"],["InvalidApiResponseError",""],["Metadata",""],["UserData",""]]});
