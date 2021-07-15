@@ -10,7 +10,10 @@ targets = [
 vulnerability = "deny"
 unmaintained = "deny"
 notice = "deny"
-ignore = []
+ignore = [
+    # Blocked on opentelemetry-otlp releasing a new version using tonic 0.5.0
+    "RUSTSEC-2021-0073"
+]
 
 [licenses]
 unlicensed = "deny"
