@@ -17,16 +17,16 @@ reqwest = "0.11.4"
 scraper = { version = "0.12.0", default-features = false }
 serde = { version = "1.0.126", features = [ "derive" ] }
 serde_json = "1.0.64"
-thiserror = "1.0.25"
-tokio = "1.7.1"
+thiserror = "1.0.26"
+tokio = "1.8.1"
 url = { version = "2.2.2", features = [ "serde" ] }
 
 # Optional
-argh = { version = "0.1.4", optional = true }
-anyhow = { version = "1.0.41", optional = true }
+argh = { version = "0.1.5", optional = true }
+anyhow = { version = "1.0.42", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.7.1", features = [ "macros" ] }
+tokio = { version = "1.8.1", features = [ "macros" ] }
 
 [features]
 cli = [
