@@ -37,7 +37,7 @@ serenity = "0.10.8"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
 sqlx = { version = "0.5.5", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.8"
-thiserror = "1.0.25"
+thiserror = "1.0.26"
 tiny-skia = { version = "0.5.1", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.8.1", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"
