@@ -3,7 +3,10 @@ use std::path::{
     Path,
     PathBuf,
 };
-use tokio::fs::File;
+use tokio::{
+    fs::File,
+    io::BufWriter,
+};
 
 #[derive(argh::FromArgs)]
 #[argh(subcommand, name = "download", description = "download a rule34 post")]
@@ -81,7 +84,7 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
         println!("Not saving since this is a dry run...")
     } else {
         println!("Saving...");
-        let mut file = File::create(out_path).await?;
+        let mut file = BufWriter::new(File::create(out_path).await?);
         tokio::io::copy(&mut buffer.as_ref(), &mut file)
             .await
             .context("failed to save image")?;

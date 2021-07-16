@@ -55,6 +55,10 @@ pub enum FromHtmlError {
     /// The sidebar title is invalid
     #[error("invalid sidebar title")]
     InvalidSidebarTitle(SidebarTitleFromStrError),
+
+    /// A tag was expected but not found
+    #[error("missing tag")]
+    MissingTag,
 }
 
 /// A Post page
@@ -213,15 +217,14 @@ impl Post {
                 let tag = element
                     .select(&A_SELECTOR)
                     .next()
-                    .and_then(|el| el.text().next());
-                if let Some(tag) = tag {
-                    match sidebar_title {
-                        SidebarTitle::Copyright => copyright_tags.push(tag.to_string()),
-                        SidebarTitle::Character => character_tags.push(tag.to_string()),
-                        SidebarTitle::Artist => artist_tags.push(tag.to_string()),
-                        SidebarTitle::General => general_tags.push(tag.to_string()),
-                        SidebarTitle::Meta => meta_tags.push(tag.to_string()),
-                    }
+                    .and_then(|el| el.text().next())
+                    .ok_or(FromHtmlError::MissingTag)?;
+                match sidebar_title {
+                    SidebarTitle::Copyright => copyright_tags.push(tag.to_string()),
+                    SidebarTitle::Character => character_tags.push(tag.to_string()),
+                    SidebarTitle::Artist => artist_tags.push(tag.to_string()),
+                    SidebarTitle::General => general_tags.push(tag.to_string()),
+                    SidebarTitle::Meta => meta_tags.push(tag.to_string()),
                 }
             }
         }
