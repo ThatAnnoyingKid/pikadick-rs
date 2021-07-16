@@ -48,6 +48,14 @@ pub struct DownloadOptions {
         description = "the path to save images"
     )]
     out_dir: PathBuf,
+
+    #[argh(
+        switch,
+        short = 'd',
+        long = "dry-run",
+        description = "whether to save the image"
+    )]
+    dry_run: bool,
 }
 
 fn main() {
@@ -117,6 +125,9 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             println!("ID: {}", post.id);
             println!("Post Date: {}", post.date);
             println!("Post Url: {}", post.get_post_url());
+            if let Some(source) = post.source.as_ref() {
+                println!("Post Source: {}", source);
+            }
             println!("Image Url: {}", post.image_url);
             println!("Image Name: {}", image_name);
             println!("Out Path: {}", out_path.display());
@@ -132,11 +143,15 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 .await
                 .context("failed to download image")?;
 
-            println!("Saving...");
-            let mut file = File::create(out_path).await?;
-            tokio::io::copy(&mut buffer.as_ref(), &mut file)
-                .await
-                .context("failed to save image")?;
+            if options.dry_run {
+                println!("Not saving since this is a dry run...")
+            } else {
+                println!("Saving...");
+                let mut file = File::create(out_path).await?;
+                tokio::io::copy(&mut buffer.as_ref(), &mut file)
+                    .await
+                    .context("failed to save image")?;
+            }
         }
     }
 
