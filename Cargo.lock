@@ -2436,8 +2436,6 @@ dependencies = [
  "itoa",
  "reqwest",
  "scraper",
- "serde",
- "serde_json",
  "thiserror",
  "tokio",
  "url",
