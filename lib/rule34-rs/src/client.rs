@@ -32,18 +32,22 @@ impl Client {
         let mut default_headers = HeaderMap::new();
         default_headers.insert(
             reqwest::header::ACCEPT_LANGUAGE,
-            HeaderValue::from_static("en,en-US;q=0,5"),
+            HeaderValue::from_static(crate::ACCEPT_LANGUAGE_STR),
         );
-        default_headers.insert(reqwest::header::ACCEPT, HeaderValue::from_static("*/*"));
+        default_headers.insert(
+            reqwest::header::ACCEPT,
+            HeaderValue::from_static(crate::ACCEPT_STR),
+        );
         default_headers.insert(
             reqwest::header::REFERER,
-            HeaderValue::from_static("https://rule34.xxx/"),
+            HeaderValue::from_static(crate::REFERER_STR),
         );
 
         Client {
             client: reqwest::Client::builder()
-                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4514.0 Safari/537.36")
-                .default_headers(default_headers).build()
+                .user_agent(crate::USER_AGENT_STR)
+                .default_headers(default_headers)
+                .build()
                 .expect("failed to build rule34 client"),
         }
     }
@@ -83,8 +87,13 @@ impl Client {
     pub async fn search(&self, query: &str, offset: u64) -> Result<SearchResult, RuleError> {
         let mut pid_buffer = itoa::Buffer::new();
         let url = Url::parse_with_params(
-            "https://rule34.xxx/index.php?page=post&s=list",
-            &[("tags", query), ("pid", pid_buffer.format(offset))],
+            crate::URL_INDEX,
+            &[
+                ("tags", query),
+                ("pid", pid_buffer.format(offset)),
+                ("page", "post"),
+                ("s", "list"),
+            ],
         )?;
 
         let ret = self
@@ -98,8 +107,8 @@ impl Client {
     pub async fn get_post(&self, id: u64) -> Result<Post, RuleError> {
         let mut id_str = itoa::Buffer::new();
         let url = Url::parse_with_params(
-            "https://rule34.xxx/index.php?page=post&s=view",
-            &[("id", id_str.format(id))],
+            crate::URL_INDEX,
+            &[("id", id_str.format(id)), ("page", "post"), ("s", "view")],
         )?;
 
         let ret = self

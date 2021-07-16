@@ -94,8 +94,8 @@ impl SearchEntry {
         let id: u64 = id_str.parse().map_err(FromElementError::InvalidId)?;
 
         let link = Url::parse_with_params(
-            "https://rule34.xxx/index.php?page=post&s=view",
-            &[("id", id_str)],
+            crate::URL_INDEX,
+            &[("id", id_str), ("page", "post"), ("s", "view")],
         )
         .map_err(FromElementError::InvalidLink)?;
 
