@@ -59,6 +59,10 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
     }
     println!("Image Url: {}", post.image_url);
     println!("Image Name: {}", image_name);
+    println!("Copyright Tags: {}", post.copyright_tags.join(", "));
+    println!("Character Tags: {}", post.character_tags.join(", "));
+    println!("Artist Tags: {}", post.artist_tags.join(", "));
+    println!("General Tags: {}", post.general_tags.join(", "));
     println!("Out Path: {}", out_path.display());
     println!();
 

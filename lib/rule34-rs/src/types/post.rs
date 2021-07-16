@@ -43,6 +43,10 @@ pub enum FromHtmlError {
     /// invalid image url
     #[error("invalid image url")]
     InvalidImageUrl(url::ParseError),
+
+    /// Missing the sidebar
+    #[error("missing sidebar")]
+    MissingSidebar,
 }
 
 /// A Post page
@@ -64,6 +68,18 @@ pub struct Post {
 
     /// Image URL
     pub image_url: Url,
+
+    /// Copyright tags
+    pub copyright_tags: Vec<String>,
+
+    /// Character tags
+    pub character_tags: Vec<String>,
+
+    /// Artist tags
+    pub artist_tags: Vec<String>,
+
+    /// General tags
+    pub general_tags: Vec<String>,
 }
 
 impl Post {
@@ -78,6 +94,8 @@ impl Post {
             static ref THUMB_URL_SELECTOR: Selector = Selector::parse("#image").expect("invalid thumb_url selector");
 
             static ref A_SELECTOR: Selector = Selector::parse("a[href]").expect("invalid a selector");
+
+            static ref SIDEBAR_SELECTOR: Selector = Selector::parse("#tag-sidebar").expect("invalid sidebar selector");
         }
 
         let mut id_str = None;
@@ -158,12 +176,49 @@ impl Post {
             })
             .ok_or(FromHtmlError::MissingImageUrl)??;
 
+        let sidebar = html
+            .select(&SIDEBAR_SELECTOR)
+            .next()
+            .ok_or(FromHtmlError::MissingSidebar)?;
+        let mut sidebar_title = None;
+        let mut copyright_tags = Vec::new();
+        let mut character_tags = Vec::new();
+        let mut artist_tags = Vec::new();
+        let mut general_tags = Vec::new();
+        for element in sidebar.select(&LI_SELECTOR) {
+            let is_title = element.value().classes().count() == 0;
+
+            if is_title {
+                sidebar_title = element
+                    .text()
+                    .next()
+                    .and_then(|s| s.parse::<SidebarTitle>().ok());
+            } else if let Some(sidebar_title) = sidebar_title {
+                let tag = element
+                    .select(&A_SELECTOR)
+                    .next()
+                    .and_then(|el| el.text().next());
+                if let Some(tag) = tag {
+                    match sidebar_title {
+                        SidebarTitle::Copyright => copyright_tags.push(tag.to_string()),
+                        SidebarTitle::Character => character_tags.push(tag.to_string()),
+                        SidebarTitle::Artist => artist_tags.push(tag.to_string()),
+                        SidebarTitle::General => general_tags.push(tag.to_string()),
+                    }
+                }
+            }
+        }
+
         Ok(Post {
             id,
             date,
             source,
             thumb_url,
             image_url,
+            copyright_tags,
+            character_tags,
+            artist_tags,
+            general_tags,
         })
     }
 
@@ -177,6 +232,34 @@ impl Post {
     /// This allocates, so cache the result.
     pub fn get_post_url(&self) -> Url {
         crate::post_id_to_post_url(self.id)
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+enum SidebarTitleFromStrError {
+    #[error("invalid title")]
+    InvalidTitle,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
+enum SidebarTitle {
+    Copyright,
+    Character,
+    Artist,
+    General,
+}
+
+impl std::str::FromStr for SidebarTitle {
+    type Err = SidebarTitleFromStrError;
+
+    fn from_str(data: &str) -> Result<Self, Self::Err> {
+        match data {
+            "Copyright" => Ok(Self::Copyright),
+            "Character" => Ok(Self::Character),
+            "Artist" => Ok(Self::Artist),
+            "General" => Ok(Self::General),
+            _ => Err(SidebarTitleFromStrError::InvalidTitle),
+        }
     }
 }
 
