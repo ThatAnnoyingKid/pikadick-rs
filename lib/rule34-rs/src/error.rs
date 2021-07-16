@@ -23,7 +23,7 @@ pub enum RuleError {
     #[error("invalid search result")]
     InvalidSearchResult(#[from] SearchResultError),
 
-    /// InvalidPost
+    /// Invalid Post
     #[error("invalid post")]
     InvalidPost(#[from] PostError),
 
