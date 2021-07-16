@@ -55,25 +55,30 @@ pub struct Post {
 impl Post {
     /// Try to make a [`Post`] from [`Html`].
     pub fn from_html(html: &Html) -> Result<Self, FromHtmlError> {
-        let stats_selector = Selector::parse("#stats").expect("invalid stats selector");
-        let li_selector = Selector::parse("li").expect("invalid li selector");
+        lazy_static::lazy_static! {
+            static ref STATS_SELECTOR: Selector = Selector::parse("#stats").expect("invalid stats selector");
+            static ref LI_SELECTOR: Selector = Selector::parse("li").expect("invalid li selector");
+
+            static ref OPTIONS_HEADER_SELECTOR: Selector = Selector::parse("div > h5").expect("invalid options header selector");
+
+            static ref THUMB_URL_SELECTOR: Selector = Selector::parse("#image").expect("invalid thumb_url selector");
+
+            static ref A_SELECTOR: Selector = Selector::parse("a[href]").expect("invalid a selector");
+        }
 
         let id = html
-            .select(&stats_selector)
+            .select(&STATS_SELECTOR)
             .next()
             .ok_or(FromHtmlError::MissingStatsSection)?
-            .select(&li_selector)
+            .select(&LI_SELECTOR)
             .filter_map(|element| element.text().next())
             .find(|text| text.starts_with("Id: "))
             .map(|text| text.trim_start_matches("Id: ").parse())
             .ok_or(FromHtmlError::MissingPostId)?
             .map_err(FromHtmlError::InvalidPostId)?;
 
-        let options_header_selector =
-            Selector::parse("div > h5").expect("invalid options header selector");
-
         let options_header = html
-            .select(&options_header_selector)
+            .select(&OPTIONS_HEADER_SELECTOR)
             .find_map(|element| {
                 let text = element.text().next()?;
 
@@ -87,20 +92,18 @@ impl Post {
             })
             .ok_or(FromHtmlError::MissingOptionsSection)?;
 
-        let thumb_url_selector = Selector::parse("#image").expect("invalid thumb_url selector");
         let thumb_url = html
-            .select(&thumb_url_selector)
+            .select(&THUMB_URL_SELECTOR)
             .last()
             .and_then(|element| element.value().attr("src"))
             .map(Url::parse)
             .transpose()
             .map_err(FromHtmlError::InvalidThumbUrl)?;
 
-        let a_selector = Selector::parse("a[href]").expect("invalid a selector");
         let image_url = options_header
-            .select(&li_selector)
+            .select(&LI_SELECTOR)
             .find_map(|element| {
-                let a = element.select(&a_selector).last()?;
+                let a = element.select(&A_SELECTOR).last()?;
                 let a_text = a.text().next()?.trim();
 
                 if a_text != "Original image" {

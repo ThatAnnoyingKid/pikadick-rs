@@ -87,7 +87,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             for (i, result) in results.entries.iter().enumerate() {
                 println!("{})", i + 1);
                 println!("ID: {}", result.id);
-                println!("Link: {}", result.link);
+                println!("Url: {}", result.get_post_url());
                 println!("Description: {}", result.description);
                 println!();
             }

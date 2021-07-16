@@ -2434,6 +2434,7 @@ dependencies = [
  "argh",
  "bytes 1.0.1",
  "itoa",
+ "lazy_static",
  "reqwest",
  "scraper",
  "thiserror",

@@ -27,16 +27,18 @@ pub struct SearchResult {
 impl SearchResult {
     /// Try to make a [`SearchResult`] from [`Html`].
     pub fn from_html(html: &Html) -> Result<Self, FromHtmlError> {
-        let content_div_selector =
-            Selector::parse(".content").expect("invalid content div selector");
+        lazy_static::lazy_static! {
+            static ref CONTENT_DIV_SELECTOR: Selector = Selector::parse(".content").expect("invalid content div selector");
+            static ref SPAN_SELECTOR: Selector = Selector::parse("span").expect("invalid span selector");
+        }
+
         let content_div = html
-            .select(&content_div_selector)
+            .select(&CONTENT_DIV_SELECTOR)
             .next()
             .ok_or(FromHtmlError::MissingContentDiv)?;
 
-        let span_selector = Selector::parse("span").expect("invalid span selector");
         let entries = content_div
-            .select(&span_selector)
+            .select(&SPAN_SELECTOR)
             .map(SearchEntry::from_element)
             .collect::<Result<_, _>>()?;
 
@@ -58,10 +60,6 @@ pub enum FromElementError {
     #[error("invalid id")]
     InvalidId(std::num::ParseIntError),
 
-    /// Invalid Link Url
-    #[error("invalid link")]
-    InvalidLink(url::ParseError),
-
     /// Invalid Thumbnail Url
     #[error("invalid thumbnail")]
     InvalidThumbnailUrl(url::ParseError),
@@ -70,46 +68,42 @@ pub enum FromElementError {
 /// Search Result Entry
 #[derive(Debug)]
 pub struct SearchEntry {
-    /// Entry ID
+    /// The post id
     pub id: u64,
 
-    /// Entry Url
-    pub link: Url,
-
-    /// Thumbnail URL
+    /// The thumbnail url
     pub thumbnail: Url,
 
-    /// Description
+    /// The description
     pub description: String,
 }
 
 impl SearchEntry {
     /// Try to make a [`SearchEntry`] from an [`ElementRef`]
     pub fn from_element(element: ElementRef) -> Result<SearchEntry, FromElementError> {
-        let id_str = element
+        lazy_static::lazy_static! {
+            static ref IMG_SELECTOR: Selector = Selector::parse("img").expect("invalid img selector");
+        }
+
+        let id = element
             .value()
             .attr("id")
             .ok_or(FromElementError::MissingAttribute("element", "id"))?
-            .trim_start_matches('s');
-        let id: u64 = id_str.parse().map_err(FromElementError::InvalidId)?;
+            .trim_start_matches('s')
+            .parse()
+            .map_err(FromElementError::InvalidId)?;
 
-        let link = Url::parse_with_params(
-            crate::URL_INDEX,
-            &[("id", id_str), ("page", "post"), ("s", "view")],
-        )
-        .map_err(FromElementError::InvalidLink)?;
-
-        let img_selector = Selector::parse("img").expect("invalid img selector");
         let img = element
-            .select(&img_selector)
+            .select(&IMG_SELECTOR)
             .last()
             .ok_or(FromElementError::MissingElement("img"))?;
 
         let thumbnail = img
             .value()
             .attr("src")
-            .ok_or(FromElementError::MissingAttribute("img", "src"))?;
-        let thumbnail = Url::parse(thumbnail).map_err(FromElementError::InvalidThumbnailUrl)?;
+            .map(Url::parse)
+            .ok_or(FromElementError::MissingAttribute("img", "src"))?
+            .map_err(FromElementError::InvalidThumbnailUrl)?;
 
         let description = img
             .value()
@@ -120,10 +114,16 @@ impl SearchEntry {
 
         Ok(SearchEntry {
             id,
-            link,
             thumbnail,
             description,
         })
+    }
+
+    /// Get the post url for this search entry.
+    ///
+    /// This allocates, so cache the result.
+    pub fn get_post_url(&self) -> Url {
+        crate::post_id_to_post_url(self.id)
     }
 }
 
