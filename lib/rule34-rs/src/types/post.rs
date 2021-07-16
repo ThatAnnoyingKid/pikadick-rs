@@ -20,6 +20,10 @@ pub enum FromHtmlError {
     #[error("invalid post id")]
     InvalidPostId(std::num::ParseIntError),
 
+    /// Missing the post date
+    #[error("missing post date")]
+    MissingPostDate,
+
     /// Invalid thumbnail url
     #[error("invalid thumbnail url")]
     InvalidThumbUrl(url::ParseError),
@@ -42,6 +46,9 @@ pub enum FromHtmlError {
 pub struct Post {
     /// The post id
     pub id: u64,
+
+    /// The post date
+    pub date: String,
 
     /// Thumbnail Url
     ///
@@ -66,16 +73,37 @@ impl Post {
             static ref A_SELECTOR: Selector = Selector::parse("a[href]").expect("invalid a selector");
         }
 
-        let id = html
+        let mut id_str = None;
+        let mut date = None;
+
+        let stats_header_element_iter = html
             .select(&STATS_SELECTOR)
             .next()
             .ok_or(FromHtmlError::MissingStatsSection)?
-            .select(&LI_SELECTOR)
-            .filter_map(|element| element.text().next())
-            .find(|text| text.starts_with("Id: "))
-            .map(|text| text.trim_start_matches("Id: ").parse())
+            .select(&LI_SELECTOR);
+        for element in stats_header_element_iter {
+            if let Some(text) = element.text().next() {
+                let text = text.trim();
+
+                if id_str.is_none() && text.starts_with("Id: ") {
+                    id_str = Some(text.trim_start_matches("Id: "));
+                }
+
+                if date.is_none() && text.starts_with("Posted: ") {
+                    date = Some(text.trim_start_matches("Posted: "));
+                }
+            }
+
+            if id_str.is_some() && date.is_some() {
+                break;
+            }
+        }
+
+        let id = id_str
             .ok_or(FromHtmlError::MissingPostId)?
+            .parse()
             .map_err(FromHtmlError::InvalidPostId)?;
+        let date = date.ok_or(FromHtmlError::MissingPostDate)?.to_string();
 
         let options_header = html
             .select(&OPTIONS_HEADER_SELECTOR)
@@ -117,6 +145,7 @@ impl Post {
 
         Ok(Post {
             id,
+            date,
             thumb_url,
             image_url,
         })
