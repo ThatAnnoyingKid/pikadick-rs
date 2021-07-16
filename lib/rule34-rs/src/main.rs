@@ -1,5 +1,8 @@
 use anyhow::Context;
-use std::path::PathBuf;
+use std::path::{
+    Path,
+    PathBuf,
+};
 use tokio::fs::File;
 
 #[derive(argh::FromArgs)]
@@ -90,9 +93,22 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             }
         }
         SubCommand::Download(options) => {
-            let post = client.get_post(options.id).await?;
+            let post = client
+                .get_post(options.id)
+                .await
+                .context("failed to get post")?;
             let image_name = post.get_image_name().context("missing image name")?;
-            let out_path = options.out_dir.join(image_name);
+            let image_extension = Path::new(image_name)
+                .extension()
+                .context("missing image extension")?
+                .to_str()
+                .context("image extension is not valid unicode")?;
+
+            let mut file_name_buffer = itoa::Buffer::new();
+            let file_name = file_name_buffer.format(options.id);
+            let out_path = options
+                .out_dir
+                .join(format!("{}.{}", file_name, image_extension));
 
             tokio::fs::create_dir_all(&options.out_dir)
                 .await
