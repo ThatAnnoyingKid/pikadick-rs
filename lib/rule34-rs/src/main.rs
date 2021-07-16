@@ -114,7 +114,8 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 .await
                 .context("failed to create out dir")?;
 
-            println!("ID: {}", options.id);
+            println!("ID: {}", post.id);
+            println!("Post Url: {}", post.get_post_url());
             println!("Image Url: {}", post.image_url);
             println!("Image Name: {}", image_name);
             println!("Out Path: {}", out_path.display());

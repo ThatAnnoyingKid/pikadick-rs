@@ -105,12 +105,7 @@ impl Client {
 
     /// Get a [`Post`] by `id`.
     pub async fn get_post(&self, id: u64) -> Result<Post, RuleError> {
-        let mut id_str = itoa::Buffer::new();
-        let url = Url::parse_with_params(
-            crate::URL_INDEX,
-            &[("id", id_str.format(id)), ("page", "post"), ("s", "view")],
-        )?;
-
+        let url = crate::post_id_to_post_url(id);
         let ret = self
             .get_html(url.as_str(), |html| Post::from_html(&html))
             .await??;
