@@ -47,6 +47,14 @@ pub enum FromHtmlError {
     /// Missing the sidebar
     #[error("missing sidebar")]
     MissingSidebar,
+
+    /// Missing the sidebar title
+    #[error("missing sidebar title")]
+    MissingSidebarTitle,
+
+    /// The sidebar title is invalid
+    #[error("invalid sidebar title")]
+    InvalidSidebarTitle(SidebarTitleFromStrError),
 }
 
 /// A Post page
@@ -80,6 +88,9 @@ pub struct Post {
 
     /// General tags
     pub general_tags: Vec<String>,
+
+    /// Meta tags
+    pub meta_tags: Vec<String>,
 }
 
 impl Post {
@@ -185,14 +196,19 @@ impl Post {
         let mut character_tags = Vec::new();
         let mut artist_tags = Vec::new();
         let mut general_tags = Vec::new();
+        let mut meta_tags = Vec::new();
         for element in sidebar.select(&LI_SELECTOR) {
             let is_title = element.value().classes().count() == 0;
 
             if is_title {
-                sidebar_title = element
-                    .text()
-                    .next()
-                    .and_then(|s| s.parse::<SidebarTitle>().ok());
+                sidebar_title = Some(
+                    element
+                        .text()
+                        .next()
+                        .ok_or(FromHtmlError::MissingSidebarTitle)?
+                        .parse::<SidebarTitle>()
+                        .map_err(FromHtmlError::InvalidSidebarTitle)?,
+                );
             } else if let Some(sidebar_title) = sidebar_title {
                 let tag = element
                     .select(&A_SELECTOR)
@@ -204,6 +220,7 @@ impl Post {
                         SidebarTitle::Character => character_tags.push(tag.to_string()),
                         SidebarTitle::Artist => artist_tags.push(tag.to_string()),
                         SidebarTitle::General => general_tags.push(tag.to_string()),
+                        SidebarTitle::Meta => meta_tags.push(tag.to_string()),
                     }
                 }
             }
@@ -219,6 +236,7 @@ impl Post {
             character_tags,
             artist_tags,
             general_tags,
+            meta_tags,
         })
     }
 
@@ -236,9 +254,9 @@ impl Post {
 }
 
 #[derive(Debug, thiserror::Error)]
-enum SidebarTitleFromStrError {
-    #[error("invalid title")]
-    InvalidTitle,
+pub enum SidebarTitleFromStrError {
+    #[error("invalid title '{0}'")]
+    InvalidTitle(String),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
@@ -247,6 +265,7 @@ enum SidebarTitle {
     Character,
     Artist,
     General,
+    Meta,
 }
 
 impl std::str::FromStr for SidebarTitle {
@@ -258,7 +277,8 @@ impl std::str::FromStr for SidebarTitle {
             "Character" => Ok(Self::Character),
             "Artist" => Ok(Self::Artist),
             "General" => Ok(Self::General),
-            _ => Err(SidebarTitleFromStrError::InvalidTitle),
+            "Meta" => Ok(Self::Meta),
+            _ => Err(SidebarTitleFromStrError::InvalidTitle(data.to_string())),
         }
     }
 }
