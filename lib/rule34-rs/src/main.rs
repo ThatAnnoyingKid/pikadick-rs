@@ -48,8 +48,8 @@ pub struct DownloadOptions {
 }
 
 fn main() {
+    let options: Options = argh::from_env();
     let exit_code = {
-        let options: Options = argh::from_env();
         if let Err(e) = real_main(options) {
             eprintln!("{:?}", e);
             1
