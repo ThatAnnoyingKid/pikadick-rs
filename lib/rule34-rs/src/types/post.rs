@@ -24,6 +24,10 @@ pub enum FromHtmlError {
     #[error("missing post date")]
     MissingPostDate,
 
+    /// Invalid Post source
+    #[error("invalid post source")]
+    InvalidPostSource(url::ParseError),
+
     /// Invalid thumbnail url
     #[error("invalid thumbnail url")]
     InvalidThumbUrl(url::ParseError),
@@ -50,6 +54,9 @@ pub struct Post {
     /// The post date
     pub date: String,
 
+    /// The post source
+    pub source: Option<Url>,
+
     /// Thumbnail Url
     ///
     /// Not included for videos/gifs.
@@ -75,6 +82,7 @@ impl Post {
 
         let mut id_str = None;
         let mut date = None;
+        let mut source_str = None;
 
         let stats_header_element_iter = html
             .select(&STATS_SELECTOR)
@@ -92,10 +100,13 @@ impl Post {
                 if date.is_none() && text.starts_with("Posted: ") {
                     date = Some(text.trim_start_matches("Posted: "));
                 }
-            }
 
-            if id_str.is_some() && date.is_some() {
-                break;
+                if source_str.is_none() && text.starts_with("Source:") {
+                    source_str = element
+                        .select(&A_SELECTOR)
+                        .next()
+                        .and_then(|a| a.value().attr("href"));
+                }
             }
         }
 
@@ -104,6 +115,10 @@ impl Post {
             .parse()
             .map_err(FromHtmlError::InvalidPostId)?;
         let date = date.ok_or(FromHtmlError::MissingPostDate)?.to_string();
+        let source = source_str
+            .map(|source| source.parse())
+            .transpose()
+            .map_err(FromHtmlError::InvalidPostSource)?;
 
         let options_header = html
             .select(&OPTIONS_HEADER_SELECTOR)
@@ -146,6 +161,7 @@ impl Post {
         Ok(Post {
             id,
             date,
+            source,
             thumb_url,
             image_url,
         })
