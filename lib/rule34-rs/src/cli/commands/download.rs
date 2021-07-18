@@ -1,7 +1,13 @@
 use anyhow::Context;
-use std::path::{
-    Path,
-    PathBuf,
+use std::{
+    collections::{
+        HashSet,
+        VecDeque,
+    },
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 use tokio::{
     fs::File,
@@ -25,6 +31,13 @@ pub struct Options {
 
     #[argh(
         switch,
+        long = "download-children",
+        description = "whether to download child posts"
+    )]
+    download_children: bool,
+
+    #[argh(
+        switch,
         short = 'd',
         long = "dry-run",
         description = "whether to save the image"
@@ -33,27 +46,72 @@ pub struct Options {
 }
 
 pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<()> {
-    let post = client
-        .get_post(options.id)
-        .await
-        .context("failed to get post")?;
-    let image_name = post.get_image_name().context("missing image name")?;
-    let image_extension = Path::new(image_name)
-        .extension()
-        .context("missing image extension")?
-        .to_str()
-        .context("image extension is not valid unicode")?;
-
-    let mut file_name_buffer = itoa::Buffer::new();
-    let file_name = file_name_buffer.format(options.id);
-    let out_path = options
-        .out_dir
-        .join(format!("{}.{}", file_name, image_extension));
-
     tokio::fs::create_dir_all(&options.out_dir)
         .await
         .context("failed to create out dir")?;
 
+    let mut downloaded = HashSet::with_capacity(8);
+    let mut queue = VecDeque::with_capacity(8);
+    queue.push_back(options.id);
+
+    while let Some(id) = queue.pop_front() {
+        let post = client.get_post(id).await.context("failed to get post")?;
+        let image_name = post.get_image_name().context("missing image name")?;
+        let image_extension = Path::new(image_name)
+            .extension()
+            .context("missing image extension")?
+            .to_str()
+            .context("image extension is not valid unicode")?;
+
+        let mut file_name_buffer = itoa::Buffer::new();
+        let file_name = file_name_buffer.format(options.id);
+        let out_path = options
+            .out_dir
+            .join(format!("{}.{}", file_name, image_extension));
+
+        print_post_info(&post, image_name, &out_path);
+
+        downloaded.insert(post.id);
+
+        if out_path.exists() {
+            println!("file already exists");
+        } else {
+            println!("Downloading...");
+            let buffer = client
+                .get_bytes(post.image_url.as_str())
+                .await
+                .context("failed to download image")?;
+
+            if options.dry_run {
+                println!("Not saving since this is a dry run...")
+            } else {
+                println!("Saving...");
+                let mut file = BufWriter::new(File::create(out_path).await?);
+                tokio::io::copy(&mut buffer.as_ref(), &mut file)
+                    .await
+                    .context("failed to save image")?;
+            }
+        }
+
+        if options.download_children && post.has_child_posts {
+            // TODO: Multi-page support
+            let results = client
+                .search(&format!("parent:{}", post.id), 0)
+                .await
+                .context("failed to fetch post children")?;
+
+            for result in results.entries {
+                if !downloaded.contains(&result.id) {
+                    queue.push_back(result.id);
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn print_post_info(post: &rule34::Post, image_name: &str, out_path: &Path) {
     println!("ID: {}", post.id);
     println!("Post Date: {}", post.date);
     println!("Post Url: {}", post.get_post_url());
@@ -77,26 +135,4 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
     );
     println!("Out Path: {}", out_path.display());
     println!();
-
-    if out_path.exists() {
-        anyhow::bail!("file already exists");
-    }
-
-    println!("Downloading...");
-    let buffer = client
-        .get_bytes(post.image_url.as_str())
-        .await
-        .context("failed to download image")?;
-
-    if options.dry_run {
-        println!("Not saving since this is a dry run...")
-    } else {
-        println!("Saving...");
-        let mut file = BufWriter::new(File::create(out_path).await?);
-        tokio::io::copy(&mut buffer.as_ref(), &mut file)
-            .await
-            .context("failed to save image")?;
-    }
-
-    Ok(())
 }
