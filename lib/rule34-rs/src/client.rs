@@ -5,7 +5,6 @@ use crate::{
     },
     RuleError,
 };
-use bytes::Bytes;
 use reqwest::header::{
     HeaderMap,
     HeaderValue,
@@ -113,29 +112,12 @@ impl Client {
         Ok(ret)
     }
 
-    /// Send a GET web request to a `uri` and download the result as [`Bytes`].
-    pub async fn get_bytes(&self, url: &str) -> Result<Bytes, RuleError> {
-        Ok(self
-            .client
-            .get(url)
-            .send()
-            .await?
-            .error_for_status()?
-            .bytes()
-            .await?)
-    }
-
     /// Send a GET web request to a `uri` and copy the result to the given async writer.
-    pub async fn get_to<W>(&self, url: &Url, mut writer: W) -> Result<(), RuleError>
+    pub async fn get_to_writer<W>(&self, url: &str, mut writer: W) -> Result<(), RuleError>
     where
         W: AsyncWrite + Unpin,
     {
-        let mut res = self
-            .client
-            .get(url.as_str())
-            .send()
-            .await?
-            .error_for_status()?;
+        let mut res = self.client.get(url).send().await?.error_for_status()?;
 
         while let Some(chunk) = res.chunk().await? {
             writer.write_all(&chunk).await?;

@@ -2432,7 +2432,6 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "argh",
- "bytes 1.0.1",
  "itoa",
  "lazy_static",
  "reqwest",

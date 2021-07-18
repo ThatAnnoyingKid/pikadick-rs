@@ -11,7 +11,10 @@ use std::{
 };
 use tokio::{
     fs::File,
-    io::BufWriter,
+    io::{
+        AsyncWriteExt,
+        BufWriter,
+    },
 };
 
 #[derive(argh::FromArgs)]
@@ -82,22 +85,17 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
 
         if out_path.exists() {
             println!("file already exists");
+        } else if options.dry_run {
+            println!("Not saving since this is a dry run...")
         } else {
             println!("Downloading...");
-            let buffer = client
-                .get_bytes(post.image_url.as_str())
+            let mut file = BufWriter::new(File::create(out_path).await?);
+            client
+                .get_to_writer(post.image_url.as_str(), &mut file)
                 .await
                 .context("failed to download image")?;
 
-            if options.dry_run {
-                println!("Not saving since this is a dry run...")
-            } else {
-                println!("Saving...");
-                let mut file = BufWriter::new(File::create(out_path).await?);
-                tokio::io::copy(&mut buffer.as_ref(), &mut file)
-                    .await
-                    .context("failed to save image")?;
-            }
+            file.flush().await.context("failed to flush writer")?;
         }
 
         if options.download_parent {
