@@ -18,7 +18,7 @@ pub enum FromHtmlError {
 
     ///The post id is invalid
     #[error("invalid post id")]
-    InvalidPostId(std::num::ParseIntError),
+    InvalidPostId(#[source] std::num::ParseIntError),
 
     /// Missing the post date
     #[error("missing post date")]
@@ -26,11 +26,11 @@ pub enum FromHtmlError {
 
     /// Invalid Post source
     #[error("invalid post source")]
-    InvalidPostSource(url::ParseError),
+    InvalidPostSource(#[source] url::ParseError),
 
     /// Invalid thumbnail url
     #[error("invalid thumbnail url")]
-    InvalidThumbUrl(url::ParseError),
+    InvalidThumbUrl(#[source] url::ParseError),
 
     /// Missing the options section
     #[error("missing options section")]
@@ -42,7 +42,7 @@ pub enum FromHtmlError {
 
     /// invalid image url
     #[error("invalid image url")]
-    InvalidImageUrl(url::ParseError),
+    InvalidImageUrl(#[source] url::ParseError),
 
     /// Missing the sidebar
     #[error("missing sidebar")]
@@ -54,11 +54,15 @@ pub enum FromHtmlError {
 
     /// The sidebar title is invalid
     #[error("invalid sidebar title")]
-    InvalidSidebarTitle(SidebarTitleFromStrError),
+    InvalidSidebarTitle(#[source] SidebarTitleFromStrError),
 
     /// A tag was expected but not found
     #[error("missing tag")]
     MissingTag,
+
+    /// A parent post url was invalid
+    #[error("invalid parent post")]
+    InvalidParentPost(#[source] std::num::ParseIntError),
 }
 
 /// A Post page
@@ -95,6 +99,12 @@ pub struct Post {
 
     /// Meta tags
     pub meta_tags: Vec<String>,
+
+    /// Whether this post has child posts
+    pub has_child_posts: bool,
+
+    /// Whether this post has a parent post
+    pub parent_post: Option<u64>,
 }
 
 impl Post {
@@ -111,6 +121,8 @@ impl Post {
             static ref A_SELECTOR: Selector = Selector::parse("a[href]").expect("invalid a selector");
 
             static ref SIDEBAR_SELECTOR: Selector = Selector::parse("#tag-sidebar").expect("invalid sidebar selector");
+
+            static ref STATUS_NOTICE_SELECTOR: Selector = Selector::parse(".status-notice").expect("invalid status notice selector");
         }
 
         let mut id_str = None;
@@ -202,6 +214,7 @@ impl Post {
         let mut general_tags = Vec::new();
         let mut meta_tags = Vec::new();
         for element in sidebar.select(&LI_SELECTOR) {
+            // Titles have no classes
             let is_title = element.value().classes().count() == 0;
 
             if is_title {
@@ -229,6 +242,54 @@ impl Post {
             }
         }
 
+        let mut has_child_posts = false;
+        let mut parent_post = None;
+
+        for element in html.select(&STATUS_NOTICE_SELECTOR) {
+            for text in element.text().map(|text| text.trim()) {
+                match text {
+                    "child posts" => {
+                        has_child_posts = true;
+                    }
+                    "parent post" => {
+                        if parent_post.is_none() {
+                            parent_post = element
+                                .select(&A_SELECTOR)
+                                .next()
+                                .and_then(|element| element.value().attr("href"))
+                                .map(|url| {
+                                    let mut trimmed = false;
+                                    let query = url.trim_start_matches(|c| {
+                                        if !trimmed && c == '?' {
+                                            trimmed = true;
+                                            trimmed
+                                        } else {
+                                            !trimmed
+                                        }
+                                    });
+
+                                    url::form_urlencoded::parse(query.as_bytes()).find_map(
+                                        |(k, v)| {
+                                            if k == "id" {
+                                                Some(
+                                                    v.parse::<u64>()
+                                                        .map_err(FromHtmlError::InvalidParentPost),
+                                                )
+                                            } else {
+                                                None
+                                            }
+                                        },
+                                    )
+                                })
+                                .flatten()
+                                .transpose()?;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
         Ok(Post {
             id,
             date,
@@ -240,6 +301,8 @@ impl Post {
             artist_tags,
             general_tags,
             meta_tags,
+            has_child_posts,
+            parent_post,
         })
     }
 

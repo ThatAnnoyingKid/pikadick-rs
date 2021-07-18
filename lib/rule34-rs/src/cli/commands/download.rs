@@ -67,6 +67,14 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
     println!("Artist Tags: {}", post.artist_tags.join(", "));
     println!("General Tags: {}", post.general_tags.join(", "));
     println!("Meta Tags: {}", post.meta_tags.join(", "));
+    println!("Has Child Posts: {}", post.has_child_posts);
+    println!(
+        "Parent Post: {}",
+        post.parent_post
+            .as_ref()
+            .map(|id| id.to_string())
+            .unwrap_or_else(|| "none".to_string())
+    );
     println!("Out Path: {}", out_path.display());
     println!();
 
