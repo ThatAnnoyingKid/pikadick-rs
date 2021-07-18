@@ -38,6 +38,13 @@ pub struct Options {
 
     #[argh(
         switch,
+        long = "download-parent",
+        description = "whether to download parent posts"
+    )]
+    download_parent: bool,
+
+    #[argh(
+        switch,
         short = 'd',
         long = "dry-run",
         description = "whether to save the image"
@@ -90,6 +97,14 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
                 tokio::io::copy(&mut buffer.as_ref(), &mut file)
                     .await
                     .context("failed to save image")?;
+            }
+        }
+
+        if options.download_parent {
+            if let Some(id) = post.parent_post {
+                if !downloaded.contains(&id) {
+                    queue.push_back(id);
+                }
             }
         }
 
