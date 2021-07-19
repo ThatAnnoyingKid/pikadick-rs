@@ -40,7 +40,7 @@ impl<T> ApiResponse<T> {
 
     /// Checks whether the data contained is valid.
     ///
-    /// This looks to see if this is both an error and succes or neither.
+    /// This looks to see if this is both an error and success or neither.
     pub fn is_valid_response(&self) -> bool {
         self.is_error() || self.is_success()
     }
@@ -62,7 +62,7 @@ impl<T> From<ApiResponse<T>> for FmlResult<T> {
 pub struct Article {
     pub apikey: Option<String>,
     pub area: Option<String>,
-    pub author: String,
+    pub author: Option<String>,
     pub bitly: Option<String>,
     pub city: Option<String>,
     pub content: String,
@@ -153,4 +153,17 @@ pub struct ArticleUsermetrics {
     pub votes: Option<serde_json::Value>,
     #[serde(flatten)]
     pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const DATA_1: &str = include_str!("../test_data/data_1.json");
+
+    #[test]
+    fn data_1() {
+        let _data_1: ApiResponse<Vec<Article>> =
+            serde_json::from_str(DATA_1).expect("failed to parse");
+    }
 }
