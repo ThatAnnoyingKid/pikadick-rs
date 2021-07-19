@@ -159,7 +159,7 @@ pub struct ArticleUsermetrics {
 mod test {
     use super::*;
 
-    const DATA_1: &str = include_str!("../test_data/data_1.json");
+    const DATA_1: &str = include_str!("../test_data/DATA_1.json");
 
     #[test]
     fn data_1() {
