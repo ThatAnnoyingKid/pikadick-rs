@@ -108,7 +108,6 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
         }
 
         if options.download_children && post.has_child_posts {
-            let mut results = Vec::with_capacity(64);
             let mut offset = 0;
             loop {
                 let search_query = format!("parent:{}", post.id);
@@ -122,12 +121,11 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
                 if page_results.is_empty() {
                     break;
                 }
-                results.extend(page_results);
-            }
 
-            for result in results {
-                if !downloaded.contains(&result.id) {
-                    queue.push_back(result.id);
+                for result in page_results {
+                    if !downloaded.contains(&result.id) {
+                        queue.push_back(result.id);
+                    }
                 }
             }
         }
