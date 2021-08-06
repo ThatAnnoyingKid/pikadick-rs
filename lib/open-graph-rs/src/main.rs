@@ -72,7 +72,7 @@ async fn download_object(
 
     let mut buffer = Vec::with_capacity(1_000_000); // 1 MB
     client
-        .download_object_to(&object, &mut buffer)
+        .download_object_to(object, &mut buffer)
         .await
         .context("failed to download object")?;
 

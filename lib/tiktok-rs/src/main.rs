@@ -1,10 +1,6 @@
 use std::path::PathBuf;
 use url::Url;
 
-fn default_out_file() -> PathBuf {
-    PathBuf::from("video.mp4")
-}
-
 #[derive(argh::FromArgs)]
 #[argh(description = "App to download tiktok videos")]
 struct CommandOptions {
@@ -13,7 +9,7 @@ struct CommandOptions {
     url: Url,
 
     /// the outfile
-    #[argh(option, short = 'o', default = "default_out_file()")]
+    #[argh(option, short = 'o', default = "PathBuf::from(\"video.mp4\")")]
     out_file: PathBuf,
 }
 
@@ -31,10 +27,10 @@ fn main() {
         }
     };
 
-    let client = tiktock::Client::new();
+    let client = tiktok::Client::new();
 
     tokio_rt.block_on(async {
-        let url = match tiktock::PostUrl::from_url(options.url) {
+        let url = match tiktok::PostUrl::from_url(options.url) {
             Ok(url) => url,
             Err(_e) => {
                 eprintln!("Invalid post url");
