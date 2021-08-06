@@ -41,7 +41,7 @@ thiserror = "1.0.26"
 tiny-skia = { version = "0.5.1", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.9.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"
-tonic = "0.4.3"
+tonic = "0.5.0"
 tracing = "0.1.26"
 tracing-appender = "0.1.2"
 tracing-log = "0.1.2"
