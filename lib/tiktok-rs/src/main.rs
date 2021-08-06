@@ -27,10 +27,10 @@ fn main() {
         }
     };
 
-    let client = tiktock::Client::new();
+    let client = tiktok::Client::new();
 
     tokio_rt.block_on(async {
-        let url = match tiktock::PostUrl::from_url(options.url) {
+        let url = match tiktok::PostUrl::from_url(options.url) {
             Ok(url) => url,
             Err(_e) => {
                 eprintln!("Invalid post url");
