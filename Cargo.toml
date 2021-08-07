@@ -88,6 +88,7 @@ members = [
     "lib/tiktok-rs",
     "lib/minimax-rs",
     "lib/open-graph-rs",
+    "lib/iqdb-rs",
 ]
 
 # To make image drawing times sane
