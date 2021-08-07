@@ -35,16 +35,35 @@ fn real_main(options: Options) -> anyhow::Result<()> {
 async fn async_main(options: Options) -> anyhow::Result<()> {
     let client = iqdb::Client::new();
 
+    let image: iqdb::Image = if options.url.starts_with("http") {
+        options.url.as_str().into()
+    } else {
+        eprintln!("Opening image...");
+        iqdb::Image::from_path(options.url.as_ref())
+            .await
+            .context("failed to load image")?
+    };
+
     eprintln!("Searching...");
-    let search_results = client
-        .search(options.url)
-        .await
-        .context("failed to search")?;
+    eprintln!();
+    let search_results = client.search(image).await.context("failed to search")?;
 
     if let Some(best_match) = search_results.best_match.as_ref() {
         println!("Best Match");
         println!(" * Url: {}", best_match.url.as_str());
         println!(" * Image Url: {}", best_match.image_url.as_str());
+    } else {
+        println!("No Best Match");
+    }
+
+    println!();
+    println!();
+
+    for (i, possible_match) in search_results.possible_matches.iter().enumerate() {
+        println!("Possbile Match {}", i + 1);
+        println!(" * Url: {}", possible_match.url.as_str());
+        println!(" * Image Url: {}", possible_match.image_url.as_str());
+        println!();
     }
 
     Ok(())

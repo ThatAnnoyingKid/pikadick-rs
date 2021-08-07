@@ -1361,6 +1361,7 @@ dependencies = [
  "scraper",
  "thiserror",
  "tokio",
+ "tokio-util",
  "url",
 ]
 
