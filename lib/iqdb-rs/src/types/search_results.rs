@@ -109,7 +109,7 @@ pub struct Match {
     pub url: Url,
 
     /// The url of the img
-    pub img_url: Url,
+    pub image_url: Url,
 }
 
 impl Match {
@@ -144,9 +144,9 @@ impl Match {
             .ok_or(FromElementError::MissingImgUrl)
             .map(fixup_url)?;
 
-        let img_url = Url::parse(&img_src).map_err(FromElementError::InvalidImgUrl)?;
+        let image_url = Url::parse(&img_src).map_err(FromElementError::InvalidImgUrl)?;
 
-        Ok(Self { url, img_url })
+        Ok(Self { url, image_url })
     }
 }
 

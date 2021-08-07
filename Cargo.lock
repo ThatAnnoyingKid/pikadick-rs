@@ -1944,6 +1944,7 @@ dependencies = [
  "heim",
  "indexmap",
  "insta",
+ "iqdb",
  "lazy_static",
  "minimax",
  "nekos",

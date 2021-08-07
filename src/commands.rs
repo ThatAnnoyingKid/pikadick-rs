@@ -4,6 +4,7 @@ pub mod deviantart;
 pub mod fml;
 pub mod insta_dl;
 pub mod invite;
+pub mod iqdb;
 pub mod latency;
 pub mod nekos;
 pub mod ping;
@@ -28,6 +29,7 @@ pub use crate::commands::{
     fml::FML_COMMAND,
     insta_dl::INSTA_DL_COMMAND,
     invite::INVITE_COMMAND,
+    iqdb::IQDB_COMMAND,
     latency::LATENCY_COMMAND,
     nekos::NEKOS_COMMAND,
     ping::PING_COMMAND,

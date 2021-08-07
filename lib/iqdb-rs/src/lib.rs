@@ -1,6 +1,6 @@
 mod types;
 
-use crate::types::SearchResults;
+pub use crate::types::SearchResults;
 use scraper::Html;
 
 // /// The max file size in bytes
@@ -21,7 +21,7 @@ pub enum Error {
     InvalidSearchResults(#[from] crate::types::search_results::FromHtmlError),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Client {
     client: reqwest::Client,
 }
@@ -34,8 +34,8 @@ impl Client {
     }
 
     /// Look up an image.
-    pub async fn search(&self, url: &str) -> Result<SearchResults, Error> {
-        let form = reqwest::multipart::Form::new().text("url", url.to_string());
+    pub async fn search(&self, url: impl Into<String>) -> Result<SearchResults, Error> {
+        let form = reqwest::multipart::Form::new().text("url", url.into());
         let text = self
             .client
             .post("http://iqdb.org/")
