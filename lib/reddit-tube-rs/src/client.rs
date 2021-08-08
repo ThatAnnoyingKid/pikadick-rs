@@ -1,7 +1,6 @@
 use crate::{
     GetVideoResponse,
     MainPage,
-    TubeError,
     TubeResult,
 };
 use scraper::Html;
@@ -21,8 +20,9 @@ impl Client {
         Client {
             client: reqwest::ClientBuilder::new()
                 .cookie_store(true)
+                .user_agent("reddit-tube-rs")
                 .build()
-                .expect("valid client"),
+                .expect("failed to build client"),
         }
     }
 
@@ -33,14 +33,14 @@ impl Client {
     /// # Errors
     /// Returns an error if the [`MainPage`] could not be fetched.
     pub async fn get_main_page(&self) -> TubeResult<MainPage> {
-        let res = self.client.get("https://www.reddit.tube/").send().await?;
-
-        let status = res.status();
-        if !status.is_success() {
-            return Err(TubeError::InvalidStatus(status));
-        }
-
-        let body = res.text().await?;
+        let body = self
+            .client
+            .get("https://www.reddit.tube/")
+            .send()
+            .await?
+            .error_for_status()?
+            .text()
+            .await?;
 
         Ok(tokio::task::spawn_blocking(move || {
             let html = Html::parse_document(body.as_str());
@@ -60,7 +60,7 @@ impl Client {
     /// # Errors
     /// Returns an error if the video url could not be fetched.
     pub async fn get_video(&self, main_page: &MainPage, url: &str) -> TubeResult<GetVideoResponse> {
-        let res = self
+        Ok(self
             .client
             .post("https://www.reddit.tube/services/get_video")
             .form(&[
@@ -69,17 +69,10 @@ impl Client {
                 (&main_page.csrf_key, &main_page.csrf_value),
             ])
             .send()
-            .await?;
-
-        let status = res.status();
-        if !status.is_success() {
-            return Err(TubeError::InvalidStatus(status));
-        }
-
-        let body = res.text().await?;
-        let response = serde_json::from_str(&body)?;
-
-        Ok(response)
+            .await?
+            .error_for_status()?
+            .json()
+            .await?)
     }
 }
 

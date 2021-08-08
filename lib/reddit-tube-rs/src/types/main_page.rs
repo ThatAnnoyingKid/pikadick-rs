@@ -28,16 +28,18 @@ pub struct MainPage {
 impl MainPage {
     /// Make a [`MainPage`] from [`Html`].
     pub(crate) fn from_html(html: &Html) -> Result<Self, FromHtmlError> {
-        let download_form_selector =
-            Selector::parse("#download-form").expect("invalid download form selector");
+        lazy_static::lazy_static! {
+            static ref DOWNLOAD_FORM_SELECTOR: Selector = Selector::parse("#download-form").expect("invalid download form selector");
+            static ref CSRF_SELECTOR: Selector = Selector::parse("[name][value]").expect("invalid csrf selector");
+        }
+
         let download_form = html
-            .select(&download_form_selector)
+            .select(&DOWNLOAD_FORM_SELECTOR)
             .next()
             .ok_or(FromHtmlError::MissingDownloadForm)?;
 
-        let csrf_selector = Selector::parse("[name][value]").expect("invalid csrf selector");
         let (csrf_key, csrf_value) = download_form
-            .select(&csrf_selector)
+            .select(&CSRF_SELECTOR)
             .filter_map(|element| {
                 let value = element.value();
                 Some((value.attr("name")?, value.attr("value")?))

@@ -2318,6 +2318,7 @@ dependencies = [
 name = "reddit-tube"
 version = "0.0.0"
 dependencies = [
+ "lazy_static",
  "reqwest",
  "scraper",
  "serde",

@@ -15,23 +15,15 @@ pub type TubeResult<T> = Result<T, TubeError>;
 #[derive(Debug, thiserror::Error)]
 pub enum TubeError {
     /// HTTP Reqwest Error
-    #[error("{0}")]
+    #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
 
-    /// Invalid HTTP Status
-    #[error("invalid http status '{0}'")]
-    InvalidStatus(StatusCode),
-
-    /// invalid json parse
-    #[error("{0}")]
-    Json(#[from] serde_json::Error),
-
     /// invalid main page
-    #[error("invalid main page: {0}")]
+    #[error("invalid main page")]
     InvalidMainPage(#[from] crate::types::main_page::FromHtmlError),
 
     /// a tokio task failed
-    #[error("{0}")]
+    #[error(transparent)]
     TokioJoin(#[from] tokio::task::JoinError),
 }
 
