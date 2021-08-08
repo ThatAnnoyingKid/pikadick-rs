@@ -145,14 +145,12 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                         // falling back to the Overwolf API lifetime value, which is bugged.
                         let max_overwolf_season = stats.overwolf_player.get_max_season();
                         let max_season = stats.profile.get_max_season();
+                        let overwolf_best_mmr =
+                            stats.overwolf_player.lifetime_stats.best_mmr.as_ref();
                         let max_mmr = max_overwolf_season
                             .map(|season| season.max_mmr)
                             .or_else(|| max_season.and_then(|season| season.max_mmr()))
-                            .or_else(|| stats
-                                .overwolf_player
-                                .lifetime_stats
-                                .best_mmr.as_ref()
-                                .map(|best_mmr| best_mmr.mmr));
+                            .or_else(|| overwolf_best_mmr.map(|best_mmr| best_mmr.mmr));
                         let max_rank = max_overwolf_season
                             .map(|season| season.max_rank.rank_name.as_str())
                             .or_else(|| {
@@ -160,11 +158,7 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                                     .and_then(|season| season.max_rank())
                                     .map(|rank| rank.name())
                             })
-                            .or_else(|| stats
-                                .overwolf_player
-                                .lifetime_stats
-                                .best_mmr.as_ref()
-                                .map(|best_mmr| best_mmr.name.as_str()));
+                            .or_else(|| overwolf_best_mmr.map(|best_mmr| best_mmr.name.as_str()));
 
                         if let Some(max_mmr) = max_mmr {
                             e.field("Best MMR", max_mmr, true);
@@ -174,17 +168,27 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                             e.field("Best Rank", max_rank, true);
                         }
 
+                        if let Some(lifetime_ranked_kd) =
+                            stats.overwolf_player.get_lifetime_ranked_kd()
+                        {
+                            e.field(
+                                "Lifetime Ranked K/D",
+                                format!("{:.2}", lifetime_ranked_kd),
+                                true,
+                            );
+                        }
+
+                        if let Some(lifetime_ranked_win_pct) =
+                            stats.overwolf_player.get_lifetime_ranked_win_pct()
+                        {
+                            e.field(
+                                "Lifetime Ranked Win %",
+                                format!("{:.2}", lifetime_ranked_win_pct),
+                                true,
+                            );
+                        }
+
                         e.field(
-                            "Lifetime Ranked K/D",
-                            format!("{:.2}", stats.overwolf_player.get_lifetime_ranked_kd()),
-                            true,
-                        )
-                        .field(
-                            "Lifetime Ranked Win %",
-                            format!("{:.2}", stats.overwolf_player.get_lifetime_ranked_win_pct()),
-                            true,
-                        )
-                        .field(
                             "Lifetime K/D",
                             &stats.overwolf_player.lifetime_stats.kd,
                             true,

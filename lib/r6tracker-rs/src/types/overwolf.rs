@@ -165,7 +165,7 @@ impl OverwolfPlayer {
     }
 
     /// Get the lifetime K/D for ranked
-    pub fn get_lifetime_ranked_kd(&self) -> f64 {
+    pub fn get_lifetime_ranked_kd(&self) -> Option<f64> {
         let mut length = 0;
         let mut sum = 0.0;
         for season in self.iter_placed_ranked_seasons() {
@@ -173,11 +173,15 @@ impl OverwolfPlayer {
             length += 1;
         }
 
-        sum / (length as f64)
+        if length == 0 {
+            None
+        } else {
+            Some(sum / (length as f64))
+        }
     }
 
     /// Get lifetime ranked win %
-    pub fn get_lifetime_ranked_win_pct(&self) -> f64 {
+    pub fn get_lifetime_ranked_win_pct(&self) -> Option<f64> {
         let mut length = 0;
         let mut sum = 0.0;
         for season in self.iter_placed_ranked_seasons() {
@@ -185,7 +189,11 @@ impl OverwolfPlayer {
             length += 1;
         }
 
-        sum / (length as f64)
+        if length == 0 {
+            None
+        } else {
+            Some(sum / (length as f64))
+        }
     }
 }
 
