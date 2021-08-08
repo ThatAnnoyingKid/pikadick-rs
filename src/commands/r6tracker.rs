@@ -60,6 +60,7 @@ impl R6TrackerClient {
             self.client.get_profile(query, r6tracker::Platform::Pc),
         )
         .await;
+
         let entry = Stats {
             overwolf_player: overwolf_player?.into_result()?,
             profile: profile?.into_result()?,
@@ -93,11 +94,13 @@ impl CacheStatsProvider for R6TrackerClient {
 #[checks(Enabled)]
 async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
+    let client_data = data_lock
+        .get::<ClientDataKey>()
+        .expect("missing client data");
     let client = client_data.r6tracker_client.clone();
     drop(data_lock);
 
-    let name = args.trimmed().current().expect("Valid Name");
+    let name = args.trimmed().current().expect("missing name");
 
     info!("Getting r6 stats for '{}' using R6Tracker", name);
 
@@ -140,13 +143,16 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                         // Try manual calculation based on the Overwolf API Season stats,
                         // falling back to manual calculation based on the overlay stats,
                         // falling back to the Overwolf API lifetime value, which is bugged.
-                        //
                         let max_overwolf_season = stats.overwolf_player.get_max_season();
                         let max_season = stats.profile.get_max_season();
                         let max_mmr = max_overwolf_season
                             .map(|season| season.max_mmr)
                             .or_else(|| max_season.and_then(|season| season.max_mmr()))
-                            .unwrap_or(stats.overwolf_player.lifetime_stats.best_mmr.mmr);
+                            .or_else(|| stats
+                                .overwolf_player
+                                .lifetime_stats
+                                .best_mmr.as_ref()
+                                .map(|best_mmr| best_mmr.mmr));
                         let max_rank = max_overwolf_season
                             .map(|season| season.max_rank.rank_name.as_str())
                             .or_else(|| {
@@ -154,33 +160,40 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                                     .and_then(|season| season.max_rank())
                                     .map(|rank| rank.name())
                             })
-                            .unwrap_or(&stats.overwolf_player.lifetime_stats.best_mmr.name);
+                            .or_else(|| stats
+                                .overwolf_player
+                                .lifetime_stats
+                                .best_mmr.as_ref()
+                                .map(|best_mmr| best_mmr.name.as_str()));
 
-                        e.field("Best MMR", max_mmr, true)
-                            .field("Best Rank", max_rank, true)
-                            .field(
-                                "Lifetime Ranked K/D",
-                                format!("{:.2}", stats.overwolf_player.get_lifetime_ranked_kd()),
-                                true,
-                            )
-                            .field(
-                                "Lifetime Ranked Win %",
-                                format!(
-                                    "{:.2}",
-                                    stats.overwolf_player.get_lifetime_ranked_win_pct()
-                                ),
-                                true,
-                            )
-                            .field(
-                                "Lifetime K/D",
-                                &stats.overwolf_player.lifetime_stats.kd,
-                                true,
-                            )
-                            .field(
-                                "Lifetime Win %",
-                                &stats.overwolf_player.lifetime_stats.win_pct,
-                                true,
-                            );
+                        if let Some(max_mmr) = max_mmr {
+                            e.field("Best MMR", max_mmr, true);
+                        }
+
+                        if let Some(max_rank) = max_rank {
+                            e.field("Best Rank", max_rank, true);
+                        }
+
+                        e.field(
+                            "Lifetime Ranked K/D",
+                            format!("{:.2}", stats.overwolf_player.get_lifetime_ranked_kd()),
+                            true,
+                        )
+                        .field(
+                            "Lifetime Ranked Win %",
+                            format!("{:.2}", stats.overwolf_player.get_lifetime_ranked_win_pct()),
+                            true,
+                        )
+                        .field(
+                            "Lifetime K/D",
+                            &stats.overwolf_player.lifetime_stats.kd,
+                            true,
+                        )
+                        .field(
+                            "Lifetime Win %",
+                            &stats.overwolf_player.lifetime_stats.win_pct,
+                            true,
+                        );
 
                         // Old Non-Overwolf API
 

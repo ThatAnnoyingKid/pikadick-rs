@@ -350,6 +350,7 @@ mod test {
     const OVERWOLF_PLAYER_2: &str = include_str!("../../test_data/overwolf_player_2.json");
     const INVALID_OVERWOLF_RESPONSE: &str =
         include_str!("../../test_data/invalid_overwolf_response.json");
+    const SMACK_ASH_OVERWOLF: &str = include_str!("../../test_data/smack_ash_overwolf.json");
 
     #[test]
     fn parse_overwolf_player_1() {
@@ -363,6 +364,15 @@ mod test {
         let res: OverwolfResponse<OverwolfPlayer> =
             serde_json::from_str(OVERWOLF_PLAYER_2).unwrap();
         let valid = res.take_valid().unwrap();
+        dbg!(&valid);
+        dbg!(&valid.get_max_season());
+    }
+
+    #[test]
+    fn parse_smack_ash_overwolf() {
+        let res: OverwolfResponse<OverwolfPlayer> =
+            serde_json::from_str(SMACK_ASH_OVERWOLF).expect("failed to parse");
+        let valid = res.take_valid().expect("data is invalid");
         dbg!(&valid);
         dbg!(&valid.get_max_season());
     }

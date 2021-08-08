@@ -26,12 +26,12 @@ impl Client {
         }
     }
 
-    /// Get a url and return it as an ApiResponse.
+    /// Get a url and return it as an [`ApiResponse`].
     async fn get_api_response<T: DeserializeOwned>(&self, url: &str) -> R6Result<ApiResponse<T>> {
         Ok(self.client.get(url).send().await?.json().await?)
     }
 
-    /// Get a url and return an Overwolf API Response
+    /// Get a url and return an [`OverwolfResponse`]
     async fn get_overwolf_response<T: DeserializeOwned>(
         &self,
         url: &str,
@@ -52,13 +52,13 @@ impl Client {
         name: &str,
         platform: Platform,
     ) -> R6Result<ApiResponse<UserData>> {
-        let uri = format!(
+        let url = format!(
             "https://r6.tracker.network/api/v1/standard/profile/{}/{}/",
             platform.as_u32(),
             name
         );
 
-        self.get_api_response(&uri).await
+        self.get_api_response(&url).await
     }
 
     /// Get the sessions for a user
@@ -67,13 +67,13 @@ impl Client {
         name: &str,
         platform: Platform,
     ) -> R6Result<ApiResponse<SessionsData>> {
-        let uri = format!(
+        let url = format!(
             "https://r6.tracker.network/api/v1/standard/profile/{}/{}/sessions?",
             platform.as_u32(),
             name
         );
 
-        self.get_api_response(&uri).await
+        self.get_api_response(&url).await
     }
 
     /// Get player info using the Overwolf API.

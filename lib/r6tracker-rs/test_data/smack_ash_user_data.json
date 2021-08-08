@@ -1,0 +1,308 @@
+{
+  "data": {
+    "id": "5b343853-b651-4481-b2ba-8c92ee4dc787",
+    "type": "player",
+    "children": [],
+    "metadata": {
+      "statsCategoryOrder": [
+        "bestRatings",
+        "Ranked",
+        "Performance",
+        "Effectiveness"
+      ],
+      "platformId": 4,
+      "pictureUrl": "https://ubisoft-avatars.akamaized.net/5b343853-b651-4481-b2ba-8c92ee4dc787/default_256_256.png",
+      "countryCode": null,
+      "platformUserHandle": "smack.ash",
+      "currentSeasonName": "North Star",
+      "currentSeasonColor": "#009cbe",
+      "accountId": "5b343853-b651-4481-b2ba-8c92ee4dc787",
+      "segmentControls": [
+        {
+          "key": "region",
+          "icon": "earth",
+          "label": "Region",
+          "options": [
+            {
+              "label": "Europe",
+              "value": "region-1"
+            },
+            {
+              "label": "America",
+              "value": "region-2"
+            },
+            {
+              "label": "Asia",
+              "value": "region-3"
+            },
+            {
+              "label": "Global",
+              "value": "region-100"
+            }
+          ]
+        },
+        {
+          "key": "season",
+          "icon": "filter-outline",
+          "label": "Season",
+          "options": []
+        }
+      ],
+      "latestSeason": 22
+    },
+    "stats": [
+      {
+        "metadata": {
+          "key": "PVPKills",
+          "name": "Kills",
+          "categoryKey": "Performance",
+          "categoryName": "Performance",
+          "isReversed": false
+        },
+        "value": 20.0,
+        "percentile": 7.0,
+        "displayValue": "20"
+      },
+      {
+        "metadata": {
+          "key": "PVPDeaths",
+          "name": "Deaths",
+          "categoryKey": "Performance",
+          "categoryName": "Performance",
+          "isReversed": false
+        },
+        "value": 88.0,
+        "percentile": 14.0,
+        "displayValue": "88"
+      },
+      {
+        "metadata": {
+          "key": "PVPHostagesRescued",
+          "name": "Hostages Rescued",
+          "categoryKey": "Performance",
+          "categoryName": "Performance",
+          "isReversed": false
+        },
+        "value": 0.0,
+        "percentile": 0.0,
+        "displayValue": "0"
+      },
+      {
+        "metadata": {
+          "key": "PVPKDRatio",
+          "name": "KD Ratio",
+          "categoryKey": "Performance",
+          "categoryName": "Performance",
+          "isReversed": false
+        },
+        "value": 0.24,
+        "percentile": 2.0,
+        "displayValue": "0.24"
+      },
+      {
+        "metadata": {
+          "key": "PVPMatchesLost",
+          "name": "Matches Lost",
+          "categoryKey": "Performance",
+          "categoryName": "Performance",
+          "isReversed": false
+        },
+        "value": 9.0,
+        "percentile": 10.0,
+        "displayValue": "9"
+      },
+      {
+        "metadata": {
+          "key": "PVPMatchesWon",
+          "name": "Matches Won",
+          "categoryKey": "Performance",
+          "categoryName": "Performance",
+          "isReversed": false
+        },
+        "value": 11.0,
+        "percentile": 11.0,
+        "displayValue": "11"
+      },
+      {
+        "metadata": {
+          "key": "PVPMatchesPlayed",
+          "name": "Matches Played",
+          "categoryKey": "Performance",
+          "categoryName": "Performance",
+          "isReversed": false
+        },
+        "value": 20.0,
+        "percentile": 10.0,
+        "displayValue": "20"
+      },
+      {
+        "metadata": {
+          "key": "PVPWLRatio",
+          "name": "WL Ratio",
+          "categoryKey": "Performance",
+          "categoryName": "Performance",
+          "isReversed": false
+        },
+        "value": 55.0,
+        "percentile": 77.0,
+        "displayValue": "55.00"
+      },
+      {
+        "metadata": {
+          "key": "PVPKillAssists",
+          "name": "Kill Assists",
+          "categoryKey": "Performance",
+          "categoryName": "Performance",
+          "isReversed": false
+        },
+        "value": 13.0,
+        "percentile": 9.0,
+        "displayValue": "13"
+      },
+      {
+        "metadata": {
+          "key": "PVPAccuracy",
+          "name": "Accuracy",
+          "categoryKey": "Performance",
+          "categoryName": "Performance",
+          "isReversed": false
+        },
+        "value": 0.0,
+        "percentile": 31.0,
+        "displayValue": "35.00"
+      },
+      {
+        "metadata": {
+          "key": "PVPReinforcementsDeployed",
+          "name": "Reinforcements Deployed",
+          "categoryKey": "Effectiveness",
+          "categoryName": "Effectiveness",
+          "isReversed": false
+        },
+        "value": 19.0,
+        "percentile": 9.0,
+        "displayValue": "19"
+      },
+      {
+        "metadata": {
+          "key": "PVPBarricadesDeployed",
+          "name": "Barricades Deployed",
+          "categoryKey": "Effectiveness",
+          "categoryName": "Effectiveness",
+          "isReversed": false
+        },
+        "value": 2.0,
+        "percentile": 4.0,
+        "displayValue": "2"
+      },
+      {
+        "metadata": {
+          "key": "PVPGadgetsDestroyed",
+          "name": "Gadgets Destroyed",
+          "categoryKey": "Effectiveness",
+          "categoryName": "Effectiveness",
+          "isReversed": false
+        },
+        "value": 29.0,
+        "percentile": 9.0,
+        "displayValue": "29"
+      },
+      {
+        "metadata": {
+          "key": "PVPDBNOs",
+          "name": "DBNOs",
+          "categoryKey": "Effectiveness",
+          "categoryName": "Effectiveness",
+          "isReversed": false
+        },
+        "value": 8.0,
+        "percentile": 6.0,
+        "displayValue": "8"
+      },
+      {
+        "metadata": {
+          "key": "PVPBulletsHit",
+          "name": "Bullets Hit",
+          "categoryKey": "Effectiveness",
+          "categoryName": "Effectiveness",
+          "isReversed": false
+        },
+        "value": 253.0,
+        "percentile": 8.0,
+        "displayValue": "253"
+      },
+      {
+        "metadata": {
+          "key": "PVPBulletsFired",
+          "name": "Bullets Fired",
+          "categoryKey": "Effectiveness",
+          "categoryName": "Effectiveness",
+          "isReversed": false
+        },
+        "value": 0.0,
+        "percentile": 0.0,
+        "displayValue": "0"
+      },
+      {
+        "metadata": {
+          "key": "PVPSuicides",
+          "name": "Suicides",
+          "categoryKey": "Effectiveness",
+          "categoryName": "Effectiveness",
+          "isReversed": false
+        },
+        "value": 5.0,
+        "percentile": 55.0,
+        "displayValue": "5"
+      },
+      {
+        "metadata": {
+          "key": "PVPMeleeKills",
+          "name": "Melee Kills",
+          "categoryKey": "Effectiveness",
+          "categoryName": "Effectiveness",
+          "isReversed": false
+        },
+        "value": 3.0,
+        "percentile": 40.0,
+        "displayValue": "3"
+      },
+      {
+        "metadata": {
+          "key": "PVPRevives",
+          "name": "Revives",
+          "categoryKey": "Effectiveness",
+          "categoryName": "Effectiveness",
+          "isReversed": false
+        },
+        "value": 3.0,
+        "percentile": 14.0,
+        "displayValue": "3"
+      },
+      {
+        "metadata": {
+          "key": "PVPPenetrationKills",
+          "name": "Penetration Kills",
+          "categoryKey": "Effectiveness",
+          "categoryName": "Effectiveness",
+          "isReversed": false
+        },
+        "value": 2.0,
+        "percentile": 10.0,
+        "displayValue": "2"
+      },
+      {
+        "metadata": {
+          "key": "PVPWLRatio",
+          "name": "Ranked WL Ratio",
+          "categoryKey": "Ranked",
+          "categoryName": "Ranked",
+          "isReversed": false
+        },
+        "value": 55.0,
+        "percentile": 77.0,
+        "displayValue": "55.00"
+      }
+    ]
+  }
+}
