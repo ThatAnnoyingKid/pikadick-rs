@@ -1943,7 +1943,6 @@ dependencies = [
  "deviantart",
  "fern",
  "fml",
- "futures",
  "heim",
  "indexmap",
  "insta",

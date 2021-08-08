@@ -11,8 +11,9 @@ use crate::{
     },
     ClientDataKey,
 };
-use r6tracker::Error as R6Error;
+use anyhow::Context as _;
 use serenity::{
+    builder::CreateEmbed,
     framework::standard::{
         macros::command,
         Args,
@@ -34,10 +35,104 @@ pub struct Stats {
     profile: r6tracker::UserData,
 }
 
+impl Stats {
+    pub fn populate_embed<'a>(&self, e: &'a mut CreateEmbed) -> &'a mut CreateEmbed {
+        // We mix overwolf and non-overwolf data to get what we want.
+
+        // New Overwolf Api
+        e.title(self.overwolf_player.name.as_str())
+            .image(self.overwolf_player.avatar.as_str());
+
+        if let Some(season) = self.overwolf_player.current_season_best_region.as_ref() {
+            e.field("Current Rank", &season.rank_name, true)
+                .field("Current MMR", season.mmr, true)
+                .field("Seasonal Ranked K/D", format!("{:.2}", season.kd), true)
+                .field("Seasonal Ranked Win %", season.win_pct, true)
+                .field("Seasonal # of Ranked Matches", season.matches, true);
+        }
+
+        if let Some(season) = self.overwolf_player.get_current_casual_season() {
+            e.field("Current Casual Rank", &season.rank_name, true)
+                .field("Current Casual MMR", season.mmr, true)
+                .field("Seasonal Casual K/D", format!("{:.2}", season.kd), true)
+                .field("Seasonal Casual Win %", season.win_pct, true)
+                .field("Seasonal # of Casual Matches", season.matches, true);
+        }
+
+        // Best Rank/MMR lifetime stats are bugged in Overwolf.
+        // It shows the max ending stats.
+        //
+        // Try manual calculation based on the Overwolf API Season stats,
+        // falling back to manual calculation based on the overlay stats,
+        // falling back to the Overwolf API lifetime value, which is bugged.
+        let max_overwolf_season = self.overwolf_player.get_max_season();
+        let max_season = self.profile.get_max_season();
+        let overwolf_best_mmr = self.overwolf_player.lifetime_stats.best_mmr.as_ref();
+        let max_mmr = max_overwolf_season
+            .map(|season| season.max_mmr)
+            .or_else(|| max_season.and_then(|season| season.max_mmr()))
+            .or_else(|| overwolf_best_mmr.map(|best_mmr| best_mmr.mmr));
+        let max_rank = max_overwolf_season
+            .map(|season| season.max_rank.rank_name.as_str())
+            .or_else(|| {
+                max_season
+                    .and_then(|season| season.max_rank())
+                    .map(|rank| rank.name())
+            })
+            .or_else(|| overwolf_best_mmr.map(|best_mmr| best_mmr.name.as_str()));
+
+        if let Some(max_mmr) = max_mmr {
+            e.field("Best MMR", max_mmr, true);
+        }
+
+        if let Some(max_rank) = max_rank {
+            e.field("Best Rank", max_rank, true);
+        }
+
+        if let Some(lifetime_ranked_kd) = self.overwolf_player.get_lifetime_ranked_kd() {
+            e.field(
+                "Lifetime Ranked K/D",
+                format!("{:.2}", lifetime_ranked_kd),
+                true,
+            );
+        }
+
+        if let Some(lifetime_ranked_win_pct) = self.overwolf_player.get_lifetime_ranked_win_pct() {
+            e.field(
+                "Lifetime Ranked Win %",
+                format!("{:.2}", lifetime_ranked_win_pct),
+                true,
+            );
+        }
+
+        e.field("Lifetime K/D", self.overwolf_player.lifetime_stats.kd, true)
+            .field(
+                "Lifetime Win %",
+                self.overwolf_player.lifetime_stats.win_pct,
+                true,
+            );
+
+        // Old Non-Overwolf API
+
+        // Overwolf API does not send season colors
+        if let Some(c) = self.profile.season_color_u32() {
+            e.color(c);
+        }
+
+        // Overwolf API does not send non-svg rank thumbnails
+        if let Some(thumb) = self.profile.current_mmr_image() {
+            e.thumbnail(thumb);
+        }
+
+        e
+    }
+}
+
 #[derive(Clone, Default, Debug)]
 pub struct R6TrackerClient {
     client: r6tracker::Client,
-    search_cache: TimedCache<String, Stats>,
+    /// The value is `None` if the user could not be found
+    search_cache: TimedCache<String, Option<Stats>>,
 }
 
 impl R6TrackerClient {
@@ -50,27 +145,71 @@ impl R6TrackerClient {
     }
 
     /// Get R6Tracker stats
-    pub async fn get_stats(&self, query: &str) -> Result<Arc<TimedCacheEntry<Stats>>, R6Error> {
+    pub async fn get_stats(
+        &self,
+        query: &str,
+    ) -> anyhow::Result<Arc<TimedCacheEntry<Option<Stats>>>> {
         if let Some(entry) = self.search_cache.get_if_fresh(query) {
             return Ok(entry);
         }
 
-        let (overwolf_player, profile) = futures::future::join(
-            self.client.get_overwolf_player(query),
-            self.client.get_profile(query, r6tracker::Platform::Pc),
-        )
-        .await;
+        let overwolf_client = self.client.clone();
+        let overwolf_query = query.to_string();
+        let overwolf_player_handle =
+            tokio::spawn(async move { overwolf_client.get_overwolf_player(&overwolf_query).await });
 
-        let entry = Stats {
-            overwolf_player: overwolf_player?.into_result()?,
-            profile: profile?.into_result()?,
+        let profile_client = self.client.clone();
+        let profile_query = query.to_string();
+        let profile_handle = tokio::spawn(async move {
+            profile_client
+                .get_profile(&profile_query, r6tracker::Platform::Pc)
+                .await
+        });
+
+        let overwolf_player = overwolf_player_handle.await?;
+        let profile = profile_handle.await?;
+
+        // This returns "No results" to the user when an InvalidName Overwolf API Error occurs.
+        // This works because we check for errors in the Overwolf response first,
+        // so non-existent users are always predictably caught there.
+        //
+        // However, it may be beneficial to add a case for other API errors to catch edge cases,
+        // such as UserData erroring while Overwolf.
+        // This isn't a high priortiy however as this is entirely cosmetic;
+        // the user will simply get an ugly error if we fail to special-case it here.
+        //
+        // TODO: Add case for UserData
+        let overwolf_player = match overwolf_player
+            .context("failed to get overwolf player data")?
+            .into_result()
+        {
+            Ok(overwolf_player) => Some(overwolf_player),
+            Err(response_err) if response_err.0.as_str() == "InvalidName" => None,
+            Err(e) => {
+                return Err(r6tracker::Error::from(e)).context("overwolf api response error");
+            }
         };
+
+        // Open profile in the map so that we only validate the profile if we got overwolf data
+        // This is because profile will fail in strange ways if the player does not exist.
+        let entry = overwolf_player
+            .map::<Result<_, anyhow::Error>, _>(|overwolf_player| {
+                let profile = profile
+                    .context("failed to get profile data")?
+                    .into_result()
+                    .context("profile api response was invalid")?;
+                Ok(Stats {
+                    overwolf_player,
+                    profile,
+                })
+            })
+            .transpose()?;
+
         self.search_cache.insert(String::from(query), entry);
 
-        Ok(self
-            .search_cache
+        self.search_cache
             .get_if_fresh(query)
-            .expect("Valid R6Tracker Stats"))
+            .context("cache data expired")
     }
 }
 
@@ -106,151 +245,29 @@ async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
 
     let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
-    match client.get_stats(name).await {
+    match client
+        .get_stats(name)
+        .await
+        .context("failed to get r6tracker stats")
+    {
         Ok(entry) => {
             loading.send_ok();
             msg.channel_id
                 .send_message(&ctx.http, |m| {
                     let stats = entry.data();
-                    m.embed(|e| {
-                        // We mix overwolf and non-overwolf data to get what we want.
 
-                        // New Overwolf Api
-                        e.title(&stats.overwolf_player.name)
-                            .image(&stats.overwolf_player.avatar);
-
-                        if let Some(season) =
-                            stats.overwolf_player.current_season_best_region.as_ref()
-                        {
-                            e.field("Current Rank", &season.rank_name, true)
-                                .field("Current MMR", season.mmr, true)
-                                .field("Seasonal Ranked K/D", format!("{:.2}", season.kd), true)
-                                .field("Seasonal Ranked Win %", season.win_pct, true)
-                                .field("Seasonal # of Ranked Matches", season.matches, true);
-                        }
-
-                        if let Some(season) = stats.overwolf_player.get_current_casual_season() {
-                            e.field("Current Casual Rank", &season.rank_name, true)
-                                .field("Current Casual MMR", season.mmr, true)
-                                .field("Seasonal Casual K/D", format!("{:.2}", season.kd), true)
-                                .field("Seasonal Casual Win %", season.win_pct, true)
-                                .field("Seasonal # of Casual Matches", season.matches, true);
-                        }
-
-                        // Best Rank/MMR lifetime stats are bugged in Overwolf.
-                        // It shows the max ending stats.
-                        //
-                        // Try manual calculation based on the Overwolf API Season stats,
-                        // falling back to manual calculation based on the overlay stats,
-                        // falling back to the Overwolf API lifetime value, which is bugged.
-                        let max_overwolf_season = stats.overwolf_player.get_max_season();
-                        let max_season = stats.profile.get_max_season();
-                        let overwolf_best_mmr =
-                            stats.overwolf_player.lifetime_stats.best_mmr.as_ref();
-                        let max_mmr = max_overwolf_season
-                            .map(|season| season.max_mmr)
-                            .or_else(|| max_season.and_then(|season| season.max_mmr()))
-                            .or_else(|| overwolf_best_mmr.map(|best_mmr| best_mmr.mmr));
-                        let max_rank = max_overwolf_season
-                            .map(|season| season.max_rank.rank_name.as_str())
-                            .or_else(|| {
-                                max_season
-                                    .and_then(|season| season.max_rank())
-                                    .map(|rank| rank.name())
-                            })
-                            .or_else(|| overwolf_best_mmr.map(|best_mmr| best_mmr.name.as_str()));
-
-                        if let Some(max_mmr) = max_mmr {
-                            e.field("Best MMR", max_mmr, true);
-                        }
-
-                        if let Some(max_rank) = max_rank {
-                            e.field("Best Rank", max_rank, true);
-                        }
-
-                        if let Some(lifetime_ranked_kd) =
-                            stats.overwolf_player.get_lifetime_ranked_kd()
-                        {
-                            e.field(
-                                "Lifetime Ranked K/D",
-                                format!("{:.2}", lifetime_ranked_kd),
-                                true,
-                            );
-                        }
-
-                        if let Some(lifetime_ranked_win_pct) =
-                            stats.overwolf_player.get_lifetime_ranked_win_pct()
-                        {
-                            e.field(
-                                "Lifetime Ranked Win %",
-                                format!("{:.2}", lifetime_ranked_win_pct),
-                                true,
-                            );
-                        }
-
-                        e.field(
-                            "Lifetime K/D",
-                            &stats.overwolf_player.lifetime_stats.kd,
-                            true,
-                        )
-                        .field(
-                            "Lifetime Win %",
-                            &stats.overwolf_player.lifetime_stats.win_pct,
-                            true,
-                        );
-
-                        // Old Non-Overwolf API
-
-                        // Overwolf API does not send season colors
-                        if let Some(c) = stats.profile.season_color_u32() {
-                            e.color(c);
-                        }
-
-                        // Overwolf API does not send non-svg rank thumbnails
-                        if let Some(thumb) = stats.profile.current_mmr_image() {
-                            e.thumbnail(thumb);
-                        }
-
-                        e
-                    })
+                    match stats {
+                        Some(stats) => m.embed(|e| stats.populate_embed(e)),
+                        None => m.content("No Results"),
+                    }
                 })
                 .await?;
         }
-        // This returns "No results" to the user when an InvalidName Overwolf API Error occurs.
-        // This works because we check for errors in the Overwolf response first,
-        // so non-existent users are always predictably caught there.
-        //
-        // However, it may be beneficial to add a case for other API errors to catch edge cases,
-        // such as UserData erroring while Overwolf.
-        // This isn't a high priortiy however as this is entirely cosmetic;
-        // the user will simply get an ugly error if we fail to special-case it here.
-        //
-        // TODO: Add case for UserData
-        Err(R6Error::InvalidOverwolfResponse(response)) => match response.0.as_str() {
-            "InvalidName" => {
-                msg.channel_id.say(&ctx.http, "No results").await?;
-            }
-            e => {
-                msg.channel_id
-                    .say(
-                        &ctx.http,
-                        format!("Failed to get r6tracker stats, Overwolf API Error: {}", e),
-                    )
-                    .await?;
-
-                error!(
-                    "Failed to get r6 stats for '{}' using r6tracker (Overwolf API Error): {}",
-                    name, e
-                );
-            }
-        },
         Err(e) => {
-            msg.channel_id
-                .say(&ctx.http, format!("Failed to get r6tracker stats: {}", e))
-                .await?;
+            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
 
             error!(
-                "Failed to get r6 stats for '{}' using r6tracker: {}",
+                "Failed to get r6 stats for '{}' using r6tracker: {:?}",
                 name, e
             );
         }
