@@ -3,6 +3,7 @@ use crate::{
     commands::{
         deviantart::DeviantartClient,
         fml::FmlClient,
+        iqdb::IqdbClient,
         nekos::NekosClient,
         quizizz::QuizizzClient,
         r6stats::R6StatsClient,
@@ -97,6 +98,8 @@ pub struct ClientData {
     pub xkcd_client: xkcd::Client,
     /// The tic tac toe data
     pub tic_tac_toe_data: TicTacToeData,
+    /// The iqdb client
+    pub iqdb_client: IqdbClient,
 
     /// The database
     pub db: Database,
@@ -133,6 +136,7 @@ impl ClientData {
             urban_client: Default::default(),
             xkcd_client: Default::default(),
             tic_tac_toe_data: Default::default(),
+            iqdb_client: Default::default(),
 
             db,
 
@@ -156,6 +160,7 @@ impl ClientData {
             &self.shift_client,
             &self.deviantart_client,
             &self.urban_client,
+            &self.iqdb_client,
         ];
 
         for cache_stat_provider in cache_stat_providers {

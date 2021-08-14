@@ -174,7 +174,8 @@ async fn help(
     deviantart,
     urban,
     xkcd,
-    tic_tac_toe
+    tic_tac_toe,
+    iqdb
 )]
 struct General;
 

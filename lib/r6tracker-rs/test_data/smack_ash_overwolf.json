@@ -1,0 +1,192 @@
+{
+  "playerId": "5b343853-b651-4481-b2ba-8c92ee4dc787",
+  "name": "smack.ash",
+  "avatar": "https://ubisoft-avatars.akamaized.net/5b343853-b651-4481-b2ba-8c92ee4dc787/default_256_256.png",
+  "level": 10,
+  "success": true,
+  "isPremium": false,
+  "suspectedCheater": false,
+  "currentSeason": 22,
+  "lifetimeStats": {
+    "winPct": 55.0,
+    "wins": 11,
+    "kd": 0.24,
+    "kills": 20,
+    "matches": 20,
+    "headshotPct": 35.0,
+    "headshots": 7,
+    "meleeKills": 3,
+    "blindKills": 0,
+    "deaths": 88,
+    "losses": 9,
+    "xp": 94015
+  },
+  "seasons": [
+    {
+      "rankName": "COPPER III",
+      "img": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank2.svg",
+      "season": 22,
+      "region": "global",
+      "regionLabel": "CASUAL",
+      "mmr": 1372,
+      "winPct": 37.93,
+      "wins": 11,
+      "kd": 0.24390243902439027,
+      "kills": 20,
+      "matches": 29,
+      "mmrChange": -72,
+      "isRanked": false,
+      "maxMmr": 0,
+      "currentRank": {
+        "rankTier": 3,
+        "mmr": 1300,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank2.svg",
+        "rankName": "COPPER III"
+      },
+      "maxRank": {
+        "rankTier": 0,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank0.svg",
+        "rankName": "No Rank"
+      },
+      "nextRank": {
+        "rankTier": 4,
+        "mmr": 1400,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank3.svg",
+        "rankName": "COPPER II"
+      },
+      "prevRank": {
+        "rankTier": 2,
+        "mmr": 0,
+        "rankIcon": "https://trackercdn.com/cdn/r6.tracker.network/ranks/svg/hd-rank1.svg",
+        "rankName": "COPPER IV"
+      }
+    }
+  ],
+  "operators": [
+    {
+      "name": "FBI SWAT",
+      "img": "https://r6.tracker.network/images/r6/recruit.png",
+      "isAttack": false,
+      "isTopOperator": true,
+      "winpct": 69.2,
+      "wins": 9,
+      "kd": 0.1,
+      "kills": 1,
+      "timePlayedDisplay": "1h 37m",
+      "timePlayed": 2228
+    },
+    {
+      "name": "JACKAL",
+      "img": "https://trackercdn.com/cdn/r6.tracker.network/operators/badges/jackal.png",
+      "isAttack": true,
+      "isTopOperator": true,
+      "winpct": 50.0,
+      "wins": 1,
+      "kd": 0.5,
+      "kills": 1,
+      "timePlayedDisplay": "0h 4m",
+      "timePlayed": 255
+    },
+    {
+      "name": "ELA",
+      "img": "https://trackercdn.com/cdn/r6.tracker.network/operators/badges/ela.png",
+      "isAttack": false,
+      "isTopOperator": false,
+      "winpct": 0.0,
+      "wins": 0,
+      "kd": 0.0,
+      "kills": 0,
+      "timePlayedDisplay": "0h 4m",
+      "timePlayed": 253
+    },
+    {
+      "name": "ASH",
+      "img": "https://trackercdn.com/cdn/r6.tracker.network/operators/badges/ash.png",
+      "isAttack": true,
+      "isTopOperator": true,
+      "winpct": 50.0,
+      "wins": 20,
+      "kd": 0.22,
+      "kills": 8,
+      "timePlayedDisplay": "2h 58m",
+      "timePlayed": 7085
+    },
+    {
+      "name": "FROST",
+      "img": "https://trackercdn.com/cdn/r6.tracker.network/operators/badges/frost.png",
+      "isAttack": false,
+      "isTopOperator": false,
+      "winpct": 0.0,
+      "wins": 0,
+      "kd": 0.0,
+      "kills": 0,
+      "timePlayedDisplay": "0h 1m",
+      "timePlayed": 101
+    },
+    {
+      "name": "VALKYRIE",
+      "img": "https://trackercdn.com/cdn/r6.tracker.network/operators/badges/valkyrie.png",
+      "isAttack": false,
+      "isTopOperator": false,
+      "winpct": 100.0,
+      "wins": 1,
+      "kd": 0.0,
+      "kills": 0,
+      "timePlayedDisplay": "0h 3m",
+      "timePlayed": 190
+    },
+    {
+      "name": "MIRA",
+      "img": "https://trackercdn.com/cdn/r6.tracker.network/operators/badges/mira.png",
+      "isAttack": false,
+      "isTopOperator": false,
+      "winpct": 0.0,
+      "wins": 0,
+      "kd": 1.0,
+      "kills": 2,
+      "timePlayedDisplay": "0h 4m",
+      "timePlayed": 254
+    },
+    {
+      "name": "LESION",
+      "img": "https://trackercdn.com/cdn/r6.tracker.network/operators/badges/lesion.png",
+      "isAttack": false,
+      "isTopOperator": false,
+      "winpct": 0.0,
+      "wins": 0,
+      "kd": 0.0,
+      "kills": 0,
+      "timePlayedDisplay": "0h 1m",
+      "timePlayed": 111
+    },
+    {
+      "name": "VIGIL",
+      "img": "https://trackercdn.com/cdn/r6.tracker.network/operators/badges/vigil.png",
+      "isAttack": false,
+      "isTopOperator": true,
+      "winpct": 50.0,
+      "wins": 1,
+      "kd": 0.0,
+      "kills": 0,
+      "timePlayedDisplay": "0h 9m",
+      "timePlayed": 543
+    },
+    {
+      "name": "JÄGER",
+      "img": "https://trackercdn.com/cdn/r6.tracker.network/operators/badges/jager.png",
+      "isAttack": false,
+      "isTopOperator": true,
+      "winpct": 46.9,
+      "wins": 15,
+      "kd": 0.27,
+      "kills": 8,
+      "timePlayedDisplay": "2h 30m",
+      "timePlayed": 5431
+    }
+  ],
+  "seasonalOperators": {
+    "operators": [],
+    "startedTracking": "2021-08-08T05:31:55.053-04:00"
+  }
+}

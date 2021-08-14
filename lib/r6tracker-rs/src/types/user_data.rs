@@ -335,6 +335,7 @@ mod test {
     const SAMPLE_1: &str = include_str!("../../test_data/user_data_1.json");
     const SAMPLE_2: &str = include_str!("../../test_data/user_data_2.json");
     const INVALID_USER_DATA: &str = include_str!("../../test_data/invalid_user_data.json");
+    const SMACK_ASH_USER_DATA: &str = include_str!("../../test_data/smack_ash_user_data.json");
 
     #[test]
     fn parse_sample_1() {
@@ -359,6 +360,15 @@ mod test {
         let season = data.get_latest_season().unwrap();
 
         dbg!(season);
+    }
+
+    #[test]
+    fn parse_smack_ash_user_data() {
+        let data = serde_json::from_str::<ApiResponse<UserData>>(SMACK_ASH_USER_DATA)
+            .unwrap()
+            .take_valid()
+            .unwrap();
+        assert!(data.get_latest_season().is_none());
     }
 
     #[test]

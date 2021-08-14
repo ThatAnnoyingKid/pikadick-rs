@@ -80,11 +80,13 @@ impl CacheStatsProvider for R6StatsClient {
 #[checks(Enabled)]
 async fn r6stats(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
+    let client_data = data_lock
+        .get::<ClientDataKey>()
+        .expect("missing client data");
     let client = client_data.r6stats_client.clone();
     drop(data_lock);
 
-    let name = args.trimmed().current().unwrap();
+    let name = args.trimmed().current().expect("missing name");
 
     info!("Getting r6 stats for '{}' using r6stats", name);
 

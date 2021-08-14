@@ -12,12 +12,11 @@ chrono = "0.4.19"
 crossbeam = "0.8.1"
 dashmap = "4.0.2"
 deviantart = { path = "./lib/deviantart-rs" }
-fern = { version = "0.6.0", features = [ "colored" ] }
 fml = { path = "./lib/fml-rs" }
-futures = { version = "0.3.15", default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
 indexmap = "1.7.0"
 insta = { path = "./lib/insta-rs" }
+iqdb = { path = "./lib/iqdb-rs" }
 lazy_static = "1.4.0"
 minimax = { path = "./lib/minimax-rs" }
 nekos = { path = "./lib/nekos-rs" }
@@ -88,6 +87,7 @@ members = [
     "lib/tiktok-rs",
     "lib/minimax-rs",
     "lib/open-graph-rs",
+    "lib/iqdb-rs",
 ]
 
 # To make image drawing times sane

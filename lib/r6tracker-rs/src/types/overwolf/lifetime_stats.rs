@@ -6,7 +6,7 @@ use url::Url;
 pub struct LifetimeStats {
     /// Best MMR Stats
     #[serde(rename = "bestMmr")]
-    pub best_mmr: BestMmr,
+    pub best_mmr: Option<BestMmr>,
 
     /// Win Percent
     #[serde(rename = "winPct")]
