@@ -91,10 +91,8 @@ pub struct Data {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub twitter_user_handle: Option<String>,
     /// creator?
-    ///
-    /// this is either a string or an array of strings
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub creator: Option<serde_json::Value>,
+    pub creator: Option<Creator>,
     /// eng name?
     #[serde(skip_serializing_if = "Option::is_none")]
     pub eng_name: Option<String>,
@@ -165,4 +163,15 @@ pub struct Data {
     /// Extra K/Vs
     #[serde(flatten)]
     pub extra: HashMap<String, serde_json::Value>,
+}
+
+/// The creator field of [`Data`]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+pub enum Creator {
+    /// a single creator
+    Single(String),
+
+    /// multiple creators
+    Multiple(Vec<String>),
 }

@@ -1,4 +1,5 @@
 use anyhow::Context;
+use sauce_nao::types::search_json::result_entry::Creator;
 
 /// User config
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -153,7 +154,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             println!();
 
             for (i, result) in results.results.iter().enumerate() {
-                println!("{})", i);
+                println!("{})", i + 1);
                 println!("Similarity: {}", result.header.similarity);
                 println!("Thumbnail: {}", result.header.thumbnail.as_str());
                 println!("Index name: {}", result.header.index_name.as_str());
@@ -163,6 +164,25 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     for url in result.data.ext_urls.iter() {
                         println!("    {}", url.as_str());
                     }
+                }
+                if let Some(author_name) = result.data.author_name.as_deref() {
+                    println!("Author Name: {}", author_name);
+                }
+                if let Some(creator) = result.data.creator.as_ref() {
+                    match creator {
+                        Creator::Single(creator) => {
+                            println!("Creator: {}", creator);
+                        }
+                        Creator::Multiple(creators) => {
+                            println!("Creators: ");
+                            for creator in creators.iter() {
+                                println!("    {}", creator);
+                            }
+                        }
+                    }
+                }
+                if let Some(member_name) = result.data.member_name.as_deref() {
+                    println!("Member Name: {}", member_name);
                 }
                 println!();
             }
