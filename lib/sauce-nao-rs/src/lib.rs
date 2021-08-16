@@ -27,13 +27,16 @@ pub enum Error {
 mod tests {
     use super::*;
 
-    const API_KEY: &str = include_str!("../api_key.txt");
     const IMAGE_PATH: &str = "./test_data/oZjCxGo.jpg";
+
+    fn get_api_key() -> String {
+        std::fs::read_to_string("api_key.txt").expect("failed to get api key")
+    }
 
     #[tokio::test]
     #[ignore]
     async fn search_url_works() {
-        let client = Client::new(API_KEY);
+        let client = Client::new(&get_api_key());
         let results = client
             .search("https://i.imgur.com/oZjCxGo.jpg")
             .await
@@ -47,7 +50,7 @@ mod tests {
         let image = Image::from_path(IMAGE_PATH.as_ref())
             .await
             .expect("failed to open image");
-        let client = Client::new(API_KEY);
+        let client = Client::new(&get_api_key());
         let results = client.search(image).await.expect("failed to search");
         dbg!(results);
     }
