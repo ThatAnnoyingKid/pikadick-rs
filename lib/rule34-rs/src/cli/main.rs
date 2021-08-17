@@ -14,6 +14,7 @@ pub struct Options {
 enum SubCommand {
     Search(self::commands::search::Options),
     Download(self::commands::download::Options),
+    Deleted(self::commands::deleted::Options),
 }
 
 fn main() {
@@ -46,6 +47,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
     match options.subcommand {
         SubCommand::Search(options) => self::commands::search::exec(&client, options).await?,
         SubCommand::Download(options) => self::commands::download::exec(&client, options).await?,
+        SubCommand::Deleted(options) => self::commands::deleted::exec(&client, options).await?,
     }
 
     Ok(())
