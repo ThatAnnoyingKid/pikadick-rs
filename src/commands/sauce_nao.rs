@@ -110,6 +110,18 @@ async fn sauce_nao(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                                     e.description(ext_url.as_str()).url(ext_url.as_str());
                                 }
 
+                                if let Some(source) = data.data.source.as_deref() {
+                                    e.field("Source", source, true);
+                                }
+
+                                if let Some(eng_name) = data.data.eng_name.as_deref() {
+                                    e.field("English Name", eng_name, true);
+                                }
+
+                                if let Some(jp_name) = data.data.jp_name.as_deref() {
+                                    e.field("Jap Name", jp_name, true);
+                                }
+
                                 e
                             })
                         })
