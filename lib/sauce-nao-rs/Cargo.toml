@@ -2,6 +2,7 @@
 name = "sauce-nao"
 version = "0.0.0"
 edition = "2018"
+license = "MIT"
 
 [[bin]]
 name = "sauce-nao"
