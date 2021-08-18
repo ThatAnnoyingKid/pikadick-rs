@@ -10,10 +10,7 @@ targets = [
 vulnerability = "deny"
 unmaintained = "deny"
 notice = "deny"
-ignore = [
-    # Blocked on opentelemetry-otlp releasing a new version using tonic 0.5.0
-    "RUSTSEC-2021-0073"
-]
+ignore = []
 
 [licenses]
 unlicensed = "deny"
@@ -127,5 +124,4 @@ allow-git = [
     "https://github.com/adumbidiot/reddit-rs",
     "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
-    "https://github.com/serenity-rs/serenity",
 ]

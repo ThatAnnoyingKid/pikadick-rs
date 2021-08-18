@@ -3,6 +3,7 @@ mod delay_writer;
 pub use self::delay_writer::DelayWriter;
 use crate::config::Config;
 use anyhow::Context;
+use opentelemetry_otlp::WithExportConfig;
 use tonic::metadata::{
     MetadataKey,
     MetadataMap,
@@ -53,20 +54,24 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
             map.insert(k, v.parse().context("invalid header value")?);
         }
 
-        let tracer = {
-            let mut tracer = opentelemetry_otlp::new_pipeline();
+        let exporter = {
+            let mut exporter = opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_metadata(map)
+                .with_tls_config(Default::default());
 
             if let Some(endpoint) = config.endpoint.as_ref() {
-                tracer = tracer.with_endpoint(endpoint);
+                exporter = exporter.with_endpoint(endpoint);
             }
 
-            tracer
-                .with_tonic()
-                .with_metadata(map)
-                .with_tls_config(Default::default())
-                .install_batch(opentelemetry::runtime::Tokio)
-                .context("failed to install otlp opentelemetry exporter")?
+            exporter
         };
+
+        let tracer = opentelemetry_otlp::new_pipeline()
+            .tracing()
+            .with_exporter(exporter)
+            .install_batch(opentelemetry::runtime::Tokio)
+            .context("failed to install otlp opentelemetry exporter")?;
 
         Some(tracing_opentelemetry::layer().with_tracer(tracer))
     } else {
