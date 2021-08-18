@@ -20,8 +20,8 @@ iqdb = { path = "./lib/iqdb-rs" }
 lazy_static = "1.4.0"
 minimax = { path = "./lib/minimax-rs" }
 nekos = { path = "./lib/nekos-rs" }
-opentelemetry = { version = "0.15.0", features = [ "rt-tokio" ] }
-opentelemetry-otlp = { version = "0.8.0", features = [ "tls", "tls-roots" ] }
+opentelemetry = { version = "0.16.0", features = [ "rt-tokio" ] }
+opentelemetry-otlp = { version = "0.9.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.11.1"
 quizizz = { path = "./lib/quizizz-rs" }
 r6stats = { path = "./lib/r6stats-rs" }
@@ -32,19 +32,19 @@ reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.127", features = [ "derive" ] }
-serenity = "0.10.8"
+serenity = "0.10.9"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
-sqlx = { version = "0.5.5", features = [ "sqlite", "runtime-tokio-rustls" ] }
+sqlx = { version = "0.5.6", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.8"
 thiserror = "1.0.26"
 tiny-skia = { version = "0.5.1", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.10.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"
-tonic = "0.4.3"
+tonic = "0.5.2"
 tracing = "0.1.26"
 tracing-appender = "0.1.2"
 tracing-log = "0.1.2"
-tracing-opentelemetry = "0.14.0"
+tracing-opentelemetry = "0.15.0"
 tracing-subscriber = { version = "0.2.19", features = [ "env-filter", "fmt", "parking_lot" ] }
 ttf-parser = "0.12.3"
 uom = "0.31.1"
@@ -54,7 +54,7 @@ xkcd = { path = "lib/xkcd-rs" }
 zalgo = { git = "https://github.com/adumbidiot/zalgo-rs", rev = "a5e0ce60cb37daee1f4b954c5270c30d1034c4af" }
 
 # Optional
-openssl = { version = "0.10.35", optional = true, features = [ "vendored" ] }
+openssl = { version = "0.10.36", optional = true, features = [ "vendored" ] }
 
 [features]
 # Note: This is needed for cross comp as sqlx has a hard, non-optional dependency on native-tls
@@ -67,9 +67,6 @@ heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7
 # `servo_arc` has UB on crates.io. This still has UB, but less and I haven't seen any issues with it yet.
 # To fix this, I think https://doc.rust-lang.org/std/mem/fn.size_of_val_raw.html needs to stabilize.
 servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca1468a1767e3cc294f824036c" }
-
-# Fix bug in token validation
-serenity = { git = "https://github.com/serenity-rs/serenity", rev = "3fba3726b2726c83c0e2a8a4e9862a214e7751da" }
 
 [workspace]
 members = [ 
