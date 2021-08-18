@@ -441,6 +441,7 @@ async fn async_main(config: Config, missing_data_dir: bool) {
         .help(&HELP)
         .group(&GENERAL_GROUP)
         .bucket("nekos", |b| b.delay(1))
+        .await
         .bucket("r6stats", |b| b.delay(7))
         .await
         .bucket("r6tracker", |b| b.delay(7))
