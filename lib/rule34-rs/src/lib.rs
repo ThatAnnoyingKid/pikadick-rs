@@ -8,6 +8,7 @@ pub use crate::{
     error::RuleError,
     search_query_builder::SearchQueryBuilder,
     types::{
+        DeletedImagesList,
         Post,
         SearchResult,
     },
@@ -23,6 +24,8 @@ const ACCEPT_STR: &str = "*/*";
 
 // URL constants
 const URL_INDEX: &str = "https://rule34.xxx/index.php";
+const DELETED_IMAGES_ENDPOINT: &str =
+    "https://rule34.xxx/index.php?page=dapi&s=post&q=index&deleted=show";
 
 /// Turn a post id into a post url
 fn post_id_to_post_url(id: u64) -> Url {

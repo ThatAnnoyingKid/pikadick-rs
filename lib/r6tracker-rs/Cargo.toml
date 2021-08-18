@@ -13,4 +13,4 @@ thiserror = "1.0.26"
 url = { version = "2.2.2", features = [ "serde" ] }
 
 [dev-dependencies]
-tokio = { version = "1.9.0", features = [ "macros" ] }
+tokio = { version = "1.10.0", features = [ "macros" ] }

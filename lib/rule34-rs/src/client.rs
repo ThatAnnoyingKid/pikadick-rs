@@ -3,7 +3,9 @@ use crate::{
         Post,
         SearchResult,
     },
+    DeletedImagesList,
     RuleError,
+    DELETED_IMAGES_ENDPOINT,
 };
 use reqwest::header::{
     HeaderMap,
@@ -112,6 +114,32 @@ impl Client {
         Ok(ret)
     }
 
+    /// Get a list of deleted images.
+    ///
+    /// Only include ids over `last_id`. Use `None` for no limit.
+    /// Due to current technical limitations, this function is not very memory efficient depending on `last_id`.
+    /// You should probably limit its use with a semaphore or similar.
+    pub async fn get_deleted_images(
+        &self,
+        last_id: Option<u64>,
+    ) -> Result<DeletedImagesList, RuleError> {
+        let mut url = Url::parse(DELETED_IMAGES_ENDPOINT).expect("invalid DELETED_IMAGES_ENDPOINT");
+        if let Some(last_id) = last_id {
+            let mut last_id_buf = itoa::Buffer::new();
+            url.query_pairs_mut()
+                .append_pair("last_id", last_id_buf.format(last_id));
+        }
+        let text = self.get_text(url.as_str()).await?;
+        // Parse on a threadpool since the full returned string is currently around 30 megabytes in size,
+        // and we need to run in under a few milliseconds.
+        // We need to buffer this all in memory though, since `quick_xml` does not provide a streaming api.
+        tokio::task::spawn_blocking(move || {
+            let data: DeletedImagesList = quick_xml::de::from_str(&text)?;
+            Ok(data)
+        })
+        .await?
+    }
+
     /// Send a GET web request to a `uri` and copy the result to the given async writer.
     pub async fn get_to_writer<W>(&self, url: &str, mut writer: W) -> Result<(), RuleError>
     where
@@ -209,5 +237,15 @@ mod test {
     async fn it_works_deep_space_waifu() {
         let post = get_top_post("deep_space_waifu").await;
         dbg!(&post);
+    }
+
+    #[tokio::test]
+    async fn deleted_images_list() {
+        let client = Client::new();
+        let result = client
+            .get_deleted_images(Some(500_000)) // Just choose a high-ish post id here and update to keep the download limited
+            .await
+            .expect("failed to get deleted images");
+        dbg!(result);
     }
 }

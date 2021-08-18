@@ -30,4 +30,8 @@ pub enum RuleError {
     /// A tokio task failed to complete
     #[error("failed to join tokio task")]
     TokioJoin(#[from] tokio::task::JoinError),
+
+    /// XML deserialization error
+    #[error(transparent)]
+    XmlDeserialize(#[from] quick_xml::DeError),
 }

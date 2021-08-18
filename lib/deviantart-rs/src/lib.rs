@@ -57,3 +57,7 @@ pub enum Error {
     #[error(transparent)]
     CookieStore(cookie_store::Error),
 }
+
+// TODO:
+// investigate deviantart.com/view/<id>
+// ex: deviantart.com/view/852625718
