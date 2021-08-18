@@ -10,6 +10,7 @@ use crate::{
         r6tracker::R6TrackerClient,
         reddit_embed::RedditEmbedData,
         rule34::Rule34Client,
+        sauce_nao::SauceNaoClient,
         shift::ShiftClient,
         urban::UrbanClient,
     },
@@ -100,6 +101,8 @@ pub struct ClientData {
     pub tic_tac_toe_data: TicTacToeData,
     /// The iqdb client
     pub iqdb_client: IqdbClient,
+    /// The sauce nao client
+    pub sauce_nao_client: SauceNaoClient,
 
     /// The database
     pub db: Database,
@@ -137,6 +140,7 @@ impl ClientData {
             xkcd_client: Default::default(),
             tic_tac_toe_data: Default::default(),
             iqdb_client: Default::default(),
+            sauce_nao_client: SauceNaoClient::new(config.sauce_nao.api_key.as_str()),
 
             db,
 

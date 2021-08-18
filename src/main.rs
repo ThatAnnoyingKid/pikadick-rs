@@ -175,7 +175,8 @@ async fn help(
     urban,
     xkcd,
     tic_tac_toe,
-    iqdb
+    iqdb,
+    sauce_nao
 )]
 struct General;
 

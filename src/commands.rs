@@ -13,6 +13,7 @@ pub mod r6stats;
 pub mod r6tracker;
 pub mod reddit_embed;
 pub mod rule34;
+pub mod sauce_nao;
 pub mod shift;
 pub mod system;
 pub mod tic_tac_toe;
@@ -38,6 +39,7 @@ pub use crate::commands::{
     r6tracker::R6TRACKER_COMMAND,
     reddit_embed::REDDIT_EMBED_COMMAND,
     rule34::RULE34_COMMAND,
+    sauce_nao::SAUCE_NAO_COMMAND,
     shift::SHIFT_COMMAND,
     system::SYSTEM_COMMAND,
     tic_tac_toe::TIC_TAC_TOE_COMMAND,

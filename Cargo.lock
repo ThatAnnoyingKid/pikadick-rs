@@ -1964,6 +1964,7 @@ dependencies = [
  "reddit-tube",
  "regex",
  "rule34",
+ "sauce-nao",
  "serde",
  "serenity",
  "shift-orcz",
