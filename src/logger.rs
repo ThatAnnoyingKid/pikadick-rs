@@ -19,7 +19,7 @@ use tracing_subscriber::{
 ///
 /// Must be called from a tokio runtime.
 pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
-    let file_writer = tracing_appender::rolling::hourly(&config.data_dir, "log.txt");
+    let file_writer = tracing_appender::rolling::hourly(&config.log_file_dir(), "log.txt");
     let (nonblocking_file_writer, guard) = tracing_appender::non_blocking(file_writer);
 
     // Only enable pikadick since serenity likes puking in the logs during connection failures

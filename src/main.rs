@@ -362,6 +362,8 @@ fn setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, WorkerGuard
         eprintln!("Data directory already exists.");
     }
 
+    std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
+
     eprintln!("Setting up logger...");
     let guard = tokio_rt
         .block_on(async { crate::logger::setup(&config) })

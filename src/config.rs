@@ -103,6 +103,11 @@ impl Config {
         self.status.as_ref().and_then(|s| s.kind)
     }
 
+    /// The log file dir
+    pub fn log_file_dir(&self) -> PathBuf {
+        self.data_dir.join("logs")
+    }
+
     /// Load a config from a path
     pub fn load_from_path(path: &Path) -> anyhow::Result<Self> {
         std::fs::read(path)
