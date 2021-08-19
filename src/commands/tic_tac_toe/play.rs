@@ -26,6 +26,7 @@ use tracing::error;
 #[min_args(2)]
 #[max_args(2)]
 #[checks(Enabled)]
+#[bucket("default")]
 pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock

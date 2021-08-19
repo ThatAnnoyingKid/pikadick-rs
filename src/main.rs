@@ -362,6 +362,8 @@ fn setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, WorkerGuard
         eprintln!("Data directory already exists.");
     }
 
+    std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
+
     eprintln!("Setting up logger...");
     let guard = tokio_rt
         .block_on(async { crate::logger::setup(&config) })
@@ -451,6 +453,10 @@ async fn async_main(config: Config, missing_data_dir: bool) {
         .bucket("quizizz", |b| b.delay(10))
         .await
         .bucket("insta-dl", |b| b.delay(10))
+        .await
+        .bucket("ttt-board", |b| b.delay(1))
+        .await
+        .bucket("default", |b| b.delay(1))
         .await
         .before(before_handler)
         .after(after_handler)

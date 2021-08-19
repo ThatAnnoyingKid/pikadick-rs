@@ -28,6 +28,7 @@ use tracing::error;
 #[max_args(2)]
 #[sub_commands(list)]
 #[checks(Admin, Enabled)]
+#[bucket("default")]
 pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let guild_id = match msg.guild_id {
         Some(id) => id,

@@ -102,6 +102,7 @@ impl CacheStatsProvider for Rule34Client {
 #[example("\"test\"")]
 #[min_args(1)]
 #[checks(Enabled)]
+#[bucket("default")]
 async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock

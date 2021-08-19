@@ -143,6 +143,7 @@ impl std::fmt::Debug for ShiftClient {
 #[usage("<bl, bl2, blps, or bl3>")]
 #[example("blps")]
 #[checks(Enabled)]
+#[bucket("default")]
 async fn shift(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();

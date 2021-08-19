@@ -18,6 +18,7 @@ use tracing::info;
 #[command("cache-stats")]
 #[description("Get cache usage stats")]
 #[checks(Enabled)]
+#[bucket("default")]
 pub async fn cache_stats(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();

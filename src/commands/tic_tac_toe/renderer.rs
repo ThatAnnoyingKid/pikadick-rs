@@ -37,7 +37,7 @@ const MAX_PARALLEL_RENDER_LIMIT: usize = 4;
 
 /// Render a Tic-Tac-Toe board
 #[derive(Debug, Clone)]
-pub(crate) struct TicTacToeRenderer {
+pub(crate) struct Renderer {
     background_pixmap: Arc<Pixmap>,
     number_paths: Arc<Vec<Path>>,
 
@@ -45,8 +45,8 @@ pub(crate) struct TicTacToeRenderer {
 }
 
 #[allow(clippy::new_without_default)]
-impl TicTacToeRenderer {
-    /// Make a new [`TicTacToeRenderer`].
+impl Renderer {
+    /// Make a new [`Renderer`].
     pub(crate) fn new() -> anyhow::Result<Self> {
         let font_face = Face::from_slice(FONT_BYTES, 0).context("invalid font")?;
 

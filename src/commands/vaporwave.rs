@@ -16,6 +16,7 @@ use serenity::{
 #[min_args(1)]
 #[max_args(1)]
 #[checks(Enabled)]
+#[bucket("default")]
 pub async fn vaporwave(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let phrase = args.single_quoted::<String>()?;
     msg.channel_id
