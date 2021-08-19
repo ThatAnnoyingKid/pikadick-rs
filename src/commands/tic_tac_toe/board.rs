@@ -20,6 +20,7 @@ use tracing::error;
 #[example("")]
 #[min_args(0)]
 #[max_args(0)]
+#[bucket("ttt-board")]
 #[checks(Enabled)]
 pub async fn board(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
