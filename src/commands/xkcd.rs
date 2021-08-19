@@ -16,6 +16,7 @@ use tracing::error;
 #[command]
 #[description("Get a random comic from Xkcd")]
 #[checks(Enabled)]
+#[bucket("default")]
 async fn xkcd(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();

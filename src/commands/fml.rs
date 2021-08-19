@@ -69,6 +69,7 @@ impl CacheStatsProvider for FmlClient {
 #[command]
 #[description("Get a random story from fmylife.com")]
 #[checks(Enabled)]
+#[bucket("default")]
 async fn fml(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();

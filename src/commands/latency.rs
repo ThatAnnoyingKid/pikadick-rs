@@ -17,6 +17,7 @@ use tracing::warn;
 #[command]
 #[description("Get the bot's latency in this server")]
 #[checks(Enabled)]
+#[bucket("default")]
 async fn latency(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();

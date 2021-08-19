@@ -456,6 +456,8 @@ async fn async_main(config: Config, missing_data_dir: bool) {
         .await
         .bucket("ttt-board", |b| b.delay(1))
         .await
+        .bucket("default", |b| b.delay(1))
+        .await
         .before(before_handler)
         .after(after_handler)
         .unrecognised_command(unrecognised_command_handler)

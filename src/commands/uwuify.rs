@@ -19,6 +19,7 @@ const FACES: &[&str] = &["(・`ω´・)", ";;w;;", "owo", "UwU", ">w<", "^w^"];
 #[min_args(1)]
 #[max_args(1)]
 #[checks(Enabled)]
+#[bucket("default")]
 pub async fn uwuify(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let phrase = args.single_quoted::<String>()?;
     msg.channel_id.say(&ctx.http, uwuify_str(&phrase)).await?;

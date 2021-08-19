@@ -22,6 +22,7 @@ use tracing::error;
 #[min_args(0)]
 #[max_args(0)]
 #[checks(Enabled)]
+#[bucket("default")]
 pub async fn concede(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock

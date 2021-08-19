@@ -149,6 +149,7 @@ impl CacheStatsProvider for DeviantartClient {
 #[min_args(1)]
 #[max_args(1)]
 #[checks(Enabled)]
+#[bucket("default")]
 async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock

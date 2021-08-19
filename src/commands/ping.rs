@@ -12,6 +12,7 @@ use serenity::{
 #[command]
 #[description("Respond with pong")]
 #[checks(Enabled)]
+#[bucket("default")]
 async fn ping(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     msg.channel_id.say(&ctx.http, "pong").await?;
     Ok(())
