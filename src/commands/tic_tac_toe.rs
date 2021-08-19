@@ -1,9 +1,9 @@
 mod board;
 mod concede;
 mod play;
-mod tic_tac_toe_renderer;
+mod renderer;
 
-use self::tic_tac_toe_renderer::TicTacToeRenderer;
+use self::renderer::Renderer;
 pub use self::{
     board::BOARD_COMMAND,
     concede::CONCEDE_COMMAND,
@@ -93,7 +93,7 @@ pub type ShareGameState = Arc<Mutex<GameState>>;
 pub struct TicTacToeData {
     game_states: Arc<Mutex<HashMap<GameStateKey, ShareGameState>>>,
     ai: Arc<MiniMaxAi<TicTacToeRuleSet>>,
-    renderer: Arc<TicTacToeRenderer>,
+    renderer: Arc<Renderer>,
 }
 
 impl TicTacToeData {
@@ -101,7 +101,7 @@ impl TicTacToeData {
     pub fn new() -> Self {
         let map = compile_minimax_map::<TicTacToeRuleSet>();
         let ai = Arc::new(MiniMaxAi::new(map));
-        let renderer = TicTacToeRenderer::new().expect("failed to init renderer");
+        let renderer = Renderer::new().expect("failed to init renderer");
 
         Self {
             game_states: Default::default(),
