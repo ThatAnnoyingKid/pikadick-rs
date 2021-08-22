@@ -3,8 +3,6 @@ use crate::{
     util::LoadingReaction,
     ClientDataKey,
 };
-use tracing::error;
-use tracing::info;
 use anyhow::Context as _;
 use serenity::{
     framework::standard::{
@@ -14,6 +12,10 @@ use serenity::{
     },
     model::prelude::*,
     prelude::*,
+};
+use tracing::{
+    error,
+    info,
 };
 
 pub type SearchResult = anyhow::Result<Option<String>>;
@@ -45,23 +47,28 @@ impl QuizizzClient {
 
                 loop {
                     let code_str = format!("{:06}", code);
-                    let check_room_result = client.check_room(&code_str).await.with_context(|| {
-                        format!("failed to search for quizizz code '{}'", code_str)
-                    });
+                    let check_room_result = client
+                        .check_room(&code_str)
+                        .await
+                        .and_then(|r| r.error_for_response());
 
-                    match check_room_result {
-                        Ok(res) => {
-                            if dbg!(&res).error.is_none() {
-                                if let Some(room) = res.room {
-                                    if room.is_running() {
-                                        let _ = sender.send(Ok(Some(code_str))).is_ok();
-                                        break;
-                                    }
-                                }
-                            }
+                    match check_room_result.map(|res| res.room) {
+                        Ok(Some(room)) if room.is_running() => {
+                            let _ = sender.send(Ok(Some(code_str))).is_ok();
+                            break;
+                        }
+                        Ok(None) | Ok(Some(_)) => {
+                            // pass
+                        }
+                        Err(quizizz::Error::InvalidGenericResponse(e)) if e.is_room_not_found() => {
+                            // Pass
                         }
                         Err(e) => {
-                            let _ = sender.send(Err(e)).is_ok();
+                            let _ = sender
+                                .send(Err(e).with_context(|| {
+                                    format!("failed to search for quizizz code '{}'", code_str)
+                                }))
+                                .is_ok();
                             break;
                         }
                     }
