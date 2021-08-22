@@ -61,9 +61,6 @@ skip = [
     
     # Blocked on input_buffer and sqlx moving to bytes 1.0.x
     { name = "bytes", version = "0.5.6" },
-    
-    # Blocked on png updating `miniz_oxide` to `0.4.x`
-    { name = "miniz_oxide", version = "0.3.7" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
