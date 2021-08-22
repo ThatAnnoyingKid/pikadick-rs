@@ -1070,7 +1070,7 @@ dependencies = [
 [[package]]
 name = "heim"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/heim-rs/heim?branch=dependabot/cargo/raw-cpuid-tw-10.2#66afde82ae65bd4287780531bc3dbee53b4058dd"
 dependencies = [
  "heim-common",
  "heim-cpu",
@@ -1083,7 +1083,7 @@ dependencies = [
 [[package]]
 name = "heim-common"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/heim-rs/heim?branch=dependabot/cargo/raw-cpuid-tw-10.2#66afde82ae65bd4287780531bc3dbee53b4058dd"
 dependencies = [
  "cfg-if",
  "core-foundation",
@@ -1101,7 +1101,7 @@ dependencies = [
 [[package]]
 name = "heim-cpu"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/heim-rs/heim?branch=dependabot/cargo/raw-cpuid-tw-10.2#66afde82ae65bd4287780531bc3dbee53b4058dd"
 dependencies = [
  "cfg-if",
  "futures",
@@ -1119,7 +1119,7 @@ dependencies = [
 [[package]]
 name = "heim-host"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/heim-rs/heim?branch=dependabot/cargo/raw-cpuid-tw-10.2#66afde82ae65bd4287780531bc3dbee53b4058dd"
 dependencies = [
  "cfg-if",
  "heim-common",
@@ -1136,7 +1136,7 @@ dependencies = [
 [[package]]
 name = "heim-memory"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/heim-rs/heim?branch=dependabot/cargo/raw-cpuid-tw-10.2#66afde82ae65bd4287780531bc3dbee53b4058dd"
 dependencies = [
  "cfg-if",
  "heim-common",
@@ -1150,7 +1150,7 @@ dependencies = [
 [[package]]
 name = "heim-runtime"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/heim-rs/heim?branch=dependabot/cargo/raw-cpuid-tw-10.2#66afde82ae65bd4287780531bc3dbee53b4058dd"
 dependencies = [
  "futures",
  "futures-timer",
@@ -1161,7 +1161,7 @@ dependencies = [
 [[package]]
 name = "heim-virt"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/heim-rs/heim?branch=dependabot/cargo/raw-cpuid-tw-10.2#66afde82ae65bd4287780531bc3dbee53b4058dd"
 dependencies = [
  "cfg-if",
  "futures",
@@ -2294,9 +2294,8 @@ dependencies = [
 
 [[package]]
 name = "raw-cpuid"
-version = "9.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1733f6f80c9c24268736a501cd00d41a9849b4faa7a9f9334c096e5d10553206"
+version = "10.2.0"
+source = "git+https://github.com/gz/rust-cpuid?rev=b28f90bc30d7dbe9c7be62fd25d7d4ace37be948#b28f90bc30d7dbe9c7be62fd25d7d4ace37be948"
 dependencies = [
  "bitflags",
 ]

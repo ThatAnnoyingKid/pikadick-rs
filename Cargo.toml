@@ -62,7 +62,9 @@ use-openssl-vendored = [ "openssl" ]
 
 [patch.crates-io]
 # Fix security advisory.
-heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }
+heim = { git = "https://github.com/heim-rs/heim", branch = "dependabot/cargo/raw-cpuid-tw-10.2" }
+heim-virt = { git = "https://github.com/heim-rs/heim", branch = "dependabot/cargo/raw-cpuid-tw-10.2" }
+raw-cpuid = { git = "https://github.com/gz/rust-cpuid", rev = "b28f90bc30d7dbe9c7be62fd25d7d4ace37be948" }
 
 # `servo_arc` has UB on crates.io. This still has UB, but less and I haven't seen any issues with it yet.
 # To fix this, I think https://doc.rust-lang.org/std/mem/fn.size_of_val_raw.html needs to stabilize.
