@@ -10,7 +10,10 @@ targets = [
 vulnerability = "deny"
 unmaintained = "deny"
 notice = "deny"
-ignore = []
+ignore = [
+    # Blocked on raw-cpuid releasing a patched version
+    "RUSTSEC-2021-0089",
+]
 
 [licenses]
 unlicensed = "deny"
