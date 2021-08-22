@@ -3,8 +3,7 @@ use crate::{
         CheckRoomJsonRequest,
         GenericResponse,
     },
-    QError,
-    QResult,
+    Error,
 };
 
 const CHECK_ROOM_URI: &str = "https://game.quizizz.com/play-api/v4/checkRoom";
@@ -24,21 +23,16 @@ impl Client {
     }
 
     /// Check if the room code exists
-    ///
-    pub async fn check_room(&self, room_code: &'_ str) -> QResult<GenericResponse> {
-        let res = self
+    pub async fn check_room(&self, room_code: &str) -> Result<GenericResponse, Error> {
+        Ok(self
             .client
             .post(CHECK_ROOM_URI)
             .json(&CheckRoomJsonRequest { room_code })
             .send()
-            .await?;
-
-        let status = res.status();
-        if !status.is_success() {
-            return Err(QError::InvalidStatus(status));
-        }
-
-        Ok(res.json().await?)
+            .await?
+            .error_for_status()?
+            .json()
+            .await?)
     }
 }
 
