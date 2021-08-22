@@ -61,6 +61,11 @@ impl GenericResponseError {
     pub fn is_room_not_found(&self) -> bool {
         self.kind == "room.NOT_FOUND"
     }
+
+    /// Returns `true` if it's kind is `"player.LOGIN_REQUIRED"`
+    pub fn is_player_login_required(&self) -> bool {
+        self.kind == "player.LOGIN_REQUIRED"
+    }
 }
 
 impl std::fmt::Display for GenericResponseError {

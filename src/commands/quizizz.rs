@@ -13,12 +13,23 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
+use std::sync::Arc;
+use tokio::sync::{
+    mpsc::{
+        Receiver as MpscReceiver,
+        Sender as MpscSender,
+    },
+    watch::{
+        Receiver as WatchReceiver,
+        Sender as WatchSender,
+    },
+};
 use tracing::{
     error,
     info,
 };
 
-pub type SearchResult = anyhow::Result<Option<String>>;
+pub type SearchResult = Result<Option<String>, Arc<anyhow::Error>>;
 
 const MAX_TRIES: usize = 1_000;
 const MAX_CODE: u32 = 999_999;
@@ -27,21 +38,23 @@ const LIMIT_REACHED_MSG: &str = "Reached limit while searching for quizizz code,
 
 #[derive(Clone, Debug)]
 pub struct QuizizzClient {
-    finder_task_tx: tokio::sync::mpsc::Sender<tokio::sync::oneshot::Sender<SearchResult>>,
+    finder_task_tx: MpscSender<()>,
+
+    finder_task_rx: WatchReceiver<SearchResult>,
 }
 
 impl QuizizzClient {
     /// Make a new [`QuizizzClient`].
     pub fn new() -> Self {
-        let (finder_task_tx, mut rx): (
-            tokio::sync::mpsc::Sender<tokio::sync::oneshot::Sender<SearchResult>>,
-            tokio::sync::mpsc::Receiver<tokio::sync::oneshot::Sender<SearchResult>>,
-        ) = tokio::sync::mpsc::channel(100);
+        let (finder_task_tx, mut rx): (MpscSender<()>, MpscReceiver<()>) =
+            tokio::sync::mpsc::channel(100);
+        let (watch_tx, finder_task_rx): (WatchSender<SearchResult>, WatchReceiver<SearchResult>) =
+            tokio::sync::watch::channel(Ok(None));
 
         tokio::spawn(async move {
             let client = quizizz::Client::new();
 
-            while let Some(sender) = rx.recv().await {
+            while let Some(()) = rx.recv().await {
                 let mut code: u32 = rand::random::<u32>() % MAX_CODE;
                 let mut tries = 0;
 
@@ -54,21 +67,24 @@ impl QuizizzClient {
 
                     match check_room_result.map(|res| res.room) {
                         Ok(Some(room)) if room.is_running() => {
-                            let _ = sender.send(Ok(Some(code_str))).is_ok();
+                            let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
                             break;
                         }
                         Ok(None) | Ok(Some(_)) => {
-                            // pass
+                            // Pass
                         }
-                        Err(quizizz::Error::InvalidGenericResponse(e)) if e.is_room_not_found() => {
+                        Err(quizizz::Error::InvalidGenericResponse(e))
+                            if e.is_room_not_found() || e.is_player_login_required() =>
+                        {
                             // Pass
                         }
                         Err(e) => {
-                            let _ = sender
-                                .send(Err(e).with_context(|| {
+                            let e = Err(e)
+                                .with_context(|| {
                                     format!("failed to search for quizizz code '{}'", code_str)
-                                }))
-                                .is_ok();
+                                })
+                                .map_err(Arc::new);
+                            let _ = watch_tx.send(e).is_ok();
                             break;
                         }
                     }
@@ -77,24 +93,32 @@ impl QuizizzClient {
                     tries += 1;
 
                     if tries == MAX_TRIES {
-                        let _ = sender.send(Ok(None)).is_ok();
+                        let _ = watch_tx.send(Ok(None)).is_ok();
                         break;
                     }
                 }
             }
         });
 
-        Self { finder_task_tx }
+        Self {
+            finder_task_tx,
+            finder_task_rx,
+        }
     }
 
-    /// Get the next searched code
+    /// Get the next searched code.
+    ///
+    /// `None` signifies that the task ran out of tries.
     pub async fn search_for_code(&self) -> SearchResult {
-        let (tx, rx) = tokio::sync::oneshot::channel();
         self.finder_task_tx
-            .send(tx)
+            .send(())
             .await
             .context("finder task died")?;
-        rx.await
+        let mut finder_task_rx = self.finder_task_rx.clone();
+        finder_task_rx
+            .changed()
+            .await
+            .map(|_| finder_task_rx.borrow().clone())
             .context("failed to get response from finder task")?
     }
 }
@@ -121,18 +145,19 @@ async fn quizizz(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     match client.search_for_code().await {
         Ok(Some(code_str)) => {
+            info!("located quizizz code '{}'", code_str);
             loading.send_ok();
             msg.channel_id
                 .say(&ctx.http, format!("Located quizizz code: {}", code_str))
                 .await?;
         }
         Ok(None) => {
-            msg.channel_id.say(&ctx.http, LIMIT_REACHED_MSG).await?;
             info!("quizziz finder reached limit");
+            msg.channel_id.say(&ctx.http, LIMIT_REACHED_MSG).await?;
         }
         Err(e) => {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
             error!("{:?}", e);
+            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
         }
     }
 
