@@ -44,74 +44,9 @@ impl QuizizzClient {
     pub fn new() -> Self {
         let finder_task_wakeup = Arc::new(Notify::new());
         let wakeup = finder_task_wakeup.clone();
-        let (watch_tx, finder_task_rx): (WatchSender<SearchResult>, WatchReceiver<SearchResult>) =
-            tokio::sync::watch::channel(Ok(None));
+        let (watch_tx, finder_task_rx) = tokio::sync::watch::channel(Ok(None));
 
-        tokio::spawn(async move {
-            let client = quizizz::Client::new();
-
-            while tokio::select! {
-                _ = wakeup.notified() => true,
-                _ = watch_tx.closed() => false,
-            } {
-                let mut code: u32 = rand::random::<u32>() % MAX_CODE;
-
-                info!(start_code = code);
-
-                let (tx, mut rx) = tokio::sync::mpsc::channel(MAX_TRIES);
-                for _ in 0..MAX_TRIES {
-                    let code_str = format!("{:06}", code);
-
-                    code = code.wrapping_add(1);
-
-                    let client = client.clone();
-                    let tx = tx.clone();
-                    tokio::spawn(async move {
-                        let check_room_result = client
-                            .check_room(&code_str)
-                            .await
-                            .and_then(|r| r.error_for_response())
-                            .map(|res| res.room);
-
-                        let _ = tx.send((code_str, check_room_result)).await.is_ok();
-                    });
-                }
-                drop(tx);
-
-                let mut sent_response = false;
-                while let (false, Some((code_str, check_room_result))) =
-                    (sent_response, rx.recv().await)
-                {
-                    match check_room_result {
-                        Ok(Some(room)) if room.is_running() => {
-                            let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
-                            sent_response = true;
-                        }
-                        Ok(None) | Ok(Some(_)) => {
-                            // Pass
-                        }
-                        Err(quizizz::Error::InvalidGenericResponse(e))
-                            if e.is_room_not_found() || e.is_player_login_required() =>
-                        {
-                            // Pass
-                        }
-                        Err(e) => {
-                            let e = Err(e)
-                                .with_context(|| {
-                                    format!("failed to search for quizizz code '{}'", code_str)
-                                })
-                                .map_err(Arc::new);
-                            let _ = watch_tx.send(e).is_ok();
-                            sent_response = true;
-                        }
-                    }
-                }
-
-                if !sent_response {
-                    let _ = watch_tx.send(Ok(None)).is_ok();
-                }
-            }
-        });
+        tokio::spawn(finder_task(watch_tx, wakeup));
 
         Self {
             finder_task_wakeup,
@@ -146,6 +81,76 @@ impl QuizizzClient {
 impl Default for QuizizzClient {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
+    let client = quizizz::Client::new();
+
+    while tokio::select! {
+        _ = wakeup.notified() => true,
+        _ = watch_tx.closed() => false,
+    } {
+        let mut code: u32 = rand::random::<u32>() % MAX_CODE;
+
+        info!(start_code = code);
+
+        let (tx, mut rx) = tokio::sync::mpsc::channel(MAX_TRIES);
+        for _ in 0..MAX_TRIES {
+            let code_str = format!("{:06}", code);
+
+            code = code.wrapping_add(1);
+
+            let client = client.clone();
+            let tx = tx.clone();
+            tokio::spawn(async move {
+                let check_room_result = client
+                    .check_room(&code_str)
+                    .await
+                    .and_then(|r| r.error_for_response())
+                    .map(|res| res.room);
+
+                let _ = tx.send((code_str, check_room_result)).await.is_ok();
+            });
+        }
+        drop(tx);
+
+        let mut sent_response = false;
+        while let Some((code_str, check_room_result)) = rx.recv().await {
+            match check_room_result {
+                Ok(Some(room)) if room.is_running() => {
+                    if !sent_response {
+                        let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
+                        sent_response = true;
+                    } else {
+                        // TODO: Cache
+                    }
+                }
+                Ok(None) | Ok(Some(_)) => {
+                    // Pass
+                }
+                Err(quizizz::Error::InvalidGenericResponse(e))
+                    if e.is_room_not_found() || e.is_player_login_required() =>
+                {
+                    // Pass
+                }
+                Err(e) => {
+                    if !sent_response {
+                        let e = Err(e)
+                            .with_context(|| {
+                                format!("failed to search for quizizz code '{}'", code_str)
+                            })
+                            .map_err(Arc::new);
+                        let _ = watch_tx.send(e).is_ok();
+                        sent_response = true;
+                    }
+                }
+            }
+        }
+
+        if !sent_response {
+            let _ = watch_tx.send(Ok(None)).is_ok();
+        }
     }
 }
 
