@@ -6,7 +6,7 @@ use crate::{
     Error,
 };
 
-const CHECK_ROOM_URI: &str = "https://game.quizizz.com/play-api/v4/checkRoom";
+const CHECK_ROOM_URI: &str = "https://game.quizizz.com/play-api/v5/checkRoom";
 
 /// A quizizz Client
 #[derive(Debug, Clone)]
