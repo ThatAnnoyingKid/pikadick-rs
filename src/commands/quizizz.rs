@@ -15,14 +15,11 @@ use serenity::{
 };
 use std::sync::Arc;
 use tokio::sync::{
-    mpsc::{
-        Receiver as MpscReceiver,
-        Sender as MpscSender,
-    },
     watch::{
         Receiver as WatchReceiver,
         Sender as WatchSender,
     },
+    Notify,
 };
 use tracing::{
     error,
@@ -38,25 +35,29 @@ const LIMIT_REACHED_MSG: &str = "Reached limit while searching for quizizz code,
 
 #[derive(Clone, Debug)]
 pub struct QuizizzClient {
-    finder_task_tx: MpscSender<()>,
-
+    finder_task_wakeup: Arc<Notify>,
     finder_task_rx: WatchReceiver<SearchResult>,
 }
 
 impl QuizizzClient {
     /// Make a new [`QuizizzClient`].
     pub fn new() -> Self {
-        let (finder_task_tx, mut rx): (MpscSender<()>, MpscReceiver<()>) =
-            tokio::sync::mpsc::channel(100);
+        let finder_task_wakeup = Arc::new(Notify::new());
+        let wakeup = finder_task_wakeup.clone();
         let (watch_tx, finder_task_rx): (WatchSender<SearchResult>, WatchReceiver<SearchResult>) =
             tokio::sync::watch::channel(Ok(None));
 
         tokio::spawn(async move {
             let client = quizizz::Client::new();
 
-            while let Some(()) = rx.recv().await {
+            while tokio::select! {
+                _ = wakeup.notified() => true,
+                _ = watch_tx.closed() => false,
+            } {
                 let mut code: u32 = rand::random::<u32>() % MAX_CODE;
                 let mut tries = 0;
+
+                info!(start_code = code);
 
                 loop {
                     let code_str = format!("{:06}", code);
@@ -101,7 +102,7 @@ impl QuizizzClient {
         });
 
         Self {
-            finder_task_tx,
+            finder_task_wakeup,
             finder_task_rx,
         }
     }
@@ -110,16 +111,23 @@ impl QuizizzClient {
     ///
     /// `None` signifies that the task ran out of tries.
     pub async fn search_for_code(&self) -> SearchResult {
-        self.finder_task_tx
-            .send(())
-            .await
-            .context("finder task died")?;
         let mut finder_task_rx = self.finder_task_rx.clone();
+
+        // Mark current value as seen
+        finder_task_rx.borrow_and_update();
+
+        // Wake up task if its sleeping
+        self.finder_task_wakeup.notify_waiters();
+
+        // Wait for new value
         finder_task_rx
             .changed()
             .await
-            .map(|_| finder_task_rx.borrow().clone())
-            .context("failed to get response from finder task")?
+            .context("failed to get response from finder task")?;
+        
+        // Return new value
+        let ret = finder_task_rx.borrow_and_update().clone();
+        ret
     }
 }
 
