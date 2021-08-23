@@ -13,7 +13,14 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use std::sync::Arc;
+use std::{
+    collections::BinaryHeap,
+    sync::Arc,
+    time::{
+        Duration,
+        Instant,
+    },
+};
 use tokio::sync::{
     watch::{
         Receiver as WatchReceiver,
@@ -86,11 +93,22 @@ impl Default for QuizizzClient {
 
 async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
     let client = quizizz::Client::new();
+    // Worst case caches `MAX_TRIES - 1` entries, since we gather MAX_TRIES entries and return one on success.
+    let mut cache: BinaryHeap<(std::cmp::Reverse<Instant>, String)> =
+        BinaryHeap::with_capacity(MAX_TRIES);
 
     while tokio::select! {
         _ = wakeup.notified() => true,
         _ = watch_tx.closed() => false,
     } {
+        // Try cache first
+        while let Some((time, code_str)) = cache.pop() {
+            if time.0.elapsed() < Duration::from_secs(10 * 60) {
+                let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
+                continue;
+            }
+        }
+
         let mut code: u32 = rand::random::<u32>() % MAX_CODE;
 
         info!(start_code = code);
@@ -123,7 +141,8 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
                         let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
                         sent_response = true;
                     } else {
-                        // TODO: Cache
+                        // Cache extra results
+                        cache.push((std::cmp::Reverse(Instant::now()), code_str));
                     }
                 }
                 Ok(None) | Ok(Some(_)) => {
@@ -135,12 +154,13 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
                     // Pass
                 }
                 Err(e) => {
+                    let e = Err(e)
+                        .with_context(|| {
+                            format!("failed to search for quizizz code '{}'", code_str)
+                        })
+                        .map_err(Arc::new);
+                    error!("{:?}", e);
                     if !sent_response {
-                        let e = Err(e)
-                            .with_context(|| {
-                                format!("failed to search for quizizz code '{}'", code_str)
-                            })
-                            .map_err(Arc::new);
                         let _ = watch_tx.send(e).is_ok();
                         sent_response = true;
                     }
@@ -151,6 +171,8 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
         if !sent_response {
             let _ = watch_tx.send(Ok(None)).is_ok();
         }
+
+        dbg!(cache.len());
     }
 }
 
