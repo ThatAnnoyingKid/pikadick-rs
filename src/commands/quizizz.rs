@@ -55,62 +55,60 @@ impl QuizizzClient {
                 _ = watch_tx.closed() => false,
             } {
                 let mut code: u32 = rand::random::<u32>() % MAX_CODE;
-                let mut tries = 0;
 
                 info!(start_code = code);
 
-                'body: loop {
-                    let (tx, mut rx) = tokio::sync::mpsc::channel(10);
-                    for _ in 0..10 {
-                        let code_str = format!("{:06}", code);
+                let (tx, mut rx) = tokio::sync::mpsc::channel(MAX_TRIES);
+                for _ in 0..MAX_TRIES {
+                    let code_str = format!("{:06}", code);
 
-                        code = code.wrapping_add(1);
-                        tries += 1;
+                    code = code.wrapping_add(1);
 
-                        let client = client.clone();
-                        let tx = tx.clone();
-                        tokio::spawn(async move {
-                            let check_room_result = client
-                                .check_room(&code_str)
-                                .await
-                                .and_then(|r| r.error_for_response())
-                                .map(|res| res.room);
+                    let client = client.clone();
+                    let tx = tx.clone();
+                    tokio::spawn(async move {
+                        let check_room_result = client
+                            .check_room(&code_str)
+                            .await
+                            .and_then(|r| r.error_for_response())
+                            .map(|res| res.room);
 
-                            let _ = tx.send((code_str, check_room_result)).await.is_ok();
-                        });
+                        let _ = tx.send((code_str, check_room_result)).await.is_ok();
+                    });
+                }
+                drop(tx);
 
-                        if tries == MAX_TRIES {
-                            let _ = watch_tx.send(Ok(None)).is_ok();
-                            break;
+                let mut sent_response = false;
+                while let (false, Some((code_str, check_room_result))) =
+                    (sent_response, rx.recv().await)
+                {
+                    match check_room_result {
+                        Ok(Some(room)) if room.is_running() => {
+                            let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
+                            sent_response = true;
+                        }
+                        Ok(None) | Ok(Some(_)) => {
+                            // Pass
+                        }
+                        Err(quizizz::Error::InvalidGenericResponse(e))
+                            if e.is_room_not_found() || e.is_player_login_required() =>
+                        {
+                            // Pass
+                        }
+                        Err(e) => {
+                            let e = Err(e)
+                                .with_context(|| {
+                                    format!("failed to search for quizizz code '{}'", code_str)
+                                })
+                                .map_err(Arc::new);
+                            let _ = watch_tx.send(e).is_ok();
+                            sent_response = true;
                         }
                     }
-                    drop(tx);
+                }
 
-                    while let Some((code_str, check_room_result)) = rx.recv().await {
-                        match check_room_result {
-                            Ok(Some(room)) if room.is_running() => {
-                                let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
-                                break 'body;
-                            }
-                            Ok(None) | Ok(Some(_)) => {
-                                // Pass
-                            }
-                            Err(quizizz::Error::InvalidGenericResponse(e))
-                                if e.is_room_not_found() || e.is_player_login_required() =>
-                            {
-                                // Pass
-                            }
-                            Err(e) => {
-                                let e = Err(e)
-                                    .with_context(|| {
-                                        format!("failed to search for quizizz code '{}'", code_str)
-                                    })
-                                    .map_err(Arc::new);
-                                let _ = watch_tx.send(e).is_ok();
-                                break 'body;
-                            }
-                        }
-                    }
+                if !sent_response {
+                    let _ = watch_tx.send(Ok(None)).is_ok();
                 }
             }
         });
