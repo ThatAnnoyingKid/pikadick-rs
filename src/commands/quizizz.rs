@@ -59,43 +59,57 @@ impl QuizizzClient {
 
                 info!(start_code = code);
 
-                loop {
-                    let code_str = format!("{:06}", code);
-                    let check_room_result = client
-                        .check_room(&code_str)
-                        .await
-                        .and_then(|r| r.error_for_response());
+                'body: loop {
+                    let (tx, mut rx) = tokio::sync::mpsc::channel(10);
+                    for _ in 0..10 {
+                        let code_str = format!("{:06}", code);
 
-                    match check_room_result.map(|res| res.room) {
-                        Ok(Some(room)) if room.is_running() => {
-                            let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
-                            break;
-                        }
-                        Ok(None) | Ok(Some(_)) => {
-                            // Pass
-                        }
-                        Err(quizizz::Error::InvalidGenericResponse(e))
-                            if e.is_room_not_found() || e.is_player_login_required() =>
-                        {
-                            // Pass
-                        }
-                        Err(e) => {
-                            let e = Err(e)
-                                .with_context(|| {
-                                    format!("failed to search for quizizz code '{}'", code_str)
-                                })
-                                .map_err(Arc::new);
-                            let _ = watch_tx.send(e).is_ok();
+                        code = code.wrapping_add(1);
+                        tries += 1;
+
+                        let client = client.clone();
+                        let tx = tx.clone();
+                        tokio::spawn(async move {
+                            let check_room_result = client
+                                .check_room(&code_str)
+                                .await
+                                .and_then(|r| r.error_for_response())
+                                .map(|res| res.room);
+
+                            let _ = tx.send((code_str, check_room_result)).await.is_ok();
+                        });
+
+                        if tries == MAX_TRIES {
+                            let _ = watch_tx.send(Ok(None)).is_ok();
                             break;
                         }
                     }
+                    drop(tx);
 
-                    code = code.wrapping_add(1);
-                    tries += 1;
-
-                    if tries == MAX_TRIES {
-                        let _ = watch_tx.send(Ok(None)).is_ok();
-                        break;
+                    while let Some((code_str, check_room_result)) = rx.recv().await {
+                        match check_room_result {
+                            Ok(Some(room)) if room.is_running() => {
+                                let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
+                                break 'body;
+                            }
+                            Ok(None) | Ok(Some(_)) => {
+                                // Pass
+                            }
+                            Err(quizizz::Error::InvalidGenericResponse(e))
+                                if e.is_room_not_found() || e.is_player_login_required() =>
+                            {
+                                // Pass
+                            }
+                            Err(e) => {
+                                let e = Err(e)
+                                    .with_context(|| {
+                                        format!("failed to search for quizizz code '{}'", code_str)
+                                    })
+                                    .map_err(Arc::new);
+                                let _ = watch_tx.send(e).is_ok();
+                                break 'body;
+                            }
+                        }
                     }
                 }
             }
@@ -124,7 +138,7 @@ impl QuizizzClient {
             .changed()
             .await
             .context("failed to get response from finder task")?;
-        
+
         // Return new value
         let ret = finder_task_rx.borrow_and_update().clone();
         ret
