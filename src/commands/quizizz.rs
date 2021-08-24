@@ -73,14 +73,14 @@ impl QuizizzClient {
 
         // Wake up task
         //
-        // You might be wondering why not `notify_waiters`, 
+        // You might be wondering why not `notify_waiters`,
         // as the current code will potentially make the task do an extra unecessary lookup
         // if two requests come in at once.
-        // This is because there is an edge case where the task may have sent its response already, 
+        // This is because there is an edge case where the task may have sent its response already,
         // but still be processing and caching the other requests when it is woken up.
         // Since it is not waiting, this will make the request task hang until another request wakes up the finder task.
         // It is therefore better to use `notify_one` to ensure the task is always woken up when it needs to be, even spuriously.
-        // The finder task is also equipped with a caching mechanism, 
+        // The finder task is also equipped with a caching mechanism,
         // so spurious wakeups will likely quickly pull a value from there instead of making web requests.
         self.finder_task_wakeup.notify_one();
 
@@ -176,7 +176,7 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
         // Generate start code
         let mut code: u32 = rand::random::<u32>() % MAX_CODE;
         info!(start_code = code);
-        
+
         // Spawn parallel guesses
         let (tx, mut rx) = tokio::sync::mpsc::channel(MAX_TRIES);
         for _ in 0..MAX_TRIES {
