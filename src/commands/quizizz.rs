@@ -71,8 +71,18 @@ impl QuizizzClient {
         // Mark current value as seen
         finder_task_rx.borrow_and_update();
 
-        // Wake up task if its sleeping
-        self.finder_task_wakeup.notify_waiters();
+        // Wake up task
+        //
+        // You might be wondering why not `notify_waiters`, 
+        // as the current code will potentially make the task do an extra unecessary lookup
+        // if two requests come in at once.
+        // This is because there is an edge case where the task may have sent its response already, 
+        // but still be processing and caching the other requests when it is woken up.
+        // Since it is not waiting, this will make the request task hang until another request wakes up the finder task.
+        // It is therefore better to use `notify_one` to ensure the task is always woken up when it needs to be, even spuriously.
+        // The finder task is also equipped with a caching mechanism, 
+        // so spurious wakeups will likely quickly pull a value from there instead of making web requests.
+        self.finder_task_wakeup.notify_one();
 
         // Wait for new value
         finder_task_rx
@@ -151,7 +161,6 @@ impl Default for CodeCache {
 
 async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
     let client = quizizz::Client::new();
-
     let mut cache = CodeCache::new();
 
     while tokio::select! {
@@ -164,14 +173,14 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
             continue;
         }
 
+        // Generate start code
         let mut code: u32 = rand::random::<u32>() % MAX_CODE;
-
         info!(start_code = code);
-
+        
+        // Spawn parallel guesses
         let (tx, mut rx) = tokio::sync::mpsc::channel(MAX_TRIES);
         for _ in 0..MAX_TRIES {
             let code_str = format!("{:06}", code);
-
             code = code.wrapping_add(1);
 
             let client = client.clone();
@@ -188,6 +197,7 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
         }
         drop(tx);
 
+        // Process parallel guess responses
         let mut sent_response = false;
         while let Some((code_str, check_room_result)) = rx.recv().await {
             match check_room_result {
@@ -202,11 +212,13 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
                 }
                 Ok(None) | Ok(Some(_)) => {
                     // Pass
+                    // room data is missing / room is not running
                 }
                 Err(quizizz::Error::InvalidGenericResponse(e))
                     if e.is_room_not_found() || e.is_player_login_required() =>
                 {
                     // Pass
+                    // the room was not found / the player needs to be logged in to access this game
                 }
                 Err(e) => {
                     let e = Err(e)
@@ -222,7 +234,6 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
                 }
             }
         }
-
         if !sent_response {
             let _ = watch_tx.send(Ok(None)).is_ok();
         }
