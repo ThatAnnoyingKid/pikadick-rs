@@ -31,7 +31,7 @@ reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "b7e79ccd5451b
 reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
-serde = { version = "1.0.128", features = [ "derive" ] }
+serde = { version = "1.0.129", features = [ "derive" ] }
 serenity = "0.10.9"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
 sqlx = { version = "0.5.7", features = [ "sqlite", "runtime-tokio-rustls" ] }
