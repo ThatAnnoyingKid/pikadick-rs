@@ -102,11 +102,16 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
         _ = watch_tx.closed() => false,
     } {
         // Try cache first
+        let mut sent_value = false;
         while let Some((time, code_str)) = cache.pop() {
             if time.0.elapsed() < Duration::from_secs(10 * 60) {
                 let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
-                continue;
+                sent_value = true;
+                break;
             }
+        }
+        if sent_value {
+            continue;
         }
 
         let mut code: u32 = rand::random::<u32>() % MAX_CODE;
@@ -172,7 +177,7 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
             let _ = watch_tx.send(Ok(None)).is_ok();
         }
 
-        dbg!(cache.len());
+        info!("quizizz has {} cached entries", cache.len());
     }
 }
 

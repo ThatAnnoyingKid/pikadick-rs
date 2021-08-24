@@ -477,8 +477,6 @@ async fn async_main(config: Config, missing_data_dir: bool) {
         }
     };
 
-    drop(crate::quizizz::QuizizzClient::new());
-
     tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
 
     let client_data = match ClientData::init(client.shard_manager.clone(), config, db).await {
