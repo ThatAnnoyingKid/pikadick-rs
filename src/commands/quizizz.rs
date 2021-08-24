@@ -43,6 +43,7 @@ const LIMIT_REACHED_MSG: &str = "Reached limit while searching for quizizz code,
 #[derive(Clone, Debug)]
 pub struct QuizizzClient {
     finder_task_wakeup: Arc<Notify>,
+    // finder_task_interest: Arc<AtomicU64>,
     finder_task_rx: WatchReceiver<SearchResult>,
 }
 
@@ -91,26 +92,75 @@ impl Default for QuizizzClient {
     }
 }
 
+/// A Cache for quizzizz codes
+#[derive(Debug)]
+pub struct CodeCache {
+    cache: BinaryHeap<(std::cmp::Reverse<Instant>, String)>,
+}
+
+impl CodeCache {
+    /// Make a new cache
+    pub fn new() -> Self {
+        // Worst case caches `MAX_TRIES - 1` entries, since we gather MAX_TRIES entries and return one on success.
+        Self {
+            cache: BinaryHeap::with_capacity(MAX_TRIES),
+        }
+    }
+
+    /// Get the # of entries
+    pub fn len(&self) -> usize {
+        self.cache.len()
+    }
+
+    /// Returns true if it is empty
+    pub fn is_empty(&self) -> bool {
+        self.cache.is_empty()
+    }
+
+    /// Trim the cache
+    pub fn trim(&mut self) {
+        while let Some((time, _)) = self.cache.peek() {
+            if time.0.elapsed() > Duration::from_secs(10 * 60) {
+                self.cache.pop();
+            } else {
+                // The newest value has not expired.
+                // Exit the peek loop.
+                break;
+            }
+        }
+    }
+
+    /// Trim the cache and pop a code if it exists
+    pub fn trim_pop(&mut self) -> Option<String> {
+        self.trim();
+        Some(self.cache.pop()?.1)
+    }
+
+    /// Add a code to the cache
+    pub fn push(&mut self, code_str: String) {
+        self.cache
+            .push((std::cmp::Reverse(Instant::now()), code_str));
+    }
+}
+
+impl Default for CodeCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
     let client = quizizz::Client::new();
-    // Worst case caches `MAX_TRIES - 1` entries, since we gather MAX_TRIES entries and return one on success.
-    let mut cache: BinaryHeap<(std::cmp::Reverse<Instant>, String)> =
-        BinaryHeap::with_capacity(MAX_TRIES);
+
+    let mut cache = CodeCache::new();
 
     while tokio::select! {
         _ = wakeup.notified() => true,
         _ = watch_tx.closed() => false,
     } {
         // Try cache first
-        let mut sent_value = false;
-        while let Some((time, code_str)) = cache.pop() {
-            if time.0.elapsed() < Duration::from_secs(10 * 60) {
-                let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
-                sent_value = true;
-                break;
-            }
-        }
-        if sent_value {
+        if let Some(code_str) = cache.trim_pop() {
+            let _ = watch_tx.send(Ok(Some(code_str))).is_ok();
             continue;
         }
 
@@ -147,7 +197,7 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
                         sent_response = true;
                     } else {
                         // Cache extra results
-                        cache.push((std::cmp::Reverse(Instant::now()), code_str));
+                        cache.push(code_str);
                     }
                 }
                 Ok(None) | Ok(Some(_)) => {
