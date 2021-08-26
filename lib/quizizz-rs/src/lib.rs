@@ -2,21 +2,22 @@ mod client;
 /// Api Types
 pub mod types;
 
+pub use self::types::{
+    GenericResponse,
+    GenericResponseError,
+};
 pub use crate::client::Client;
-
-/// Library Result
-pub type QResult<T> = Result<T, QError>;
 
 /// Library Error
 #[derive(Debug, thiserror::Error)]
-pub enum QError {
+pub enum Error {
     /// Reqwest HTTP Error
-    #[error("{0}")]
+    #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
 
-    /// Invalid HTTP Status
-    #[error("Invalid HTTP status {0}")]
-    InvalidStatus(reqwest::StatusCode),
+    /// Invalid Generic Response
+    #[error("invalid generic response")]
+    InvalidGenericResponse(#[from] GenericResponseError),
 }
 
 #[cfg(test)]
@@ -26,7 +27,10 @@ mod test {
     #[tokio::test]
     async fn check_room() {
         let client = Client::new();
-        let data = client.check_room("274218").await.unwrap();
+        let data = client
+            .check_room("274218")
+            .await
+            .expect("failed to check room");
 
         dbg!(data);
     }

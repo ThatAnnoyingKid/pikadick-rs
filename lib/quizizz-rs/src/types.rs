@@ -1,3 +1,4 @@
+use crate::Error;
 use std::collections::HashMap;
 
 /// Check Room Request
@@ -29,6 +30,17 @@ pub struct GenericResponse {
     pub extra: HashMap<String, serde_json::Value>,
 }
 
+impl GenericResponse {
+    /// Change this into a result if it is an error.
+    pub fn error_for_response(self) -> Result<Self, Error> {
+        if let Some(e) = self.error {
+            return Err(Error::InvalidGenericResponse(e));
+        }
+
+        Ok(self)
+    }
+}
+
 /// Api Response Error
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct GenericResponseError {
@@ -43,6 +55,26 @@ pub struct GenericResponseError {
     #[serde(flatten)]
     pub extra: HashMap<String, serde_json::Value>,
 }
+
+impl GenericResponseError {
+    /// Returns `true` if it's kind is `"room.NOT_FOUND"`
+    pub fn is_room_not_found(&self) -> bool {
+        self.kind == "room.NOT_FOUND"
+    }
+
+    /// Returns `true` if it's kind is `"player.LOGIN_REQUIRED"`
+    pub fn is_player_login_required(&self) -> bool {
+        self.kind == "player.LOGIN_REQUIRED"
+    }
+}
+
+impl std::fmt::Display for GenericResponseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.message.fmt(f)
+    }
+}
+
+impl std::error::Error for GenericResponseError {}
 
 /// A quiz Room
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
