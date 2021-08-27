@@ -10,26 +10,17 @@ pub use crate::{
 };
 pub use url::Url;
 
-/// Nekos result type
-pub type NekosResult<T> = Result<T, NekosError>;
-
 /// Nekos lib error
 #[derive(Debug, thiserror::Error)]
-pub enum NekosError {
+pub enum Error {
     /// Reqwest HTTP Error
-    #[error("{0}")]
+    #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
-    /// Invalid HTTP Status
-    #[error("invalid status {0}")]
-    InvalidStatus(reqwest::StatusCode),
-    /// Invalid JSON
-    #[error("{0}")]
-    Json(#[from] serde_json::Error),
     /// Invalid URL
-    #[error("{0}")]
+    #[error(transparent)]
     InvalidUrl(#[from] url::ParseError),
     /// Io Error
-    #[error("{0}")]
+    #[error(transparent)]
     Io(#[from] std::io::Error),
 }
 
@@ -40,33 +31,50 @@ mod test {
     #[tokio::test]
     async fn it_works() {
         let client = Client::new();
-        let image_list = client.get_random(Some(false), 10).await.unwrap();
+        let image_list = client
+            .get_random(Some(false), 10)
+            .await
+            .expect("failed to get random");
 
         assert_eq!(image_list.images.len(), 10);
 
-        let image_url = image_list.images[0].get_url().unwrap();
+        let image_url = image_list.images[0]
+            .get_url()
+            .expect("missing first element");
         let mut image = Vec::new();
-        client.copy_res_to(&image_url, &mut image).await.unwrap();
+        client
+            .get_to_writer(image_url.as_str(), &mut image)
+            .await
+            .expect("failed to download");
     }
 
     #[tokio::test]
     async fn get_nsfw() {
         let client = Client::new();
-        let image_list = client.get_random(Some(true), 10).await.unwrap();
+        let image_list = client
+            .get_random(Some(true), 10)
+            .await
+            .expect("failed to get random");
         assert_eq!(image_list.images.len(), 10);
     }
 
     #[tokio::test]
     async fn get_non_nsfw() {
         let client = Client::new();
-        let image_list = client.get_random(Some(false), 10).await.unwrap();
+        let image_list = client
+            .get_random(Some(false), 10)
+            .await
+            .expect("failed to get random");
         assert_eq!(image_list.images.len(), 10);
     }
 
     #[tokio::test]
     async fn get_100() {
         let client = Client::new();
-        let image_list = client.get_random(None, 100).await.unwrap();
+        let image_list = client
+            .get_random(None, 100)
+            .await
+            .expect("failed to get 100");
         assert_eq!(image_list.images.len(), 100);
     }
 }

@@ -1613,6 +1613,7 @@ dependencies = [
 name = "nekos"
 version = "0.0.1"
 dependencies = [
+ "anyhow",
  "argh",
  "itoa",
  "reqwest",
