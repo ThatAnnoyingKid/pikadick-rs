@@ -48,10 +48,12 @@ impl FromStr for NsfwArg {
     }
 }
 
+/// A nekos cache
 #[derive(Clone, Debug)]
 pub struct Cache(Arc<CacheInner>);
 
 impl Cache {
+    /// Make a new cache
     pub fn new() -> Self {
         Self(Arc::new(CacheInner {
             primary: ArrayQueue::new(BUFFER_SIZE.into()),
@@ -59,27 +61,33 @@ impl Cache {
         }))
     }
 
+    /// Get the size of the primary cache
     pub fn primary_len(&self) -> usize {
         self.0.primary.len()
     }
 
+    /// Get the size of the secondary cache
     pub fn secondary_len(&self) -> usize {
         self.0.secondary.read().len()
     }
 
+    /// Check if the primary cache is emoty
     pub fn primary_is_empty(&self) -> bool {
         self.0.primary.is_empty()
     }
 
+    /// Check if the secondary cache is empty
     pub fn secondary_is_empty(&self) -> bool {
         self.0.secondary.read().is_empty()
     }
 
+    /// Add a url to the cache
     pub fn add(&self, uri: Url) {
         let _ = self.0.primary.push(uri.clone());
         self.0.secondary.write().insert(uri);
     }
 
+    /// Add many urls to the cache
     pub fn add_many<I: Iterator<Item = Url>>(&self, iter: I) {
         let mut secondary = self.0.secondary.write();
         for uri in iter {
@@ -88,6 +96,7 @@ impl Cache {
         }
     }
 
+    /// Get a random url
     pub async fn get_rand(&self) -> Option<Url> {
         if let Some(uri) = self.0.primary.pop() {
             Some(uri)
@@ -112,12 +121,14 @@ impl Default for Cache {
     }
 }
 
+/// The inner cache data
 #[derive(Debug)]
 struct CacheInner {
     primary: ArrayQueue<Url>,
     secondary: RwLock<IndexSet<Url>>,
 }
 
+/// The nekos client
 #[derive(Clone, Debug)]
 pub struct NekosClient {
     client: nekos::Client,
@@ -127,6 +138,7 @@ pub struct NekosClient {
 }
 
 impl NekosClient {
+    /// Make a new nekos client
     pub fn new() -> Self {
         NekosClient {
             client: Default::default(),
@@ -135,6 +147,7 @@ impl NekosClient {
         }
     }
 
+    /// Get a cache
     fn get_cache(&self, nsfw: bool) -> &Cache {
         if nsfw {
             &self.nsfw_cache
@@ -143,6 +156,7 @@ impl NekosClient {
         }
     }
 
+    /// Repopulate a cache
     pub async fn populate(&self, nsfw: bool) -> anyhow::Result<()> {
         let cache = self.get_cache(nsfw);
         let image_list = self
@@ -161,6 +175,7 @@ impl NekosClient {
         Ok(())
     }
 
+    /// Get a random nekos image
     pub async fn get_rand(&self, nsfw: bool) -> anyhow::Result<Url> {
         let cache = self.get_cache(nsfw);
 
@@ -179,7 +194,9 @@ impl NekosClient {
         }
 
         if cache.secondary_is_empty() {
-            self.populate(nsfw).await?;
+            self.populate(nsfw)
+                .await
+                .context("failed to populate caches")?;
         }
 
         cache
@@ -215,6 +232,9 @@ impl Default for NekosClient {
     }
 }
 
+// TODO:
+// Consider adding https://nekos.life/api/v2/endpoints
+
 #[command]
 #[bucket("nekos")]
 #[description("Get a random neko")]
@@ -231,20 +251,19 @@ async fn nekos(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
-    match nekos_client.get_rand(nsfw).await {
+    match nekos_client
+        .get_rand(nsfw)
+        .await
+        .context("failed to repopulate nekos caches")
+    {
         Ok(url) => {
             loading.send_ok();
             msg.channel_id.say(&ctx.http, url.as_str()).await?;
         }
         Err(e) => {
-            error!("Failed to repopulate nekos cache: {}", e);
+            error!("{:?}", e);
 
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    format!("Failed to repopulate nekos cache: {}", e),
-                )
-                .await?;
+            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
         }
     }
 
