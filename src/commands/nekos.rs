@@ -7,9 +7,9 @@ use crate::{
     util::LoadingReaction,
     ClientDataKey,
 };
+use anyhow::Context as _;
 use crossbeam::queue::ArrayQueue;
 use indexmap::set::IndexSet;
-use nekos::NekosError;
 use parking_lot::RwLock;
 use rand::Rng;
 use serenity::{
@@ -143,9 +143,13 @@ impl NekosClient {
         }
     }
 
-    pub async fn populate(&self, nsfw: bool) -> Result<(), NekosError> {
+    pub async fn populate(&self, nsfw: bool) -> anyhow::Result<()> {
         let cache = self.get_cache(nsfw);
-        let image_list = self.client.get_random(Some(nsfw), BUFFER_SIZE).await?;
+        let image_list = self
+            .client
+            .get_random(Some(nsfw), BUFFER_SIZE)
+            .await
+            .context("failed to get random nekos image list")?;
 
         cache.add_many(
             image_list
@@ -157,14 +161,20 @@ impl NekosClient {
         Ok(())
     }
 
-    pub async fn get_rand(&self, nsfw: bool) -> Result<Option<Url>, NekosError> {
+    pub async fn get_rand(&self, nsfw: bool) -> anyhow::Result<Url> {
         let cache = self.get_cache(nsfw);
 
         if cache.primary_is_empty() {
             let self_clone = self.clone();
             tokio::spawn(async move {
-                // TODO: Consider reporting error somehow?
-                let _ = self_clone.populate(nsfw).await.is_ok(); // Best effort here, we can always fall back to secondary cache
+                // Best effort here, we can always fall back to secondary cache
+                if let Err(e) = self_clone
+                    .populate(nsfw)
+                    .await
+                    .context("failed to get new nekos data")
+                {
+                    error!("{:?}", e);
+                }
             });
         }
 
@@ -172,7 +182,10 @@ impl NekosClient {
             self.populate(nsfw).await?;
         }
 
-        Ok(cache.get_rand().await)
+        cache
+            .get_rand()
+            .await
+            .context("both primary and secondary caches are empty")
     }
 }
 
@@ -207,35 +220,24 @@ impl Default for NekosClient {
 #[description("Get a random neko")]
 #[checks(Enabled)]
 async fn nekos(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let nsfw = args.single::<NsfwArg>().map(|_| true).unwrap_or(false);
-
     let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
+    let client_data = data_lock
+        .get::<ClientDataKey>()
+        .expect("failed to get client data");
     let nekos_client = client_data.nekos_client.clone();
     drop(data_lock);
+
+    let nsfw = args.single::<NsfwArg>().map(|_| true).unwrap_or(false);
 
     let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
     match nekos_client.get_rand(nsfw).await {
-        Ok(Some(url)) => {
+        Ok(url) => {
             loading.send_ok();
             msg.channel_id.say(&ctx.http, url.as_str()).await?;
         }
-        Ok(None) => {
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    "Both primary and secondary caches are empty. This is not possible.",
-                )
-                .await?;
-
-            error!("Both primary and secondary caches are empty. This is not possible.",);
-        }
         Err(e) => {
-            error!(
-                "Failed to repopulate nekos cache (secondary cache empty): {}",
-                e
-            );
+            error!("Failed to repopulate nekos cache: {}", e);
 
             msg.channel_id
                 .say(
