@@ -43,7 +43,7 @@ mod test {
             .expect("missing first element");
         let mut image = Vec::new();
         client
-            .copy_res_to(image_url.as_str(), &mut image)
+            .get_to_writer(image_url.as_str(), &mut image)
             .await
             .expect("failed to download");
     }
