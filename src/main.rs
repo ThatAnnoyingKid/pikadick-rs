@@ -61,6 +61,7 @@ use serenity::{
     prelude::*,
     FutureExt,
 };
+use songbird::SerenityInit;
 use std::{
     collections::HashSet,
     path::Path,
@@ -468,6 +469,7 @@ async fn async_main(config: Config, missing_data_dir: bool) {
     let mut client = match Client::builder(&config.token)
         .event_handler(Handler)
         .framework(framework)
+        .register_songbird()
         .await
     {
         Ok(c) => c,
