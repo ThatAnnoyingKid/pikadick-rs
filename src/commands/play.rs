@@ -1,4 +1,7 @@
-use crate::checks::ENABLED_CHECK;
+use crate::{
+    checks::ENABLED_CHECK,
+    util::LoadingReaction,
+};
 use anyhow::Context as _;
 use serenity::{
     client::Context,
@@ -18,11 +21,12 @@ use tracing::error;
 #[checks(Enabled)]
 async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args.single::<String>().expect("missing url");
-
     if !url.starts_with("http") {
         msg.channel_id.say(&ctx.http, "invalid url").await?;
         return Ok(());
     }
+
+    let mut loading_reaction = LoadingReaction::new(ctx.http.clone(), msg);
 
     let guild_id = msg
         .guild_field(&ctx.cache, |guild| guild.id)
@@ -46,9 +50,8 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             }
         };
 
-        handler.play_source(source);
-
-        msg.channel_id.say(&ctx.http, "Playing song").await?;
+        handler.play_only_source(source);
+        loading_reaction.send_ok();
     } else {
         msg.channel_id
             .say(&ctx.http, "Not in a voice channel")
