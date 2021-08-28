@@ -176,7 +176,11 @@ async fn help(
     urban,
     xkcd,
     tic_tac_toe,
-    iqdb
+    iqdb,
+    join,
+    play,
+    stop,
+    leave
 )]
 struct General;
 

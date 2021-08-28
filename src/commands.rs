@@ -5,15 +5,19 @@ pub mod fml;
 pub mod insta_dl;
 pub mod invite;
 pub mod iqdb;
+pub mod join;
 pub mod latency;
+pub mod leave;
 pub mod nekos;
 pub mod ping;
+pub mod play;
 pub mod quizizz;
 pub mod r6stats;
 pub mod r6tracker;
 pub mod reddit_embed;
 pub mod rule34;
 pub mod shift;
+pub mod stop;
 pub mod system;
 pub mod tic_tac_toe;
 pub mod urban;
@@ -30,15 +34,19 @@ pub use crate::commands::{
     insta_dl::INSTA_DL_COMMAND,
     invite::INVITE_COMMAND,
     iqdb::IQDB_COMMAND,
+    join::JOIN_COMMAND,
     latency::LATENCY_COMMAND,
+    leave::LEAVE_COMMAND,
     nekos::NEKOS_COMMAND,
     ping::PING_COMMAND,
+    play::PLAY_COMMAND,
     quizizz::QUIZIZZ_COMMAND,
     r6stats::R6STATS_COMMAND,
     r6tracker::R6TRACKER_COMMAND,
     reddit_embed::REDDIT_EMBED_COMMAND,
     rule34::RULE34_COMMAND,
     shift::SHIFT_COMMAND,
+    stop::STOP_COMMAND,
     system::SYSTEM_COMMAND,
     tic_tac_toe::TIC_TAC_TOE_COMMAND,
     urban::URBAN_COMMAND,
