@@ -1,4 +1,7 @@
-use crate::checks::ENABLED_CHECK;
+use crate::{
+    checks::ENABLED_CHECK,
+    util::LoadingReaction,
+};
 use anyhow::Context as _;
 use serenity::{
     client::Context,
@@ -19,6 +22,8 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
         .await
         .context("missing server data")?;
 
+    let mut loading_reaction = LoadingReaction::new(ctx.http.clone(), msg);
+
     let manager = songbird::get(ctx)
         .await
         .expect("missing songbird data")
@@ -26,11 +31,12 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
     let has_handler = manager.get(guild_id).is_some();
 
     if has_handler {
-        if let Err(e) = manager.remove(guild_id).await {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
+        match manager.remove(guild_id).await {
+            Ok(()) => loading_reaction.send_ok(),
+            Err(e) => {
+                msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
+            }
         }
-
-        msg.channel_id.say(&ctx.http, "Left voice channel").await?;
     } else {
         msg.reply(ctx, "Not in a voice channel").await?;
     }
