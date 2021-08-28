@@ -69,6 +69,9 @@ heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7
 # To fix this, I think https://doc.rust-lang.org/std/mem/fn.size_of_val_raw.html needs to stabilize.
 servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca1468a1767e3cc294f824036c" }
 
+# Reduce duplicate crossbeam-util dependency
+streamcatcher = { git = "https://github.com/adumbidiot/streamcatcher", branch = "update-crossbeam-utils" }
+
 [workspace]
 members = [ 
     "lib/fml-rs",

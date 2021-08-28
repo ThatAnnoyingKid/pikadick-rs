@@ -76,10 +76,6 @@ skip = [
     # Blocked on `num-traits` updating to `0.2.x`
     { name = "num-traits", version = "0.1.43" },
     
-    # Blocked on `stream-catcher` updating `crossbeam-util` to 0.8.x
-    { name = "cfg-if", version = "0.1.10" },
-    { name = "crossbeam-utils", version = "0.7.2" },
-    
     # Blocked on sha1 and sha2 updating cpufeatures to `0.2.x`
     { name = "cpufeatures", version = "0.1.5" },
 ]
@@ -142,4 +138,5 @@ allow-git = [
     "https://github.com/adumbidiot/reddit-rs",
     "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
+    "https://github.com/adumbidiot/streamcatcher",
 ]
