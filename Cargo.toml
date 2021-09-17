@@ -22,7 +22,7 @@ minimax = { path = "./lib/minimax-rs" }
 nekos = { path = "./lib/nekos-rs" }
 opentelemetry = { version = "0.16.0", features = [ "rt-tokio" ] }
 opentelemetry-otlp = { version = "0.9.0", features = [ "tls", "tls-roots" ] }
-parking_lot = "0.11.1"
+parking_lot = "0.11.2"
 quizizz = { path = "./lib/quizizz-rs" }
 r6stats = { path = "./lib/r6stats-rs" }
 r6tracker = { path = "./lib/r6tracker-rs" }
