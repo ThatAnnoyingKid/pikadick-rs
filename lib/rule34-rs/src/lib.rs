@@ -5,7 +5,7 @@ mod types;
 
 pub use crate::{
     client::Client,
-    error::RuleError,
+    error::Error,
     search_query_builder::SearchQueryBuilder,
     types::{
         DeletedImagesList,

@@ -112,7 +112,10 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
             loop {
                 let search_query = format!("parent:{}", post.id);
                 let page_results = client
-                    .search(&search_query, offset)
+                    .list()
+                    .tags(Some(&search_query))
+                    .pid(Some(offset))
+                    .execute()
                     .await
                     .context("failed to fetch post children")?;
                 offset += u64::try_from(page_results.len())

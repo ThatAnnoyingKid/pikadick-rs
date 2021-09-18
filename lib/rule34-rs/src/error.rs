@@ -3,7 +3,7 @@ pub type PostError = crate::types::post::FromHtmlError;
 
 /// Crate Error Type
 #[derive(Debug, thiserror::Error)]
-pub enum RuleError {
+pub enum Error {
     /// Reqwest HTTP Error
     #[error("reqwest error")]
     Reqwest(#[from] reqwest::Error),

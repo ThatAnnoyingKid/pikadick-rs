@@ -10,10 +10,9 @@ pub struct Options {
         option,
         long = "offset",
         short = 'o',
-        default = "0",
         description = "the starting offset"
     )]
-    offset: u64,
+    offset: Option<u64>,
 
     #[argh(
         option,
@@ -54,7 +53,7 @@ impl FromStr for OutputType {
 }
 
 pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<()> {
-    let results = client.search(&options.query, options.offset).await?;
+    let results = client.list().tags(Some(&options.query)).pid(options.offset).execute().await?;
 
     match options.output_type {
         OutputType::Human => {

@@ -4,7 +4,7 @@ use crate::{
         SearchResult,
     },
     DeletedImagesList,
-    RuleError,
+    Error,
     DELETED_IMAGES_ENDPOINT,
 };
 use reqwest::header::{
@@ -54,7 +54,7 @@ impl Client {
     }
 
     /// Send a GET web request to a `url` and get the result as a [`String`].
-    pub async fn get_text(&self, url: &str) -> Result<String, RuleError> {
+    pub async fn get_text(&self, url: &str) -> Result<String, Error> {
         Ok(self
             .client
             .get(url)
@@ -67,7 +67,7 @@ impl Client {
 
     /// Send a GET web request to a `uri` and get the result as [`Html`],
     /// then use the given func to process it.
-    pub async fn get_html<F, T>(&self, uri: &str, f: F) -> Result<T, RuleError>
+    pub async fn get_html<F, T>(&self, uri: &str, f: F) -> Result<T, Error>
     where
         F: FnOnce(Html) -> T + Send + 'static,
         T: Send + 'static,
@@ -78,39 +78,13 @@ impl Client {
         Ok(ret)
     }
 
-    /// Run a search for a `query`.
-    ///
-    /// Querys are based on "tags".
-    /// Tags are seperated by spaces, while words are seperated by underscores.
-    /// Characters are automatically url-encoded.
-    ///
-    /// Offset is the starting offset in number of results.
-    pub async fn search(&self, query: &str, offset: u64) -> Result<Vec<SearchResult>, RuleError> {
-        let mut pid_buffer = itoa::Buffer::new();
-        let url = Url::parse_with_params(
-            crate::URL_INDEX,
-            &[
-                ("tags", query),
-                ("pid", pid_buffer.format(offset)),
-                ("page", "dapi"),
-                ("s", "post"),
-                ("json", "1"),
-                ("q", "index"),
-            ],
-        )?;
-
-        // The api sends "" on no results, and serde_json dies instead of giving an empty list.
-        // Therefore, we need to handle json parsing instead of reqwest.
-        let text = self.get_text(url.as_str()).await?;
-        if text.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        Ok(serde_json::from_str(&text)?)
+    /// Create a builder to list posts from rule34.
+    pub fn list<'a, 'b>(&'a self) -> ListQueryBuilder<'a, 'b> {
+        ListQueryBuilder::new(self)
     }
 
     /// Get a [`Post`] by `id`.
-    pub async fn get_post(&self, id: u64) -> Result<Post, RuleError> {
+    pub async fn get_post(&self, id: u64) -> Result<Post, Error> {
         let url = crate::post_id_to_post_url(id);
         let ret = self
             .get_html(url.as_str(), |html| Post::from_html(&html))
@@ -127,7 +101,7 @@ impl Client {
     pub async fn get_deleted_images(
         &self,
         last_id: Option<u64>,
-    ) -> Result<DeletedImagesList, RuleError> {
+    ) -> Result<DeletedImagesList, Error> {
         let mut url = Url::parse(DELETED_IMAGES_ENDPOINT).expect("invalid DELETED_IMAGES_ENDPOINT");
         if let Some(last_id) = last_id {
             let mut last_id_buf = itoa::Buffer::new();
@@ -146,7 +120,7 @@ impl Client {
     }
 
     /// Send a GET web request to a `uri` and copy the result to the given async writer.
-    pub async fn get_to_writer<W>(&self, url: &str, mut writer: W) -> Result<(), RuleError>
+    pub async fn get_to_writer<W>(&self, url: &str, mut writer: W) -> Result<(), Error>
     where
         W: AsyncWrite + Unpin,
     {
@@ -166,6 +140,84 @@ impl Default for Client {
     }
 }
 
+/// A builder for list api queries
+#[derive(Debug)]
+pub struct ListQueryBuilder<'a, 'b> {
+    pub tags: Option<&'b str>,
+    pub pid: Option<u64>,
+
+    client: &'a Client,
+}
+
+impl<'a, 'b> ListQueryBuilder<'a, 'b> {
+    /// Make a new [`ListQueryBuilder`].
+    pub fn new(client: &'a Client) -> Self {
+        Self {
+            client,
+            tags: None,
+            pid: None,
+        }
+    }
+
+    /// Set the tags to list for.
+    ///
+    /// Querys are based on "tags".
+    /// Tags are seperated by spaces, while words are seperated by underscores.
+    /// Characters are automatically url-encoded.
+    pub fn tags(&mut self, tags: Option<&'b str>) -> &mut Self {
+        self.tags = tags;
+        self
+    }
+
+    /// Set the page number
+    pub fn pid(&mut self, pid: Option<u64>) -> &mut Self {
+        self.pid = pid;
+        self
+    }
+
+    /// Get the api url
+    pub fn get_url(&self) -> Result<Url, url::ParseError> {
+        let mut pid_buffer = itoa::Buffer::new();
+        let mut url = Url::parse_with_params(
+            crate::URL_INDEX,
+            &[
+                ("page", "dapi"),
+                ("s", "post"),
+                ("json", "1"),
+                ("q", "index"),
+            ],
+        )?;
+
+        {
+            let mut query_pairs_mut = url.query_pairs_mut();
+
+            if let Some(tags) = self.tags {
+                query_pairs_mut.append_pair("tags", tags);
+            }
+
+            if let Some(pid) = self.pid {
+                query_pairs_mut.append_pair("pid", pid_buffer.format(pid));
+            }
+        }
+
+        Ok(url)
+    }
+
+    /// Execute the api query and get the results
+    pub async fn execute(&self) -> Result<Vec<SearchResult>, Error> {
+        let url = self.get_url()?;
+
+        // The api sends "" on no results, and serde_json dies instead of giving an empty list.
+        // Therefore, we need to handle json parsing instead of reqwest.
+        let text = self.client.get_text(url.as_str()).await?;
+        if text.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        Ok(serde_json::from_str(&text)?)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -174,7 +226,9 @@ mod test {
     async fn search() {
         let client = Client::new();
         let res = client
-            .search("rust", 0)
+            .list()
+            .tags(Some("rust"))
+            .execute()
             .await
             .expect("failed to search rule34 for `rust`");
         dbg!(&res);
@@ -184,7 +238,9 @@ mod test {
     async fn get_top_post(query: &str) -> Post {
         let client = Client::new();
         let res = client
-            .search(query, 0)
+            .list()
+            .tags(Some(query))
+            .execute()
             .await
             .unwrap_or_else(|_| panic!("failed to search rule34 for `{}`", query));
         assert!(!res.is_empty());
