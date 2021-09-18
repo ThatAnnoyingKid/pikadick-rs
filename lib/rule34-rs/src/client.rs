@@ -190,6 +190,7 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
     /// Get the api url
     pub fn get_url(&self) -> Result<Url, url::ParseError> {
         let mut pid_buffer = itoa::Buffer::new();
+        let mut id_buffer = itoa::Buffer::new();
         let mut url = Url::parse_with_params(
             crate::URL_INDEX,
             &[
@@ -209,6 +210,10 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
 
             if let Some(pid) = self.pid {
                 query_pairs_mut.append_pair("pid", pid_buffer.format(pid));
+            }
+
+            if let Some(id) = self.id {
+                query_pairs_mut.append_pair("id", id_buffer.format(id));
             }
         }
 
