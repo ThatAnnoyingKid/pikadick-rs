@@ -36,7 +36,7 @@ use tracing::{
 #[derive(Clone, Default, Debug)]
 pub struct Rule34Client {
     client: rule34::Client,
-    search_cache: TimedCache<String, SearchResult>,
+    search_cache: TimedCache<String, Vec<SearchResult>>,
     post_cache: TimedCache<u64, Post>,
 }
 
@@ -52,20 +52,24 @@ impl Rule34Client {
 
     /// Search for a query.
     #[tracing::instrument(skip(self))]
-    pub async fn search(&self, query: &str) -> anyhow::Result<Arc<TimedCacheEntry<SearchResult>>> {
-        if let Some(entry) = self.search_cache.get_if_fresh(query) {
+    pub async fn search(
+        &self,
+        tags: &str,
+    ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<SearchResult>>>> {
+        if let Some(entry) = self.search_cache.get_if_fresh(tags) {
             return Ok(entry);
         }
 
-        let offset = 0;
         let results = self
             .client
-            .search(query, offset)
+            .list()
+            .tags(Some(tags))
+            .execute()
             .await
             .context("failed to search rule34")?;
-        self.search_cache.insert(String::from(query), results);
+        self.search_cache.insert(String::from(tags), results);
         self.search_cache
-            .get_if_fresh(query)
+            .get_if_fresh(tags)
             .context("search cache entry expired")
     }
 
@@ -123,7 +127,6 @@ async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         Ok(search_results) => {
             let maybe_post_id = search_results
                 .data()
-                .entries
                 .choose(&mut rand::thread_rng())
                 .map(|post| post.id);
 

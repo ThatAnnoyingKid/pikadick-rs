@@ -143,8 +143,12 @@ impl Default for Client {
 /// A builder for list api queries
 #[derive(Debug)]
 pub struct ListQueryBuilder<'a, 'b> {
+    /// The tags
     pub tags: Option<&'b str>,
+    /// The page #
     pub pid: Option<u64>,
+    /// The post id
+    pub id: Option<u64>,
 
     client: &'a Client,
 }
@@ -153,9 +157,11 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
     /// Make a new [`ListQueryBuilder`].
     pub fn new(client: &'a Client) -> Self {
         Self {
-            client,
             tags: None,
             pid: None,
+            id: None,
+
+            client,
         }
     }
 
@@ -172,6 +178,12 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
     /// Set the page number
     pub fn pid(&mut self, pid: Option<u64>) -> &mut Self {
         self.pid = pid;
+        self
+    }
+
+    /// Set the post id
+    pub fn id(&mut self, id: Option<u64>) -> &mut Self {
+        self.id = id;
         self
     }
 

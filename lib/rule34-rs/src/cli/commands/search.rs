@@ -4,15 +4,13 @@ use std::str::FromStr;
 #[argh(subcommand, name = "search", description = "search for a rule34 post")]
 pub struct Options {
     #[argh(positional, description = "the query string")]
-    query: String,
+    query: Option<String>,
 
-    #[argh(
-        option,
-        long = "offset",
-        short = 'o',
-        description = "the starting offset"
-    )]
-    offset: Option<u64>,
+    #[argh(option, long = "pid", short = 'p', description = "the page #")]
+    pid: Option<u64>,
+
+    #[argh(option, long = "id", description = "the post id")]
+    id: Option<u64>,
 
     #[argh(
         option,
@@ -53,7 +51,13 @@ impl FromStr for OutputType {
 }
 
 pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<()> {
-    let results = client.list().tags(Some(&options.query)).pid(options.offset).execute().await?;
+    let results = client
+        .list()
+        .tags(options.query.as_deref())
+        .pid(options.pid)
+        .id(options.id)
+        .execute()
+        .await?;
 
     match options.output_type {
         OutputType::Human => {
