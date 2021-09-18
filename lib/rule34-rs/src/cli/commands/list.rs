@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
 #[derive(argh::FromArgs)]
-#[argh(subcommand, name = "search", description = "search for a rule34 post")]
+#[argh(subcommand, name = "list", description = "list rule34 posts")]
 pub struct Options {
-    #[argh(positional, description = "the query string")]
-    query: Option<String>,
+    #[argh(option, long = "tags", description = "the tags")]
+    tags: Option<String>,
 
     #[argh(option, long = "pid", short = 'p', description = "the page #")]
     pid: Option<u64>,
@@ -53,7 +53,7 @@ impl FromStr for OutputType {
 pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<()> {
     let results = client
         .list()
-        .tags(options.query.as_deref())
+        .tags(options.tags.as_deref())
         .pid(options.pid)
         .id(options.id)
         .execute()

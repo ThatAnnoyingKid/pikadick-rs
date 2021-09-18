@@ -1,3 +1,3 @@
 pub mod deleted;
 pub mod download;
-pub mod search;
+pub mod list;
