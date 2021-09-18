@@ -53,11 +53,11 @@ impl Client {
         }
     }
 
-    /// Send a GET web request to a `uri` and get the result as a [`String`].
-    pub async fn get_text(&self, uri: &str) -> Result<String, RuleError> {
+    /// Send a GET web request to a `url` and get the result as a [`String`].
+    pub async fn get_text(&self, url: &str) -> Result<String, RuleError> {
         Ok(self
             .client
-            .get(uri)
+            .get(url)
             .send()
             .await?
             .error_for_status()?
@@ -85,23 +85,28 @@ impl Client {
     /// Characters are automatically url-encoded.
     ///
     /// Offset is the starting offset in number of results.
-    pub async fn search(&self, query: &str, offset: u64) -> Result<SearchResult, RuleError> {
+    pub async fn search(&self, query: &str, offset: u64) -> Result<Vec<SearchResult>, RuleError> {
         let mut pid_buffer = itoa::Buffer::new();
         let url = Url::parse_with_params(
             crate::URL_INDEX,
             &[
                 ("tags", query),
                 ("pid", pid_buffer.format(offset)),
-                ("page", "post"),
-                ("s", "list"),
+                ("page", "dapi"),
+                ("s", "post"),
+                ("json", "1"),
+                ("q", "index"),
             ],
         )?;
 
-        let ret = self
-            .get_html(url.as_str(), |html| SearchResult::from_html(&html))
-            .await??;
+        // The api sends "" on no results, and serde_json dies instead of giving an empty list.
+        // Therefore, we need to handle json parsing instead of reqwest.
+        let text = self.get_text(url.as_str()).await?;
+        if text.is_empty() {
+            return Ok(Vec::new());
+        }
 
-        Ok(ret)
+        Ok(serde_json::from_str(&text)?)
     }
 
     /// Get a [`Post`] by `id`.
@@ -173,7 +178,7 @@ mod test {
             .await
             .expect("failed to search rule34 for `rust`");
         dbg!(&res);
-        assert!(!res.entries.is_empty());
+        assert!(!res.is_empty());
     }
 
     async fn get_top_post(query: &str) -> Post {
@@ -182,9 +187,9 @@ mod test {
             .search(query, 0)
             .await
             .unwrap_or_else(|_| panic!("failed to search rule34 for `{}`", query));
-        assert!(!res.entries.is_empty());
+        assert!(!res.is_empty());
 
-        let first = res.entries.first().expect("missing first entry");
+        let first = res.first().expect("missing first entry");
         client
             .get_post(first.id)
             .await

@@ -114,8 +114,7 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
                 let page_results = client
                     .search(&search_query, offset)
                     .await
-                    .context("failed to fetch post children")?
-                    .entries;
+                    .context("failed to fetch post children")?;
                 offset += u64::try_from(page_results.len())
                     .context("failed to convert the page results to a usize")?;
                 if page_results.is_empty() {
