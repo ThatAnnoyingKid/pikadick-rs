@@ -37,7 +37,6 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         .build()
         .context("failed to start tokio runtime")?;
     tokio_rt.block_on(async_main(options))?;
-    println!("Done.");
     Ok(())
 }
 

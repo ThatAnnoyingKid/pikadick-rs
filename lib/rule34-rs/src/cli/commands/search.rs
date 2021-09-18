@@ -46,8 +46,8 @@ impl FromStr for OutputType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "human" => Ok(Self::Human),
-            "json" => Ok(Self::Json),
+            "h" | "human" => Ok(Self::Human),
+            "j" | "json" => Ok(Self::Json),
             s => Err(OutputTypeParseError(s.into())),
         }
     }
@@ -56,16 +56,23 @@ impl FromStr for OutputType {
 pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<()> {
     let results = client.search(&options.query, options.offset).await?;
 
-    if results.is_empty() {
-        println!("No Results");
-    }
+    match options.output_type {
+        OutputType::Human => {
+            if results.is_empty() {
+                println!("No Results");
+            }
 
-    for (i, result) in results.iter().enumerate() {
-        println!("{})", i + 1);
-        println!("ID: {}", result.id);
-        println!("Url: {}", result.get_post_url());
-        println!("Tags: {}", result.tags);
-        println!();
+            for (i, result) in results.iter().enumerate() {
+                println!("{})", i + 1);
+                println!("ID: {}", result.id);
+                println!("Url: {}", result.get_post_url());
+                println!("Tags: {}", result.tags);
+                println!();
+            }
+        }
+        OutputType::Json => {
+            println!("{}", serde_json::to_string(&results)?);
+        }
     }
 
     Ok(())
