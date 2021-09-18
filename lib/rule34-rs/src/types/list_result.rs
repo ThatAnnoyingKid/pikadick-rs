@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use url::Url;
 
-/// A result for a search
+/// A result for a list api call
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct SearchResult {
+pub struct ListResult {
     /// ?
     pub change: u64,
 
@@ -65,8 +65,8 @@ pub struct SearchResult {
     pub extra: HashMap<String, serde_json::Value>,
 }
 
-impl SearchResult {
-    /// Get the post url for this search entry.
+impl ListResult {
+    /// Get the post url for this list result.
     ///
     /// This allocates, so cache the result.
     pub fn get_post_url(&self) -> Url {
@@ -74,26 +74,16 @@ impl SearchResult {
     }
 }
 
-/// Search Result Entry
-#[derive(Debug)]
-pub struct SearchEntry {
-    /// The thumbnail url
-    pub thumbnail: Url,
-
-    /// The description
-    pub description: String,
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
-    const GIF_JSON_STR: &str = include_str!("../../test_data/gif_search.json");
+    const GIF_JSON_STR: &str = include_str!("../../test_data/gif_list.json");
 
     #[test]
     fn from_gif_json() {
-        let results: Vec<SearchResult> =
-            serde_json::from_str(GIF_JSON_STR).expect("invalid gif search result");
+        let results: Vec<ListResult> =
+            serde_json::from_str(GIF_JSON_STR).expect("invalid gif list result");
         dbg!(results);
     }
 }

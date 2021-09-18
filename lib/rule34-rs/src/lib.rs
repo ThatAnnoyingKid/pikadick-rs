@@ -9,8 +9,8 @@ pub use crate::{
     search_query_builder::SearchQueryBuilder,
     types::{
         DeletedImagesList,
+        ListResult,
         Post,
-        SearchResult,
     },
 };
 pub use scraper::Html;

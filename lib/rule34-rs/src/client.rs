@@ -1,7 +1,7 @@
 use crate::{
     types::{
+        ListResult,
         Post,
-        SearchResult,
     },
     DeletedImagesList,
     Error,
@@ -221,7 +221,7 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
     }
 
     /// Execute the api query and get the results
-    pub async fn execute(&self) -> Result<Vec<SearchResult>, Error> {
+    pub async fn execute(&self) -> Result<Vec<ListResult>, Error> {
         let url = self.get_url()?;
 
         // The api sends "" on no results, and serde_json dies instead of giving an empty list.

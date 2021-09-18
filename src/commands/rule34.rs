@@ -15,7 +15,7 @@ use anyhow::Context as _;
 use rand::seq::SliceRandom;
 use rule34::{
     Post,
-    SearchResult,
+    ListResult,
 };
 use serenity::{
     framework::standard::{
@@ -36,7 +36,7 @@ use tracing::{
 #[derive(Clone, Default, Debug)]
 pub struct Rule34Client {
     client: rule34::Client,
-    search_cache: TimedCache<String, Vec<SearchResult>>,
+    list_cache: TimedCache<String, Vec<ListResult>>,
     post_cache: TimedCache<u64, Post>,
 }
 
@@ -45,18 +45,18 @@ impl Rule34Client {
     pub fn new() -> Rule34Client {
         Rule34Client {
             client: rule34::Client::new(),
-            search_cache: TimedCache::new(),
+            list_cache: TimedCache::new(),
             post_cache: TimedCache::new(),
         }
     }
 
     /// Search for a query.
     #[tracing::instrument(skip(self))]
-    pub async fn search(
+    pub async fn list(
         &self,
         tags: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<SearchResult>>>> {
-        if let Some(entry) = self.search_cache.get_if_fresh(tags) {
+    ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<ListResult>>>> {
+        if let Some(entry) = self.list_cache.get_if_fresh(tags) {
             return Ok(entry);
         }
 
@@ -67,8 +67,8 @@ impl Rule34Client {
             .execute()
             .await
             .context("failed to search rule34")?;
-        self.search_cache.insert(String::from(tags), results);
-        self.search_cache
+        self.list_cache.insert(String::from(tags), results);
+        self.list_cache
             .get_if_fresh(tags)
             .context("search cache entry expired")
     }
@@ -94,7 +94,7 @@ impl Rule34Client {
 
 impl CacheStatsProvider for Rule34Client {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("rule34", "search_cache", self.search_cache.len() as f32);
+        cache_stats_builder.publish_stat("rule34", "list_cache", self.list_cache.len() as f32);
         cache_stats_builder.publish_stat("rule34", "post_cache", self.post_cache.len() as f32);
     }
 }
@@ -123,7 +123,7 @@ async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
     info!("Searching rule34 for '{}'", query_str);
 
-    match client.search(&query_str).await {
+    match client.list(&query_str).await {
         Ok(search_results) => {
             let maybe_post_id = search_results
                 .data()
@@ -167,7 +167,7 @@ async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         }
     }
 
-    client.search_cache.trim();
+    client.list_cache.trim();
     client.post_cache.trim();
 
     Ok(())
