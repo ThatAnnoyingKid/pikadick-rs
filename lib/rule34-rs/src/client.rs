@@ -85,6 +85,9 @@ impl Client {
 
     /// Get a [`Post`] by `id`.
     pub async fn get_post(&self, id: u64) -> Result<Post, Error> {
+        if id == 0 {
+            return Err(Error::InvalidId);
+        }
         let url = crate::post_id_to_post_url(id);
         let ret = self
             .get_html(url.as_str(), |html| Post::from_html(&html))
@@ -203,8 +206,10 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
     /// Get the api url.
     ///
     /// # Errors
-    /// This fails if the generated url is invalid,
-    /// or if `limit` is greater than `1000`.
+    /// This fails if:
+    /// 1. The generated url is invalid
+    /// 2. `id` is 0.
+    /// 3. `limit` is greater than `1000`
     pub fn get_url(&self) -> Result<Url, Error> {
         let mut pid_buffer = itoa::Buffer::new();
         let mut id_buffer = itoa::Buffer::new();
@@ -231,6 +236,9 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
             }
 
             if let Some(id) = self.id {
+                if id == 0 {
+                    return Err(Error::InvalidId);
+                }
                 query_pairs_mut.append_pair("id", id_buffer.format(id));
             }
 

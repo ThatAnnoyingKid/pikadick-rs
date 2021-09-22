@@ -10,31 +10,31 @@ pub struct ListResult {
     /// ?
     pub directory: u64,
 
-    /// image url
+    /// the image url
     pub file_url: Url,
 
-    /// image hash
+    /// the image hash
     pub hash: String,
 
-    /// image height
+    /// the image height
     pub height: u64,
 
-    /// id
+    /// the post id
     pub id: u64,
 
-    /// image name
+    /// the image name
     pub image: String,
 
     /// owner
     pub owner: String,
 
-    /// parent post id?
+    /// the parent post id
     pub parent_id: Option<u64>,
 
     /// Preview image url
     pub preview_url: Url,
 
-    /// rating
+    /// the image rating
     pub rating: String,
 
     /// ?
