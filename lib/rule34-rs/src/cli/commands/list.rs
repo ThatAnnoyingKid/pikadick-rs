@@ -14,6 +14,14 @@ pub struct Options {
 
     #[argh(
         option,
+        long = "limit",
+        short = 'l',
+        description = "the # of posts per page"
+    )]
+    limit: Option<u16>,
+
+    #[argh(
+        option,
         long = "output-type",
         short = 't',
         default = "OutputType::Human",
@@ -56,6 +64,7 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
         .tags(options.tags.as_deref())
         .pid(options.pid)
         .id(options.id)
+        .limit(options.limit)
         .execute()
         .await?;
 

@@ -140,6 +140,8 @@ impl Default for Client {
     }
 }
 
+const LIMIT_MAX: u16 = 1_000;
+
 /// A builder for list api queries
 #[derive(Debug)]
 pub struct ListQueryBuilder<'a, 'b> {
@@ -149,6 +151,8 @@ pub struct ListQueryBuilder<'a, 'b> {
     pub pid: Option<u64>,
     /// The post id
     pub id: Option<u64>,
+    /// The limit
+    pub limit: Option<u16>,
 
     client: &'a Client,
 }
@@ -160,6 +164,7 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
             tags: None,
             pid: None,
             id: None,
+            limit: None,
 
             client,
         }
@@ -187,10 +192,23 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
         self
     }
 
-    /// Get the api url
-    pub fn get_url(&self) -> Result<Url, url::ParseError> {
+    /// Set the post limit.
+    ///
+    /// This has a hard upper limit of `1000`.
+    pub fn limit(&mut self, limit: Option<u16>) -> &mut Self {
+        self.limit = limit;
+        self
+    }
+
+    /// Get the api url.
+    ///
+    /// # Errors
+    /// This fails if the generated url is invalid,
+    /// or if `limit` is greater than `1000`.
+    pub fn get_url(&self) -> Result<Url, Error> {
         let mut pid_buffer = itoa::Buffer::new();
         let mut id_buffer = itoa::Buffer::new();
+        let mut limit_buffer = itoa::Buffer::new();
         let mut url = Url::parse_with_params(
             crate::URL_INDEX,
             &[
@@ -215,12 +233,23 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
             if let Some(id) = self.id {
                 query_pairs_mut.append_pair("id", id_buffer.format(id));
             }
+
+            if let Some(limit) = self.limit {
+                if limit > LIMIT_MAX {
+                    return Err(Error::LimitTooLarge(limit));
+                }
+
+                query_pairs_mut.append_pair("limit", limit_buffer.format(limit));
+            }
         }
 
         Ok(url)
     }
 
-    /// Execute the api query and get the results
+    /// Execute the api query and get the results.
+    ///
+    /// # Returns
+    /// Returns an empty list if there are no results.
     pub async fn execute(&self) -> Result<Vec<ListResult>, Error> {
         let url = self.get_url()?;
 
