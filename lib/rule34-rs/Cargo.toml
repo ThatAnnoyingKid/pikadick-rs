@@ -18,7 +18,7 @@ reqwest = "0.11.4"
 scraper = { version = "0.12.0", default-features = false }
 serde = { version = "1.0.130", features = [ "derive" ] }
 thiserror = "1.0.29"
-tokio = "1.11.0"
+tokio = "1.12.0"
 url = { version = "2.2.2", features = [ "serde" ] }
 
 # Optional
@@ -26,7 +26,7 @@ argh = { version = "0.1.6", optional = true }
 anyhow = { version = "1.0.44", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.11.0", features = [ "macros" ] }
+tokio = { version = "1.12.0", features = [ "macros" ] }
 
 [features]
 cli = [

@@ -10,4 +10,4 @@ open-graph = { path = "../open-graph-rs", features = [ "client" ] }
 thiserror = "1.0.29"
 
 [dev-dependencies]
-tokio = { version = "1.11.0", features = [ "macros" ] }
+tokio = { version = "1.12.0", features = [ "macros" ] }
