@@ -29,7 +29,7 @@ pub struct ListResult {
     pub owner: String,
 
     /// parent post id?
-    pub parent_id: u64,
+    pub parent_id: Option<u64>,
 
     /// Preview image url
     pub preview_url: Url,
