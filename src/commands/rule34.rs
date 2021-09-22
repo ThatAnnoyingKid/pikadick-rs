@@ -13,10 +13,6 @@ use crate::{
 };
 use anyhow::Context as _;
 use rand::seq::SliceRandom;
-use rule34::{
-    ListResult,
-    Post,
-};
 use serenity::{
     framework::standard::{
         macros::command,
@@ -36,8 +32,7 @@ use tracing::{
 #[derive(Clone, Default, Debug)]
 pub struct Rule34Client {
     client: rule34::Client,
-    list_cache: TimedCache<String, Vec<ListResult>>,
-    post_cache: TimedCache<u64, Post>,
+    list_cache: TimedCache<String, Vec<rule34::ListResult>>,
 }
 
 impl Rule34Client {
@@ -46,13 +41,15 @@ impl Rule34Client {
         Rule34Client {
             client: rule34::Client::new(),
             list_cache: TimedCache::new(),
-            post_cache: TimedCache::new(),
         }
     }
 
     /// Search for a query.
     #[tracing::instrument(skip(self))]
-    pub async fn list(&self, tags: &str) -> anyhow::Result<Arc<TimedCacheEntry<Vec<ListResult>>>> {
+    pub async fn list(
+        &self,
+        tags: &str,
+    ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<rule34::ListResult>>>> {
         if let Some(entry) = self.list_cache.get_if_fresh(tags) {
             return Ok(entry);
         }
@@ -65,10 +62,7 @@ impl Rule34Client {
             .execute()
             .await
             .context("failed to search rule34")?;
-        self.list_cache.insert(String::from(tags), results);
-        self.list_cache
-            .get_if_fresh(tags)
-            .context("search cache entry expired")
+        Ok(self.list_cache.insert_and_get(String::from(tags), results))
     }
 }
 
