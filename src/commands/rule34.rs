@@ -14,8 +14,8 @@ use crate::{
 use anyhow::Context as _;
 use rand::seq::SliceRandom;
 use rule34::{
-    Post,
     ListResult,
+    Post,
 };
 use serenity::{
     framework::standard::{
@@ -52,10 +52,7 @@ impl Rule34Client {
 
     /// Search for a query.
     #[tracing::instrument(skip(self))]
-    pub async fn list(
-        &self,
-        tags: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<ListResult>>>> {
+    pub async fn list(&self, tags: &str) -> anyhow::Result<Arc<TimedCacheEntry<Vec<ListResult>>>> {
         if let Some(entry) = self.list_cache.get_if_fresh(tags) {
             return Ok(entry);
         }
