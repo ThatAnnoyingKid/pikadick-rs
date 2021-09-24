@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 #[derive(argh::FromArgs)]
-#[argh(subcommand, name = "list", description = "list rule34 posts")]
+#[argh(subcommand, name = "list-posts", description = "list rule34 posts")]
 pub struct Options {
     #[argh(option, long = "tags", description = "the tags")]
     tags: Option<String>,
@@ -60,7 +60,7 @@ impl FromStr for OutputType {
 
 pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<()> {
     let results = client
-        .list()
+        .list_posts()
         .tags(options.tags.as_deref())
         .pid(options.pid)
         .id(options.id)

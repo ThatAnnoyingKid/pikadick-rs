@@ -9,12 +9,14 @@ pub use crate::{
     search_query_builder::SearchQueryBuilder,
     types::{
         DeletedImagesList,
-        ListResult,
         Post,
+        PostListResult,
     },
 };
 pub use scraper::Html;
 pub use url::Url;
+
+pub const POST_LIST_LIMIT_MAX: u16 = 1_000;
 
 // Default Header values
 const USER_AGENT_STR: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4514.0 Safari/537.36";

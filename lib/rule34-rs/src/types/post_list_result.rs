@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use url::Url;
 
 /// A result for a list api call
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct ListResult {
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct PostListResult {
     /// ?
     pub change: u64,
 
@@ -65,7 +65,7 @@ pub struct ListResult {
     pub extra: HashMap<String, serde_json::Value>,
 }
 
-impl ListResult {
+impl PostListResult {
     /// Get the post url for this list result.
     ///
     /// This allocates, so cache the result.
@@ -82,7 +82,7 @@ mod test {
 
     #[test]
     fn from_gif_json() {
-        let results: Vec<ListResult> =
+        let results: Vec<PostListResult> =
             serde_json::from_str(GIF_JSON_STR).expect("invalid gif list result");
         dbg!(results);
     }

@@ -12,7 +12,7 @@ pub struct Options {
 #[derive(argh::FromArgs)]
 #[argh(subcommand)]
 enum SubCommand {
-    List(self::commands::list::Options),
+    ListPosts(self::commands::list_posts::Options),
     Download(self::commands::download::Options),
     Deleted(self::commands::deleted::Options),
 }
@@ -44,7 +44,9 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
     let client = rule34::Client::new();
 
     match options.subcommand {
-        SubCommand::List(options) => self::commands::list::exec(&client, options).await?,
+        SubCommand::ListPosts(options) => {
+            self::commands::list_posts::exec(&client, options).await?
+        }
         SubCommand::Download(options) => self::commands::download::exec(&client, options).await?,
         SubCommand::Deleted(options) => self::commands::deleted::exec(&client, options).await?,
     }

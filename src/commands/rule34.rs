@@ -32,7 +32,7 @@ use tracing::{
 #[derive(Clone, Default, Debug)]
 pub struct Rule34Client {
     client: rule34::Client,
-    list_cache: TimedCache<String, Vec<rule34::ListResult>>,
+    list_cache: TimedCache<String, Vec<rule34::PostListResult>>,
 }
 
 impl Rule34Client {
@@ -49,14 +49,14 @@ impl Rule34Client {
     pub async fn list(
         &self,
         tags: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<rule34::ListResult>>>> {
+    ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<rule34::PostListResult>>>> {
         if let Some(entry) = self.list_cache.get_if_fresh(tags) {
             return Ok(entry);
         }
 
         let results = self
             .client
-            .list()
+            .list_posts()
             .tags(Some(tags))
             .limit(Some(1_000))
             .execute()

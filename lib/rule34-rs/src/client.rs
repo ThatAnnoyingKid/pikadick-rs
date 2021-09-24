@@ -1,7 +1,7 @@
 use crate::{
     types::{
-        ListResult,
         Post,
+        PostListResult,
     },
     DeletedImagesList,
     Error,
@@ -79,8 +79,8 @@ impl Client {
     }
 
     /// Create a builder to list posts from rule34.
-    pub fn list<'a, 'b>(&'a self) -> ListQueryBuilder<'a, 'b> {
-        ListQueryBuilder::new(self)
+    pub fn list_posts<'a, 'b>(&'a self) -> PostListQueryBuilder<'a, 'b> {
+        PostListQueryBuilder::new(self)
     }
 
     /// Get a [`Post`] by `id`.
@@ -143,11 +143,9 @@ impl Default for Client {
     }
 }
 
-const LIMIT_MAX: u16 = 1_000;
-
 /// A builder for list api queries
 #[derive(Debug)]
-pub struct ListQueryBuilder<'a, 'b> {
+pub struct PostListQueryBuilder<'a, 'b> {
     /// The tags
     pub tags: Option<&'b str>,
     /// The page #
@@ -160,7 +158,7 @@ pub struct ListQueryBuilder<'a, 'b> {
     client: &'a Client,
 }
 
-impl<'a, 'b> ListQueryBuilder<'a, 'b> {
+impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
     /// Make a new [`ListQueryBuilder`].
     pub fn new(client: &'a Client) -> Self {
         Self {
@@ -243,7 +241,7 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
             }
 
             if let Some(limit) = self.limit {
-                if limit > LIMIT_MAX {
+                if limit > crate::POST_LIST_LIMIT_MAX {
                     return Err(Error::LimitTooLarge(limit));
                 }
 
@@ -258,7 +256,7 @@ impl<'a, 'b> ListQueryBuilder<'a, 'b> {
     ///
     /// # Returns
     /// Returns an empty list if there are no results.
-    pub async fn execute(&self) -> Result<Vec<ListResult>, Error> {
+    pub async fn execute(&self) -> Result<Vec<PostListResult>, Error> {
         let url = self.get_url()?;
 
         // The api sends "" on no results, and serde_json dies instead of giving an empty list.
@@ -280,7 +278,7 @@ mod test {
     async fn search() {
         let client = Client::new();
         let res = client
-            .list()
+            .list_posts()
             .tags(Some("rust"))
             .execute()
             .await
@@ -292,7 +290,7 @@ mod test {
     async fn get_top_post(query: &str) -> Post {
         let client = Client::new();
         let res = client
-            .list()
+            .list_posts()
             .tags(Some(query))
             .execute()
             .await

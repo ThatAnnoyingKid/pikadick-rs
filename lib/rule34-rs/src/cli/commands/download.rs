@@ -111,7 +111,7 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
             loop {
                 let search_query = format!("parent:{}", post.id);
                 let page_results = client
-                    .list()
+                    .list_posts()
                     .tags(Some(&search_query))
                     .pid(Some(pid))
                     .execute()
