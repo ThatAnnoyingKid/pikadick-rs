@@ -27,7 +27,7 @@ quizizz = { path = "./lib/quizizz-rs" }
 r6stats = { path = "./lib/r6stats-rs" }
 r6tracker = { path = "./lib/r6tracker-rs" }
 rand = "0.8.4"
-reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "b7e79ccd5451be21540d54d5cff2cf76749a753a" }
+reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "033b0b78d57c00713a3ff992188d881d4e228b3c" }
 reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }

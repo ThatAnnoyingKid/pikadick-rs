@@ -2305,12 +2305,9 @@ dependencies = [
 [[package]]
 name = "reddit"
 version = "0.0.1"
-source = "git+https://github.com/adumbidiot/reddit-rs?rev=b7e79ccd5451be21540d54d5cff2cf76749a753a#b7e79ccd5451be21540d54d5cff2cf76749a753a"
+source = "git+https://github.com/adumbidiot/reddit-rs?rev=033b0b78d57c00713a3ff992188d881d4e228b3c#033b0b78d57c00713a3ff992188d881d4e228b3c"
 dependencies = [
- "bytes 1.1.0",
- "http",
- "hyper",
- "hyper-tls",
+ "reqwest",
  "serde",
  "serde_json",
  "thiserror",
