@@ -32,6 +32,14 @@ use tracing::{
 #[derive(Clone, Default, Debug)]
 pub struct Rule34Client {
     client: rule34::Client,
+    // Ideally, this would be an LRU.
+    // However, we would also need to add time tracking to
+    // get new data when it goes stale.
+    // We would end up duplicating 90% of the logic from [`TimedCache`],
+    // so directly using an LRU isn't worth it.
+    // However, we could add an LRU based on [`TimedCache`]
+    // in the future, or add a setting to it to cap the maximum 
+    // number of entries.
     list_cache: TimedCache<String, Vec<rule34::PostListResult>>,
 }
 
