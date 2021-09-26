@@ -1,11 +1,13 @@
+mod query_builder;
+
+pub use self::query_builder::{
+    PostListQueryBuilder,
+    TagsListQueryBuilder,
+};
 use crate::{
-    types::{
-        Post,
-        PostListResult,
-    },
+    types::Post,
     DeletedImagesList,
     Error,
-    DELETED_IMAGES_ENDPOINT,
 };
 use reqwest::header::{
     HeaderMap,
@@ -105,7 +107,15 @@ impl Client {
         &self,
         last_id: Option<u64>,
     ) -> Result<DeletedImagesList, Error> {
-        let mut url = Url::parse(DELETED_IMAGES_ENDPOINT).expect("invalid DELETED_IMAGES_ENDPOINT");
+        let mut url = Url::parse_with_params(
+            crate::URL_INDEX,
+            &[
+                ("page", "dapi"),
+                ("s", "post"),
+                ("q", "index"),
+                ("deleted", "show"),
+            ],
+        )?;
         if let Some(last_id) = last_id {
             let mut last_id_buf = itoa::Buffer::new();
             url.query_pairs_mut()
@@ -120,6 +130,11 @@ impl Client {
             Ok(data)
         })
         .await?
+    }
+
+    /// Get a builder to list tags.
+    pub fn list_tags(&self) -> TagsListQueryBuilder {
+        TagsListQueryBuilder::new(self)
     }
 
     /// Send a GET web request to a `uri` and copy the result to the given async writer.
@@ -140,133 +155,6 @@ impl Client {
 impl Default for Client {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-/// A builder for list api queries
-#[derive(Debug)]
-pub struct PostListQueryBuilder<'a, 'b> {
-    /// The tags
-    pub tags: Option<&'b str>,
-    /// The page #
-    pub pid: Option<u64>,
-    /// The post id
-    pub id: Option<u64>,
-    /// The limit
-    pub limit: Option<u16>,
-
-    client: &'a Client,
-}
-
-impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
-    /// Make a new [`ListQueryBuilder`].
-    pub fn new(client: &'a Client) -> Self {
-        Self {
-            tags: None,
-            pid: None,
-            id: None,
-            limit: None,
-
-            client,
-        }
-    }
-
-    /// Set the tags to list for.
-    ///
-    /// Querys are based on "tags".
-    /// Tags are seperated by spaces, while words are seperated by underscores.
-    /// Characters are automatically url-encoded.
-    pub fn tags(&mut self, tags: Option<&'b str>) -> &mut Self {
-        self.tags = tags;
-        self
-    }
-
-    /// Set the page number
-    pub fn pid(&mut self, pid: Option<u64>) -> &mut Self {
-        self.pid = pid;
-        self
-    }
-
-    /// Set the post id
-    pub fn id(&mut self, id: Option<u64>) -> &mut Self {
-        self.id = id;
-        self
-    }
-
-    /// Set the post limit.
-    ///
-    /// This has a hard upper limit of `1000`.
-    pub fn limit(&mut self, limit: Option<u16>) -> &mut Self {
-        self.limit = limit;
-        self
-    }
-
-    /// Get the api url.
-    ///
-    /// # Errors
-    /// This fails if:
-    /// 1. The generated url is invalid
-    /// 2. `id` is 0.
-    /// 3. `limit` is greater than `1000`
-    pub fn get_url(&self) -> Result<Url, Error> {
-        let mut pid_buffer = itoa::Buffer::new();
-        let mut id_buffer = itoa::Buffer::new();
-        let mut limit_buffer = itoa::Buffer::new();
-        let mut url = Url::parse_with_params(
-            crate::URL_INDEX,
-            &[
-                ("page", "dapi"),
-                ("s", "post"),
-                ("json", "1"),
-                ("q", "index"),
-            ],
-        )?;
-
-        {
-            let mut query_pairs_mut = url.query_pairs_mut();
-
-            if let Some(tags) = self.tags {
-                query_pairs_mut.append_pair("tags", tags);
-            }
-
-            if let Some(pid) = self.pid {
-                query_pairs_mut.append_pair("pid", pid_buffer.format(pid));
-            }
-
-            if let Some(id) = self.id {
-                if id == 0 {
-                    return Err(Error::InvalidId);
-                }
-                query_pairs_mut.append_pair("id", id_buffer.format(id));
-            }
-
-            if let Some(limit) = self.limit {
-                if limit > crate::POST_LIST_LIMIT_MAX {
-                    return Err(Error::LimitTooLarge(limit));
-                }
-
-                query_pairs_mut.append_pair("limit", limit_buffer.format(limit));
-            }
-        }
-
-        Ok(url)
-    }
-
-    /// Execute the api query and get the results.
-    ///
-    /// # Returns
-    /// Returns an empty list if there are no results.
-    pub async fn execute(&self) -> Result<Vec<PostListResult>, Error> {
-        let url = self.get_url()?;
-
-        // The api sends "" on no results, and serde_json dies instead of giving an empty list.
-        // Therefore, we need to handle json parsing instead of reqwest.
-        let text = self.client.get_text(url.as_str()).await?;
-        if text.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        Ok(serde_json::from_str(&text)?)
     }
 }
 
@@ -305,51 +193,22 @@ mod test {
     }
 
     #[tokio::test]
-    async fn it_works_rust() {
-        let post = get_top_post("rust").await;
-        dbg!(&post);
-    }
+    async fn it_works() {
+        let list = [
+            "rust",
+            "fbi",
+            "gif",
+            "corna",
+            "sledge",
+            "deep",
+            "roadhog",
+            "deep_space_waifu",
+        ];
 
-    #[tokio::test]
-    async fn it_works_fbi() {
-        let post = get_top_post("fbi").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_gif() {
-        let post = get_top_post("gif").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_corna() {
-        let post = get_top_post("corna").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_sledge() {
-        let post = get_top_post("sledge").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_deep() {
-        let post = get_top_post("deep").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_roadhog() {
-        let post = get_top_post("roadhog").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_deep_space_waifu() {
-        let post = get_top_post("deep_space_waifu").await;
-        dbg!(&post);
+        for item in list {
+            let post = get_top_post(item).await;
+            dbg!(&post);
+        }
     }
 
     #[tokio::test]
@@ -359,6 +218,17 @@ mod test {
             .get_deleted_images(Some(500_000)) // Just choose a high-ish post id here and update to keep the download limited
             .await
             .expect("failed to get deleted images");
+        dbg!(result);
+    }
+
+    #[tokio::test]
+    async fn tags_list() {
+        let client = Client::new();
+        let result = client
+            .list_tags()
+            .execute()
+            .await
+            .expect("failed to list tags");
         dbg!(result);
     }
 }
