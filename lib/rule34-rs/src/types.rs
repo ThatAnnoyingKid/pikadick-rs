@@ -11,7 +11,9 @@ pub use self::{
     deleted_images_list::DeletedImagesList,
     post::Post,
     post_list_result::PostListResult,
-    tags_list::TagsList,
-    tags_list::TagKind,
-    tags_list::Tag,
+    tags_list::{
+        Tag,
+        TagKind,
+        TagsList,
+    },
 };

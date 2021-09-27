@@ -240,7 +240,22 @@ impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
     pub async fn execute(&self) -> Result<TagsList, Error> {
         let url = self.get_url()?;
         let text = self.client.get_text(url.as_str()).await?;
-        let data: TagsList = quick_xml::de::from_str(&text)?;
-        Ok(data)
+
+        // We run this on the blocking threadpool out of an abundance of caution.
+        // On a 10th gen i7, this runs around 2.5 milliseconds tops in release mode.
+        // However, we won't always run on an i7. This should also work on ARM.
+        // Therefore, we choose to punt it to the threadpool.
+        //
+        // quick_xml appears to be inefficient when using serde.
+        // One of the first PRs to fix this is https://github.com/tafia/quick-xml/pull/312.
+        // When this lands, we can re-investigate optimizing the serde impl.
+        //
+        // quick_xml also may get async support via https://github.com/tafia/quick-xml/pull/314 in the future as well,
+        // making all this optimizing a moot point.
+        tokio::task::spawn_blocking(move || {
+            let data: TagsList = quick_xml::de::from_str(&text)?;
+            Ok(data)
+        })
+        .await?
     }
 }

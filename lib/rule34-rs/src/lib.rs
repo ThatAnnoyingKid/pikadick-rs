@@ -11,9 +11,9 @@ pub use crate::{
         DeletedImagesList,
         Post,
         PostListResult,
-        TagsList,
-        TagKind,
         Tag,
+        TagKind,
+        TagsList,
     },
 };
 pub use scraper::Html;

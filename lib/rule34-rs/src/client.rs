@@ -226,9 +226,10 @@ mod test {
         let client = Client::new();
         let result = client
             .list_tags()
+            .limit(Some(crate::TAGS_LIST_LIMIT_MAX))
             .execute()
             .await
             .expect("failed to list tags");
-        dbg!(result);
+        // dbg!(result);
     }
 }
