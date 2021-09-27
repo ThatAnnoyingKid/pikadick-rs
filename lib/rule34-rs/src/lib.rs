@@ -12,6 +12,8 @@ pub use crate::{
         Post,
         PostListResult,
         TagsList,
+        TagKind,
+        Tag,
     },
 };
 pub use scraper::Html;

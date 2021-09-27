@@ -12,4 +12,6 @@ pub use self::{
     post::Post,
     post_list_result::PostListResult,
     tags_list::TagsList,
+    tags_list::TagKind,
+    tags_list::Tag,
 };
