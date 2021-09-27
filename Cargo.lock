@@ -2180,8 +2180,9 @@ dependencies = [
 
 [[package]]
 name = "quick-xml"
-version = "0.23.0-alpha3"
-source = "git+https://github.com/Mingun/quick-xml?branch=refactoring#5336ef7e895bd3d61afe8fc5bcf5aca9edbadea2"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8533f14c8382aaad0d592c812ac3b826162128b65662331e1127b45c3d18536b"
 dependencies = [
  "memchr",
  "serde",
@@ -2482,15 +2483,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "roxmltree"
-version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "921904a62e410e37e215c40381b7117f830d9d89ba60ab5236170541dd25646b"
-dependencies = [
- "xmlparser",
-]
-
-[[package]]
 name = "rule34"
 version = "0.0.0"
 dependencies = [
@@ -2500,7 +2492,6 @@ dependencies = [
  "lazy_static",
  "quick-xml",
  "reqwest",
- "roxmltree",
  "scraper",
  "serde",
  "serde_json",
@@ -3947,12 +3938,6 @@ dependencies = [
  "thiserror",
  "tokio",
 ]
-
-[[package]]
-name = "xmlparser"
-version = "0.13.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "114ba2b24d2167ef6d67d7d04c8cc86522b87f490025f39f0303b7db5bf5e3d8"
 
 [[package]]
 name = "zalgo"
