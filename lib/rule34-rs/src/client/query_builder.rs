@@ -135,7 +135,7 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
 
 /// A query builder to get tags
 #[derive(Debug)]
-pub struct TagsListQueryBuilder<'a> {
+pub struct TagsListQueryBuilder<'a, 'b> {
     /// The id
     pub id: Option<u64>,
 
@@ -152,16 +152,24 @@ pub struct TagsListQueryBuilder<'a> {
     /// This option is undocumented.
     pub pid: Option<u64>,
 
+    /// The tag name to look up
+    ///
+    /// This is a single tag name.
+    /// This option is undocumented
+    pub name: Option<&'b str>,
+
     client: &'a Client,
 }
 
-impl<'a> TagsListQueryBuilder<'a> {
+impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
     /// Make a new [`TagsListQueryBuilder`]
     pub fn new(client: &'a Client) -> Self {
         Self {
             id: None,
             limit: None,
             pid: None,
+            name: None,
+
             client,
         }
     }
@@ -191,6 +199,15 @@ impl<'a> TagsListQueryBuilder<'a> {
         self
     }
 
+    /// The tag name to look up
+    ///
+    /// This is a single tag name.
+    /// This option is undocumented
+    pub fn name(&'a mut self, name: Option<&'b str>) -> &'a mut Self {
+        self.name = name;
+        self
+    }
+
     /// Get the url for this query.
     pub fn get_url(&self) -> Result<Url, Error> {
         let mut url = Url::parse_with_params(
@@ -210,7 +227,12 @@ impl<'a> TagsListQueryBuilder<'a> {
                 let mut limit_buffer = itoa::Buffer::new();
                 query_pairs.append_pair("limit", limit_buffer.format(limit));
             }
+
+            if let Some(name) = self.name {
+                query_pairs.append_pair("name", name);
+            }
         }
+
         Ok(url)
     }
 
@@ -218,10 +240,7 @@ impl<'a> TagsListQueryBuilder<'a> {
     pub async fn execute(&self) -> Result<TagsList, Error> {
         let url = self.get_url()?;
         let text = self.client.get_text(url.as_str()).await?;
-        tokio::task::spawn_blocking(move || {
-            let data: TagsList = quick_xml::de::from_str(&text)?;
-            Ok(data)
-        })
-        .await?
+        let data: TagsList = quick_xml::de::from_str(&text)?;
+        Ok(data)
     }
 }
