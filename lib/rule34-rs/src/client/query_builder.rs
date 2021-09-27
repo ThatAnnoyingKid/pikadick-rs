@@ -228,6 +228,11 @@ impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
                 query_pairs.append_pair("limit", limit_buffer.format(limit));
             }
 
+            if let Some(pid) = self.pid {
+                let mut pid_buffer = itoa::Buffer::new();
+                query_pairs.append_pair("pid", pid_buffer.format(pid));
+            }
+
             if let Some(name) = self.name {
                 query_pairs.append_pair("name", name);
             }
