@@ -224,7 +224,7 @@ mod test {
     #[tokio::test]
     async fn tags_list() {
         let client = Client::new();
-        let result = client
+        let _result = client
             .list_tags()
             .limit(Some(crate::TAGS_LIST_LIMIT_MAX))
             .execute()
