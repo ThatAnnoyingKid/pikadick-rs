@@ -8,7 +8,7 @@ pub struct TagsList {
     pub kind: String,
 
     /// The list of tags
-    #[serde(rename = "tag")]
+    #[serde(rename = "tag", default)]
     pub tags: Vec<Tag>,
 }
 
