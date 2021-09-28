@@ -29,7 +29,6 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use std::sync::Arc;
 use tracing::{
     error,
     warn,
@@ -48,7 +47,7 @@ lazy_static! {
 
 #[derive(Clone, Default)]
 pub struct RedditEmbedData {
-    reddit_client: Arc<reddit::Client>,
+    reddit_client: reddit::Client,
     reddit_tube_client: reddit_tube::Client,
     cache: TimedCache<(SubReddit, PostId), String>,
 }
@@ -56,7 +55,7 @@ pub struct RedditEmbedData {
 impl RedditEmbedData {
     pub fn new() -> Self {
         RedditEmbedData {
-            reddit_client: Arc::new(reddit::Client::new()),
+            reddit_client: reddit::Client::new(),
             reddit_tube_client: reddit_tube::Client::new(),
             cache: Default::default(),
         }
