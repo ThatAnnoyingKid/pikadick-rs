@@ -11,3 +11,6 @@ criterion = { version = "0.3.5", features = [ "html_reports" ] }
 [[bench]]
 name = "benchmark"
 harness = false
+
+[features]
+nightly = [ "criterion/real_blackbox" ]

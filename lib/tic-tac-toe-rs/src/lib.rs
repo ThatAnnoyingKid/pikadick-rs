@@ -200,7 +200,7 @@ impl Default for Board {
 ///
 /// # Returns
 /// Returns a tuple. The first element is the score. The second is the move.
-pub fn minimax(board: Board, depth: u8) -> (i8, u8) {
+pub fn minimax(board: Board, depth: u8, mut alpha: i8, beta: i8) -> (i8, u8) {
     let color = if board.get_turn() == Team::X { 1 } else { -1 };
 
     if depth == 0 {
@@ -220,11 +220,21 @@ pub fn minimax(board: Board, depth: u8) -> (i8, u8) {
     let mut value = i8::MIN;
     let mut best_index = 0;
     for (index, child) in board.iter_children() {
-        let (new_value, _index) = minimax(child, depth - 1);
+        let (new_value, _index) = minimax(child, depth - 1, -beta, -alpha);
         let new_value = -new_value;
+
         if new_value > value {
             value = new_value;
             best_index = index;
+
+            //if value == 1 {
+            //    return (value, index);
+            //}
+        }
+
+        alpha = std::cmp::max(value, alpha);
+        if alpha > beta {
+            break;
         }
     }
 
@@ -238,7 +248,7 @@ mod test {
     #[test]
     fn minimax_all() {
         let board = Board::new();
-        let (score, index) = minimax(board, 9);
+        let (score, index) = minimax(board, 9, -100, 100);
         assert_eq!(score, 0);
         assert_eq!(index, 0);
     }
@@ -250,7 +260,7 @@ mod test {
             .set(4, Some(Team::O))
             .set(8, Some(Team::X))
             .set(2, Some(Team::O));
-        let (score, index) = minimax(board, 9);
+        let (score, index) = minimax(board, 9, -100, 100);
         assert_eq!(score, 1, "expected X win");
         assert_eq!(index, 6);
     }
