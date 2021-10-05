@@ -61,6 +61,23 @@ skip = [
     
     # Blocked on input_buffer and sqlx moving to bytes 1.0.x
     { name = "bytes", version = "0.5.6" },
+    
+    # Blocked on serenity updating `async-tungstenite` to `0.14.x`
+    { name = "async-tungstenite", version = "0.11.0" },
+    { name = "tungstenite", version = "0.11.1" },
+    { name = "input_buffer", version = "0.3.1" },
+    
+    # Blocked on `songbird` updating `symphonia` to `0.3.x`
+    { name = "arrayvec", version = "0.4.0" },
+    
+    # Blocked on `ring` updating `spin` to `0.9.x`
+    { name = "spin", version = "0.5.2" },
+    
+    # Blocked on `num-traits` updating to `0.2.x`
+    { name = "num-traits", version = "0.1.43" },
+    
+    # Blocked on sha1 and sha2 updating cpufeatures to `0.2.x`
+    { name = "cpufeatures", version = "0.1.5" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -121,4 +138,5 @@ allow-git = [
     "https://github.com/adumbidiot/reddit-rs",
     "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
+    "https://github.com/adumbidiot/streamcatcher",
 ]
