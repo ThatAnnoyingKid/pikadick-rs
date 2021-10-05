@@ -11,8 +11,6 @@ fn criterion_benchmark(c: &mut Criterion) {
             tic_tac_toe::minimax(
                 black_box(tic_tac_toe::Board::new()),
                 black_box(tic_tac_toe::NUM_TILES),
-                -100,
-                100
             )
         })
     });

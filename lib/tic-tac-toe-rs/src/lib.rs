@@ -198,10 +198,15 @@ impl Default for Board {
 
 /// Run minimax on a board.
 ///
+/// This is negamax. The returned score is relative to the current player.
+///
 /// # Returns
 /// Returns a tuple. The first element is the score. The second is the move.
-pub fn minimax(board: Board, depth: u8, mut alpha: i8, beta: i8) -> (i8, u8) {
-    let color = if board.get_turn() == Team::X { 1 } else { -1 };
+pub fn minimax(board: Board, depth: u8) -> (i8, u8) {
+    let color = match board.get_turn() {
+        Team::X => 1,
+        Team::O => -1,
+    };
 
     if depth == 0 {
         return (0, 0);
@@ -220,21 +225,17 @@ pub fn minimax(board: Board, depth: u8, mut alpha: i8, beta: i8) -> (i8, u8) {
     let mut value = i8::MIN;
     let mut best_index = 0;
     for (index, child) in board.iter_children() {
-        let (new_value, _index) = minimax(child, depth - 1, -beta, -alpha);
+        let (new_value, _index) = minimax(child, depth - 1);
         let new_value = -new_value;
 
         if new_value > value {
             value = new_value;
             best_index = index;
 
-            //if value == 1 {
-            //    return (value, index);
-            //}
-        }
-
-        alpha = std::cmp::max(value, alpha);
-        if alpha > beta {
-            break;
+            // If value is the max value, stop search
+            if value == 1 {
+                return (value, index);
+            }
         }
     }
 
@@ -248,7 +249,7 @@ mod test {
     #[test]
     fn minimax_all() {
         let board = Board::new();
-        let (score, index) = minimax(board, 9, -100, 100);
+        let (score, index) = minimax(board, 9);
         assert_eq!(score, 0);
         assert_eq!(index, 0);
     }
@@ -260,8 +261,21 @@ mod test {
             .set(4, Some(Team::O))
             .set(8, Some(Team::X))
             .set(2, Some(Team::O));
-        let (score, index) = minimax(board, 9, -100, 100);
+        let (score, index) = minimax(board, 9);
         assert_eq!(score, 1, "expected X win");
         assert_eq!(index, 6);
+    }
+
+    #[test]
+    fn minimax_win_2() {
+        let board = Board::new()
+            .set(0, Some(Team::X))
+            .set(1, Some(Team::O))
+            .set(2, Some(Team::X))
+            .set(4, Some(Team::O))
+            .set(3, Some(Team::X));
+        let (score, index) = minimax(board, 9);
+        assert_eq!(score, 1, "expected O win");
+        assert_eq!(index, 7);
     }
 }
