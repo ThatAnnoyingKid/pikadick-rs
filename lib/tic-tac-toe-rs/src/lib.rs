@@ -197,38 +197,37 @@ impl Default for Board {
 }
 
 /// Run minimax on a board.
-pub fn minimax(
-    board: Board,
-    depth: u8,
-    color: i8,
-    mut selected_move_index: Option<&mut Option<u8>>,
-) -> i8 {
+///
+/// # Returns
+/// Returns a tuple. The first element is the score. The second is the move.
+pub fn minimax(board: Board, depth: u8) -> (i8, u8) {
+    let color = if board.get_turn() == Team::X { 1 } else { -1 };
+
     if depth == 0 {
-        return 0;
+        return (0, 0);
     }
-    
+
     match board.get_winner() {
-        Some(Team::X) => return color,
-        Some(Team::O) => return -color,
+        Some(Team::X) => return (color, 0),
+        Some(Team::O) => return (-color, 0),
         None => {}
     }
 
     if board.is_draw() {
-        return 0;
+        return (0, 0);
     }
 
     let mut value = i8::MIN;
+    let mut best_index = 0;
     for (index, child) in board.iter_children() {
-        let new_value = -minimax(child, depth - 1, -color, None);
+        let (new_value, _index) = minimax(child, depth - 1);
+        let new_value = -new_value;
         if new_value > value {
-            value = new_value;
-            if let Some(selected_move_index) = selected_move_index.as_mut() {
-                **selected_move_index = Some(index);
-            }
+            best_index = index;
         }
     }
 
-    return value;
+    return (value, best_index);
 }
 
 #[cfg(test)]
@@ -238,10 +237,9 @@ mod test {
     #[test]
     fn minimax_all() {
         let board = Board::new();
-        let mut selected_move_index = None;
-        let score = minimax(board, 9, 1, Some(&mut selected_move_index));
+        let (score, index) = minimax(board, 9);
         assert_eq!(score, 0);
-        assert_eq!(selected_move_index, Some(0));
+        assert_eq!(index, 0);
     }
 
     #[test]
@@ -251,9 +249,8 @@ mod test {
             .set(4, Some(Team::O))
             .set(8, Some(Team::X))
             .set(2, Some(Team::O));
-        let mut selected_move_index = None;
-        let score = minimax(board, 9, 1, Some(&mut selected_move_index));
+        let (score, index) = minimax(board, 9);
         assert_eq!(score, 1, "expected X win");
-        assert_eq!(selected_move_index, Some(6));
+        assert_eq!(index, Some(6));
     }
 }
