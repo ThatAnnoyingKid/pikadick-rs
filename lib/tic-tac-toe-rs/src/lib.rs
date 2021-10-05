@@ -24,7 +24,7 @@ const DIAGONAL_WIN: u16 = 0b100_010_001;
 const ANTI_DIAGONAL_WIN: u16 = 0b001_010_100;
 
 /// The # of tic-tac-toe tiles
-const NUM_TILES: u8 = 9;
+pub const NUM_TILES: u8 = 9;
 
 /// A Tic Tac Toe Team
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]

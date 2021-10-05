@@ -1,6 +1,13 @@
 [package]
-name = "tic-tac-toe-rs"
+name = "tic-tac-toe"
 version = "0.0.0"
 edition = "2018"
 
 [dependencies]
+
+[dev-dependencies]
+criterion = { version = "0.3.5", features = [ "html_reports" ] } 
+
+[[bench]]
+name = "benchmark"
+harness = false
