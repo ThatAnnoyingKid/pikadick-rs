@@ -223,6 +223,7 @@ pub fn minimax(board: Board, depth: u8) -> (i8, u8) {
         let (new_value, _index) = minimax(child, depth - 1);
         let new_value = -new_value;
         if new_value > value {
+            value = new_value;
             best_index = index;
         }
     }
@@ -251,6 +252,6 @@ mod test {
             .set(2, Some(Team::O));
         let (score, index) = minimax(board, 9);
         assert_eq!(score, 1, "expected X win");
-        assert_eq!(index, Some(6));
+        assert_eq!(index, 6);
     }
 }
