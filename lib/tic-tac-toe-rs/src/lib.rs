@@ -228,7 +228,7 @@ pub fn minimax(board: Board, depth: u8) -> (i8, u8) {
         }
     }
 
-    return (value, best_index);
+    (value, best_index)
 }
 
 #[cfg(test)]
