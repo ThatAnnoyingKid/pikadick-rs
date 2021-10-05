@@ -86,6 +86,7 @@ members = [
     "lib/open-graph-rs",
     "lib/iqdb-rs",
     "lib/sauce-nao-rs",
+    "lib/tic-tac-toe-rs",
 ]
 
 # To make image drawing times sane
