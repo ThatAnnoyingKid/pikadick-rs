@@ -34,7 +34,7 @@ rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.130", features = [ "derive" ] }
 serenity = "0.10.9"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
-sqlx = { version = "0.5.7", features = [ "sqlite", "runtime-tokio-rustls" ] }
+sqlx = { version = "0.5.9", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.8"
 thiserror = "1.0.29"
 tiny-skia = { version = "0.6.1", features = [ "std", "simd", "png-format" ], default-features = false }
