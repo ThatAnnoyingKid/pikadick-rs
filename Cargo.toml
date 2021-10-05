@@ -27,14 +27,14 @@ quizizz = { path = "./lib/quizizz-rs" }
 r6stats = { path = "./lib/r6stats-rs" }
 r6tracker = { path = "./lib/r6tracker-rs" }
 rand = "0.8.4"
-reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "033b0b78d57c00713a3ff992188d881d4e228b3c" }
+reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "d46d78445ca94023aee417fe92bd43e86faf36dc", features = [ "force-rustls-tls" ] }
 reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
 serde = { version = "1.0.130", features = [ "derive" ] }
 serenity = "0.10.9"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
-sqlx = { version = "0.5.7", features = [ "sqlite", "runtime-tokio-rustls" ] }
+sqlx = { version = "0.5.9", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.8"
 thiserror = "1.0.29"
 tiny-skia = { version = "0.6.1", features = [ "std", "simd", "png-format" ], default-features = false }

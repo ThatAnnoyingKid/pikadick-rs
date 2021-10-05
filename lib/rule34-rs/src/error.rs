@@ -1,27 +1,24 @@
-/// The error that occurs when a `SearchResult` could not be parsed.
-pub type SearchResultError = crate::types::search_result::FromHtmlError;
-
 /// The Error that occurs when a `Post` could not be parsed.
 pub type PostError = crate::types::post::FromHtmlError;
 
 /// Crate Error Type
 #[derive(Debug, thiserror::Error)]
-pub enum RuleError {
+pub enum Error {
     /// Reqwest HTTP Error
-    #[error(transparent)]
+    #[error("reqwest error")]
     Reqwest(#[from] reqwest::Error),
 
     /// Invalid URL Error
     #[error(transparent)]
     InvalidUrl(#[from] url::ParseError),
 
+    /// Invalid json
+    #[error("invalid json")]
+    InvalidJson(#[from] serde_json::Error),
+
     /// IO Error
     #[error(transparent)]
     Io(#[from] std::io::Error),
-
-    /// Invalid Search Result
-    #[error("invalid search result")]
-    InvalidSearchResult(#[from] SearchResultError),
 
     /// Invalid Post
     #[error("invalid post")]
@@ -34,4 +31,12 @@ pub enum RuleError {
     /// XML deserialization error
     #[error(transparent)]
     XmlDeserialize(#[from] quick_xml::DeError),
+
+    /// The limit was too large
+    #[error("the limit `{0}` is too large")]
+    LimitTooLarge(u16),
+
+    /// The post id was 0
+    #[error("the post id was `0`")]
+    InvalidId,
 }

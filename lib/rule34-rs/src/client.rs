@@ -1,11 +1,13 @@
+mod query_builder;
+
+pub use self::query_builder::{
+    PostListQueryBuilder,
+    TagsListQueryBuilder,
+};
 use crate::{
-    types::{
-        Post,
-        SearchResult,
-    },
+    types::Post,
     DeletedImagesList,
-    RuleError,
-    DELETED_IMAGES_ENDPOINT,
+    Error,
 };
 use reqwest::header::{
     HeaderMap,
@@ -53,11 +55,11 @@ impl Client {
         }
     }
 
-    /// Send a GET web request to a `uri` and get the result as a [`String`].
-    pub async fn get_text(&self, uri: &str) -> Result<String, RuleError> {
+    /// Send a GET web request to a `url` and get the result as a [`String`].
+    pub async fn get_text(&self, url: &str) -> Result<String, Error> {
         Ok(self
             .client
-            .get(uri)
+            .get(url)
             .send()
             .await?
             .error_for_status()?
@@ -67,7 +69,7 @@ impl Client {
 
     /// Send a GET web request to a `uri` and get the result as [`Html`],
     /// then use the given func to process it.
-    pub async fn get_html<F, T>(&self, uri: &str, f: F) -> Result<T, RuleError>
+    pub async fn get_html<F, T>(&self, uri: &str, f: F) -> Result<T, Error>
     where
         F: FnOnce(Html) -> T + Send + 'static,
         T: Send + 'static,
@@ -78,34 +80,16 @@ impl Client {
         Ok(ret)
     }
 
-    /// Run a search for a `query`.
-    ///
-    /// Querys are based on "tags".
-    /// Tags are seperated by spaces, while words are seperated by underscores.
-    /// Characters are automatically url-encoded.
-    ///
-    /// Offset is the starting offset in number of results.
-    pub async fn search(&self, query: &str, offset: u64) -> Result<SearchResult, RuleError> {
-        let mut pid_buffer = itoa::Buffer::new();
-        let url = Url::parse_with_params(
-            crate::URL_INDEX,
-            &[
-                ("tags", query),
-                ("pid", pid_buffer.format(offset)),
-                ("page", "post"),
-                ("s", "list"),
-            ],
-        )?;
-
-        let ret = self
-            .get_html(url.as_str(), |html| SearchResult::from_html(&html))
-            .await??;
-
-        Ok(ret)
+    /// Create a builder to list posts from rule34.
+    pub fn list_posts<'a, 'b>(&'a self) -> PostListQueryBuilder<'a, 'b> {
+        PostListQueryBuilder::new(self)
     }
 
     /// Get a [`Post`] by `id`.
-    pub async fn get_post(&self, id: u64) -> Result<Post, RuleError> {
+    pub async fn get_post(&self, id: u64) -> Result<Post, Error> {
+        if id == 0 {
+            return Err(Error::InvalidId);
+        }
         let url = crate::post_id_to_post_url(id);
         let ret = self
             .get_html(url.as_str(), |html| Post::from_html(&html))
@@ -122,8 +106,16 @@ impl Client {
     pub async fn get_deleted_images(
         &self,
         last_id: Option<u64>,
-    ) -> Result<DeletedImagesList, RuleError> {
-        let mut url = Url::parse(DELETED_IMAGES_ENDPOINT).expect("invalid DELETED_IMAGES_ENDPOINT");
+    ) -> Result<DeletedImagesList, Error> {
+        let mut url = Url::parse_with_params(
+            crate::URL_INDEX,
+            &[
+                ("page", "dapi"),
+                ("s", "post"),
+                ("q", "index"),
+                ("deleted", "show"),
+            ],
+        )?;
         if let Some(last_id) = last_id {
             let mut last_id_buf = itoa::Buffer::new();
             url.query_pairs_mut()
@@ -140,8 +132,13 @@ impl Client {
         .await?
     }
 
+    /// Get a builder to list tags.
+    pub fn list_tags(&self) -> TagsListQueryBuilder {
+        TagsListQueryBuilder::new(self)
+    }
+
     /// Send a GET web request to a `uri` and copy the result to the given async writer.
-    pub async fn get_to_writer<W>(&self, url: &str, mut writer: W) -> Result<(), RuleError>
+    pub async fn get_to_writer<W>(&self, url: &str, mut writer: W) -> Result<(), Error>
     where
         W: AsyncWrite + Unpin,
     {
@@ -169,22 +166,26 @@ mod test {
     async fn search() {
         let client = Client::new();
         let res = client
-            .search("rust", 0)
+            .list_posts()
+            .tags(Some("rust"))
+            .execute()
             .await
             .expect("failed to search rule34 for `rust`");
         dbg!(&res);
-        assert!(!res.entries.is_empty());
+        assert!(!res.is_empty());
     }
 
     async fn get_top_post(query: &str) -> Post {
         let client = Client::new();
         let res = client
-            .search(query, 0)
+            .list_posts()
+            .tags(Some(query))
+            .execute()
             .await
             .unwrap_or_else(|_| panic!("failed to search rule34 for `{}`", query));
-        assert!(!res.entries.is_empty());
+        assert!(!res.is_empty());
 
-        let first = res.entries.first().expect("missing first entry");
+        let first = res.first().expect("missing first entry");
         client
             .get_post(first.id)
             .await
@@ -192,51 +193,22 @@ mod test {
     }
 
     #[tokio::test]
-    async fn it_works_rust() {
-        let post = get_top_post("rust").await;
-        dbg!(&post);
-    }
+    async fn it_works() {
+        let list = [
+            "rust",
+            "fbi",
+            "gif",
+            "corna",
+            "sledge",
+            "deep",
+            "roadhog",
+            "deep_space_waifu",
+        ];
 
-    #[tokio::test]
-    async fn it_works_fbi() {
-        let post = get_top_post("fbi").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_gif() {
-        let post = get_top_post("gif").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_corna() {
-        let post = get_top_post("corna").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_sledge() {
-        let post = get_top_post("sledge").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_deep() {
-        let post = get_top_post("deep").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_roadhog() {
-        let post = get_top_post("roadhog").await;
-        dbg!(&post);
-    }
-
-    #[tokio::test]
-    async fn it_works_deep_space_waifu() {
-        let post = get_top_post("deep_space_waifu").await;
-        dbg!(&post);
+        for item in list {
+            let post = get_top_post(item).await;
+            dbg!(&post);
+        }
     }
 
     #[tokio::test]
@@ -247,5 +219,17 @@ mod test {
             .await
             .expect("failed to get deleted images");
         dbg!(result);
+    }
+
+    #[tokio::test]
+    async fn tags_list() {
+        let client = Client::new();
+        let _result = client
+            .list_tags()
+            .limit(Some(crate::TAGS_LIST_LIMIT_MAX))
+            .execute()
+            .await
+            .expect("failed to list tags");
+        // dbg!(result);
     }
 }

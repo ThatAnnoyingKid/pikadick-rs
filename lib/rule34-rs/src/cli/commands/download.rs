@@ -4,7 +4,6 @@ use std::{
         HashSet,
         VecDeque,
     },
-    convert::TryFrom,
     path::{
         Path,
         PathBuf,
@@ -108,16 +107,17 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
         }
 
         if options.download_children && post.has_child_posts {
-            let mut offset = 0;
+            let mut pid = 0;
             loop {
                 let search_query = format!("parent:{}", post.id);
                 let page_results = client
-                    .search(&search_query, offset)
+                    .list_posts()
+                    .tags(Some(&search_query))
+                    .pid(Some(pid))
+                    .execute()
                     .await
-                    .context("failed to fetch post children")?
-                    .entries;
-                offset += u64::try_from(page_results.len())
-                    .context("failed to convert the page results to a usize")?;
+                    .context("failed to fetch post children")?;
+                pid += 1;
                 if page_results.is_empty() {
                     break;
                 }

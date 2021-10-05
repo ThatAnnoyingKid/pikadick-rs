@@ -13,10 +13,6 @@ use crate::{
 };
 use anyhow::Context as _;
 use rand::seq::SliceRandom;
-use rule34::{
-    Post,
-    SearchResult,
-};
 use serenity::{
     framework::standard::{
         macros::command,
@@ -36,8 +32,15 @@ use tracing::{
 #[derive(Clone, Default, Debug)]
 pub struct Rule34Client {
     client: rule34::Client,
-    search_cache: TimedCache<String, SearchResult>,
-    post_cache: TimedCache<u64, Post>,
+    // Ideally, this would be an LRU.
+    // However, we would also need to add time tracking to
+    // get new data when it goes stale.
+    // We would end up duplicating 90% of the logic from [`TimedCache`],
+    // so directly using an LRU isn't worth it.
+    // However, we could add an LRU based on [`TimedCache`]
+    // in the future, or add a setting to it to cap the maximum
+    // number of entries.
+    list_cache: TimedCache<String, Vec<rule34::PostListResult>>,
 }
 
 impl Rule34Client {
@@ -45,53 +48,35 @@ impl Rule34Client {
     pub fn new() -> Rule34Client {
         Rule34Client {
             client: rule34::Client::new(),
-            search_cache: TimedCache::new(),
-            post_cache: TimedCache::new(),
+            list_cache: TimedCache::new(),
         }
     }
 
     /// Search for a query.
     #[tracing::instrument(skip(self))]
-    pub async fn search(&self, query: &str) -> anyhow::Result<Arc<TimedCacheEntry<SearchResult>>> {
-        if let Some(entry) = self.search_cache.get_if_fresh(query) {
+    pub async fn list(
+        &self,
+        tags: &str,
+    ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<rule34::PostListResult>>>> {
+        if let Some(entry) = self.list_cache.get_if_fresh(tags) {
             return Ok(entry);
         }
 
-        let offset = 0;
         let results = self
             .client
-            .search(query, offset)
+            .list_posts()
+            .tags(Some(tags))
+            .limit(Some(1_000))
+            .execute()
             .await
             .context("failed to search rule34")?;
-        self.search_cache.insert(String::from(query), results);
-        self.search_cache
-            .get_if_fresh(query)
-            .context("search cache entry expired")
-    }
-
-    /// Get the [`Post`] for a given post id.
-    #[tracing::instrument(skip(self))]
-    pub async fn get_post(&self, id: u64) -> anyhow::Result<Arc<TimedCacheEntry<Post>>> {
-        if let Some(entry) = self.post_cache.get_if_fresh(&id) {
-            return Ok(entry);
-        }
-
-        let post = self
-            .client
-            .get_post(id)
-            .await
-            .context("failed to get post")?;
-        self.post_cache.insert(id, post);
-        self.post_cache
-            .get_if_fresh(&id)
-            .context("post cache entry expired")
+        Ok(self.list_cache.insert_and_get(String::from(tags), results))
     }
 }
 
 impl CacheStatsProvider for Rule34Client {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("rule34", "search_cache", self.search_cache.len() as f32);
-        cache_stats_builder.publish_stat("rule34", "post_cache", self.post_cache.len() as f32);
+        cache_stats_builder.publish_stat("rule34", "list_cache", self.list_cache.len() as f32);
     }
 }
 
@@ -117,37 +102,21 @@ async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .add_tag_iter(args.raw_quoted())
         .take_query_string();
 
-    info!("Searching rule34 for '{}'", query_str);
+    info!("searching rule34 for '{}'", query_str);
 
-    match client.search(&query_str).await {
-        Ok(search_results) => {
-            let maybe_post_id = search_results
+    match client.list(&query_str).await {
+        Ok(list_results) => {
+            let maybe_list_result: Option<String> = list_results
                 .data()
-                .entries
                 .choose(&mut rand::thread_rng())
-                .map(|post| post.id);
+                .map(|list_result| list_result.file_url.to_string());
 
-            if let Some(post_id) = maybe_post_id {
-                match client.get_post(post_id).await {
-                    Ok(post) => {
-                        let post_data = post.data();
-                        let image_url = post_data.image_url.as_str();
-                        info!("Sending {}", image_url);
-
-                        msg.channel_id.say(&ctx.http, image_url).await?;
-                        loading.send_ok();
-                    }
-                    Err(e) => {
-                        error!("{:?}", e);
-
-                        msg.channel_id
-                            .say(&ctx.http, format!("Failed to get rule34 post: {:?}", e))
-                            .await?;
-                    }
-                }
+            if let Some(file_url) = maybe_list_result {
+                info!("sending {}", file_url);
+                msg.channel_id.say(&ctx.http, file_url).await?;
+                loading.send_ok();
             } else {
-                info!("No results");
-
+                info!("no results");
                 msg.channel_id
                     .say(
                         &ctx.http,
@@ -157,15 +126,14 @@ async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             }
         }
         Err(e) => {
-            error!("Failed to get search results: {:?}", e);
+            error!("failed to get search results: {:?}", e);
             msg.channel_id
                 .say(&ctx.http, format!("Failed to get rule34 post, got: {}", e))
                 .await?;
         }
     }
 
-    client.search_cache.trim();
-    client.post_cache.trim();
+    client.list_cache.trim();
 
     Ok(())
 }
