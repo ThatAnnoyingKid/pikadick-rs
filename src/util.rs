@@ -24,11 +24,9 @@ use std::{
 const DEFAULT_EXPIRE_TIME: Duration = Duration::from_secs(10 * 60);
 
 /// A cache with entries that "expire" after a per-cache time limit
-#[derive(Debug)]
-pub struct TimedCache<K: Eq + Hash + 'static, V: 'static>(Arc<TimedCacheInner<K, V>>);
+pub struct TimedCache<K, V>(Arc<TimedCacheInner<K, V>>);
 
-#[derive(Debug)]
-struct TimedCacheInner<K: Eq + Hash + 'static, V: 'static> {
+struct TimedCacheInner<K, V> {
     cache: DashMap<K, Arc<TimedCacheEntry<V>>>,
     last_trim: Mutex<Instant>,
 
@@ -36,7 +34,11 @@ struct TimedCacheInner<K: Eq + Hash + 'static, V: 'static> {
     expiry_time: Duration,
 }
 
-impl<K: Eq + Hash + 'static, V: 'static> TimedCache<K, V> {
+impl<K, V> TimedCache<K, V>
+where
+    K: Eq + Hash + 'static,
+    V: 'static,
+{
     /// Create a cache with timed entries with a default expire time
     pub fn new() -> Self {
         TimedCache(Arc::new(TimedCacheInner {
@@ -49,10 +51,10 @@ impl<K: Eq + Hash + 'static, V: 'static> TimedCache<K, V> {
     }
 
     /// Get a value if fresh, or None if it doesn't exist or is expired
-    pub fn get_if_fresh<Q: ?Sized>(&self, key: &Q) -> Option<Arc<TimedCacheEntry<V>>>
+    pub fn get_if_fresh<Q>(&self, key: &Q) -> Option<Arc<TimedCacheEntry<V>>>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: Hash + Eq + ?Sized,
     {
         self.0.cache.get(key).and_then(|entry| {
             if entry.is_fresh(self.0.expiry_time) {
@@ -72,6 +74,16 @@ impl<K: Eq + Hash + 'static, V: 'static> TimedCache<K, V> {
                 last_update: Instant::now(),
             }),
         );
+    }
+
+    /// Insert a K/V and return the data for the newly inserted value
+    pub fn insert_and_get(&self, key: K, value: V) -> Arc<TimedCacheEntry<V>> {
+        let data = Arc::new(TimedCacheEntry {
+            data: value,
+            last_update: Instant::now(),
+        });
+        self.0.cache.insert(key, data.clone());
+        data
     }
 
     /// Trims expired entries
@@ -105,15 +117,35 @@ impl<K: Eq + Hash + 'static, V: 'static> TimedCache<K, V> {
     }
 }
 
-impl<K: Eq + Hash + 'static, V: 'static> Default for TimedCache<K, V> {
+impl<K, V> Default for TimedCache<K, V>
+where
+    K: Eq + Hash + 'static,
+    V: 'static,
+{
     fn default() -> Self {
-        TimedCache::new()
+        Self::new()
     }
 }
 
-impl<K: Eq + Hash + 'static, V: 'static> Clone for TimedCache<K, V> {
+impl<K, V> Clone for TimedCache<K, V>
+where
+    K: Eq + Hash + 'static,
+    V: 'static,
+{
     fn clone(&self) -> Self {
         TimedCache(self.0.clone())
+    }
+}
+
+impl<K, V> std::fmt::Debug for TimedCache<K, V>
+where
+    K: Eq + std::fmt::Debug + Hash,
+    V: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TimedCache")
+            .field("cache", &self.0.cache)
+            .finish()
     }
 }
 

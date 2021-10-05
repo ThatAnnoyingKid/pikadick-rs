@@ -12,7 +12,7 @@ pub struct Options {
 #[derive(argh::FromArgs)]
 #[argh(subcommand)]
 enum SubCommand {
-    Search(self::commands::search::Options),
+    ListPosts(self::commands::list_posts::Options),
     Download(self::commands::download::Options),
     Deleted(self::commands::deleted::Options),
 }
@@ -37,7 +37,6 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         .build()
         .context("failed to start tokio runtime")?;
     tokio_rt.block_on(async_main(options))?;
-    println!("Done.");
     Ok(())
 }
 
@@ -45,7 +44,9 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
     let client = rule34::Client::new();
 
     match options.subcommand {
-        SubCommand::Search(options) => self::commands::search::exec(&client, options).await?,
+        SubCommand::ListPosts(options) => {
+            self::commands::list_posts::exec(&client, options).await?
+        }
         SubCommand::Download(options) => self::commands::download::exec(&client, options).await?,
         SubCommand::Deleted(options) => self::commands::deleted::exec(&client, options).await?,
     }
