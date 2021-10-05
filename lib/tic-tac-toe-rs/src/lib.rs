@@ -27,7 +27,7 @@ const ANTI_DIAGONAL_WIN: u16 = 0b001_010_100;
 const NUM_TILES: u8 = 9;
 
 /// A Tic Tac Toe Team
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Team {
     X,
     O,
@@ -68,7 +68,7 @@ impl Board {
     ///
     /// This does not check for wins.
     pub fn is_draw(self) -> bool {
-        (self.x_state | self.o_state).count_ones() >= 9
+        (self.x_state | self.o_state).count_ones() >= u32::from(NUM_TILES)
     }
 
     /// Check if the given team won.
@@ -200,16 +200,16 @@ impl Default for Board {
 pub fn minimax(
     board: Board,
     depth: u8,
-    is_maximizing: bool,
+    color: i8,
     mut selected_move_index: Option<&mut Option<u8>>,
 ) -> i8 {
     if depth == 0 {
         return 0;
     }
-
+    
     match board.get_winner() {
-        Some(Team::X) => return 1,
-        Some(Team::O) => return -1,
+        Some(Team::X) => return color,
+        Some(Team::O) => return -color,
         None => {}
     }
 
@@ -217,34 +217,18 @@ pub fn minimax(
         return 0;
     }
 
-    match is_maximizing {
-        true => {
-            let mut value = i8::MIN;
-            for (index, child) in board.iter_children() {
-                let new_value = minimax(child, depth - 1, false, None);
-                if new_value > value {
-                    value = new_value;
-                    if let Some(selected_move_index) = selected_move_index.as_mut() {
-                        **selected_move_index = Some(index);
-                    }
-                }
+    let mut value = i8::MIN;
+    for (index, child) in board.iter_children() {
+        let new_value = -minimax(child, depth - 1, -color, None);
+        if new_value > value {
+            value = new_value;
+            if let Some(selected_move_index) = selected_move_index.as_mut() {
+                **selected_move_index = Some(index);
             }
-            value
-        }
-        false => {
-            let mut value = i8::MAX;
-            for (index, child) in board.iter_children() {
-                let new_value = minimax(child, depth - 1, true, None);
-                if new_value < value {
-                    value = new_value;
-                    if let Some(selected_move_index) = selected_move_index.as_mut() {
-                        **selected_move_index = Some(index);
-                    }
-                }
-            }
-            value
         }
     }
+
+    return value;
 }
 
 #[cfg(test)]
@@ -255,7 +239,7 @@ mod test {
     fn minimax_all() {
         let board = Board::new();
         let mut selected_move_index = None;
-        let score = minimax(board, 9, true, Some(&mut selected_move_index));
+        let score = minimax(board, 9, 1, Some(&mut selected_move_index));
         assert_eq!(score, 0);
         assert_eq!(selected_move_index, Some(0));
     }
@@ -268,8 +252,8 @@ mod test {
             .set(8, Some(Team::X))
             .set(2, Some(Team::O));
         let mut selected_move_index = None;
-        let score = minimax(board, 9, true, Some(&mut selected_move_index));
-        assert_eq!(score, 1);
+        let score = minimax(board, 9, 1, Some(&mut selected_move_index));
+        assert_eq!(score, 1, "expected X win");
         assert_eq!(selected_move_index, Some(6));
     }
 }
