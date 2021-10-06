@@ -13,13 +13,6 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
-use minimax::{
-    compile_minimax_map,
-    tic_tac_toe::TicTacToeState,
-    MiniMaxAi,
-    TicTacToeRuleSet,
-    TicTacToeTeam,
-};
 use parking_lot::Mutex;
 use serenity::{
     client::Context,
@@ -92,20 +85,16 @@ pub type ShareGameState = Arc<Mutex<GameState>>;
 #[derive(Clone)]
 pub struct TicTacToeData {
     game_states: Arc<Mutex<HashMap<GameStateKey, ShareGameState>>>,
-    ai: Arc<MiniMaxAi<TicTacToeRuleSet>>,
     renderer: Arc<Renderer>,
 }
 
 impl TicTacToeData {
     /// Make a new [`TicTacToeData`].
     pub fn new() -> Self {
-        let map = compile_minimax_map::<TicTacToeRuleSet>();
-        let ai = Arc::new(MiniMaxAi::new(map));
         let renderer = Renderer::new().expect("failed to init renderer");
 
         Self {
             game_states: Default::default(),
-            ai,
             renderer: Arc::new(renderer),
         }
     }
@@ -150,10 +139,10 @@ impl TicTacToeData {
         &self,
         guild_id: Option<GuildId>,
         author_id: UserId,
-        author_team: TicTacToeTeam,
+        author_team: tic_tac_toe::Team,
         opponent: GamePlayer,
     ) -> Result<ShareGameState, CreateGameError> {
-        let (x_player, o_player) = if author_team == TicTacToeTeam::X {
+        let (x_player, o_player) = if author_team == tic_tac_toe::Team::X {
             (GamePlayer::User(author_id), opponent)
         } else {
             (opponent, GamePlayer::User(author_id))
@@ -175,16 +164,14 @@ impl TicTacToeData {
         }
 
         let mut raw_game = GameState {
-            state: Default::default(),
+            board: Default::default(),
             x_player,
             o_player,
         };
 
         if x_player.is_computer() {
-            raw_game.state = *self
-                .ai
-                .get_move(&raw_game.state, &TicTacToeTeam::X)
-                .expect("AI failed to calculate the first move");
+            let (_score, index) = tic_tac_toe::minimax(raw_game.board, 9);
+            raw_game.board = raw_game.board.set(index, Some(tic_tac_toe::Team::X));
         }
 
         let game = Arc::new(Mutex::new(raw_game));
@@ -218,7 +205,7 @@ impl TicTacToeData {
             return Err(TryMoveError::InvalidMove);
         }
 
-        if let Some(winner) = game_state.state.get_winning_team() {
+        if let Some(winner) = game_state.board.get_winner() {
             let game = *game_state;
             let winner_player = game.get_player(winner);
             let loser_player = game.get_player(winner.inverse());
@@ -235,7 +222,7 @@ impl TicTacToeData {
             });
         }
 
-        if game_state.state.is_tie() {
+        if game_state.board.is_draw() {
             let game = *game_state;
             drop(game_state);
             let _game = self
@@ -247,13 +234,10 @@ impl TicTacToeData {
 
         let opponent = game_state.get_player_turn();
         if opponent == GamePlayer::Computer {
-            let ai_state = *self
-                .ai
-                .get_move(&game_state.state, &team_turn.inverse())
-                .expect("invalid game state lookup");
-            game_state.state = ai_state;
+            let (_score, index) = tic_tac_toe::minimax(game_state.board, 9);
+            game_state.board = game_state.board.set(index, Some(team_turn.inverse()));
 
-            if let Some(winner) = game_state.state.get_winning_team() {
+            if let Some(winner) = game_state.board.get_winner() {
                 let game = *game_state;
                 let winner_player = game.get_player(winner);
                 let loser_player = game.get_player(winner.inverse());
@@ -270,7 +254,7 @@ impl TicTacToeData {
                 });
             }
 
-            if game_state.state.is_tie() {
+            if game_state.board.is_draw() {
                 let game = *game_state;
                 drop(game_state);
                 let _game = self
@@ -302,7 +286,7 @@ impl Default for TicTacToeData {
 #[derive(Debug, Copy, Clone)]
 pub struct GameState {
     /// The Game state
-    state: TicTacToeState,
+    board: tic_tac_toe::Board,
 
     /// The X player
     x_player: GamePlayer,
@@ -331,25 +315,25 @@ impl GameState {
     }
 
     /// Get whos turn it is
-    pub fn get_team_turn(&self) -> TicTacToeTeam {
-        self.state.get_team_turn()
+    pub fn get_team_turn(&self) -> tic_tac_toe::Team {
+        self.board.get_turn()
     }
 
     /// Get the player whos turn it is
     pub fn get_player_turn(&self) -> GamePlayer {
         let turn = self.get_team_turn();
         match turn {
-            TicTacToeTeam::X => self.x_player,
-            TicTacToeTeam::O => self.o_player,
+            tic_tac_toe::Team::X => self.x_player,
+            tic_tac_toe::Team::O => self.o_player,
         }
     }
 
     /// Try to make a move. Returns true if successful.
-    pub fn try_move(&mut self, index: u8, team: TicTacToeTeam) -> bool {
-        if self.state.at(index).is_some() {
+    pub fn try_move(&mut self, index: u8, team: tic_tac_toe::Team) -> bool {
+        if self.board.get(index).is_some() {
             false
         } else {
-            self.state.set(index, Some(team));
+            self.board = self.board.set(index, Some(team));
             true
         }
     }
@@ -365,10 +349,10 @@ impl GameState {
     }
 
     /// Get the player for the given team.
-    pub fn get_player(&self, team: TicTacToeTeam) -> GamePlayer {
+    pub fn get_player(&self, team: tic_tac_toe::Team) -> GamePlayer {
         match team {
-            TicTacToeTeam::X => self.x_player,
-            TicTacToeTeam::O => self.o_player,
+            tic_tac_toe::Team::X => self.x_player,
+            tic_tac_toe::Team::O => self.o_player,
         }
     }
 }
@@ -499,12 +483,12 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         }) => {
             let file = match tic_tac_toe_data
                 .renderer
-                .render_board_async(game.state)
+                .render_board_async(game.board)
                 .await
             {
                 Ok(file) => AttachmentType::Bytes {
                     data: file.into(),
-                    filename: format!("ttt-{}.png", game.state.into_u16()),
+                    filename: format!("ttt-{}.png", game.board.encode_u16()),
                 },
                 Err(e) => {
                     error!("Failed to render Tic-Tac-Toe board: {}", e);
@@ -529,12 +513,12 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         Ok(TryMoveResponse::Tie { game }) => {
             let file = match tic_tac_toe_data
                 .renderer
-                .render_board_async(game.state)
+                .render_board_async(game.board)
                 .await
             {
                 Ok(file) => AttachmentType::Bytes {
                     data: file.into(),
-                    filename: format!("ttt-{}.png", game.state.into_u16()),
+                    filename: format!("ttt-{}.png", game.board.encode_u16()),
                 },
                 Err(e) => {
                     error!("Failed to render Tic-Tac-Toe board: {}", e);
@@ -549,8 +533,8 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
             };
             let content = format!(
                 "{} has tied with {} in Tic-Tac-Toe",
-                game.get_player(TicTacToeTeam::X).mention(),
-                game.get_player(TicTacToeTeam::O).mention(),
+                game.get_player(tic_tac_toe::Team::X).mention(),
+                game.get_player(tic_tac_toe::Team::O).mention(),
             );
             msg.channel_id
                 .send_message(&ctx.http, |m| m.content(content).add_file(file))
@@ -559,12 +543,12 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         Ok(TryMoveResponse::NextTurn { game }) => {
             let file = match tic_tac_toe_data
                 .renderer
-                .render_board_async(game.state)
+                .render_board_async(game.board)
                 .await
             {
                 Ok(file) => AttachmentType::Bytes {
                     data: file.into(),
-                    filename: format!("ttt-{}.png", game.state.into_u16()),
+                    filename: format!("ttt-{}.png", game.board.encode_u16()),
                 },
                 Err(e) => {
                     error!("Failed to render Tic-Tac-Toe board: {}", e);

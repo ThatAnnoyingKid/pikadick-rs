@@ -2,7 +2,11 @@ pub mod board;
 pub mod team;
 
 pub use self::{
-    board::Board,
+    board::{
+        Board,
+        WinType,
+        WinnerInfo,
+    },
     team::Team,
 };
 

@@ -1694,13 +1694,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "minimax"
-version = "0.0.0"
-dependencies = [
- "tic-tac-toe",
-]
-
-[[package]]
 name = "miniz_oxide"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2094,7 +2087,6 @@ dependencies = [
  "insta",
  "iqdb",
  "lazy_static",
- "minimax",
  "nekos",
  "openssl",
  "opentelemetry",
@@ -2114,6 +2106,7 @@ dependencies = [
  "sqlx",
  "systemstat",
  "thiserror",
+ "tic-tac-toe",
  "tiny-skia",
  "tokio",
  "toml",

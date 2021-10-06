@@ -49,12 +49,12 @@ pub async fn concede(ctx: &Context, msg: &Message, _args: Args) -> CommandResult
 
     let file = match tic_tac_toe_data
         .renderer
-        .render_board_async(game_state.state)
+        .render_board_async(game_state.board)
         .await
     {
         Ok(file) => AttachmentType::Bytes {
             data: file.into(),
-            filename: format!("ttt-{}.png", game_state.state.into_u16()),
+            filename: format!("ttt-{}.png", game_state.board.encode_u16()),
         },
         Err(e) => {
             error!("Failed to render Tic-Tac-Toe board: {}", e);

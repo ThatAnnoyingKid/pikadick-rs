@@ -6,7 +6,6 @@ use crate::{
     checks::ENABLED_CHECK,
     ClientDataKey,
 };
-use minimax::TicTacToeTeam;
 use serenity::{
     client::Context,
     framework::standard::{
@@ -47,7 +46,7 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         }
     };
 
-    let author_team: TicTacToeTeam = match args.trimmed().single() {
+    let author_team: tic_tac_toe::Team = match args.trimmed().single() {
         Ok(team) => team,
         Err(e) => {
             let response = format!("Invalid team. Choose 'X' or 'O'. Error: {}", e);
@@ -73,10 +72,10 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         }
     };
 
-    let game_state = game.lock().state;
+    let game_board = game.lock().board;
     let user = if let GamePlayer::User(opponent_id) = opponent {
         // Cannot be a computer here as there are at least 2 human players at this point
-        if author_team == TicTacToeTeam::X {
+        if author_team == tic_tac_toe::Team::X {
             author_id
         } else {
             opponent_id
@@ -90,12 +89,12 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     let file = match tic_tac_toe_data
         .renderer
-        .render_board_async(game_state)
+        .render_board_async(game_board)
         .await
     {
         Ok(file) => AttachmentType::Bytes {
             data: file.into(),
-            filename: format!("{}.png", game_state.into_u16()),
+            filename: format!("{}.png", game_board.encode_u16()),
         },
         Err(e) => {
             error!("Failed to render Tic-Tac-Toe board: {}", e);

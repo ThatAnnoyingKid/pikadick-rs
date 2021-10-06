@@ -1,9 +1,4 @@
 use anyhow::Context;
-use minimax::tic_tac_toe::{
-    TicTacToeState,
-    TicTacToeTeam,
-    WinType,
-};
 use std::{
     sync::Arc,
     time::Instant,
@@ -102,7 +97,7 @@ impl Renderer {
     /// Render a Tic-Tac-Toe board with `tiny_skia`.
     // Author might add more fields
     #[allow(clippy::field_reassign_with_default)]
-    pub(crate) fn render_board(&self, state: TicTacToeState) -> anyhow::Result<Vec<u8>> {
+    pub(crate) fn render_board(&self, board: tic_tac_toe::Board) -> anyhow::Result<Vec<u8>> {
         let draw_start = Instant::now();
         let mut pixmap = self.background_pixmap.as_ref().as_ref().to_owned();
 
@@ -113,16 +108,16 @@ impl Renderer {
         paint.anti_alias = true;
         stroke.width = f32::from(PIECE_WIDTH);
 
-        for (i, team) in state.iter().enumerate() {
+        for (i, team) in board.iter() {
             let transform = Transform::from_translate(
-                ((i % 3) * SQUARE_SIZE_USIZE) as f32,
-                ((i / 3) * SQUARE_SIZE_USIZE) as f32,
+                ((u16::from(i) % 3) * SQUARE_SIZE) as f32,
+                ((u16::from(i) / 3) * SQUARE_SIZE) as f32,
             );
 
             if let Some(team) = team {
                 paint.set_color_rgba8(0, 0, 0, 255);
                 let path = match team {
-                    TicTacToeTeam::X => {
+                    tic_tac_toe::Team::X => {
                         let mut path_builder = PathBuilder::new();
                         path_builder.move_to((PIECE_WIDTH / 2).into(), (PIECE_WIDTH / 2).into());
                         path_builder.line_to(
@@ -139,7 +134,7 @@ impl Renderer {
                         );
                         path_builder.finish()
                     }
-                    TicTacToeTeam::O => PathBuilder::from_circle(
+                    tic_tac_toe::Team::O => PathBuilder::from_circle(
                         HALF_SQUARE_SIZE_F32,
                         HALF_SQUARE_SIZE_F32,
                         HALF_SQUARE_SIZE_F32 - f32::from(PIECE_WIDTH / 2),
@@ -153,7 +148,7 @@ impl Renderer {
                     .with_context(|| format!("failed to draw path for team '{:?}'", team))?;
             } else {
                 paint.set_color_rgba8(255, 255, 255, 255);
-                let path = &self.number_paths[i + 1];
+                let path = &self.number_paths[usize::from(i) + 1];
                 let bounds = path.bounds();
 
                 let ratio = ((SQUARE_SIZE / 2) as f32) / bounds.height().max(bounds.width());
@@ -168,7 +163,7 @@ impl Renderer {
             }
         }
 
-        if let Some(winner_info) = state.get_winning_info() {
+        if let Some(winner_info) = board.get_winner_info() {
             stroke.width = 10.0;
             paint.set_color_rgba8(48, 48, 48, 255);
 
@@ -183,21 +178,21 @@ impl Renderer {
             let mut end_y = ((end / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
 
             match winner_info.win_type {
-                WinType::Horizontal => {
+                tic_tac_toe::WinType::Horizontal => {
                     start_x -= SQUARE_SIZE_F32 / 4.0;
                     end_x += SQUARE_SIZE_F32 / 4.0;
                 }
-                WinType::Vertical => {
+                tic_tac_toe::WinType::Vertical => {
                     start_y -= SQUARE_SIZE_F32 / 4.0;
                     end_y += SQUARE_SIZE_F32 / 4.0;
                 }
-                WinType::Diagonal => {
+                tic_tac_toe::WinType::Diagonal => {
                     start_x -= SQUARE_SIZE_F32 / 4.0;
                     start_y -= SQUARE_SIZE_F32 / 4.0;
                     end_x += SQUARE_SIZE_F32 / 4.0;
                     end_y += SQUARE_SIZE_F32 / 4.0;
                 }
-                WinType::AntiDiagonal => {
+                tic_tac_toe::WinType::AntiDiagonal => {
                     start_x += SQUARE_SIZE_F32 / 4.0;
                     start_y -= SQUARE_SIZE_F32 / 4.0;
                     end_x -= SQUARE_SIZE_F32 / 4.0;
@@ -232,12 +227,12 @@ impl Renderer {
     /// Render a Tic-Tac-Toe board on a threadpool
     pub(crate) async fn render_board_async(
         &self,
-        state: TicTacToeState,
+        board: tic_tac_toe::Board,
     ) -> anyhow::Result<Vec<u8>> {
         // TODO: LRU cache
         let _permit = self.render_semaphore.acquire().await?;
         let self_clone = self.clone();
-        tokio::task::spawn_blocking(move || self_clone.render_board(state)).await?
+        tokio::task::spawn_blocking(move || self_clone.render_board(board)).await?
     }
 }
 

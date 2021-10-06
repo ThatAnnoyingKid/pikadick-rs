@@ -271,6 +271,22 @@ impl Board {
             ret
         })
     }
+
+    /// Encode this board as a [`u16`].
+    pub fn encode_u16(self) -> u16 {
+        let mut ret = 0;
+        for i in (NUM_TILES - 1).. {
+            let tile = self.get(i);
+
+            ret *= 3;
+            ret += match tile {
+                None => 0,
+                Some(Team::X) => 1,
+                Some(Team::O) => 2,
+            };
+        }
+        ret
+    }
 }
 
 impl Default for Board {
