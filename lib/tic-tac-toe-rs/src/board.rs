@@ -275,7 +275,7 @@ impl Board {
     /// Encode this board as a [`u16`].
     pub fn encode_u16(self) -> u16 {
         let mut ret = 0;
-        for i in (NUM_TILES - 1)..=0 {
+        for i in (0..NUM_TILES).rev() {
             let tile = self.get(i);
 
             ret *= 3;
