@@ -82,7 +82,6 @@ members = [
     "lib/urban-dictionary-rs",
     "lib/xkcd-rs",
     "lib/tiktok-rs",
-    "lib/minimax-rs",
     "lib/open-graph-rs",
     "lib/iqdb-rs",
     "lib/sauce-nao-rs",

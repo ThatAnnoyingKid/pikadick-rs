@@ -1,8 +1,0 @@
-[package]
-name = "minimax"
-version = "0.0.0"
-edition = "2018"
-license = "MIT OR Apache-2.0"
-
-[dependencies]
-tic-tac-toe = { path = "../tic-tac-toe-rs" }
