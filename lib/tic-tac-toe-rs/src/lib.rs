@@ -80,39 +80,14 @@ impl Board {
             Team::O => self.o_state,
         };
 
-        if (state & VERTICAL_WIN_1) == VERTICAL_WIN_1 {
-            return true;
-        }
-
-        if (state & VERTICAL_WIN_2) == VERTICAL_WIN_2 {
-            return true;
-        }
-
-        if (state & VERTICAL_WIN_3) == VERTICAL_WIN_3 {
-            return true;
-        }
-
-        if (state & HORIZONTAL_WIN_1) == HORIZONTAL_WIN_1 {
-            return true;
-        }
-
-        if (state & HORIZONTAL_WIN_2) == HORIZONTAL_WIN_2 {
-            return true;
-        }
-
-        if (state & HORIZONTAL_WIN_3) == HORIZONTAL_WIN_3 {
-            return true;
-        }
-
-        if (state & DIAGONAL_WIN) == DIAGONAL_WIN {
-            return true;
-        }
-
-        if (state & ANTI_DIAGONAL_WIN) == ANTI_DIAGONAL_WIN {
-            return true;
-        }
-
-        false
+        ((state & VERTICAL_WIN_1) == VERTICAL_WIN_1)
+            || ((state & VERTICAL_WIN_2) == VERTICAL_WIN_2)
+            || ((state & VERTICAL_WIN_3) == VERTICAL_WIN_3)
+            || ((state & HORIZONTAL_WIN_1) == HORIZONTAL_WIN_1)
+            || ((state & HORIZONTAL_WIN_2) == HORIZONTAL_WIN_2)
+            || ((state & HORIZONTAL_WIN_3) == HORIZONTAL_WIN_3)
+            || ((state & DIAGONAL_WIN) == DIAGONAL_WIN)
+            || ((state & ANTI_DIAGONAL_WIN) == ANTI_DIAGONAL_WIN)
     }
 
     /// Get the winner if they exist
