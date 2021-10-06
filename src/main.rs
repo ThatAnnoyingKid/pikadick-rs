@@ -426,10 +426,13 @@ fn real_main(
 async fn async_main(config: Config, missing_data_dir: bool) {
     info!("Opening database...");
     let db_path = config.data_dir.join("pikadick.sqlite");
-    let db = match Database::new(&db_path, missing_data_dir).await {
+    let db = match Database::new(&db_path, missing_data_dir)
+        .await
+        .context("failed to open database")
+    {
         Ok(db) => db,
         Err(e) => {
-            error!("Failed to open database: {}", e);
+            error!("{:?}", e);
             return;
         }
     };
