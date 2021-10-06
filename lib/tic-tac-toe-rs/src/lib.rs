@@ -1,3 +1,7 @@
+pub mod team;
+
+pub use self::team::Team;
+
 // Allow unusual_byte_groupings as we group by 3 to visualize the board
 // Vertical Wins
 #[allow(clippy::unusual_byte_groupings)]
@@ -26,15 +30,8 @@ const ANTI_DIAGONAL_WIN: u16 = 0b001_010_100;
 /// The # of tic-tac-toe tiles
 pub const NUM_TILES: u8 = 9;
 
-/// A Tic Tac Toe Team
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum Team {
-    X,
-    O,
-}
-
 /// A Tic Tac Toe board
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Board {
     // the bitboard
     // 9 tiles, so it cannot fit in a u8 but can fit in a u16
@@ -57,10 +54,10 @@ impl Board {
         let num_x = self.x_state.count_ones();
         let num_o = self.o_state.count_ones();
 
-        if num_x <= num_o {
-            Team::X
-        } else {
+        if num_x > num_o {
             Team::O
+        } else {
+            Team::X
         }
     }
 
@@ -145,7 +142,7 @@ impl Board {
     /// Returns an Iterator where Items are tuples.
     /// The first item is the index of the placed tile.
     /// The second is the resulting board state.
-    pub fn iter_children(self) -> impl Iterator<Item = (u8, Self)> {
+    pub fn iter_children(self) -> ChildrenIter {
         ChildrenIter::new(self)
     }
 }

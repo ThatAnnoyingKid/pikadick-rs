@@ -1696,6 +1696,9 @@ dependencies = [
 [[package]]
 name = "minimax"
 version = "0.0.0"
+dependencies = [
+ "tic-tac-toe",
+]
 
 [[package]]
 name = "miniz_oxide"
