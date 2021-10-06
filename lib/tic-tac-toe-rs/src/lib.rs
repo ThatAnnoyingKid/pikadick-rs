@@ -146,22 +146,7 @@ impl Board {
     /// The first item is the index of the placed tile.
     /// The second is the resulting board state.
     pub fn iter_children(self) -> impl Iterator<Item = (u8, Self)> {
-        let turn = self.get_turn();
-        let mut index = 0;
-        std::iter::from_fn(move || loop {
-            if index >= NUM_TILES {
-                return None;
-            }
-
-            if self.get(index).is_none() {
-                let board = self.set(index, Some(turn));
-                let item = Some((index, board));
-                index += 1;
-                return item;
-            }
-
-            index += 1;
-        })
+        ChildrenIter::new(self)
     }
 }
 
@@ -170,6 +155,50 @@ impl Default for Board {
         Self::new()
     }
 }
+
+#[derive(Debug)]
+pub struct ChildrenIter {
+    board: Board,
+    turn: Team,
+    index: u8,
+}
+
+impl ChildrenIter {
+    fn new(board: Board) -> Self {
+        let turn = board.get_turn();
+        Self {
+            board,
+            turn,
+            index: 0,
+        }
+    }
+}
+
+impl Iterator for ChildrenIter {
+    type Item = (u8, Board);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if self.index >= NUM_TILES {
+                return None;
+            }
+
+            if self.board.get(self.index).is_none() {
+                let board = self.board.set(self.index, Some(self.turn));
+                let item = Some((self.index, board));
+                self.index += 1;
+                return item;
+            }
+            self.index += 1;
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(9))
+    }
+}
+
+impl std::iter::FusedIterator for ChildrenIter {}
 
 /// Run minimax on a board.
 ///
