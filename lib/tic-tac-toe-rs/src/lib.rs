@@ -183,7 +183,10 @@ impl Iterator for ChildrenIter {
                 return None;
             }
 
-            if self.board.get(self.index).is_none() {
+            let index_mask = 1 << self.index;
+            let tile_does_not_exist = ((self.board.x_state | self.board.o_state) & index_mask) == 0;
+
+            if tile_does_not_exist {
                 let board = self.board.set(self.index, Some(self.turn));
                 let item = Some((self.index, board));
                 self.index += 1;
@@ -194,7 +197,7 @@ impl Iterator for ChildrenIter {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, Some(9))
+        (0, Some(usize::from(NUM_TILES)))
     }
 }
 
