@@ -61,6 +61,14 @@ skip = [
     
     # Blocked on input_buffer and sqlx moving to bytes 1.0.x
     { name = "bytes", version = "0.5.6" },
+    
+    # This is duped by criterion, which isn't present in the main build
+    { name = "semver", version = "0.11.0" },
+    { name = "rustc_version", version = "0.3.3" },
+    
+    # Blocked on systemstat updating nom
+    { name = "nom",  version = "6.1.2" },
+    
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
