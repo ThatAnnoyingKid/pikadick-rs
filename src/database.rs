@@ -152,4 +152,48 @@ impl Database {
 
         Ok(())
     }
+
+    /// Enable or disable reddit embeds.
+    ///
+    /// # Returns
+    /// Returns the old value
+    pub async fn set_reddit_embed_enabled(
+        &self,
+        guild_id: GuildId,
+        enabled: bool,
+    ) -> anyhow::Result<bool> {
+        const SELECT_QUERY: &str =
+            "SELECT enabled FROM reddit_embed_guild_settings WHERE guild_id = ?";
+        const INSERT_QUERY: &str =
+            "INSERT OR REPLACE INTO reddit_embed_guild_settings (guild_id, enabled) VALUES (?, ?);";
+        self.access_db(move |db| {
+            let txn = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+            let old_data = txn
+                .prepare_cached(SELECT_QUERY)?
+                .query_row([guild_id.0 as i64], |row| row.get(0))
+                .optional()?
+                .unwrap_or(false);
+            txn.prepare_cached(INSERT_QUERY)?
+                .execute(params![guild_id.0 as i64, enabled])?;
+
+            txn.commit()
+                .context("failed to set reddit embed")
+                .map(|_| old_data)
+        })
+        .await?
+    }
+
+    /// Get the reddit embed setting.
+    pub async fn get_reddit_embed_enabled(&self, guild_id: GuildId) -> anyhow::Result<bool> {
+        const SELECT_QUERY: &str =
+            "SELECT enabled FROM reddit_embed_guild_settings WHERE guild_id = ?";
+        self.access_db(move |db| {
+            db.prepare_cached(SELECT_QUERY)?
+                .query_row([guild_id.0 as i64], |row| row.get(0))
+                .optional()
+                .context("failed to read database")
+                .map(|v| v.unwrap_or(false))
+        })
+        .await?
+    }
 }
