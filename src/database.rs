@@ -42,6 +42,16 @@ impl Database {
         Ok(Database { db })
     }
 
+    /// Access the db on the tokio threadpool
+    async fn access_db<F, R>(&self, func: F) -> anyhow::Result<R>
+    where
+        F: FnOnce(&mut rusqlite::Connection) -> R + Send + 'static,
+        R: Send + 'static,
+    {
+        let db = self.db.clone();
+        Ok(tokio::task::spawn_blocking(move || func(&mut db.lock())).await?)
+    }
+
     /// Sets a command as disabled if disabled is true
     pub async fn disable_command(
         &self,
@@ -50,25 +60,15 @@ impl Database {
         disable: bool,
     ) -> anyhow::Result<()> {
         self.create_default_guild_info(id).await?;
-
-        let self_clone = self.clone();
         let cmd = cmd.to_string();
-        let ret: anyhow::Result<_> = tokio::task::spawn_blocking(move || {
-            let mut db = self_clone.db.lock();
+        self.access_db(move |db| {
             let txn = db.transaction()?;
             txn.prepare_cached(
                 "INSERT OR REPLACE INTO disabled_commands (guild_id, name, disabled) VALUES (?, ?, ?);",
             )?
             .execute(params![id.0, cmd, disable])?;
-
-            txn.commit()?;
-
-            Ok(())
-        })
-        .await?;
-        ret?;
-
-        Ok(())
+            txn.commit().context("failed to update disabled command")
+        }).await?
     }
 
     /// Get disabled commands as a set
