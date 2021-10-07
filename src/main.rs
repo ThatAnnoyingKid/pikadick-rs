@@ -107,11 +107,11 @@ impl EventHandler for Handler {
             }
         }
 
-        info!("Logged in as '{}'", ready.user.name);
+        info!("logged in as '{}'", ready.user.name);
     }
 
     async fn resume(&self, _ctx: Context, resumed: ResumedEvent) {
-        warn!("Resumed connection. Trace: {:?}", resumed.trace);
+        warn!("resumed connection. trace: {:?}", resumed.trace);
     }
 
     #[tracing::instrument(skip(self, ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
@@ -124,7 +124,7 @@ impl EventHandler for Handler {
         drop(data_lock);
 
         if let Err(e) = reddit_embed_data.process_msg(&ctx, &msg).await {
-            error!("Failed to generate reddit embed: {}", e);
+            error!("failed to generate reddit embed: {}", e);
         }
     }
 }
@@ -182,12 +182,12 @@ struct General;
 async fn handle_ctrl_c(shard_manager: Arc<Mutex<ShardManager>>) {
     match tokio::signal::ctrl_c().await {
         Ok(_) => {
-            info!("Shutting down...");
-            info!("Stopping Client...");
+            info!("shutting down...");
+            info!("stopping client...");
             shard_manager.lock().await.shutdown_all().await;
         }
         Err(e) => {
-            warn!("Failed to set Ctrl-C handler: {}", e);
+            warn!("failed to set ctrl-c handler: {}", e);
             // The default "kill everything" handler is probably still installed, so this isn't a problem?
         }
     };
@@ -199,7 +199,7 @@ fn before_handler<'fut>(
     msg: &'fut Message,
     cmd_name: &'fut str,
 ) -> BoxFuture<'fut, bool> {
-    info!("Allowing command to process");
+    info!("allowing command to process");
     async move { true }.boxed()
 }
 
@@ -211,7 +211,7 @@ fn after_handler<'fut>(
 ) -> BoxFuture<'fut, ()> {
     async move {
         if let Err(e) = command_result {
-            error!("Failed to process command '{}': {}", command_name, e);
+            error!("failed to process command '{}': {}", command_name, e);
         }
     }
     .boxed()
@@ -223,7 +223,7 @@ fn unrecognised_command_handler<'fut>(
     command_name: &'fut str,
 ) -> BoxFuture<'fut, ()> {
     async move {
-        error!("Unrecognized command '{}'", command_name);
+        error!("unrecognized command '{}'", command_name);
 
         let _ = msg
             .channel_id
@@ -312,27 +312,27 @@ async fn process_dispatch_error_future<'fut>(
 fn load_config() -> anyhow::Result<Config> {
     let config_path: &Path = "./config.toml".as_ref();
 
-    eprintln!("Loading `{}`...", config_path.display());
+    eprintln!("loading `{}`...", config_path.display());
     let mut config = Config::load_from_path(config_path)
         .with_context(|| format!("failed to load `{}`", config_path.display()))?;
 
-    eprintln!("Validating config...");
+    eprintln!("validating config...");
     let errors = config.validate();
     let mut error_count = 0;
     for e in errors {
         match e.severity() {
             Severity::Warn => {
-                eprintln!("Validation Warning: {}", e.error());
+                eprintln!("validation warning: {}", e.error());
             }
             Severity::Error => {
-                eprintln!("Validation Error: {}", e.error());
+                eprintln!("validation error: {}", e.error());
                 error_count += 1;
             }
         }
     }
 
     if error_count != 0 {
-        anyhow::bail!("Validation failed with {} errors.", error_count);
+        anyhow::bail!("validation failed with {} errors.", error_count);
     }
 
     Ok(config)
@@ -340,31 +340,31 @@ fn load_config() -> anyhow::Result<Config> {
 
 /// Pre-main setup
 fn setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, WorkerGuard)> {
-    eprintln!("Starting tokio runtime...");
+    eprintln!("starting tokio runtime...");
     let tokio_rt = RuntimeBuilder::new_multi_thread()
         .enable_all()
         .thread_name("pikadick-tokio-worker")
         .build()
-        .context("failed to start Tokio Runtime")?;
+        .context("failed to start tokio runtime")?;
 
     let config = load_config().context("failed to load config")?;
 
-    eprintln!("Opening data directory...");
+    eprintln!("opening data directory...");
     if config.data_dir.is_file() {
         anyhow::bail!("failed to create or open data directory, the path is a file");
     }
 
     let missing_data_dir = !config.data_dir.exists();
     if missing_data_dir {
-        eprintln!("Data directory does not exist. Creating...");
+        eprintln!("data directory does not exist. creating...");
         std::fs::create_dir_all(&config.data_dir).context("failed to create data directory")?;
     } else if config.data_dir.is_dir() {
-        eprintln!("Data directory already exists.");
+        eprintln!("data directory already exists.");
     }
 
     std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
 
-    eprintln!("Setting up logger...");
+    eprintln!("setting up logger...");
     let guard = tokio_rt
         .block_on(async { crate::logger::setup(&config) })
         .context("failed to initialize logger")?;
@@ -412,19 +412,19 @@ fn real_main(
 
     let shutdown_start = Instant::now();
     info!(
-        "Shutting down tokio runtime (shutdown timeout is {:?})...",
+        "shutting down tokio runtime (shutdown timeout is {:?})...",
         TOKIO_RT_SHUTDOWN_TIMEOUT
     );
     tokio_rt.shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
-    info!("Shutdown tokio runtime in {:?}", shutdown_start.elapsed());
+    info!("shutdown tokio runtime in {:?}", shutdown_start.elapsed());
 
-    info!("Successful Shutdown");
+    info!("successful Shutdown");
     ret
 }
 
 /// The async entry
 async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<()> {
-    info!("Opening database...");
+    info!("opening database...");
     let db_path = config.data_dir.join("pikadick.sqlite");
     // TODO: Is there a good reason to not remake the db if it is missing?
     let db = Database::new(&db_path, true) // missing_data_dir
@@ -460,7 +460,7 @@ async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<(
         .unrecognised_command(unrecognised_command_handler)
         .on_dispatch_error(process_dispatch_error);
 
-    info!("Using prefix '{}'", &config.prefix);
+    info!("using prefix '{}'", &config.prefix);
 
     let mut client = Client::builder(&config.token)
         .event_handler(Handler)
@@ -484,9 +484,9 @@ async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<(
         data.insert::<ClientDataKey>(client_data);
     }
 
-    info!("Logging in...");
+    info!("logging in...");
     if let Err(why) = client.start().await {
-        error!("Error while running client: {}", why);
+        error!("error while running client: {}", why);
     }
 
     drop(client);
