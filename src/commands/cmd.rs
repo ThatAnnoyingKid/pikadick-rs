@@ -78,18 +78,23 @@ pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     match db.set_disabled_command(guild_id, cmd_name, disable).await {
         Ok(_old_value) => {
+            let status_str = status_to_str(disable);
+
             // TODO: Tell user if the command is already disabled/enabled
+            msg.channel_id
+                .say(&ctx.http, format!("Command '{}' {}.", cmd_name, status_str))
+                .await?;
         }
         Err(e) => {
-            error!("Failed to disable command: {}", e);
+            error!("failed to disable command '{}': {:?}", cmd_name, e);
+            msg.channel_id
+                .say(
+                    &ctx.http,
+                    format!("Failed to disable command '{}' ", cmd_name),
+                )
+                .await?;
         }
     }
-
-    let status_str = if disable { "disabled" } else { "enabled" };
-
-    msg.channel_id
-        .say(&ctx.http, format!("Command '{}' {}.", cmd_name, status_str))
-        .await?;
 
     Ok(())
 }
@@ -108,26 +113,18 @@ pub async fn list(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     };
 
     let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
+    let client_data = data_lock.get::<ClientDataKey>().expect("client data");
     let data = client_data.enabled_check_data.clone();
     let db = client_data.db.clone();
     drop(data_lock);
 
-    let disabled_commands = match db.get_disabled_commands(guild_id).await {
-        Ok(d) => d,
-        Err(e) => {
-            error!("Failed to get disabled commands: {}", e);
-            return Ok(());
-        }
-    };
-
     let res = {
         let mut res = "Commands:\n".to_string();
 
-        let names = data.get_command_names();
+        let names = data.get_command_names().clone();
 
         for name in names.iter() {
-            let state = if disabled_commands.contains(name) {
+            let state = if db.is_command_disabled(guild_id, name).await? {
                 "DISABLED"
             } else {
                 "ENABLED"
@@ -140,4 +137,12 @@ pub async fn list(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     msg.channel_id.say(&ctx.http, res).await?;
     Ok(())
+}
+
+fn status_to_str(status: bool) -> &'static str {
+    if status {
+        "disabled"
+    } else {
+        "enabled"
+    }
 }

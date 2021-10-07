@@ -6,7 +6,6 @@ use rusqlite::{
 };
 use serenity::model::prelude::*;
 use std::{
-    collections::HashSet,
     path::Path,
     sync::Arc,
 };
@@ -83,22 +82,19 @@ impl Database {
         .await?
     }
 
-    /// Get disabled commands as a set
-    pub async fn get_disabled_commands(&self, id: GuildId) -> anyhow::Result<HashSet<String>> {
-        let data: anyhow::Result<_> = self
-            .access_db(move |db| {
-                let set: HashSet<String> = db
-                    .prepare_cached(
-                        "SELECT name FROM disabled_commands WHERE guild_id = ? AND disabled = 1;",
-                    )?
-                    .query_map([id.0 as i64], |row| row.get(0))?
-                    .collect::<Result<_, _>>()?;
-                Ok(set)
-            })
-            .await?;
-        let data = data?;
-
-        Ok(data)
+    /// Check if a command is disabled
+    pub async fn is_command_disabled(&self, id: GuildId, name: &str) -> anyhow::Result<bool> {
+        let name = name.to_string();
+        self.access_db(move |db| {
+            db.prepare_cached(
+                "SELECT disabled FROM disabled_commands WHERE guild_id = ? AND name = ?",
+            )?
+            .query_row(params![id.0 as i64, name], |row| row.get(0))
+            .optional()
+            .context("failed to access db")
+            .map(|row| row.unwrap_or(false))
+        })
+        .await?
     }
 
     /// Get a key from the store
