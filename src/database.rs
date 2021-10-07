@@ -59,7 +59,6 @@ impl Database {
         cmd: &str,
         disable: bool,
     ) -> anyhow::Result<()> {
-        self.create_default_guild_info(id).await?;
         let cmd = cmd.to_string();
         self.access_db(move |db| {
             let txn = db.transaction()?;
@@ -73,15 +72,13 @@ impl Database {
 
     /// Get disabled commands as a set
     pub async fn get_disabled_commands(&self, id: GuildId) -> anyhow::Result<HashSet<String>> {
-        self.create_default_guild_info(id).await?;
-
         let data: anyhow::Result<_> = self
             .access_db(move |db| {
                 let set: HashSet<String> = db
                     .prepare_cached(
                         "SELECT name FROM disabled_commands WHERE guild_id = ? AND disabled = 1;",
                     )?
-                    .query_map([id.0], |row| row.get(0))?
+                    .query_map([id.0 as i64], |row| row.get(0))?
                     .collect::<Result<_, _>>()?;
                 Ok(set)
             })
@@ -89,24 +86,6 @@ impl Database {
         let data = data?;
 
         Ok(data)
-    }
-
-    /// Create the default guild entry for the given GuildId
-    async fn create_default_guild_info(&self, id: GuildId) -> anyhow::Result<()> {
-        self.access_db(move |db| {
-            let id = id.0 as i64;
-            let txn = db.transaction()?;
-            // SQLite doesn't support u64, only i64. We cast to i64 to cope,
-            // but the id will not match the actual id of the server.
-            // This is ok because I'm pretty sure using 'as' is essentially a transmute here.
-            // In the future, it might be better to use a byte array or an actual transmute
-            txn.prepare_cached("INSERT OR IGNORE INTO guilds (id) VALUES (?);")?
-                .execute([id])?;
-            txn.commit().context("failed to create default guild info")
-        })
-        .await??;
-
-        Ok(())
     }
 
     /// Get a key from the store
