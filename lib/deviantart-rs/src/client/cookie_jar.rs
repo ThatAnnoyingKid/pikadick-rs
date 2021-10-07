@@ -1,5 +1,6 @@
 use crate::Error;
 use bytes::Bytes;
+use cookie::Cookie;
 use cookie_store::CookieStore;
 use reqwest::header::HeaderValue;
 use std::{
@@ -71,8 +72,6 @@ impl CookieJar {
 
 impl reqwest::cookie::CookieStore for CookieJar {
     fn set_cookies(&self, headers: &mut dyn Iterator<Item = &HeaderValue>, url: &Url) {
-        use cookie::Cookie;
-
         let iter = headers.filter_map(|val| {
             let val = val.to_str().ok()?;
             let cookie = Cookie::parse(val).ok()?;

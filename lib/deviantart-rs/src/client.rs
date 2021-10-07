@@ -87,6 +87,7 @@ impl Client {
             .await?
             .error_for_status()?;
 
+        // TODO: Verify login
         let _text = res.text().await?;
 
         Ok(())

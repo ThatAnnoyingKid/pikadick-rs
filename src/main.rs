@@ -418,7 +418,7 @@ fn real_main(
     tokio_rt.shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
     info!("shutdown tokio runtime in {:?}", shutdown_start.elapsed());
 
-    info!("successful Shutdown");
+    info!("successful shutdown");
     ret
 }
 

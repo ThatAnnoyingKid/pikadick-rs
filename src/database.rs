@@ -131,7 +131,7 @@ impl Database {
             let db = self_clone.db.lock();
             let value: Option<Vec<u8>> = db
                 .prepare_cached(
-                    "SELECT key_value FROM kv_store WHERE key_prefix = ? AND key_value = ?;",
+                    "SELECT key_value FROM kv_store WHERE key_prefix = ? AND key_name = ?;",
                 )?
                 .query_row([prefix, key], |row| row.get(0))
                 .optional()?;
@@ -165,7 +165,7 @@ impl Database {
             let mut db = self_clone.db.lock();
             let txn = db.transaction()?;
             txn.prepare_cached(
-                "REPLACE INTO kv_store (key_prefix, key_name, key_value) VALUES (?, ?, ?);",
+                "INSERT OR REPLACE INTO kv_store (key_prefix, key_name, key_value) VALUES (?, ?, ?);",
             )?
             .execute(params![prefix, key, value])?;
             txn.commit()?;

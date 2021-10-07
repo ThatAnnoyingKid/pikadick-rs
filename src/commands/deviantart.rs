@@ -62,7 +62,7 @@ impl DeviantartClient {
                     .load_json(BufReader::new(cookie_data.as_slice()))?;
             }
             None => {
-                info!("Could not load cookie data");
+                info!("could not load cookie data");
             }
         }
 
@@ -80,7 +80,7 @@ impl DeviantartClient {
         password: &str,
     ) -> anyhow::Result<()> {
         if !self.client.is_logged_in_online().await? {
-            info!("Re-signing in");
+            info!("re-signing in");
             self.client.signin(username, password).await?;
 
             // Store the new cookies
@@ -120,14 +120,11 @@ impl DeviantartClient {
             .search(query, 1)
             .await
             .context("failed to search")?;
-        self.search_cache.insert(String::from(query), list);
-        let end = Instant::now();
+        let ret = self.search_cache.insert_and_get(String::from(query), list);
 
-        info!("Searched deviantart in {:?}", end - start);
+        info!("searched deviantart in {:?}", start.elapsed());
 
-        self.search_cache
-            .get_if_fresh(query)
-            .context("missing entry")
+        Ok(ret)
     }
 }
 
