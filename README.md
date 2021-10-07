@@ -11,7 +11,6 @@ Yet another generic discord bot.
 ## Getting Started
 1. Download [Rust](https://rustup.rs/).
 2. Download this repository.
-3. Create your own `.env` file in the repo. See the [env template file](./.env.template) for info. You should be fine just renaming that file.
 3. Run `cargo build --release` in the repo.
 4. Find `pikadick.exe` under `target/release`.
 5. Move it anywhere and place your `config.toml` in the same directory. See the file [config template file](./config.toml.template) to see how to make a config file.
