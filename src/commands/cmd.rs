@@ -76,7 +76,7 @@ pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
         return Ok(());
     }
 
-    match db.disable_command(guild_id, cmd_name, disable).await {
+    match db.set_disabled_command(guild_id, cmd_name, disable).await {
         Ok(()) => {}
         Err(e) => {
             error!("Failed to disable command: {}", e);
@@ -130,7 +130,7 @@ pub async fn list(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
             } else {
                 "ENABLED"
             };
-            writeln!(res, "{}: **{}**", name, state).unwrap();
+            writeln!(res, "{}: **{}**", name, state)?;
         }
 
         res

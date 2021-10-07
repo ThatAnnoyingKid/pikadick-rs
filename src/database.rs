@@ -53,7 +53,7 @@ impl Database {
     }
 
     /// Sets a command as disabled if disabled is true
-    pub async fn disable_command(
+    pub async fn set_disabled_command(
         &self,
         id: GuildId,
         cmd: &str,
@@ -66,7 +66,7 @@ impl Database {
             txn.prepare_cached(
                 "INSERT OR REPLACE INTO disabled_commands (guild_id, name, disabled) VALUES (?, ?, ?);",
             )?
-            .execute(params![id.0, cmd, disable])?;
+            .execute(params![id.0 as i64, cmd, disable])?;
             txn.commit().context("failed to update disabled command")
         }).await?
     }
@@ -75,18 +75,17 @@ impl Database {
     pub async fn get_disabled_commands(&self, id: GuildId) -> anyhow::Result<HashSet<String>> {
         self.create_default_guild_info(id).await?;
 
-        let self_clone = self.clone();
-        let data: anyhow::Result<_> = tokio::task::spawn_blocking(move || {
-            let db = self_clone.db.lock();
-            let set: HashSet<String> = db
-                .prepare_cached(
-                    "SELECT name FROM disabled_commands WHERE guild_id = ? AND disabled = 1;",
-                )?
-                .query_map([id.0], |row| row.get(0))?
-                .collect::<Result<_, _>>()?;
-            Ok(set)
-        })
-        .await?;
+        let data: anyhow::Result<_> = self
+            .access_db(move |db| {
+                let set: HashSet<String> = db
+                    .prepare_cached(
+                        "SELECT name FROM disabled_commands WHERE guild_id = ? AND disabled = 1;",
+                    )?
+                    .query_map([id.0], |row| row.get(0))?
+                    .collect::<Result<_, _>>()?;
+                Ok(set)
+            })
+            .await?;
         let data = data?;
 
         Ok(data)
@@ -94,10 +93,7 @@ impl Database {
 
     /// Create the default guild entry for the given GuildId
     async fn create_default_guild_info(&self, id: GuildId) -> anyhow::Result<()> {
-        let self_clone = self.clone();
-        let ret: anyhow::Result<_> = tokio::task::spawn_blocking(move || {
-            let mut db = self_clone.db.lock();
-
+        self.access_db(move |db| {
             let id = id.0 as i64;
             let txn = db.transaction()?;
             // SQLite doesn't support u64, only i64. We cast to i64 to cope,
@@ -106,12 +102,9 @@ impl Database {
             // In the future, it might be better to use a byte array or an actual transmute
             txn.prepare_cached("INSERT OR IGNORE INTO guilds (id) VALUES (?);")?
                 .execute([id])?;
-            txn.commit()
-                .context("failed to create default guild info")?;
-            Ok(())
+            txn.commit().context("failed to create default guild info")
         })
-        .await?;
-        ret?;
+        .await??;
 
         Ok(())
     }
@@ -126,18 +119,17 @@ impl Database {
         let prefix = prefix.as_ref().to_vec();
         let key = key.as_ref().to_vec();
 
-        let self_clone = self.clone();
-        let value: anyhow::Result<_> = tokio::task::spawn_blocking(move || {
-            let db = self_clone.db.lock();
-            let value: Option<Vec<u8>> = db
-                .prepare_cached(
-                    "SELECT key_value FROM kv_store WHERE key_prefix = ? AND key_name = ?;",
-                )?
-                .query_row([prefix, key], |row| row.get(0))
-                .optional()?;
-            Ok(value)
-        })
-        .await?;
+        let value: anyhow::Result<_> = self
+            .access_db(move |db| {
+                let value: Option<Vec<u8>> = db
+                    .prepare_cached(
+                        "SELECT key_value FROM kv_store WHERE key_prefix = ? AND key_name = ?;",
+                    )?
+                    .query_row([prefix, key], |row| row.get(0))
+                    .optional()?;
+                Ok(value)
+            })
+            .await?;
         let value = value?;
         let bytes = match value {
             Some(value) => value,
@@ -160,19 +152,15 @@ impl Database {
         let key = key.as_ref().to_vec();
         let value = bincode::serialize(&value).context("failed to serialize value")?;
 
-        let self_clone = self.clone();
-        let ret: anyhow::Result<()> = tokio::task::spawn_blocking(move || {
-            let mut db = self_clone.db.lock();
+        self.access_db(move |db| {
             let txn = db.transaction()?;
             txn.prepare_cached(
                 "INSERT OR REPLACE INTO kv_store (key_prefix, key_name, key_value) VALUES (?, ?, ?);",
             )?
             .execute(params![prefix, key, value])?;
-            txn.commit()?;
-            Ok(())
+            txn.commit().context("failed to insert key into kv_store")
         })
-        .await?;
-        ret?;
+        .await??;
 
         Ok(())
     }
