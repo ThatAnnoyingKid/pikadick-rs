@@ -3,6 +3,8 @@ PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
 PRAGMA synchronous = FULL;
 
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS kv_store (
     key_prefix BLOB NULL CHECK(TYPEOF(key_prefix) IN ('blob', 'null')), 
     key_name BLOB NOT NULL CHECK(TYPEOF(key_name) = 'blob'),
@@ -23,3 +25,5 @@ CREATE TABLE IF NOT EXISTS reddit_embed_guild_settings (
     guild_id INTEGER NOT NULL PRIMARY KEY UNIQUE CHECK(TYPEOF(guild_id) = 'integer'),
     enabled INTEGER NOT NULL CHECK(TYPEOF(enabled) = 'integer' AND enabled IN (0, 1))
 );
+
+COMMIT;

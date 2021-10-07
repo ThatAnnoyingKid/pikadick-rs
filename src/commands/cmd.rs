@@ -77,7 +77,9 @@ pub async fn cmd(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     }
 
     match db.set_disabled_command(guild_id, cmd_name, disable).await {
-        Ok(()) => {}
+        Ok(_old_value) => {
+            // TODO: Tell user if the command is already disabled/enabled
+        }
         Err(e) => {
             error!("Failed to disable command: {}", e);
         }

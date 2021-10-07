@@ -126,7 +126,7 @@ impl RedditEmbedData {
 
         match video_data {
             GetVideoResponse::Ok(video_data) => Ok(video_data),
-            GetVideoResponse::Error(e) => Err(anyhow::anyhow!(e)),
+            GetVideoResponse::Error(e) => Err(e).context("bad video response"),
         }
     }
 
@@ -319,7 +319,7 @@ async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     let db = client_data.db.clone();
     drop(data_lock);
 
-    let enable = match args.trimmed().current().unwrap() {
+    let enable = match args.trimmed().current().expect("missing arg") {
         "enable" => true,
         "disable" => false,
         arg => {

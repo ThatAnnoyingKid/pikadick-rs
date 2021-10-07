@@ -2,6 +2,7 @@ use anyhow::Context;
 use rusqlite::{
     params,
     OptionalExtension,
+    TransactionBehavior,
 };
 use serenity::model::prelude::*;
 use std::{
@@ -11,9 +12,6 @@ use std::{
 };
 
 const SETUP_TABLES_SQL: &str = include_str!("../sql/setup_tables.sql");
-
-/// Bincode Error type-alias
-pub type BincodeError = Box<bincode::ErrorKind>;
 
 /// The database
 #[derive(Clone, Debug)]
@@ -52,22 +50,37 @@ impl Database {
         Ok(tokio::task::spawn_blocking(move || func(&mut db.lock())).await?)
     }
 
-    /// Sets a command as disabled if disabled is true
+    /// Disables or enables a command.
+    ///
+    /// # Returns
+    /// Returns the old setting
     pub async fn set_disabled_command(
         &self,
         id: GuildId,
         cmd: &str,
         disable: bool,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<bool> {
+        const SELECT_QUERY: &str =
+            "SELECT disabled from disabled_commands WHERE guild_id = ? AND name = ?;";
+        const UPDATE_QUERY: &str =
+            "INSERT OR REPLACE INTO disabled_commands (guild_id, name, disabled) VALUES (?, ?, ?);";
+
         let cmd = cmd.to_string();
         self.access_db(move |db| {
-            let txn = db.transaction()?;
-            txn.prepare_cached(
-                "INSERT OR REPLACE INTO disabled_commands (guild_id, name, disabled) VALUES (?, ?, ?);",
-            )?
-            .execute(params![id.0 as i64, cmd, disable])?;
-            txn.commit().context("failed to update disabled command")
-        }).await?
+            let txn = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+            let old_value = txn
+                .prepare_cached(SELECT_QUERY)?
+                .query_row(params![id.0 as i64, cmd], |row| row.get(0))
+                .optional()?
+                .unwrap_or(false);
+
+            txn.prepare_cached(UPDATE_QUERY)?
+                .execute(params![id.0 as i64, cmd, disable])?;
+            txn.commit()
+                .context("failed to update disabled command")
+                .map(|_| old_value)
+        })
+        .await?
     }
 
     /// Get disabled commands as a set
