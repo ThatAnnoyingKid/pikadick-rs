@@ -50,9 +50,8 @@ impl DeviantartClient {
 
         let client = deviantart::Client::new();
 
-        let store = db.get_store(DATA_STORE_NAME).await;
-        let cookie_data: Option<Vec<u8>> = store
-            .get(COOKIE_KEY)
+        let cookie_data: Option<Vec<u8>> = db
+            .store_get(DATA_STORE_NAME, COOKIE_KEY)
             .await
             .context("failed to get cookie data")?;
 
@@ -85,7 +84,6 @@ impl DeviantartClient {
             self.client.signin(username, password).await?;
 
             // Store the new cookies
-            let store = db.get_store(DATA_STORE_NAME).await;
             let cookie_store = self.client.cookie_store.clone();
             let cookie_data = tokio::task::spawn_blocking(move || {
                 let mut cookie_data = Vec::with_capacity(1_000_000); // 1 MB
@@ -93,7 +91,8 @@ impl DeviantartClient {
                 anyhow::Result::<_>::Ok(cookie_data)
             })
             .await??;
-            store.put(COOKIE_KEY, cookie_data).await?;
+            db.store_put(DATA_STORE_NAME, COOKIE_KEY, cookie_data)
+                .await?;
         }
 
         Ok(())

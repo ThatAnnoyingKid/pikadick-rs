@@ -15,19 +15,6 @@ const SETUP_TABLES_SQL: &str = include_str!("../sql/setup_tables.sql");
 /// Bincode Error type-alias
 pub type BincodeError = Box<bincode::ErrorKind>;
 
-/// Turn a prefix + key into  a key for the k/v store.
-///
-/// # Spec
-/// `Raw key = b"{prefix}0{key}"`
-fn make_key(prefix: &[u8], key: &[u8]) -> Vec<u8> {
-    let mut raw_key = prefix.to_vec();
-    raw_key.reserve(1 + key.len());
-    raw_key.push(0);
-    raw_key.extend(key);
-
-    raw_key
-}
-
 /// The database
 #[derive(Clone, Debug)]
 pub struct Database {
@@ -53,11 +40,6 @@ impl Database {
         let db = db?;
 
         Ok(Database { db })
-    }
-
-    /// Gets the store by name.
-    pub async fn get_store(&self, name: &str) -> Store {
-        Store::new(self.db.clone(), name.into())
     }
 
     /// Sets a command as disabled if disabled is true
@@ -133,96 +115,59 @@ impl Database {
 
         Ok(())
     }
-}
 
-/*
-async fn get_disabled_commands(
-    mut txn: Transaction<'_, sqlx::Sqlite>,
-    id: GuildId,
-) -> anyhow::Result<(HashSet<String>, Transaction<'_, sqlx::Sqlite>)> {
-    let id = id.0 as i64;
-    let entry = sqlx::query!(
-        "
-SELECT disabled_commands FROM guild_info WHERE id = ?;
-            ",
-        id
-    )
-    .fetch_one(&mut txn)
-    .await?;
-
-    let data = if entry.disabled_commands.is_empty() {
-        HashSet::new()
-    } else {
-        bincode::deserialize(&entry.disabled_commands)
-            .context("failed to decode disabled commands")?
-    };
-
-    Ok((data, txn))
-}
-*/
-
-/// K/V Store
-#[derive(Debug, Clone)]
-pub struct Store {
-    db: Arc<parking_lot::Mutex<rusqlite::Connection>>,
-    prefix: String,
-}
-
-impl Store {
-    fn new(db: Arc<parking_lot::Mutex<rusqlite::Connection>>, prefix: String) -> Self {
-        Store { db, prefix }
-    }
-
-    /// Save a key in the store
-    pub async fn get<K, V>(&self, key: K) -> anyhow::Result<Option<V>>
+    /// Get a key from the store
+    pub async fn store_get<P, K, V>(&self, prefix: P, key: K) -> anyhow::Result<Option<V>>
     where
+        P: AsRef<[u8]>,
         K: AsRef<[u8]>,
         V: serde::de::DeserializeOwned,
     {
-        let key = key.as_ref();
-        let key = make_key(self.prefix.as_ref(), key);
+        let prefix = prefix.as_ref().to_vec();
+        let key = key.as_ref().to_vec();
 
         let self_clone = self.clone();
         let value: anyhow::Result<_> = tokio::task::spawn_blocking(move || {
             let db = self_clone.db.lock();
             let value: Option<Vec<u8>> = db
-                .prepare_cached("SELECT value FROM kv_store WHERE key = ?;")?
-                .query_row([key], |row| row.get(0))
+                .prepare_cached(
+                    "SELECT key_value FROM kv_store WHERE key_prefix = ? AND key_value = ?;",
+                )?
+                .query_row([prefix, key], |row| row.get(0))
                 .optional()?;
             Ok(value)
         })
         .await?;
         let value = value?;
-
         let bytes = match value {
             Some(value) => value,
             None => {
                 return Ok(None);
             }
         };
-
         let data = bincode::deserialize(&bytes).context("failed to decode value")?;
-
         Ok(Some(data))
     }
 
     /// Put a key in the store
-    pub async fn put<K, V>(&self, key: K, data: V) -> anyhow::Result<()>
+    pub async fn store_put<P, K, V>(&self, prefix: P, key: K, value: V) -> anyhow::Result<()>
     where
+        P: AsRef<[u8]>,
         K: AsRef<[u8]>,
         V: serde::Serialize,
     {
-        let key = key.as_ref();
-
-        let key = make_key(self.prefix.as_ref(), key);
-        let value = bincode::serialize(&data).context("failed to serialize value")?;
+        let prefix = prefix.as_ref().to_vec();
+        let key = key.as_ref().to_vec();
+        let value = bincode::serialize(&value).context("failed to serialize value")?;
 
         let self_clone = self.clone();
         let ret: anyhow::Result<()> = tokio::task::spawn_blocking(move || {
             let mut db = self_clone.db.lock();
             let txn = db.transaction()?;
-            txn.prepare_cached("REPLACE INTO kv_store (key, value) VALUES(?, ?);")?
-                .execute(params![key, value])?;
+            txn.prepare_cached(
+                "REPLACE INTO kv_store (key_prefix, key_name, key_value) VALUES (?, ?, ?);",
+            )?
+            .execute(params![prefix, key, value])?;
             txn.commit()?;
             Ok(())
         })

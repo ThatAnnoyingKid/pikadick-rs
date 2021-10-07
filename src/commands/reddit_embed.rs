@@ -149,9 +149,8 @@ impl RedditEmbedData {
         };
 
         let is_enabled_for_guild = {
-            let store = db.get_store(DATA_STORE_NAME).await;
             let key = guild_id.0.to_be_bytes();
-            match store.get(key).await {
+            match db.store_get(DATA_STORE_NAME, key).await {
                 Ok(Some(b)) => b,
                 Ok(None) => false,
                 Err(e) => {
@@ -352,9 +351,8 @@ async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     };
 
     let (old_val, _set_new_data) = {
-        let store = db.get_store(DATA_STORE_NAME).await;
         let key = guild_id.0.to_be_bytes();
-        let old_val: Option<bool> = match store.get(key).await {
+        let old_val: Option<bool> = match db.store_get(DATA_STORE_NAME, key).await {
             Ok(v) => v,
             Err(e) => {
                 error!(
@@ -365,7 +363,7 @@ async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
             }
         };
 
-        let set_new_data = match store.put(key, enable).await {
+        let set_new_data = match db.store_put(DATA_STORE_NAME, key, enable).await {
             Ok(_) => true,
             Err(e) => {
                 error!(

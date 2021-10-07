@@ -4,8 +4,11 @@ PRAGMA foreign_keys = ON;
 PRAGMA synchronous = FULL;
 
 CREATE TABLE IF NOT EXISTS kv_store (
-    key BLOB PRIMARY KEY UNIQUE NOT NULL CHECK(TYPEOF(key) = 'blob'),
-    value BLOB NOT NULL CHECK(TYPEOF(value) = 'blob')
+    key_prefix BLOB NULL CHECK(TYPEOF(key_prefix) IN ('blob', 'null')), 
+    key_name BLOB NOT NULL CHECK(TYPEOF(key_name) = 'blob'),
+    key_value BLOB NOT NULL CHECK(TYPEOF(key_value) = 'blob'),
+    PRIMARY KEY(key_prefix, key_name),
+    UNIQUE (key_prefix, key_name)
 );
 
 CREATE TABLE IF NOT EXISTS guilds (

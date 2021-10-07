@@ -408,7 +408,7 @@ fn real_main(
     missing_data_dir: bool,
     _worker_guard: WorkerGuard,
 ) -> anyhow::Result<()> {
-    tokio_rt.block_on(async_main(config, missing_data_dir));
+    let ret = tokio_rt.block_on(async_main(config, missing_data_dir));
 
     let shutdown_start = Instant::now();
     info!(
@@ -419,23 +419,17 @@ fn real_main(
     info!("Shutdown tokio runtime in {:?}", shutdown_start.elapsed());
 
     info!("Successful Shutdown");
-    Ok(())
+    ret
 }
 
 /// The async entry
-async fn async_main(config: Config, missing_data_dir: bool) {
+async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<()> {
     info!("Opening database...");
     let db_path = config.data_dir.join("pikadick.sqlite");
-    let db = match Database::new(&db_path, missing_data_dir)
+    // TODO: Is there a good reason to not remake the db if it is missing?
+    let db = Database::new(&db_path, true) // missing_data_dir
         .await
-        .context("failed to open database")
-    {
-        Ok(db) => db,
-        Err(e) => {
-            error!("{:?}", e);
-            return;
-        }
-    };
+        .context("failed to open database")?;
 
     let uppercase_prefix = config.prefix.to_uppercase();
     let framework = StandardFramework::new()
@@ -468,31 +462,22 @@ async fn async_main(config: Config, missing_data_dir: bool) {
 
     info!("Using prefix '{}'", &config.prefix);
 
-    let mut client = match Client::builder(&config.token)
+    let mut client = Client::builder(&config.token)
         .event_handler(Handler)
         .framework(framework)
         .await
-    {
-        Ok(c) => c,
-        Err(e) => {
-            error!("Failed to create client: {}", e);
-            return;
-        }
-    };
+        .context("failed to create client")?;
 
     tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
 
-    let client_data = match ClientData::init(client.shard_manager.clone(), config, db).await {
-        Ok(c) => {
-            // Add all post-init client data changes here
-            c.enabled_check_data.add_groups(&[&GENERAL_GROUP]);
-            c
-        }
-        Err(e) => {
-            error!("Client Data Initialization failed: {}", e);
-            return;
-        }
-    };
+    let client_data = ClientData::init(client.shard_manager.clone(), config, db)
+        .await
+        .context("client data initialization failed")?;
+
+    // Add all post-init client data changes here
+    {
+        client_data.enabled_check_data.add_groups(&[&GENERAL_GROUP]);
+    }
 
     {
         let mut data = client.data.write().await;
@@ -505,4 +490,6 @@ async fn async_main(config: Config, missing_data_dir: bool) {
     }
 
     drop(client);
+
+    Ok(())
 }
