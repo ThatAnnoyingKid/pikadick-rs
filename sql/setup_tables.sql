@@ -26,4 +26,12 @@ CREATE TABLE IF NOT EXISTS reddit_embed_guild_settings (
     enabled INTEGER NOT NULL CHECK(TYPEOF(enabled) = 'integer' AND enabled IN (0, 1))
 );
 
+/*
+CREATE TABLE IF NOT EXISTS tic_tac_toe_games (
+    guild_id INTEGER NULL CHECK(TYPEOF(guild_id) IN ('integer', 'null')),
+    -- user_id 
+    -- game INTEGER NOT NULL 
+);
+*/
+
 COMMIT;
