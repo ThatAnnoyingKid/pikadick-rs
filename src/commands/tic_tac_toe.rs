@@ -13,13 +13,11 @@ use crate::{
     checks::ENABLED_CHECK,
     database::{
         model::TicTacToePlayer,
-        Database,
         TicTacToeTryMoveError,
         TicTacToeTryMoveResponse,
     },
     ClientDataKey,
 };
-use parking_lot::Mutex;
 use serenity::{
     client::Context,
     framework::standard::{
@@ -33,29 +31,12 @@ use serenity::{
         prelude::*,
     },
 };
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use std::sync::Arc;
 use tracing::error;
-
-/// This is the prefix
-///
-/// # Data Format
-/// Key: bincodeify(GameStateKey)
-/// Value: bincodify(GameState)
-const DATA_STORE_NAME: &str = "tic-tac-toe";
-
-/// A [`GuildId`]/[`UserId`] key to a [`GameState`].
-type GameStateKey = (Option<GuildId>, UserId);
-
-/// A [`GameState`] that is wrapped in a mutex and sharable via a rc'ed ptr.
-pub type ShareGameState = Arc<Mutex<GameState>>;
 
 /// Data pertaining to running tic_tac_toe games
 #[derive(Clone)]
 pub struct TicTacToeData {
-    game_states: Arc<Mutex<HashMap<GameStateKey, i64>>>,
     renderer: Arc<Renderer>,
 }
 
@@ -65,42 +46,8 @@ impl TicTacToeData {
         let renderer = Renderer::new().expect("failed to init renderer");
 
         Self {
-            game_states: Default::default(),
             renderer: Arc::new(renderer),
         }
-    }
-
-    /// Remove a [`GameState`] by key. Returns the [`ShareGameState`] if successful.
-    ///
-    /// # Deadlocks
-    /// This function deadlocks if the game is alreadly locked by the same thread.
-    pub fn remove_game_state(
-        &self,
-        guild_id: Option<GuildId>,
-        author_id: UserId,
-    ) -> Option<ShareGameState> {
-        /*
-        let mut game_states = self.game_states.lock();
-
-        let shared_game_state = game_states.remove(&(guild_id, author_id))?;
-
-        {
-            let game_state = shared_game_state.lock();
-
-            let maybe_opponent = game_state
-                .get_opponent(TicTacToePlayer::User(author_id))
-                .and_then(TicTacToePlayer::get_user);
-
-            if let Some(user_id) = maybe_opponent {
-                if game_states.remove(&(guild_id, user_id)).is_none() && user_id != author_id {
-                    error!("tried to delete a non-existent opponent game.");
-                }
-            }
-        }
-
-        Some(shared_game_state)
-        */
-        todo!()
     }
 }
 
@@ -116,19 +63,7 @@ impl Default for TicTacToeData {
     }
 }
 
-/// A Tic-Tac-Toe game.
-#[derive(Debug, Copy, Clone)]
-pub struct GameState {
-    /// The Game state
-    board: tic_tac_toe::Board,
-
-    /// The X player
-    x_player: TicTacToePlayer,
-
-    /// The O player
-    o_player: TicTacToePlayer,
-}
-
+/*
 impl GameState {
     /// Iterate over all [`GamePlayer`]s.
     ///
@@ -148,16 +83,9 @@ impl GameState {
         })
     }
 
-    /// Get the opponent of the given user in this [`GameState`].
-    pub fn get_opponent(&self, player: TicTacToePlayer) -> Option<TicTacToePlayer> {
-        match (player == self.x_player, player == self.o_player) {
-            (false, false) => None,
-            (false, true) => Some(self.x_player),
-            (true, false) => Some(self.o_player),
-            (true, true) => Some(player), // Player is playing themselves
-        }
-    }
+
 }
+*/
 
 impl TicTacToePlayer {
     /// Get the "mention" for a user.

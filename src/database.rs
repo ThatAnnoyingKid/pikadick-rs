@@ -588,4 +588,22 @@ impl Database {
         })
         .await?
     }
+
+    pub async fn delete_tic_tac_toe_game(
+        &self,
+        guild_id: Option<GuildId>,
+        user_id: UserId,
+    ) -> anyhow::Result<Option<TicTacToeGame>> {
+        self.access_db(move |db| {
+            let txn = db.transaction()?;
+            let ret = get_tic_tac_toe_game(&txn, guild_id, user_id).context("failed to query")?;
+            if let Some((id, _game)) = ret {
+                delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
+            }
+            txn.commit()
+                .context("failed to commit")
+                .map(|_| ret.map(|(_, game)| game))
+        })
+        .await?
+    }
 }

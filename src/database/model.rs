@@ -68,6 +68,16 @@ impl TicTacToeGame {
             true
         }
     }
+
+    /// Get the opponent of the given user in this [`TicTacToeGame`].
+    pub fn get_opponent(&self, player: TicTacToePlayer) -> Option<TicTacToePlayer> {
+        match (player == self.x_player, player == self.o_player) {
+            (false, false) => None,
+            (false, true) => Some(self.x_player),
+            (true, false) => Some(self.o_player),
+            (true, true) => Some(player), // Player is playing themselves
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
