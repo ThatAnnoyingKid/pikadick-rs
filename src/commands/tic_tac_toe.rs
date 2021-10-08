@@ -11,7 +11,16 @@ pub use self::{
 };
 use crate::{
     checks::ENABLED_CHECK,
-    database::model::TicTacToePlayer,
+    database::{
+        model::{
+            TicTacToeGame,
+            TicTacToePlayer,
+        },
+        Database,
+        TicTacToeCreateGameError,
+        TicTacToeTryMoveError,
+        TicTacToeTryMoveResponse,
+    },
     ClientDataKey,
 };
 use parking_lot::Mutex;
@@ -34,46 +43,6 @@ use std::{
 };
 use tracing::error;
 
-/// Error that may occur while creating a game.
-#[derive(Debug, Clone, Copy, thiserror::Error)]
-pub enum CreateGameError {
-    /// The author is in a game
-    #[error("the author is in a game")]
-    AuthorInGame,
-
-    /// The opponent is in a game
-    #[error("the opponent is in a game")]
-    OpponentInGame,
-}
-
-/// Error that may occur while performing a game move.
-#[derive(Debug, Clone, Copy, thiserror::Error)]
-pub enum TryMoveError {
-    /// It is not the user's turn
-    #[error("not the user's turn to move")]
-    InvalidTurn,
-
-    /// The move is invalid
-    #[error("the move is not valid")]
-    InvalidMove,
-}
-
-/// The response for making a move.
-#[derive(Debug, Copy, Clone)]
-pub enum TryMoveResponse {
-    Winner {
-        game: GameState,
-        winner: TicTacToePlayer,
-        loser: TicTacToePlayer,
-    },
-    Tie {
-        game: GameState,
-    },
-    NextTurn {
-        game: GameState,
-    },
-}
-
 /// This is the prefix
 ///
 /// # Data Format
@@ -90,7 +59,7 @@ pub type ShareGameState = Arc<Mutex<GameState>>;
 /// Data pertaining to running tic_tac_toe games
 #[derive(Clone)]
 pub struct TicTacToeData {
-    game_states: Arc<Mutex<HashMap<GameStateKey, ShareGameState>>>,
+    game_states: Arc<Mutex<HashMap<GameStateKey, i64>>>,
     renderer: Arc<Renderer>,
 }
 
@@ -106,8 +75,27 @@ impl TicTacToeData {
     }
 
     /// Get a game state for a [`GameStateKey`].
-    pub fn get_game_state(&self, key: &GameStateKey) -> Option<ShareGameState> {
-        self.game_states.lock().get(key).cloned()
+    pub fn get_game_state(&self, key: &GameStateKey) -> Option<i64> {
+        let id = self.game_states.lock().get(key).cloned(); // TicTacToeGame
+                                                            // Some(id)
+        id
+        /*
+
+        self.access_db(move |db| {
+            db.prepare_cached(
+                "SELECT board, x_player, o_player FROM tic_tac_toe_games WHERE id = ?;",
+            )
+            .query_row([id], |row| todo!())
+            .unwrap()
+        })
+        .await
+        .unwrap()
+        */
+    }
+
+    /// Get a game state for a [`GameStateKey`].
+    pub fn get_game_state_game(&self, key: &GameStateKey) -> Option<TicTacToeGame> {
+        todo!()
     }
 
     /// Remove a [`GameState`] by key. Returns the [`ShareGameState`] if successful.
@@ -119,6 +107,7 @@ impl TicTacToeData {
         guild_id: Option<GuildId>,
         author_id: UserId,
     ) -> Option<ShareGameState> {
+        /*
         let mut game_states = self.game_states.lock();
 
         let shared_game_state = game_states.remove(&(guild_id, author_id))?;
@@ -132,147 +121,81 @@ impl TicTacToeData {
 
             if let Some(user_id) = maybe_opponent {
                 if game_states.remove(&(guild_id, user_id)).is_none() && user_id != author_id {
-                    error!("Tried to delete a non-existent opponent game.");
+                    error!("tried to delete a non-existent opponent game.");
                 }
             }
         }
 
         Some(shared_game_state)
+        */
+        todo!()
     }
 
     /// Create a new [`GameState`].
-    pub fn create_game(
+    pub async fn create_game(
         &self,
+        db: &Database,
         guild_id: Option<GuildId>,
         author_id: UserId,
         author_team: tic_tac_toe::Team,
         opponent: TicTacToePlayer,
-    ) -> Result<ShareGameState, CreateGameError> {
+    ) -> Result<(i64, TicTacToeGame), TicTacToeCreateGameError> {
         let (x_player, o_player) = if author_team == tic_tac_toe::Team::X {
             (TicTacToePlayer::User(author_id), opponent)
         } else {
             (opponent, TicTacToePlayer::User(author_id))
         };
 
+        {
+            let game_states = self.game_states.lock();
+
+            let author_in_game = game_states.contains_key(&(guild_id, author_id));
+            let opponent_in_game = opponent.get_user().map_or(false, |user_id| {
+                game_states.contains_key(&(guild_id, user_id))
+            });
+
+            if author_in_game {
+                return Err(TicTacToeCreateGameError::AuthorInGame);
+            }
+
+            if opponent_in_game {
+                return Err(TicTacToeCreateGameError::OpponentInGame);
+            }
+        }
+
+        let (game_id, game) = db.create_tic_tac_toe_game(x_player, o_player).await?;
+
         let mut game_states = self.game_states.lock();
-
-        let author_in_game = game_states.contains_key(&(guild_id, author_id));
-        let opponent_in_game = opponent.get_user().map_or(false, |user_id| {
-            game_states.contains_key(&(guild_id, user_id))
-        });
-
-        if author_in_game {
-            return Err(CreateGameError::AuthorInGame);
-        }
-
-        if opponent_in_game {
-            return Err(CreateGameError::OpponentInGame);
-        }
-
-        let mut raw_game = GameState {
-            board: Default::default(),
-            x_player,
-            o_player,
-        };
-
-        if x_player.is_computer() {
-            let (_score, index) = tic_tac_toe::minimax(raw_game.board, 9);
-            raw_game.board = raw_game.board.set(index, Some(tic_tac_toe::Team::X));
-        }
-
-        let game = Arc::new(Mutex::new(raw_game));
-        game_states.insert((guild_id, author_id), game.clone());
+        game_states.insert((guild_id, author_id), game_id);
         if let TicTacToePlayer::User(opponent_id) = opponent {
-            game_states.insert((guild_id, opponent_id), game.clone());
+            game_states.insert((guild_id, opponent_id), game_id);
         }
 
-        Ok(game)
+        Ok((game_id, game))
     }
 
     /// Try to make a move.
-    pub fn try_move(
+    pub async fn try_move(
         &self,
-        game_state: ShareGameState,
+        db: &Database,
+        game_id: i64,
         guild_id: Option<GuildId>,
         author_id: UserId,
         move_number: u8,
-    ) -> Result<TryMoveResponse, TryMoveError> {
-        let mut game_state = game_state.lock();
-        let player_turn = game_state.get_player_turn();
+    ) -> Result<TicTacToeTryMoveResponse, TicTacToeTryMoveError> {
+        let ret = db
+            .try_tic_tac_toe_move(game_id, author_id, move_number)
+            .await?;
 
-        if TicTacToePlayer::User(author_id) != player_turn {
-            return Err(TryMoveError::InvalidTurn);
-        }
-
-        let team_turn = game_state.get_team_turn();
-        let move_successful = game_state.try_move(move_number, team_turn);
-
-        if !move_successful {
-            return Err(TryMoveError::InvalidMove);
-        }
-
-        if let Some(winner) = game_state.board.get_winner() {
-            let game = *game_state;
-            let winner_player = game.get_player(winner);
-            let loser_player = game.get_player(winner.inverse());
-            drop(game_state);
-
+        if matches!(ret, TicTacToeTryMoveResponse::Tie { .. })
+            || matches!(ret, TicTacToeTryMoveResponse::Winner { .. })
+        {
             let _game = self
                 .remove_game_state(guild_id, author_id)
                 .expect("failed to delete tic-tac-toe game");
-
-            return Ok(TryMoveResponse::Winner {
-                game,
-                winner: winner_player,
-                loser: loser_player,
-            });
         }
 
-        if game_state.board.is_draw() {
-            let game = *game_state;
-            drop(game_state);
-            let _game = self
-                .remove_game_state(guild_id, author_id)
-                .expect("failed to delete tic-tac-toe game");
-
-            return Ok(TryMoveResponse::Tie { game });
-        }
-
-        let opponent = game_state.get_player_turn();
-        if opponent == TicTacToePlayer::Computer {
-            let (_score, index) = tic_tac_toe::minimax(game_state.board, 9);
-            game_state.board = game_state.board.set(index, Some(team_turn.inverse()));
-
-            if let Some(winner) = game_state.board.get_winner() {
-                let game = *game_state;
-                let winner_player = game.get_player(winner);
-                let loser_player = game.get_player(winner.inverse());
-                drop(game_state);
-
-                let _game = self
-                    .remove_game_state(guild_id, author_id)
-                    .expect("failed to delete tic-tac-toe game");
-
-                return Ok(TryMoveResponse::Winner {
-                    game,
-                    winner: winner_player,
-                    loser: loser_player,
-                });
-            }
-
-            if game_state.board.is_draw() {
-                let game = *game_state;
-                drop(game_state);
-                let _game = self
-                    .remove_game_state(guild_id, author_id)
-                    .expect("failed to delete tic-tac-toe game");
-
-                return Ok(TryMoveResponse::Tie { game });
-            }
-        }
-
-        let game = *game_state;
-        Ok(TryMoveResponse::NextTurn { game })
+        Ok(ret)
     }
 }
 
@@ -320,30 +243,6 @@ impl GameState {
         })
     }
 
-    /// Get whos turn it is
-    pub fn get_team_turn(&self) -> tic_tac_toe::Team {
-        self.board.get_turn()
-    }
-
-    /// Get the player whos turn it is
-    pub fn get_player_turn(&self) -> TicTacToePlayer {
-        let turn = self.get_team_turn();
-        match turn {
-            tic_tac_toe::Team::X => self.x_player,
-            tic_tac_toe::Team::O => self.o_player,
-        }
-    }
-
-    /// Try to make a move. Returns true if successful.
-    pub fn try_move(&mut self, index: u8, team: tic_tac_toe::Team) -> bool {
-        if self.board.get(index).is_some() {
-            false
-        } else {
-            self.board = self.board.set(index, Some(team));
-            true
-        }
-    }
-
     /// Get the opponent of the given user in this [`GameState`].
     pub fn get_opponent(&self, player: TicTacToePlayer) -> Option<TicTacToePlayer> {
         match (player == self.x_player, player == self.o_player) {
@@ -351,14 +250,6 @@ impl GameState {
             (false, true) => Some(self.x_player),
             (true, false) => Some(self.o_player),
             (true, true) => Some(player), // Player is playing themselves
-        }
-    }
-
-    /// Get the player for the given team.
-    pub fn get_player(&self, team: tic_tac_toe::Team) -> TicTacToePlayer {
-        match team {
-            tic_tac_toe::Team::X => self.x_player,
-            tic_tac_toe::Team::O => self.o_player,
         }
     }
 }
@@ -436,8 +327,11 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         }
     };
 
-    match tic_tac_toe_data.try_move(game_state, guild_id, author_id, move_number) {
-        Ok(TryMoveResponse::Winner {
+    match tic_tac_toe_data
+        .try_move(&db, game_state, guild_id, author_id, move_number)
+        .await
+    {
+        Ok(TicTacToeTryMoveResponse::Winner {
             game,
             winner,
             loser,
@@ -471,7 +365,7 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 .send_message(&ctx.http, |m| m.content(content).add_file(file))
                 .await?;
         }
-        Ok(TryMoveResponse::Tie { game }) => {
+        Ok(TicTacToeTryMoveResponse::Tie { game }) => {
             let file = match tic_tac_toe_data
                 .renderer
                 .render_board_async(game.board)
@@ -501,7 +395,7 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 .send_message(&ctx.http, |m| m.content(content).add_file(file))
                 .await?;
         }
-        Ok(TryMoveResponse::NextTurn { game }) => {
+        Ok(TicTacToeTryMoveResponse::NextTurn { game }) => {
             let file = match tic_tac_toe_data
                 .renderer
                 .render_board_async(game.board)
@@ -527,16 +421,20 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 .send_message(&ctx.http, |m| m.content(content).add_file(file))
                 .await?;
         }
-        Err(TryMoveError::InvalidTurn) => {
+        Err(TicTacToeTryMoveError::InvalidTurn) => {
             let response = "It is not your turn. Please wait for your opponent to finish.";
             msg.channel_id.say(&ctx.http, response).await?;
         }
-        Err(TryMoveError::InvalidMove) => {
+        Err(TicTacToeTryMoveError::InvalidMove) => {
             let response = format!(
                 "Invalid move {}. Please choose one of the available squares.\n",
                 author_id.mention(),
             );
             msg.channel_id.say(&ctx.http, response).await?;
+        }
+        Err(TicTacToeTryMoveError::Database(e)) => {
+            error!("{:?}", e);
+            msg.channel_id.say(&ctx.http, "database error").await?;
         }
     }
 

@@ -1,5 +1,6 @@
 use crate::{
     checks::ENABLED_CHECK,
+    database::model::TicTacToeGame,
     ClientDataKey,
 };
 use serenity::{
@@ -35,7 +36,7 @@ pub async fn board(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     match tic_tac_toe_data
         .get_game_state(&(guild_id, author_id))
-        .map(|game| *game.lock())
+        .map::<TicTacToeGame,_>(|game| todo!()) // *game.lock()
     {
         Some(game) => {
             let file = match tic_tac_toe_data

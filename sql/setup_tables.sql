@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS reddit_embed_guild_settings (
 DROP TABLE IF EXISTS tic_tac_toe_games;
 CREATE TABLE IF NOT EXISTS tic_tac_toe_games (
     id INTEGER NOT NULL UNIQUE PRIMARY KEY CHECK(TYPEOF(id) = 'integer'),
-    game_state INTEGER NOT NULL CHECK(TYPEOF(game_state) = 'integer'),
+    board INTEGER NOT NULL CHECK(TYPEOF(board) = 'integer'),
     x_player TEXT NOT NULL CHECK(TYPEOF(x_player) = 'text'),
     o_player TEXT NOT NULL CHECK(TYPEOF(o_player) = 'text')
 );
