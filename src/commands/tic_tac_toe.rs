@@ -12,12 +12,8 @@ pub use self::{
 use crate::{
     checks::ENABLED_CHECK,
     database::{
-        model::{
-            TicTacToeGame,
-            TicTacToePlayer,
-        },
+        model::TicTacToePlayer,
         Database,
-        TicTacToeCreateGameError,
         TicTacToeTryMoveError,
         TicTacToeTryMoveResponse,
     },
@@ -51,7 +47,7 @@ use tracing::error;
 const DATA_STORE_NAME: &str = "tic-tac-toe";
 
 /// A [`GuildId`]/[`UserId`] key to a [`GameState`].
-pub type GameStateKey = (Option<GuildId>, UserId);
+type GameStateKey = (Option<GuildId>, UserId);
 
 /// A [`GameState`] that is wrapped in a mutex and sharable via a rc'ed ptr.
 pub type ShareGameState = Arc<Mutex<GameState>>;
@@ -72,30 +68,6 @@ impl TicTacToeData {
             game_states: Default::default(),
             renderer: Arc::new(renderer),
         }
-    }
-
-    /// Get a game state for a [`GameStateKey`].
-    pub fn get_game_state(&self, key: &GameStateKey) -> Option<i64> {
-        let id = self.game_states.lock().get(key).cloned(); // TicTacToeGame
-                                                            // Some(id)
-        id
-        /*
-
-        self.access_db(move |db| {
-            db.prepare_cached(
-                "SELECT board, x_player, o_player FROM tic_tac_toe_games WHERE id = ?;",
-            )
-            .query_row([id], |row| todo!())
-            .unwrap()
-        })
-        .await
-        .unwrap()
-        */
-    }
-
-    /// Get a game state for a [`GameStateKey`].
-    pub fn get_game_state_game(&self, key: &GameStateKey) -> Option<TicTacToeGame> {
-        todo!()
     }
 
     /// Remove a [`GameState`] by key. Returns the [`ShareGameState`] if successful.
@@ -129,73 +101,6 @@ impl TicTacToeData {
         Some(shared_game_state)
         */
         todo!()
-    }
-
-    /// Create a new [`GameState`].
-    pub async fn create_game(
-        &self,
-        db: &Database,
-        guild_id: Option<GuildId>,
-        author_id: UserId,
-        author_team: tic_tac_toe::Team,
-        opponent: TicTacToePlayer,
-    ) -> Result<(i64, TicTacToeGame), TicTacToeCreateGameError> {
-        let (x_player, o_player) = if author_team == tic_tac_toe::Team::X {
-            (TicTacToePlayer::User(author_id), opponent)
-        } else {
-            (opponent, TicTacToePlayer::User(author_id))
-        };
-
-        {
-            let game_states = self.game_states.lock();
-
-            let author_in_game = game_states.contains_key(&(guild_id, author_id));
-            let opponent_in_game = opponent.get_user().map_or(false, |user_id| {
-                game_states.contains_key(&(guild_id, user_id))
-            });
-
-            if author_in_game {
-                return Err(TicTacToeCreateGameError::AuthorInGame);
-            }
-
-            if opponent_in_game {
-                return Err(TicTacToeCreateGameError::OpponentInGame);
-            }
-        }
-
-        let (game_id, game) = db.create_tic_tac_toe_game(x_player, o_player).await?;
-
-        let mut game_states = self.game_states.lock();
-        game_states.insert((guild_id, author_id), game_id);
-        if let TicTacToePlayer::User(opponent_id) = opponent {
-            game_states.insert((guild_id, opponent_id), game_id);
-        }
-
-        Ok((game_id, game))
-    }
-
-    /// Try to make a move.
-    pub async fn try_move(
-        &self,
-        db: &Database,
-        game_id: i64,
-        guild_id: Option<GuildId>,
-        author_id: UserId,
-        move_number: u8,
-    ) -> Result<TicTacToeTryMoveResponse, TicTacToeTryMoveError> {
-        let ret = db
-            .try_tic_tac_toe_move(game_id, author_id, move_number)
-            .await?;
-
-        if matches!(ret, TicTacToeTryMoveResponse::Tie { .. })
-            || matches!(ret, TicTacToeTryMoveResponse::Winner { .. })
-        {
-            let _game = self
-                .remove_game_state(guild_id, author_id)
-                .expect("failed to delete tic-tac-toe game");
-        }
-
-        Ok(ret)
     }
 }
 
@@ -297,7 +202,7 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
     let guild_id = msg.guild_id;
     let author_id = msg.author.id;
 
-    let mut move_number = match args.trimmed().single::<u8>() {
+    let mut move_index = match args.trimmed().single::<u8>() {
         Ok(num) => num,
         Err(e) => {
             let response = format!("That move is not a number: {}\nUse `tic-tac-toe play <computer/@user> <X/O> to start a game.`", e);
@@ -306,7 +211,7 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         }
     };
 
-    if !(1..=9).contains(&move_number) {
+    if !(1..=9).contains(&move_index) {
         let response = format!(
             "Your move number must be between 1 and 9 {}",
             author_id.mention()
@@ -315,20 +220,10 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         return Ok(());
     }
 
-    move_number -= 1;
+    move_index -= 1;
 
-    let game_state = match tic_tac_toe_data.get_game_state(&(guild_id, author_id)) {
-        Some(game_state) => game_state,
-        None => {
-            let response =
-                "No games in progress. Make one with `tic-tac-toe play <computer/@user> <X/O>`.";
-            msg.channel_id.say(&ctx.http, response).await?;
-            return Ok(());
-        }
-    };
-
-    match tic_tac_toe_data
-        .try_move(&db, game_state, guild_id, author_id, move_number)
+    match db
+        .try_tic_tac_toe_move(guild_id, author_id, move_index)
         .await
     {
         Ok(TicTacToeTryMoveResponse::Winner {
@@ -430,6 +325,11 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 "Invalid move {}. Please choose one of the available squares.\n",
                 author_id.mention(),
             );
+            msg.channel_id.say(&ctx.http, response).await?;
+        }
+        Err(TicTacToeTryMoveError::NotInAGame) => {
+            let response =
+                "No games in progress. Make one with `tic-tac-toe play <computer/@user> <X/O>`.";
             msg.channel_id.say(&ctx.http, response).await?;
         }
         Err(TicTacToeTryMoveError::Database(e)) => {

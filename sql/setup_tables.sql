@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS reddit_embed_guild_settings (
 
 -- Temp until all ttt data is persisted
 DROP TABLE IF EXISTS tic_tac_toe_games;
+DROP TABLE IF EXISTS tic_tac_toe_player_info;
+
 CREATE TABLE IF NOT EXISTS tic_tac_toe_games (
     id INTEGER NOT NULL UNIQUE PRIMARY KEY CHECK(TYPEOF(id) = 'integer'),
     board INTEGER NOT NULL CHECK(TYPEOF(board) = 'integer'),
@@ -35,14 +37,13 @@ CREATE TABLE IF NOT EXISTS tic_tac_toe_games (
     o_player TEXT NOT NULL CHECK(TYPEOF(o_player) = 'text')
 );
 
--- Draft of 2nd ttt table
-/*
 CREATE TABLE IF NOT EXISTS tic_tac_toe_player_info (
     guild_id INTEGER NULL CHECK(TYPEOF(guild_id) IN ('integer', 'null')),
-    -- user_id 
-    -- game_id INTEGER NOT NULL 
-    -- Foregin key game_id -> tic_tac_toe_games.id
+    user_id INTEGER NOT NULL CHECK(TYPEOF(user_id) = 'integer'),
+    game_id INTEGER NOT NULL CHECK(TYPEOF(game_id) = 'integer'),
+    FOREIGN KEY (game_id) REFERENCES tic_tac_toe_games(id) ON DELETE CASCADE,
+    UNIQUE(guild_id, user_id),
+    PRIMARY KEY (guild_id, user_id)
 );
-*/
 
 COMMIT;

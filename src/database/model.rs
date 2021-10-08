@@ -61,9 +61,7 @@ impl TicTacToeGame {
     /// # Returns
     /// Returns true if successful.
     pub fn try_move(&mut self, index: u8, team: tic_tac_toe::Team) -> bool {
-        if index >= tic_tac_toe::NUM_TILES {
-            false
-        } else if self.board.get(index).is_some() {
+        if index >= tic_tac_toe::NUM_TILES || self.board.get(index).is_some() {
             false
         } else {
             self.board = self.board.set(index, Some(team));
