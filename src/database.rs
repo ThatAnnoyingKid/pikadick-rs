@@ -20,6 +20,10 @@ const SETUP_TABLES_SQL: &str = include_str!("../sql/setup_tables.sql");
 const GET_STORE_SQL: &str = "SELECT key_value FROM kv_store WHERE key_prefix = ? AND key_name = ?;";
 const PUT_STORE_SQL: &str =
     "INSERT OR REPLACE INTO kv_store (key_prefix, key_name, key_value) VALUES (?, ?, ?);";
+const DELETE_TIC_TAC_TOE_GAME_SQL: &str = "DELETE FROM tic_tac_toe_games WHERE id = ?;";
+const UPDATE_TIC_TAC_TOE_GAME_SQL: &str = "UPDATE tic_tac_toe_games SET board = ? WHERE id = ?;";
+const GET_TIC_TAC_TOE_GAME_SQL: &str =
+    "SELECT board, x_player, o_player FROM tic_tac_toe_games WHERE id = ?;";
 
 /// Error that may occur while creating a tic-tac-toe game
 #[derive(Debug, thiserror::Error)]
@@ -66,6 +70,22 @@ pub enum TicTacToeTryMoveResponse {
     Tie { game: TicTacToeGame },
     /// The next turn executed
     NextTurn { game: TicTacToeGame },
+}
+
+fn delete_tic_tac_toe_game(txn: &rusqlite::Transaction<'_>, id: i64) -> rusqlite::Result<()> {
+    txn.prepare_cached(DELETE_TIC_TAC_TOE_GAME_SQL)?
+        .execute([id])?;
+    Ok(())
+}
+
+fn update_tic_tac_toe_game(
+    txn: &rusqlite::Transaction<'_>,
+    id: i64,
+    board: tic_tac_toe::Board,
+) -> rusqlite::Result<()> {
+    txn.prepare_cached(UPDATE_TIC_TAC_TOE_GAME_SQL)?
+        .execute(params![board.encode_u16(), id])?;
+    Ok(())
 }
 
 /// The database
@@ -301,7 +321,7 @@ impl Database {
 
             let mut game = TicTacToeGame::new(x_player, o_player);
 
-            // TODO: Iteratively perform AI steps
+            // TODO: Iteratively perform AI steps?
             if x_player.is_computer() {
                 let (_score, index) = tic_tac_toe::minimax(game.board, tic_tac_toe::NUM_TILES);
                 game.board = game.board.set(index, Some(tic_tac_toe::Team::X));
@@ -341,15 +361,12 @@ impl Database {
                 .map_err(TicTacToeTryMoveError::Database)?;
 
             let mut game = txn
-                .prepare_cached(
-                    "SELECT board, x_player, o_player FROM tic_tac_toe_games WHERE id = ?;",
-                )
+                .prepare_cached(GET_TIC_TAC_TOE_GAME_SQL)
                 .context("failed to prepare query")
                 .map_err(TicTacToeTryMoveError::Database)?
                 .query_row([id], |row| {
-                    let board: u16 = row.get(0)?;
                     Ok(TicTacToeGame {
-                        board: tic_tac_toe::Board::decode_u16(board),
+                        board: tic_tac_toe::Board::decode_u16(row.get(0)?),
                         x_player: row.get(1)?,
                         o_player: row.get(2)?,
                     })
@@ -372,10 +389,7 @@ impl Database {
                 let winner = game.get_player(winner_team);
                 let loser = game.get_player(winner_team.inverse());
 
-                txn.prepare_cached("DELETE FROM tic_tac_toe_games WHERE id = ?;")
-                    .context("failed to prepare query")
-                    .map_err(TicTacToeTryMoveError::Database)?
-                    .execute([id])
+                delete_tic_tac_toe_game(&txn, id)
                     .context("failed to delete game")
                     .map_err(TicTacToeTryMoveError::Database)?;
 
@@ -391,10 +405,7 @@ impl Database {
             }
 
             if game.board.is_draw() {
-                txn.prepare_cached("DELETE FROM tic_tac_toe_games WHERE id = ?;")
-                    .context("failed to prepare query")
-                    .map_err(TicTacToeTryMoveError::Database)?
-                    .execute([id])
+                delete_tic_tac_toe_game(&txn, id)
                     .context("failed to delete game")
                     .map_err(TicTacToeTryMoveError::Database)?;
 
@@ -405,12 +416,8 @@ impl Database {
                 return Ok(TicTacToeTryMoveResponse::Tie { game });
             }
 
-            let board = game.board.encode_u16();
-            txn.prepare_cached("UPDATE tic_tac_toe_games SET board = ? WHERE id = ?;")
-                .context("failed to prepare query")
-                .map_err(TicTacToeTryMoveError::Database)?
-                .execute(params![board, id])
-                .context("failed to delete game")
+            update_tic_tac_toe_game(&txn, id, game.board)
+                .context("failed to update game")
                 .map_err(TicTacToeTryMoveError::Database)?;
 
             let opponent = game.get_player_turn();
@@ -422,10 +429,7 @@ impl Database {
                     let winner_player = game.get_player(winner_team);
                     let loser_player = game.get_player(winner_team.inverse());
 
-                    txn.prepare_cached("DELETE FROM tic_tac_toe_games WHERE id = ?;")
-                        .context("failed to prepare query")
-                        .map_err(TicTacToeTryMoveError::Database)?
-                        .execute([id])
+                    delete_tic_tac_toe_game(&txn, id)
                         .context("failed to delete game")
                         .map_err(TicTacToeTryMoveError::Database)?;
 
@@ -437,23 +441,15 @@ impl Database {
                 }
 
                 if game.board.is_draw() {
-                    txn.prepare_cached("DELETE FROM tic_tac_toe_games WHERE id = ?;")
-                        .context("failed to prepare query")
-                        .map_err(TicTacToeTryMoveError::Database)?
-                        .execute([id])
+                    delete_tic_tac_toe_game(&txn, id)
                         .context("failed to delete game")
                         .map_err(TicTacToeTryMoveError::Database)?;
-
                     return Ok(TicTacToeTryMoveResponse::Tie { game });
                 }
             }
 
-            let board = game.board.encode_u16();
-            txn.prepare_cached("UPDATE tic_tac_toe_games SET board = ? WHERE id = ?;")
-                .context("failed to prepare query")
-                .map_err(TicTacToeTryMoveError::Database)?
-                .execute(params![board, id])
-                .context("failed to delete game")
+            update_tic_tac_toe_game(&txn, id, game.board)
+                .context("failed to update game")
                 .map_err(TicTacToeTryMoveError::Database)?;
 
             txn.commit()
