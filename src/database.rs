@@ -12,7 +12,6 @@ use rusqlite::{
 };
 use serenity::model::prelude::*;
 use std::{
-    borrow::Cow,
     path::Path,
     sync::Arc,
 };
@@ -309,8 +308,6 @@ impl Database {
             }
 
             let board = game.board.encode_u16();
-            let x_player: Cow<'static, _> = game.x_player.into();
-            let o_player: Cow<'static, _> = game.x_player.into();
             let game_id: i64 = txn
                 .prepare_cached(query)
                 .context("failed to prepare query")
@@ -342,6 +339,7 @@ impl Database {
                 .transaction_with_behavior(TransactionBehavior::Immediate)
                 .context("failed to create transaction")
                 .map_err(TicTacToeTryMoveError::Database)?;
+
             let mut game = txn
                 .prepare_cached(
                     "SELECT board, x_player, o_player FROM tic_tac_toe_games WHERE id = ?;",
@@ -350,26 +348,13 @@ impl Database {
                 .map_err(TicTacToeTryMoveError::Database)?
                 .query_row([id], |row| {
                     let board: u16 = row.get(0)?;
-                    let x_player: String = row.get(1)?;
-                    let o_player: String = row.get(2)?;
-
-                    let maybe_x_player = x_player
-                        .parse::<TicTacToePlayer>()
-                        .context("failed to parse x player");
-                    let maybe_o_player = o_player
-                        .parse::<TicTacToePlayer>()
-                        .context("failed to parse o player");
-
-                    Ok(maybe_x_player
-                        .and_then(|x_player| Ok((x_player, maybe_o_player?)))
-                        .map(|(x_player, o_player)| TicTacToeGame {
-                            board: tic_tac_toe::Board::decode_u16(board),
-                            x_player,
-                            o_player,
-                        }))
+                    Ok(TicTacToeGame {
+                        board: tic_tac_toe::Board::decode_u16(board),
+                        x_player: row.get(1)?,
+                        o_player: row.get(2)?,
+                    })
                 })
                 .context("failed to query database")
-                .map_err(TicTacToeTryMoveError::Database)?
                 .map_err(TicTacToeTryMoveError::Database)?;
 
             let player_turn = game.get_player_turn();

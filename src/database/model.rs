@@ -1,3 +1,13 @@
+use rusqlite::{
+    types::{
+        FromSql,
+        FromSqlError,
+        FromSqlResult,
+        ToSqlOutput,
+        ValueRef,
+    },
+    ToSql,
+};
 use serenity::{
     model::prelude::*,
     utils::parse_username,
@@ -129,5 +139,24 @@ impl FromStr for TicTacToePlayer {
                 input.parse().map_err(TicTacToePlayerParseError)?,
             )))
         }
+    }
+}
+
+impl ToSql for TicTacToePlayer {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        let data: Cow<'static, str> = (*self).into();
+
+        match data {
+            Cow::Owned(data) => Ok(ToSqlOutput::from(data)),
+            Cow::Borrowed(data) => Ok(ToSqlOutput::from(data)),
+        }
+    }
+}
+
+impl FromSql for TicTacToePlayer {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        value
+            .as_str()
+            .and_then(|s| s.parse().map_err(|err| FromSqlError::Other(Box::new(err))))
     }
 }
