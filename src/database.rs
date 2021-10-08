@@ -1,3 +1,5 @@
+pub mod model;
+
 use anyhow::Context;
 use rusqlite::{
     params,
@@ -72,12 +74,12 @@ impl Database {
             let txn = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
             let old_value = txn
                 .prepare_cached(SELECT_QUERY)?
-                .query_row(params![id.0 as i64, cmd], |row| row.get(0))
+                .query_row(params![i64::from(id), cmd], |row| row.get(0))
                 .optional()?
                 .unwrap_or(false);
 
             txn.prepare_cached(UPDATE_QUERY)?
-                .execute(params![id.0 as i64, cmd, disable])?;
+                .execute(params![i64::from(id), cmd, disable])?;
             txn.commit()
                 .context("failed to update disabled command")
                 .map(|_| old_value)
@@ -92,7 +94,7 @@ impl Database {
             db.prepare_cached(
                 "SELECT disabled FROM disabled_commands WHERE guild_id = ? AND name = ?",
             )?
-            .query_row(params![id.0 as i64, name], |row| row.get(0))
+            .query_row(params![i64::from(id), name], |row| row.get(0))
             .optional()
             .context("failed to access db")
             .map(|row| row.unwrap_or(false))
@@ -206,11 +208,11 @@ impl Database {
             let txn = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
             let old_data = txn
                 .prepare_cached(SELECT_QUERY)?
-                .query_row([guild_id.0 as i64], |row| row.get(0))
+                .query_row([i64::from(guild_id)], |row| row.get(0))
                 .optional()?
                 .unwrap_or(false);
             txn.prepare_cached(INSERT_QUERY)?
-                .execute(params![guild_id.0 as i64, enabled])?;
+                .execute(params![i64::from(guild_id), enabled])?;
 
             txn.commit()
                 .context("failed to set reddit embed")
@@ -225,7 +227,7 @@ impl Database {
             "SELECT enabled FROM reddit_embed_guild_settings WHERE guild_id = ?";
         self.access_db(move |db| {
             db.prepare_cached(SELECT_QUERY)?
-                .query_row([guild_id.0 as i64], |row| row.get(0))
+                .query_row([i64::from(guild_id)], |row| row.get(0))
                 .optional()
                 .context("failed to read database")
                 .map(|v| v.unwrap_or(false))

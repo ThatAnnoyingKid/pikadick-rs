@@ -1,6 +1,6 @@
-use super::GamePlayer;
 use crate::{
     checks::ENABLED_CHECK,
+    database::model::TicTacToePlayer,
     ClientDataKey,
 };
 use serenity::{
@@ -44,7 +44,7 @@ pub async fn concede(ctx: &Context, msg: &Message, _args: Args) -> CommandResult
     };
 
     let opponent = game_state
-        .get_opponent(GamePlayer::User(author_id))
+        .get_opponent(TicTacToePlayer::User(author_id))
         .expect("author is not playing the game");
 
     let file = match tic_tac_toe_data

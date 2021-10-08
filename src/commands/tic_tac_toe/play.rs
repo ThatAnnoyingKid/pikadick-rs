@@ -1,9 +1,7 @@
-use super::{
-    CreateGameError,
-    GamePlayer,
-};
+use super::CreateGameError;
 use crate::{
     checks::ENABLED_CHECK,
+    database::model::TicTacToePlayer,
     ClientDataKey,
 };
 use serenity::{
@@ -32,9 +30,10 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         .get::<ClientDataKey>()
         .expect("missing client data");
     let tic_tac_toe_data = client_data.tic_tac_toe_data.clone();
+    let db = client_data.db.clone();
     drop(data_lock);
 
-    let opponent: GamePlayer = match args.trimmed().single() {
+    let opponent: TicTacToePlayer = match args.trimmed().single() {
         Ok(player) => player,
         Err(e) => {
             let response = format!(
@@ -73,7 +72,7 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     };
 
     let game_board = game.lock().board;
-    let user = if let GamePlayer::User(opponent_id) = opponent {
+    let user = if let TicTacToePlayer::User(opponent_id) = opponent {
         // Cannot be a computer here as there are at least 2 human players at this point
         if author_team == tic_tac_toe::Team::X {
             author_id

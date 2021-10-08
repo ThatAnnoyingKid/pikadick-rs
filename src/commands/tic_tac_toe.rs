@@ -11,6 +11,7 @@ pub use self::{
 };
 use crate::{
     checks::ENABLED_CHECK,
+    database::model::TicTacToePlayer,
     ClientDataKey,
 };
 use parking_lot::Mutex;
@@ -26,11 +27,9 @@ use serenity::{
         channel::Message,
         prelude::*,
     },
-    utils::parse_username,
 };
 use std::{
     collections::HashMap,
-    str::FromStr,
     sync::Arc,
 };
 use tracing::error;
@@ -64,8 +63,8 @@ pub enum TryMoveError {
 pub enum TryMoveResponse {
     Winner {
         game: GameState,
-        winner: GamePlayer,
-        loser: GamePlayer,
+        winner: TicTacToePlayer,
+        loser: TicTacToePlayer,
     },
     Tie {
         game: GameState,
@@ -74,6 +73,13 @@ pub enum TryMoveResponse {
         game: GameState,
     },
 }
+
+/// This is the prefix
+///
+/// # Data Format
+/// Key: bincodeify(GameStateKey)
+/// Value: bincodify(GameState)
+const DATA_STORE_NAME: &str = "tic-tac-toe";
 
 /// A [`GuildId`]/[`UserId`] key to a [`GameState`].
 pub type GameStateKey = (Option<GuildId>, UserId);
@@ -121,8 +127,8 @@ impl TicTacToeData {
             let game_state = shared_game_state.lock();
 
             let maybe_opponent = game_state
-                .get_opponent(GamePlayer::User(author_id))
-                .and_then(GamePlayer::into_user_id);
+                .get_opponent(TicTacToePlayer::User(author_id))
+                .and_then(TicTacToePlayer::get_user);
 
             if let Some(user_id) = maybe_opponent {
                 if game_states.remove(&(guild_id, user_id)).is_none() && user_id != author_id {
@@ -140,18 +146,18 @@ impl TicTacToeData {
         guild_id: Option<GuildId>,
         author_id: UserId,
         author_team: tic_tac_toe::Team,
-        opponent: GamePlayer,
+        opponent: TicTacToePlayer,
     ) -> Result<ShareGameState, CreateGameError> {
         let (x_player, o_player) = if author_team == tic_tac_toe::Team::X {
-            (GamePlayer::User(author_id), opponent)
+            (TicTacToePlayer::User(author_id), opponent)
         } else {
-            (opponent, GamePlayer::User(author_id))
+            (opponent, TicTacToePlayer::User(author_id))
         };
 
         let mut game_states = self.game_states.lock();
 
         let author_in_game = game_states.contains_key(&(guild_id, author_id));
-        let opponent_in_game = opponent.into_user_id().map_or(false, |user_id| {
+        let opponent_in_game = opponent.get_user().map_or(false, |user_id| {
             game_states.contains_key(&(guild_id, user_id))
         });
 
@@ -176,7 +182,7 @@ impl TicTacToeData {
 
         let game = Arc::new(Mutex::new(raw_game));
         game_states.insert((guild_id, author_id), game.clone());
-        if let GamePlayer::User(opponent_id) = opponent {
+        if let TicTacToePlayer::User(opponent_id) = opponent {
             game_states.insert((guild_id, opponent_id), game.clone());
         }
 
@@ -194,7 +200,7 @@ impl TicTacToeData {
         let mut game_state = game_state.lock();
         let player_turn = game_state.get_player_turn();
 
-        if GamePlayer::User(author_id) != player_turn {
+        if TicTacToePlayer::User(author_id) != player_turn {
             return Err(TryMoveError::InvalidTurn);
         }
 
@@ -233,7 +239,7 @@ impl TicTacToeData {
         }
 
         let opponent = game_state.get_player_turn();
-        if opponent == GamePlayer::Computer {
+        if opponent == TicTacToePlayer::Computer {
             let (_score, index) = tic_tac_toe::minimax(game_state.board, 9);
             game_state.board = game_state.board.set(index, Some(team_turn.inverse()));
 
@@ -289,10 +295,10 @@ pub struct GameState {
     board: tic_tac_toe::Board,
 
     /// The X player
-    x_player: GamePlayer,
+    x_player: TicTacToePlayer,
 
     /// The O player
-    o_player: GamePlayer,
+    o_player: TicTacToePlayer,
 }
 
 impl GameState {
@@ -301,7 +307,7 @@ impl GameState {
     /// Order is X player, O player.
     /// This will include computer players.
     /// Convert players into [`UserId`]s and filter if you want human players.
-    pub fn iter_players(&self) -> impl Iterator<Item = GamePlayer> + '_ {
+    pub fn iter_players(&self) -> impl Iterator<Item = TicTacToePlayer> + '_ {
         let mut count = 0;
         std::iter::from_fn(move || {
             let ret = match count {
@@ -320,7 +326,7 @@ impl GameState {
     }
 
     /// Get the player whos turn it is
-    pub fn get_player_turn(&self) -> GamePlayer {
+    pub fn get_player_turn(&self) -> TicTacToePlayer {
         let turn = self.get_team_turn();
         match turn {
             tic_tac_toe::Team::X => self.x_player,
@@ -339,7 +345,7 @@ impl GameState {
     }
 
     /// Get the opponent of the given user in this [`GameState`].
-    pub fn get_opponent(&self, player: GamePlayer) -> Option<GamePlayer> {
+    pub fn get_opponent(&self, player: TicTacToePlayer) -> Option<TicTacToePlayer> {
         match (player == self.x_player, player == self.o_player) {
             (false, false) => None,
             (false, true) => Some(self.x_player),
@@ -349,7 +355,7 @@ impl GameState {
     }
 
     /// Get the player for the given team.
-    pub fn get_player(&self, team: tic_tac_toe::Team) -> GamePlayer {
+    pub fn get_player(&self, team: tic_tac_toe::Team) -> TicTacToePlayer {
         match team {
             tic_tac_toe::Team::X => self.x_player,
             tic_tac_toe::Team::O => self.o_player,
@@ -357,39 +363,7 @@ impl GameState {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct InvalidGamePlayer;
-
-impl std::fmt::Display for InvalidGamePlayer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        "invalid player".fmt(f)
-    }
-}
-
-/// A player of Tic-Tac-Toe
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum GamePlayer {
-    /// User
-    Computer,
-
-    /// A User
-    User(UserId),
-}
-
-impl GamePlayer {
-    /// Try to convert this into a [`UserId`].
-    pub fn into_user_id(self) -> Option<UserId> {
-        match self {
-            Self::User(id) => Some(id),
-            _ => None,
-        }
-    }
-
-    /// Check if this player is a computer
-    pub fn is_computer(self) -> bool {
-        matches!(self, Self::Computer)
-    }
-
+impl TicTacToePlayer {
     /// Get the "mention" for a user.
     ///
     /// Computer is "computer" and users are mentioned.
@@ -398,28 +372,14 @@ impl GamePlayer {
     }
 }
 
-impl FromStr for GamePlayer {
-    type Err = InvalidGamePlayer;
-
-    fn from_str(data: &str) -> Result<Self, Self::Err> {
-        if data.eq_ignore_ascii_case("computer") {
-            return Ok(Self::Computer);
-        }
-
-        parse_username(data)
-            .map(|id| Self::User(UserId(id)))
-            .ok_or(InvalidGamePlayer)
-    }
-}
-
 #[derive(Debug, Copy, Clone)]
-pub struct GamePlayerMention(GamePlayer);
+pub struct GamePlayerMention(TicTacToePlayer);
 
 impl std::fmt::Display for GamePlayerMention {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.0 {
-            GamePlayer::Computer => "computer".fmt(f),
-            GamePlayer::User(user_id) => user_id.mention().fmt(f),
+            TicTacToePlayer::Computer => "computer".fmt(f),
+            TicTacToePlayer::User(user_id) => user_id.mention().fmt(f),
         }
     }
 }
@@ -440,6 +400,7 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         .get::<ClientDataKey>()
         .expect("missing client data");
     let tic_tac_toe_data = client_data.tic_tac_toe_data.clone();
+    let db = client_data.db.clone();
     drop(data_lock);
 
     let guild_id = msg.guild_id;
