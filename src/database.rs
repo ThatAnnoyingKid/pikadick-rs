@@ -1,6 +1,7 @@
 pub mod model;
 
 use crate::database::model::{
+    MaybeGuildString,
     TicTacToeGame,
     TicTacToePlayer,
 };
@@ -100,13 +101,13 @@ fn update_tic_tac_toe_game(
 
 fn get_tic_tac_toe_game(
     txn: &rusqlite::Transaction<'_>,
-    guild_id: Option<GuildId>,
+    guild_id: MaybeGuildString,
     user_id: TicTacToePlayer,
 ) -> rusqlite::Result<Option<(i64, TicTacToeGame)>> {
     txn.prepare_cached(GET_TIC_TAC_TOE_GAME_SQL)?
         .query_row(
             named_params! {
-                ":guild_id": guild_id.map(i64::from),
+                ":guild_id": guild_id,
                 ":user_id": user_id
             },
             |row| {
@@ -344,7 +345,7 @@ impl Database {
     /// Create a new tic-tac-toe game
     pub async fn create_tic_tac_toe_game(
         &self,
-        guild_id: Option<GuildId>,
+        guild_id: MaybeGuildString,
         author: TicTacToePlayer,
         author_team: tic_tac_toe::Team,
         opponent: TicTacToePlayer,
@@ -367,7 +368,7 @@ impl Database {
                 .map_err(TicTacToeCreateGameError::Database)?
                 .query_row(
                     named_params! {
-                        ":guild_id": guild_id.map(i64::from),
+                        ":guild_id": guild_id,
                         ":author": author,
                         ":opponent": opponent,
                     },
@@ -399,7 +400,7 @@ impl Database {
             txn.prepare_cached(CREATE_TIC_TAC_TOE_GAME_SQL)
                 .context("failed to prepare query")
                 .map_err(TicTacToeCreateGameError::Database)?
-                .execute(params![board, x_player, o_player, guild_id.map(i64::from)])
+                .execute(params![board, x_player, o_player, guild_id])
                 .context("failed to create game in database")
                 .map_err(TicTacToeCreateGameError::Database)?;
 
@@ -417,7 +418,7 @@ impl Database {
     /// Try to make a tic-tac-toe move
     pub async fn try_tic_tac_toe_move(
         &self,
-        guild_id: Option<GuildId>,
+        guild_id: MaybeGuildString,
         player: TicTacToePlayer,
         move_index: u8,
     ) -> Result<TicTacToeTryMoveResponse, TicTacToeTryMoveError> {
@@ -491,6 +492,10 @@ impl Database {
                         .context("failed to delete game")
                         .map_err(TicTacToeTryMoveError::Database)?;
 
+                    txn.commit()
+                        .context("failed to commit")
+                        .map_err(TicTacToeTryMoveError::Database)?;
+
                     return Ok(TicTacToeTryMoveResponse::Winner {
                         game,
                         winner: winner_player,
@@ -529,7 +534,7 @@ impl Database {
     /// Try to get a tic-tac-toe game by guild and player
     pub async fn get_tic_tac_toe_game(
         &self,
-        guild_id: Option<GuildId>,
+        guild_id: MaybeGuildString,
         player: TicTacToePlayer,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
         self.access_db(move |db| {
@@ -548,7 +553,7 @@ impl Database {
     /// Returns the game if it existed
     pub async fn delete_tic_tac_toe_game(
         &self,
-        guild_id: Option<GuildId>,
+        guild_id: MaybeGuildString,
         player: TicTacToePlayer,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
         self.access_db(move |db| {

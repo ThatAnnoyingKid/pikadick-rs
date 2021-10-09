@@ -34,7 +34,10 @@ pub async fn board(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild_id = msg.guild_id;
     let author_id = msg.author.id;
 
-    match db.get_tic_tac_toe_game(guild_id, author_id.into()).await {
+    match db
+        .get_tic_tac_toe_game(guild_id.into(), author_id.into())
+        .await
+    {
         Ok(Some(game)) => {
             let file = match tic_tac_toe_data
                 .renderer

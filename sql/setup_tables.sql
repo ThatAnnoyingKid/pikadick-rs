@@ -26,8 +26,6 @@ CREATE TABLE IF NOT EXISTS reddit_embed_guild_settings (
     enabled INTEGER NOT NULL CHECK(TYPEOF(enabled) = 'integer' AND enabled IN (0, 1))
 );
 
--- Temp until all ttt data is persisted
-DROP TABLE IF EXISTS tic_tac_toe_games;
 CREATE TABLE IF NOT EXISTS tic_tac_toe_games (
     id INTEGER PRIMARY KEY UNIQUE NOT NULL CHECK(TYPEOF(id) = 'integer'),
     board INTEGER NOT NULL CHECK(TYPEOF(board) = 'integer'),

@@ -192,3 +192,44 @@ impl FromSql for TicTacToePlayer {
         }
     }
 }
+
+/// A String wrapper for a [`GuildId`]
+///
+/// This is "<u64>.to_string()" if a guild, or "empty" if not.
+#[derive(Debug, Copy, Clone)]
+pub struct MaybeGuildString {
+    pub guild_id: Option<GuildId>,
+}
+
+impl From<Option<GuildId>> for MaybeGuildString {
+    fn from(guild_id: Option<GuildId>) -> Self {
+        Self { guild_id }
+    }
+}
+
+impl ToSql for MaybeGuildString {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        match self.guild_id {
+            Some(guild_id) => Ok(ToSqlOutput::from(guild_id.to_string())),
+            None => Ok(ToSqlOutput::Borrowed(ValueRef::Text(b"empty"))),
+        }
+    }
+}
+
+impl FromSql for MaybeGuildString {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let text = value.as_str()?;
+        match text.parse::<u64>() {
+            Ok(guild_id) => Ok(MaybeGuildString {
+                guild_id: Some(GuildId(guild_id)),
+            }),
+            Err(e) => {
+                if text == "empty" {
+                    Ok(MaybeGuildString { guild_id: None })
+                } else {
+                    Err(FromSqlError::Other(Box::new(e)))
+                }
+            }
+        }
+    }
+}

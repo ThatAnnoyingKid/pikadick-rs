@@ -2045,6 +2045,7 @@ dependencies = [
  "indexmap",
  "insta",
  "iqdb",
+ "itoa",
  "lazy_static",
  "nekos",
  "openssl",
