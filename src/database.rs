@@ -24,44 +24,12 @@ const SETUP_TABLES_SQL: &str = include_str!("../sql/setup_tables.sql");
 const GET_STORE_SQL: &str = include_str!("../sql/get_store.sql");
 const PUT_STORE_SQL: &str = include_str!("../sql/put_store.sql");
 
-const DELETE_TIC_TAC_TOE_GAME_SQL: &str = "
-DELETE FROM 
-    tic_tac_toe_games 
-WHERE 
-    id = ?;";
-const UPDATE_TIC_TAC_TOE_GAME_SQL: &str = "UPDATE tic_tac_toe_games SET board = ? WHERE id = ?;";
-const CREATE_TIC_TAC_TOE_GAME_SQL: &str = "
-INSERT INTO tic_tac_toe_games (
-    board, 
-    x_player, 
-    o_player,
-    guild_id
-) VALUES (
-    ?, 
-    ?, 
-    ?, 
-    ?
-);";
-const GET_TIC_TAC_TOE_GAME_SQL: &str = "
-SELECT 
-    id,
-    board, 
-    x_player, 
-    o_player
-FROM 
-    tic_tac_toe_games 
-WHERE
-    guild_id = :guild_id AND (x_player = :user_id OR o_player = :user_id);
-";
-const CHECK_IN_TIC_TAC_TOE_GAME_SQL: &str = "
-SELECT 
-    x_player,
-    o_player
-FROM 
-    tic_tac_toe_games 
-WHERE 
-    guild_id = :guild_id AND 
-    (x_player IN (:author, :opponent) OR o_player IN (:author, :opponent));";
+// Tic-Tac-Toe
+const DELETE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/delete_tic_tac_toe_game.sql");
+const UPDATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/update_tic_tac_toe_game.sql");
+const CREATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/create_tic_tac_toe_game.sql");
+const GET_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/get_tic_tac_toe_game.sql");
+const CHECK_IN_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/check_in_tic_tac_toe_game.sql");
 
 /// Error that may occur while creating a tic-tac-toe game
 #[derive(Debug, thiserror::Error)]
