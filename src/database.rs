@@ -6,6 +6,7 @@ use crate::database::model::{
 };
 use anyhow::Context;
 use rusqlite::{
+    named_params,
     params,
     OptionalExtension,
     TransactionBehavior,
@@ -16,17 +17,51 @@ use std::{
     sync::Arc,
 };
 
+// Setup
 const SETUP_TABLES_SQL: &str = include_str!("../sql/setup_tables.sql");
-const GET_STORE_SQL: &str = "SELECT key_value FROM kv_store WHERE key_prefix = ? AND key_name = ?;";
-const PUT_STORE_SQL: &str =
-    "INSERT OR REPLACE INTO kv_store (key_prefix, key_name, key_value) VALUES (?, ?, ?);";
-const DELETE_TIC_TAC_TOE_GAME_SQL: &str = "DELETE FROM tic_tac_toe_games WHERE id = ?;";
+
+// K/V Store
+const GET_STORE_SQL: &str = include_str!("../sql/get_store.sql");
+const PUT_STORE_SQL: &str = include_str!("../sql/put_store.sql");
+
+const DELETE_TIC_TAC_TOE_GAME_SQL: &str = "
+DELETE FROM 
+    tic_tac_toe_games 
+WHERE 
+    id = ?;";
 const UPDATE_TIC_TAC_TOE_GAME_SQL: &str = "UPDATE tic_tac_toe_games SET board = ? WHERE id = ?;";
-const GET_TIC_TAC_TOE_GAME_BY_ID_SQL: &str =
-    "SELECT board, x_player, o_player FROM tic_tac_toe_games WHERE id = ?;";
-const CREATE_TIC_TAC_TOE_GAME_SQL: &str =
-    "INSERT INTO tic_tac_toe_games (board, x_player, o_player) VALUES (?, ?, ?) RETURNING id";
-const GET_TIC_TAC_TOE_GAME_SQL: &str = "SELECT id, board, x_player, o_player FROM tic_tac_toe_games JOIN tic_tac_toe_player_info ON guild_id = ? AND user_id = ?;";
+const CREATE_TIC_TAC_TOE_GAME_SQL: &str = "
+INSERT INTO tic_tac_toe_games (
+    board, 
+    x_player, 
+    o_player,
+    guild_id
+) VALUES (
+    ?, 
+    ?, 
+    ?, 
+    ?
+);";
+const GET_TIC_TAC_TOE_GAME_SQL: &str = "
+SELECT 
+    id,
+    board, 
+    x_player, 
+    o_player
+FROM 
+    tic_tac_toe_games 
+WHERE
+    guild_id = :guild_id AND (x_player = :user_id OR o_player = :user_id);
+";
+const CHECK_IN_TIC_TAC_TOE_GAME_SQL: &str = "
+SELECT 
+    x_player,
+    o_player
+FROM 
+    tic_tac_toe_games 
+WHERE 
+    guild_id = :guild_id AND 
+    (x_player IN (:author, :opponent) OR o_player IN (:author, :opponent));";
 
 /// Error that may occur while creating a tic-tac-toe game
 #[derive(Debug, thiserror::Error)]
@@ -98,15 +133,17 @@ fn update_tic_tac_toe_game(
 fn get_tic_tac_toe_game(
     txn: &rusqlite::Transaction<'_>,
     guild_id: Option<GuildId>,
-    user_id: UserId,
+    user_id: TicTacToePlayer,
 ) -> rusqlite::Result<Option<(i64, TicTacToeGame)>> {
     txn.prepare_cached(GET_TIC_TAC_TOE_GAME_SQL)?
         .query_row(
-            params![guild_id.map(i64::from), i64::from(user_id)],
+            named_params! {
+                ":guild_id": guild_id.map(i64::from),
+                ":user_id": user_id
+            },
             |row| {
-                let id = row.get(0)?;
                 Ok((
-                    id,
+                    row.get(0)?,
                     TicTacToeGame {
                         board: tic_tac_toe::Board::decode_u16(row.get(1)?),
                         x_player: row.get(2)?,
@@ -115,21 +152,6 @@ fn get_tic_tac_toe_game(
                 ))
             },
         )
-        .optional()
-}
-
-fn get_tic_tac_toe_game_by_id(
-    txn: &rusqlite::Transaction<'_>,
-    id: i64,
-) -> rusqlite::Result<Option<TicTacToeGame>> {
-    txn.prepare_cached(GET_TIC_TAC_TOE_GAME_BY_ID_SQL)?
-        .query_row([id], |row| {
-            Ok(TicTacToeGame {
-                board: tic_tac_toe::Board::decode_u16(row.get(0)?),
-                x_player: row.get(1)?,
-                o_player: row.get(2)?,
-            })
-        })
         .optional()
 }
 
@@ -358,16 +380,12 @@ impl Database {
         author_id: UserId,
         author_team: tic_tac_toe::Team,
         opponent: TicTacToePlayer,
-    ) -> Result<(i64, TicTacToeGame), TicTacToeCreateGameError> {
-        const CHECK_IN_GAME_SQL: &str =
-            "SELECT user_id FROM tic_tac_toe_player_info WHERE guild_id = ? AND user_id IN (?, ?);";
-        let query =
-            "INSERT INTO tic_tac_toe_player_info (guild_id, user_id, game_id) VALUES (?, ?, ?)";
-
+    ) -> Result<TicTacToeGame, TicTacToeCreateGameError> {
+        let author = TicTacToePlayer::User(author_id);
         let (x_player, o_player) = if author_team == tic_tac_toe::Team::X {
-            (TicTacToePlayer::User(author_id), opponent)
+            (author, opponent)
         } else {
-            (opponent, TicTacToePlayer::User(author_id))
+            (opponent, author)
         };
 
         self.access_db(move |db| {
@@ -376,28 +394,28 @@ impl Database {
                 .context("failed to create transaction")
                 .map_err(TicTacToeCreateGameError::Database)?;
 
-            let user_id_in_game: Option<i64> = txn
-                .prepare_cached(CHECK_IN_GAME_SQL)
+            let check_in_game_result: Option<(TicTacToePlayer, TicTacToePlayer)> = txn
+                .prepare_cached(CHECK_IN_TIC_TAC_TOE_GAME_SQL)
                 .context("failed to prepare query")
                 .map_err(TicTacToeCreateGameError::Database)?
                 .query_row(
-                    params![
-                        guild_id.map(i64::from),
-                        i64::from(author_id),
-                        opponent.get_user().map(i64::from)
-                    ],
-                    |row| row.get(0),
+                    named_params! {
+                        ":guild_id": guild_id.map(i64::from),
+                        ":author": author,
+                        ":opponent": opponent,
+                    },
+                    |row| Ok((row.get(0)?, row.get(1)?)),
                 )
                 .optional()
                 .context("failed to run query")
                 .map_err(TicTacToeCreateGameError::Database)?;
 
-            if let Some(user_id_in_game) = user_id_in_game {
-                if user_id_in_game == i64::from(author_id) {
+            if let Some((maybe_x_player_in_game, maybe_o_player_in_game)) = check_in_game_result {
+                if maybe_x_player_in_game == author || maybe_o_player_in_game == author {
                     return Err(TicTacToeCreateGameError::AuthorInGame);
                 }
 
-                if TicTacToePlayer::User(UserId::from(user_id_in_game as u64)) == opponent {
+                if maybe_x_player_in_game == opponent || maybe_o_player_in_game == opponent {
                     return Err(TicTacToeCreateGameError::OpponentInGame);
                 }
             }
@@ -411,43 +429,18 @@ impl Database {
             }
 
             let board = game.board.encode_u16();
-            let game_id: i64 = txn
-                .prepare_cached(CREATE_TIC_TAC_TOE_GAME_SQL)
+            txn.prepare_cached(CREATE_TIC_TAC_TOE_GAME_SQL)
                 .context("failed to prepare query")
                 .map_err(TicTacToeCreateGameError::Database)?
-                .query_row(params![board, x_player, o_player], |row| row.get(0))
+                .execute(params![board, x_player, o_player, guild_id.map(i64::from)])
                 .context("failed to execute query")
                 .map_err(TicTacToeCreateGameError::Database)?;
-
-            txn.prepare_cached(query)
-                .context("failed to prepare query")
-                .map_err(TicTacToeCreateGameError::Database)?
-                .execute(params![
-                    guild_id.map(i64::from),
-                    i64::from(author_id),
-                    game_id
-                ])
-                .context("failed to execute query")
-                .map_err(TicTacToeCreateGameError::Database)?;
-
-            if let Some(opponent_id) = opponent.get_user() {
-                txn.prepare_cached(query)
-                    .context("failed to prepare query")
-                    .map_err(TicTacToeCreateGameError::Database)?
-                    .execute(params![
-                        guild_id.map(i64::from),
-                        i64::from(opponent_id),
-                        game_id
-                    ])
-                    .context("failed to execute query")
-                    .map_err(TicTacToeCreateGameError::Database)?;
-            }
 
             txn.commit()
                 .context("failed to commit")
                 .map_err(TicTacToeCreateGameError::Database)?;
 
-            Ok((game_id, game))
+            Ok(game)
         })
         .await
         .context("database access failed to join")
@@ -467,11 +460,11 @@ impl Database {
                 .context("failed to create transaction")
                 .map_err(TicTacToeTryMoveError::Database)?;
 
-            let (id, mut game) = get_tic_tac_toe_game(&txn, guild_id, author_id)
-                .context("failed to get game")
-                .map_err(TicTacToeTryMoveError::Database)?
-                .context("missing game")
-                .map_err(TicTacToeTryMoveError::Database)?;
+            let (id, mut game) =
+                get_tic_tac_toe_game(&txn, guild_id, TicTacToePlayer::User(author_id))
+                    .context("failed to get game")
+                    .map_err(TicTacToeTryMoveError::Database)?
+                    .ok_or(TicTacToeTryMoveError::NotInAGame)?;
 
             let player_turn = game.get_player_turn();
             if TicTacToePlayer::User(author_id) != player_turn {
@@ -567,28 +560,22 @@ impl Database {
         &self,
         guild_id: Option<GuildId>,
         user_id: UserId,
-    ) -> anyhow::Result<Option<(i64, TicTacToeGame)>> {
-        self.access_db(move |db| {
-            let txn = db.transaction()?;
-            let ret = get_tic_tac_toe_game(&txn, guild_id, user_id).context("failed to query")?;
-            txn.commit().context("failed to commit").map(|_| ret)
-        })
-        .await?
-    }
-
-    /// Try to get a tic-tac-toe game by id
-    pub async fn get_tic_tac_toe_game_by_id(
-        &self,
-        id: i64,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
         self.access_db(move |db| {
             let txn = db.transaction()?;
-            let ret = get_tic_tac_toe_game_by_id(&txn, id).context("failed to get game")?;
-            txn.commit().context("failed to commit").map(|_| ret)
+            let ret = get_tic_tac_toe_game(&txn, guild_id, TicTacToePlayer::User(user_id))
+                .context("failed to query")?;
+            txn.commit()
+                .context("failed to commit")
+                .map(|_| ret.map(|ret| ret.1))
         })
         .await?
     }
 
+    /// Try to delete a Tic-Tac-Toe game.
+    ///
+    /// # Returns
+    /// Returns the game if it existed
     pub async fn delete_tic_tac_toe_game(
         &self,
         guild_id: Option<GuildId>,
@@ -596,13 +583,16 @@ impl Database {
     ) -> anyhow::Result<Option<TicTacToeGame>> {
         self.access_db(move |db| {
             let txn = db.transaction()?;
-            let ret = get_tic_tac_toe_game(&txn, guild_id, user_id).context("failed to query")?;
+            let ret = get_tic_tac_toe_game(&txn, guild_id, TicTacToePlayer::User(user_id))
+                .context("failed to query")?;
+
             if let Some((id, _game)) = ret {
                 delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
             }
+
             txn.commit()
                 .context("failed to commit")
-                .map(|_| ret.map(|(_, game)| game))
+                .map(|_| ret.map(|ret| ret.1))
         })
         .await?
     }

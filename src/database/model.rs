@@ -78,6 +78,24 @@ impl TicTacToeGame {
             (true, true) => Some(player), // Player is playing themselves
         }
     }
+
+    /// Iterate over all [`TicTacToePlayer`]s.
+    ///
+    /// Order is X player, O player.
+    /// This will include computer players.
+    /// Convert players into [`UserId`]s and filter if you want human players.
+    pub fn iter_players(&self) -> impl Iterator<Item = TicTacToePlayer> + '_ {
+        let mut count = 0;
+        std::iter::from_fn(move || {
+            let ret = match count {
+                0 => self.x_player,
+                1 => self.o_player,
+                _c => return None,
+            };
+            count += 1;
+            Some(ret)
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
