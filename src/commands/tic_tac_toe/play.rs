@@ -60,7 +60,7 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     let guild_id = msg.guild_id;
 
     let game = match db
-        .create_tic_tac_toe_game(guild_id, author_id, author_team, opponent)
+        .create_tic_tac_toe_game(guild_id, author_id.into(), author_team, opponent)
         .await
     {
         Ok(game) => game,

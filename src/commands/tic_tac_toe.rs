@@ -127,7 +127,7 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
     move_index -= 1;
 
     match db
-        .try_tic_tac_toe_move(guild_id, author_id, move_index)
+        .try_tic_tac_toe_move(guild_id, author_id.into(), move_index)
         .await
     {
         Ok(TicTacToeTryMoveResponse::Winner {

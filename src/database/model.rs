@@ -168,21 +168,27 @@ impl FromStr for TicTacToePlayer {
     }
 }
 
+impl From<UserId> for TicTacToePlayer {
+    fn from(user_id: UserId) -> Self {
+        Self::User(user_id)
+    }
+}
+
 impl ToSql for TicTacToePlayer {
     fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
-        let data: Cow<'static, str> = (*self).into();
-
-        match data {
-            Cow::Owned(data) => Ok(ToSqlOutput::from(data)),
-            Cow::Borrowed(data) => Ok(ToSqlOutput::from(data)),
+        match self {
+            Self::Computer => Ok(ToSqlOutput::Borrowed(ValueRef::Null)),
+            Self::User(id) => Ok(ToSqlOutput::Borrowed(ValueRef::Integer(i64::from(*id)))),
         }
     }
 }
 
 impl FromSql for TicTacToePlayer {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        value
-            .as_str()
-            .and_then(|s| s.parse().map_err(|err| FromSqlError::Other(Box::new(err))))
+        match value {
+            ValueRef::Integer(int) => Ok(Self::User(UserId(int as u64))),
+            ValueRef::Null => Ok(Self::Computer),
+            _ => Err(FromSqlError::InvalidType),
+        }
     }
 }

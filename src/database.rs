@@ -345,11 +345,10 @@ impl Database {
     pub async fn create_tic_tac_toe_game(
         &self,
         guild_id: Option<GuildId>,
-        author_id: UserId,
+        author: TicTacToePlayer,
         author_team: tic_tac_toe::Team,
         opponent: TicTacToePlayer,
     ) -> Result<TicTacToeGame, TicTacToeCreateGameError> {
-        let author = TicTacToePlayer::User(author_id);
         let (x_player, o_player) = if author_team == tic_tac_toe::Team::X {
             (author, opponent)
         } else {
@@ -375,7 +374,7 @@ impl Database {
                     |row| Ok((row.get(0)?, row.get(1)?)),
                 )
                 .optional()
-                .context("failed to run query")
+                .context("failed to query if in game")
                 .map_err(TicTacToeCreateGameError::Database)?;
 
             if let Some((maybe_x_player_in_game, maybe_o_player_in_game)) = check_in_game_result {
@@ -401,7 +400,7 @@ impl Database {
                 .context("failed to prepare query")
                 .map_err(TicTacToeCreateGameError::Database)?
                 .execute(params![board, x_player, o_player, guild_id.map(i64::from)])
-                .context("failed to execute query")
+                .context("failed to create game in database")
                 .map_err(TicTacToeCreateGameError::Database)?;
 
             txn.commit()
@@ -419,7 +418,7 @@ impl Database {
     pub async fn try_tic_tac_toe_move(
         &self,
         guild_id: Option<GuildId>,
-        author_id: UserId,
+        player: TicTacToePlayer,
         move_index: u8,
     ) -> Result<TicTacToeTryMoveResponse, TicTacToeTryMoveError> {
         self.access_db(move |db| {
@@ -428,14 +427,13 @@ impl Database {
                 .context("failed to create transaction")
                 .map_err(TicTacToeTryMoveError::Database)?;
 
-            let (id, mut game) =
-                get_tic_tac_toe_game(&txn, guild_id, TicTacToePlayer::User(author_id))
-                    .context("failed to get game")
-                    .map_err(TicTacToeTryMoveError::Database)?
-                    .ok_or(TicTacToeTryMoveError::NotInAGame)?;
+            let (id, mut game) = get_tic_tac_toe_game(&txn, guild_id, player)
+                .context("failed to get game")
+                .map_err(TicTacToeTryMoveError::Database)?
+                .ok_or(TicTacToeTryMoveError::NotInAGame)?;
 
             let player_turn = game.get_player_turn();
-            if TicTacToePlayer::User(author_id) != player_turn {
+            if player != player_turn {
                 return Err(TicTacToeTryMoveError::InvalidTurn);
             }
 
@@ -504,6 +502,11 @@ impl Database {
                     delete_tic_tac_toe_game(&txn, id)
                         .context("failed to delete game")
                         .map_err(TicTacToeTryMoveError::Database)?;
+
+                    txn.commit()
+                        .context("failed to commit")
+                        .map_err(TicTacToeTryMoveError::Database)?;
+
                     return Ok(TicTacToeTryMoveResponse::Tie { game });
                 }
             }
@@ -523,16 +526,15 @@ impl Database {
         .map_err(TicTacToeTryMoveError::Database)?
     }
 
-    /// Try to get a tic-tac-toe game by guild and user id
+    /// Try to get a tic-tac-toe game by guild and player
     pub async fn get_tic_tac_toe_game(
         &self,
         guild_id: Option<GuildId>,
-        user_id: UserId,
+        player: TicTacToePlayer,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
         self.access_db(move |db| {
             let txn = db.transaction()?;
-            let ret = get_tic_tac_toe_game(&txn, guild_id, TicTacToePlayer::User(user_id))
-                .context("failed to query")?;
+            let ret = get_tic_tac_toe_game(&txn, guild_id, player).context("failed to query")?;
             txn.commit()
                 .context("failed to commit")
                 .map(|_| ret.map(|ret| ret.1))
@@ -547,12 +549,11 @@ impl Database {
     pub async fn delete_tic_tac_toe_game(
         &self,
         guild_id: Option<GuildId>,
-        user_id: UserId,
+        player: TicTacToePlayer,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
         self.access_db(move |db| {
             let txn = db.transaction()?;
-            let ret = get_tic_tac_toe_game(&txn, guild_id, TicTacToePlayer::User(user_id))
-                .context("failed to query")?;
+            let ret = get_tic_tac_toe_game(&txn, guild_id, player).context("failed to query")?;
 
             if let Some((id, _game)) = ret {
                 delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;

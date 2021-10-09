@@ -35,7 +35,7 @@ pub async fn concede(ctx: &Context, msg: &Message, _args: Args) -> CommandResult
     let guild_id = msg.guild_id;
     let author_id = msg.author.id;
 
-    let game = match db.delete_tic_tac_toe_game(guild_id, author_id).await {
+    let game = match db.delete_tic_tac_toe_game(guild_id, author_id.into()).await {
         Ok(Some(game)) => game,
         Ok(None) => {
             let response = "Failed to concede as you have no games in this server".to_string();
