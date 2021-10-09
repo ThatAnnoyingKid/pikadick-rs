@@ -287,6 +287,24 @@ impl Board {
         }
         ret
     }
+
+    /// Decode a [`u16`] into a board
+    pub fn decode_u16(mut data: u16) -> Self {
+        let mut ret = Self::new();
+        for i in 0..NUM_TILES {
+            let tile = match data % 3 {
+                0 => None,
+                1 => Some(Team::X),
+                2 => Some(Team::O),
+                unknown_tile => unreachable!("unknown tile '{}'", unknown_tile),
+            };
+            ret = ret.set(i, tile);
+
+            data /= 3;
+        }
+
+        ret
+    }
 }
 
 impl Default for Board {

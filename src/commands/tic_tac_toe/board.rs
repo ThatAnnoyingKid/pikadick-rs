@@ -28,16 +28,17 @@ pub async fn board(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .get::<ClientDataKey>()
         .expect("missing client data");
     let tic_tac_toe_data = client_data.tic_tac_toe_data.clone();
+    let db = client_data.db.clone();
     drop(data_lock);
 
     let guild_id = msg.guild_id;
     let author_id = msg.author.id;
 
-    match tic_tac_toe_data
-        .get_game_state(&(guild_id, author_id))
-        .map(|game| *game.lock())
+    match db
+        .get_tic_tac_toe_game(guild_id.into(), author_id.into())
+        .await
     {
-        Some(game) => {
+        Ok(Some(game)) => {
             let file = match tic_tac_toe_data
                 .renderer
                 .render_board_async(game.board)
@@ -62,10 +63,14 @@ pub async fn board(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 .send_message(&ctx.http, |m| m.add_file(file))
                 .await?;
         }
-        None => {
+        Ok(None) => {
             let response = "Failed to print board as you have no games in this server".to_string();
             msg.channel_id.say(&ctx.http, response).await?;
             return Ok(());
+        }
+        Err(e) => {
+            error!("{:?}", e);
+            msg.channel_id.say(&ctx.http, "database error").await?;
         }
     };
 

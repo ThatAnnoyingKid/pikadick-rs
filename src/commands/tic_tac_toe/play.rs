@@ -1,9 +1,9 @@
-use super::{
-    CreateGameError,
-    GamePlayer,
-};
 use crate::{
     checks::ENABLED_CHECK,
+    database::{
+        model::TicTacToePlayer,
+        TicTacToeCreateGameError,
+    },
     ClientDataKey,
 };
 use serenity::{
@@ -32,9 +32,10 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         .get::<ClientDataKey>()
         .expect("missing client data");
     let tic_tac_toe_data = client_data.tic_tac_toe_data.clone();
+    let db = client_data.db.clone();
     drop(data_lock);
 
-    let opponent: GamePlayer = match args.trimmed().single() {
+    let opponent: TicTacToePlayer = match args.trimmed().single() {
         Ok(player) => player,
         Err(e) => {
             let response = format!(
@@ -58,22 +59,30 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     let author_id = msg.author.id;
     let guild_id = msg.guild_id;
 
-    let game = match tic_tac_toe_data.create_game(guild_id, author_id, author_team, opponent) {
+    let game = match db
+        .create_tic_tac_toe_game(guild_id.into(), author_id.into(), author_team, opponent)
+        .await
+    {
         Ok(game) => game,
-        Err(CreateGameError::AuthorInGame) => {
+        Err(TicTacToeCreateGameError::AuthorInGame) => {
             let response = "Finish your current game in this server before starting a new one. Use `tic-tac-toe concede` to end your current game.";
             msg.channel_id.say(&ctx.http, response).await?;
             return Ok(());
         }
-        Err(CreateGameError::OpponentInGame) => {
+        Err(TicTacToeCreateGameError::OpponentInGame) => {
             let response = "Your opponent is currently in another game in this server. Wait for them to finish.";
             msg.channel_id.say(&ctx.http, response).await?;
             return Ok(());
         }
+        Err(TicTacToeCreateGameError::Database(e)) => {
+            error!("{:?}", e);
+            msg.channel_id.say(&ctx.http, "database error").await?;
+            return Ok(());
+        }
     };
 
-    let game_board = game.lock().board;
-    let user = if let GamePlayer::User(opponent_id) = opponent {
+    let game_board = game.board;
+    let user = if let TicTacToePlayer::User(opponent_id) = opponent {
         // Cannot be a computer here as there are at least 2 human players at this point
         if author_team == tic_tac_toe::Team::X {
             author_id

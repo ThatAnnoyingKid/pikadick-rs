@@ -1,9 +1,8 @@
 [package]
 name = "pikadick"
 version = "0.0.0"
-authors = [ "professionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
 edition = "2018"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.44"
@@ -17,6 +16,7 @@ heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] 
 indexmap = "1.7.0"
 insta = { path = "./lib/insta-rs" }
 iqdb = { path = "./lib/iqdb-rs" }
+itoa = "0.4.8"
 lazy_static = "1.4.0"
 nekos = { path = "./lib/nekos-rs" }
 opentelemetry = { version = "0.16.0", features = [ "rt-tokio" ] }
@@ -30,10 +30,10 @@ reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "d46d78445ca94
 reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
+rusqlite = { version = "0.26.0", features = [ "bundled", "blob" ] }
 serde = { version = "1.0.130", features = [ "derive" ] }
 serenity = "0.10.9"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
-sqlx = { version = "0.5.9", features = [ "sqlite", "runtime-tokio-rustls" ] }
 systemstat = "0.1.8"
 thiserror = "1.0.29"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }

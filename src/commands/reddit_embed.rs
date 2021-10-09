@@ -38,8 +38,6 @@ use url::Url;
 type SubReddit = String;
 type PostId = String;
 
-const DATA_STORE_NAME: &str = "reddit-embed";
-
 lazy_static! {
     /// Source: https://urlregex.com/
     static ref URL_REGEX: Regex = Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex");
@@ -126,7 +124,7 @@ impl RedditEmbedData {
 
         match video_data {
             GetVideoResponse::Ok(video_data) => Ok(video_data),
-            GetVideoResponse::Error(e) => Err(anyhow::anyhow!(e)),
+            GetVideoResponse::Error(e) => Err(e).context("bad video response"),
         }
     }
 
@@ -148,21 +146,16 @@ impl RedditEmbedData {
             }
         };
 
-        let is_enabled_for_guild = {
-            let store = db.get_store(DATA_STORE_NAME).await;
-            let key = guild_id.0.to_be_bytes();
-            match store.get(key).await {
-                Ok(Some(b)) => b,
-                Ok(None) => false,
-                Err(e) => {
+        let is_enabled_for_guild =
+            db.get_reddit_embed_enabled(guild_id)
+                .await
+                .unwrap_or_else(|e| {
                     error!(
-                        "Failed to get reddit-embed guild data for '{}': {}",
+                        "failed to get reddit-embed guild data for '{}': {}",
                         guild_id, e
                     );
                     false
-                }
-            }
-        };
+                });
 
         if !is_enabled_for_guild || msg.author.bot {
             // Don't process if it isn't enabled or the author is a bot
@@ -320,7 +313,7 @@ async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     let db = client_data.db.clone();
     drop(data_lock);
 
-    let enable = match args.trimmed().current().unwrap() {
+    let enable = match args.trimmed().current().expect("missing arg") {
         "enable" => true,
         "disable" => false,
         arg => {
@@ -351,33 +344,7 @@ async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
         }
     };
 
-    let (old_val, _set_new_data) = {
-        let store = db.get_store(DATA_STORE_NAME).await;
-        let key = guild_id.0.to_be_bytes();
-        let old_val: Option<bool> = match store.get(key).await {
-            Ok(v) => v,
-            Err(e) => {
-                error!(
-                    "Failed to get reddit-embed guild data for '{}': {}",
-                    guild_id, e
-                );
-                None
-            }
-        };
-
-        let set_new_data = match store.put(key, enable).await {
-            Ok(_) => true,
-            Err(e) => {
-                error!(
-                    "Failed to set reddit-embed guild data for '{}' to '{}': {}",
-                    guild_id, enable, e
-                );
-                false
-            }
-        };
-
-        (old_val.unwrap_or(false), set_new_data)
-    };
+    let old_val = db.set_reddit_embed_enabled(guild_id, enable).await?;
 
     let status_str = if enable { "enabled" } else { "disabled" };
 

@@ -3,8 +3,6 @@ on:
   push:
     branches:
       - master
-env:
-  DATABASE_URL: sqlite:./testing/testing_db.sqlite
   
 jobs:
   rustdoc:

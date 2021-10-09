@@ -1,255 +1,573 @@
+pub mod model;
+
+use crate::database::model::{
+    MaybeGuildString,
+    TicTacToeGame,
+    TicTacToePlayer,
+};
 use anyhow::Context;
+use rusqlite::{
+    named_params,
+    params,
+    OptionalExtension,
+    TransactionBehavior,
+};
 use serenity::model::prelude::*;
-use sqlx::{
-    sqlite::SqliteConnectOptions,
-    ConnectOptions,
-    SqlitePool,
-    Transaction,
-};
 use std::{
-    collections::HashSet,
     path::Path,
+    sync::Arc,
 };
 
-/// Bincode Error type-alias
-pub type BincodeError = Box<bincode::ErrorKind>;
+// Setup
+const SETUP_TABLES_SQL: &str = include_str!("../sql/setup_tables.sql");
 
-/// Turn a prefix + key into  a key for the k/v store.
-///
-/// # Spec
-/// `Raw key = b"{prefix}0{key}"`
-fn make_key(prefix: &[u8], key: &[u8]) -> Vec<u8> {
-    let mut raw_key = prefix.to_vec();
-    raw_key.reserve(1 + key.len());
-    raw_key.push(0);
-    raw_key.extend(key);
+// K/V Store
+const GET_STORE_SQL: &str = include_str!("../sql/get_store.sql");
+const PUT_STORE_SQL: &str = include_str!("../sql/put_store.sql");
 
-    raw_key
+// Tic-Tac-Toe
+const DELETE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/delete_tic_tac_toe_game.sql");
+const UPDATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/update_tic_tac_toe_game.sql");
+const CREATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/create_tic_tac_toe_game.sql");
+const GET_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/get_tic_tac_toe_game.sql");
+const CHECK_IN_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/check_in_tic_tac_toe_game.sql");
+
+/// Error that may occur while creating a tic-tac-toe game
+#[derive(Debug, thiserror::Error)]
+pub enum TicTacToeCreateGameError {
+    /// The author is in a game
+    #[error("the author is in a game")]
+    AuthorInGame,
+
+    /// The opponent is in a game
+    #[error("the opponent is in a game")]
+    OpponentInGame,
+
+    /// Error accessing the database
+    #[error("database error")]
+    Database(#[source] anyhow::Error),
+}
+
+/// Error that may occur while performing a tic-tac-toe move
+#[derive(Debug, thiserror::Error)]
+pub enum TicTacToeTryMoveError {
+    /// The user is not in a game
+    #[error("not in a game")]
+    NotInAGame,
+
+    /// It is not the user's turn
+    #[error("not the user's turn to move")]
+    InvalidTurn,
+
+    /// The move is invalid
+    #[error("the move is not valid")]
+    InvalidMove,
+
+    /// Error accessing the database
+    #[error("database error")]
+    Database(#[source] anyhow::Error),
+}
+
+/// The response for making a tic-tac-toe move
+#[derive(Debug, Copy, Clone)]
+pub enum TicTacToeTryMoveResponse {
+    /// There was a winner
+    Winner {
+        game: TicTacToeGame,
+        winner: TicTacToePlayer,
+        loser: TicTacToePlayer,
+    },
+    /// There was a tie
+    Tie { game: TicTacToeGame },
+    /// The next turn executed
+    NextTurn { game: TicTacToeGame },
+}
+
+fn delete_tic_tac_toe_game(txn: &rusqlite::Transaction<'_>, id: i64) -> rusqlite::Result<()> {
+    txn.prepare_cached(DELETE_TIC_TAC_TOE_GAME_SQL)?
+        .execute([id])?;
+    Ok(())
+}
+
+fn update_tic_tac_toe_game(
+    txn: &rusqlite::Transaction<'_>,
+    id: i64,
+    board: tic_tac_toe::Board,
+) -> rusqlite::Result<()> {
+    txn.prepare_cached(UPDATE_TIC_TAC_TOE_GAME_SQL)?
+        .execute(params![board.encode_u16(), id])?;
+    Ok(())
+}
+
+fn get_tic_tac_toe_game(
+    txn: &rusqlite::Transaction<'_>,
+    guild_id: MaybeGuildString,
+    user_id: TicTacToePlayer,
+) -> rusqlite::Result<Option<(i64, TicTacToeGame)>> {
+    txn.prepare_cached(GET_TIC_TAC_TOE_GAME_SQL)?
+        .query_row(
+            named_params! {
+                ":guild_id": guild_id,
+                ":user_id": user_id
+            },
+            |row| {
+                Ok((
+                    row.get(0)?,
+                    TicTacToeGame {
+                        board: tic_tac_toe::Board::decode_u16(row.get(1)?),
+                        x_player: row.get(2)?,
+                        o_player: row.get(3)?,
+                    },
+                ))
+            },
+        )
+        .optional()
 }
 
 /// The database
 #[derive(Clone, Debug)]
 pub struct Database {
-    db: SqlitePool,
+    db: Arc<parking_lot::Mutex<rusqlite::Connection>>,
 }
 
 impl Database {
     //// Make a new [`Database`].
-    pub async fn new(db_path: &Path, create_if_missing: bool) -> anyhow::Result<Self> {
-        let mut connect_options = SqliteConnectOptions::new()
-            .filename(&db_path)
-            .create_if_missing(create_if_missing);
-        connect_options.disable_statement_logging();
-        let db = SqlitePool::connect_with(connect_options)
-            .await
-            .context("failed to open database")?;
-
-        let mut txn = db.begin().await?;
-        sqlx::query!(
-            "
-CREATE TABLE IF NOT EXISTS kv_store (
-    key BLOB PRIMARY KEY,
-    value BLOB NOT NULL
-);
-            "
-        )
-        .execute(&mut txn)
-        .await
-        .context("failed to create kv_store table")?;
-
-        sqlx::query!(
-            "
-CREATE TABLE IF NOT EXISTS guild_info (
-    id INTEGER PRIMARY KEY,
-    disabled_commands BLOB
-);
-            "
-        )
-        .execute(&mut txn)
-        .await
-        .context("failed to create guild_info table")?;
-
-        txn.commit().await.context("failed to set up database")?;
+    pub async fn new(path: &Path, create_if_missing: bool) -> anyhow::Result<Self> {
+        let mut flags = rusqlite::OpenFlags::default();
+        if !create_if_missing {
+            flags.remove(rusqlite::OpenFlags::SQLITE_OPEN_CREATE)
+        }
+        let path = path.to_owned();
+        let db: anyhow::Result<_> = tokio::task::spawn_blocking(move || {
+            let db = rusqlite::Connection::open_with_flags(path, flags)
+                .context("failed to open database")?;
+            db.execute_batch(SETUP_TABLES_SQL)
+                .context("failed to setup database")?;
+            Ok(Arc::new(parking_lot::Mutex::new(db)))
+        })
+        .await?;
+        let db = db?;
 
         Ok(Database { db })
     }
 
-    /// Gets the store by name.
-    pub async fn get_store(&self, name: &str) -> Store {
-        Store::new(self.db.clone(), name.into())
+    /// Access the db on the tokio threadpool
+    async fn access_db<F, R>(&self, func: F) -> anyhow::Result<R>
+    where
+        F: FnOnce(&mut rusqlite::Connection) -> R + Send + 'static,
+        R: Send + 'static,
+    {
+        let db = self.db.clone();
+        Ok(tokio::task::spawn_blocking(move || func(&mut db.lock())).await?)
     }
 
-    /// Sets a command as disabled if disabled is true
-    pub async fn disable_command(
+    /// Disables or enables a command.
+    ///
+    /// # Returns
+    /// Returns the old setting
+    pub async fn set_disabled_command(
         &self,
         id: GuildId,
         cmd: &str,
         disable: bool,
-    ) -> anyhow::Result<()> {
-        self.create_default_guild_info(id).await?;
+    ) -> anyhow::Result<bool> {
+        const SELECT_QUERY: &str =
+            "SELECT disabled from disabled_commands WHERE guild_id = ? AND name = ?;";
+        const UPDATE_QUERY: &str =
+            "INSERT OR REPLACE INTO disabled_commands (guild_id, name, disabled) VALUES (?, ?, ?);";
 
-        let txn = self.db.begin().await?;
-        let (mut disabled_commands, mut txn) = get_disabled_commands(txn, id).await?;
+        let cmd = cmd.to_string();
+        self.access_db(move |db| {
+            let txn = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+            let old_value = txn
+                .prepare_cached(SELECT_QUERY)?
+                .query_row(params![i64::from(id), cmd], |row| row.get(0))
+                .optional()?
+                .unwrap_or(false);
 
-        if disable {
-            disabled_commands.insert(cmd.to_string());
-        } else {
-            disabled_commands.remove(cmd);
+            txn.prepare_cached(UPDATE_QUERY)?
+                .execute(params![i64::from(id), cmd, disable])?;
+            txn.commit()
+                .context("failed to update disabled command")
+                .map(|_| old_value)
+        })
+        .await?
+    }
+
+    /// Check if a command is disabled
+    pub async fn is_command_disabled(&self, id: GuildId, name: &str) -> anyhow::Result<bool> {
+        let name = name.to_string();
+        self.access_db(move |db| {
+            db.prepare_cached(
+                "SELECT disabled FROM disabled_commands WHERE guild_id = ? AND name = ?",
+            )?
+            .query_row(params![i64::from(id), name], |row| row.get(0))
+            .optional()
+            .context("failed to access db")
+            .map(|row| row.unwrap_or(false))
+        })
+        .await?
+    }
+
+    /// Get a key from the store
+    pub async fn store_get<P, K, V>(&self, prefix: P, key: K) -> anyhow::Result<Option<V>>
+    where
+        P: AsRef<[u8]>,
+        K: AsRef<[u8]>,
+        V: serde::de::DeserializeOwned,
+    {
+        let prefix = prefix.as_ref().to_vec();
+        let key = key.as_ref().to_vec();
+
+        let maybe_bytes: Option<Vec<u8>> = self
+            .access_db(move |db| {
+                db.prepare_cached(GET_STORE_SQL)?
+                    .query_row([prefix, key], |row| row.get(0))
+                    .optional()
+                    .context("failed to get value")
+            })
+            .await??;
+
+        match maybe_bytes {
+            Some(bytes) => Ok(Some(
+                bincode::deserialize(&bytes).context("failed to decode value")?,
+            )),
+            None => Ok(None),
         }
-
-        let id = id.0 as i64;
-        let data = bincode::serialize(&disabled_commands)?;
-
-        sqlx::query!(
-            "
-UPDATE guild_info
-SET disabled_commands = ?
-WHERE id = ?;
-            ",
-            data,
-            id
-        )
-        .execute(&mut txn)
-        .await?;
-
-        txn.commit().await?;
-
-        Ok(())
-    }
-
-    /// Get disabled commands as a set
-    pub async fn get_disabled_commands(&self, id: GuildId) -> anyhow::Result<HashSet<String>> {
-        self.create_default_guild_info(id).await?;
-        let txn = self.db.begin().await?;
-        let (data, txn) = get_disabled_commands(txn, id)
-            .await
-            .context("failed to get disabled commands")?;
-        txn.commit().await?;
-
-        Ok(data)
-    }
-
-    /// Create the default guild entry for the given GuildId
-    async fn create_default_guild_info(&self, id: GuildId) -> anyhow::Result<()> {
-        let id = id.0 as i64;
-        let mut txn = self
-            .db
-            .begin()
-            .await
-            .context("failed to start db transaction")?;
-
-        // SQLite doesn't support u64, only i64. We cast to i64 to cope,
-        // but the id will not match the actual id of the server.
-        // This is ok because I'm pretty sure using 'as' is essentially a transmute here.
-        // In the future, it might be better to use a byte array or an actual transmute
-        sqlx::query!(
-            "
-INSERT OR IGNORE INTO guild_info (id, disabled_commands) VALUES (?, NULL);
-            ",
-            id
-        )
-        .execute(&mut txn)
-        .await?;
-
-        txn.commit()
-            .await
-            .context("failed to create default guild info")?;
-
-        Ok(())
-    }
-}
-
-async fn get_disabled_commands(
-    mut txn: Transaction<'_, sqlx::Sqlite>,
-    id: GuildId,
-) -> anyhow::Result<(HashSet<String>, Transaction<'_, sqlx::Sqlite>)> {
-    let id = id.0 as i64;
-    let entry = sqlx::query!(
-        "
-SELECT disabled_commands FROM guild_info WHERE id = ?;
-            ",
-        id
-    )
-    .fetch_one(&mut txn)
-    .await?;
-
-    let data = if entry.disabled_commands.is_empty() {
-        HashSet::new()
-    } else {
-        bincode::deserialize(&entry.disabled_commands)
-            .context("failed to decode disabled commands")?
-    };
-
-    Ok((data, txn))
-}
-
-/// K/V Store
-#[derive(Debug)]
-pub struct Store {
-    db: SqlitePool,
-    prefix: String,
-}
-
-impl Store {
-    fn new(db: SqlitePool, prefix: String) -> Self {
-        Store { db, prefix }
-    }
-
-    /// Save a key in the store
-    pub async fn get<K: AsRef<[u8]>, V: serde::de::DeserializeOwned>(
-        &self,
-        key: K,
-    ) -> anyhow::Result<Option<V>> {
-        let key = key.as_ref();
-
-        let key = make_key(self.prefix.as_ref(), key);
-
-        let entry = sqlx::query!(
-            "
-SELECT * FROM kv_store WHERE key = ?;
-            ",
-            key
-        )
-        .fetch_optional(&self.db)
-        .await?;
-
-        let bytes = match entry {
-            Some(b) => b.value,
-            None => {
-                return Ok(None);
-            }
-        };
-
-        let data = bincode::deserialize(&bytes).context("failed to decode value")?;
-
-        Ok(Some(data))
     }
 
     /// Put a key in the store
-    pub async fn put<K: AsRef<[u8]>, V: serde::Serialize>(
-        &self,
-        key: K,
-        data: V,
-    ) -> anyhow::Result<()> {
-        let key = key.as_ref();
+    pub async fn store_put<P, K, V>(&self, prefix: P, key: K, value: V) -> anyhow::Result<()>
+    where
+        P: AsRef<[u8]>,
+        K: AsRef<[u8]>,
+        V: serde::Serialize,
+    {
+        let prefix = prefix.as_ref().to_vec();
+        let key = key.as_ref().to_vec();
+        let value = bincode::serialize(&value).context("failed to serialize value")?;
 
-        let key = make_key(self.prefix.as_ref(), key);
-        let value = bincode::serialize(&data).context("failed to serialize value")?;
-
-        let mut txn = self.db.begin().await?;
-        sqlx::query!(
-            "
-REPLACE INTO kv_store (key, value)
-VALUES(?, ?);
-            ",
-            key,
-            value,
-        )
-        .execute(&mut txn)
-        .await?;
-
-        txn.commit().await?;
+        self.access_db(move |db| {
+            let txn = db.transaction()?;
+            txn.prepare_cached(PUT_STORE_SQL)?
+                .execute(params![prefix, key, value])?;
+            txn.commit().context("failed to insert key into kv_store")
+        })
+        .await??;
 
         Ok(())
+    }
+
+    /// Get and Put a key in the store in one action, ensuring the key is not changed between the commands.
+    pub async fn store_update<P, K, V, U>(
+        &self,
+        prefix: P,
+        key: K,
+        update_func: U,
+    ) -> anyhow::Result<()>
+    where
+        P: AsRef<[u8]>,
+        K: AsRef<[u8]>,
+        V: serde::Serialize + serde::de::DeserializeOwned,
+        U: FnOnce(Option<V>) -> V + Send + 'static,
+    {
+        let prefix = prefix.as_ref().to_vec();
+        let key = key.as_ref().to_vec();
+
+        self.access_db(move |db| {
+            let txn = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+
+            let maybe_value = txn
+                .prepare_cached(GET_STORE_SQL)?
+                .query_row(params![prefix, key], |row| row.get(0))
+                .optional()
+                .context("failed to get value")?
+                .map(|bytes: Vec<u8>| {
+                    bincode::deserialize(&bytes).context("failed to decode value")
+                })
+                .transpose()?;
+            let value = update_func(maybe_value);
+            let value = bincode::serialize(&value).context("failed to serialize value")?;
+
+            txn.prepare_cached(PUT_STORE_SQL)?
+                .execute(params![prefix, key, value])?;
+            txn.commit().context("failed to insert key into kv_store")
+        })
+        .await??;
+
+        Ok(())
+    }
+
+    /// Enable or disable reddit embeds.
+    ///
+    /// # Returns
+    /// Returns the old value
+    pub async fn set_reddit_embed_enabled(
+        &self,
+        guild_id: GuildId,
+        enabled: bool,
+    ) -> anyhow::Result<bool> {
+        const SELECT_QUERY: &str =
+            "SELECT enabled FROM reddit_embed_guild_settings WHERE guild_id = ?";
+        const INSERT_QUERY: &str =
+            "INSERT OR REPLACE INTO reddit_embed_guild_settings (guild_id, enabled) VALUES (?, ?);";
+        self.access_db(move |db| {
+            let txn = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+            let old_data = txn
+                .prepare_cached(SELECT_QUERY)?
+                .query_row([i64::from(guild_id)], |row| row.get(0))
+                .optional()?
+                .unwrap_or(false);
+            txn.prepare_cached(INSERT_QUERY)?
+                .execute(params![i64::from(guild_id), enabled])?;
+
+            txn.commit()
+                .context("failed to set reddit embed")
+                .map(|_| old_data)
+        })
+        .await?
+    }
+
+    /// Get the reddit embed setting.
+    pub async fn get_reddit_embed_enabled(&self, guild_id: GuildId) -> anyhow::Result<bool> {
+        const SELECT_QUERY: &str =
+            "SELECT enabled FROM reddit_embed_guild_settings WHERE guild_id = ?";
+        self.access_db(move |db| {
+            db.prepare_cached(SELECT_QUERY)?
+                .query_row([i64::from(guild_id)], |row| row.get(0))
+                .optional()
+                .context("failed to read database")
+                .map(|v| v.unwrap_or(false))
+        })
+        .await?
+    }
+
+    /// Create a new tic-tac-toe game
+    pub async fn create_tic_tac_toe_game(
+        &self,
+        guild_id: MaybeGuildString,
+        author: TicTacToePlayer,
+        author_team: tic_tac_toe::Team,
+        opponent: TicTacToePlayer,
+    ) -> Result<TicTacToeGame, TicTacToeCreateGameError> {
+        let (x_player, o_player) = if author_team == tic_tac_toe::Team::X {
+            (author, opponent)
+        } else {
+            (opponent, author)
+        };
+
+        self.access_db(move |db| {
+            let txn = db
+                .transaction_with_behavior(TransactionBehavior::Immediate)
+                .context("failed to create transaction")
+                .map_err(TicTacToeCreateGameError::Database)?;
+
+            let check_in_game_result: Option<(TicTacToePlayer, TicTacToePlayer)> = txn
+                .prepare_cached(CHECK_IN_TIC_TAC_TOE_GAME_SQL)
+                .context("failed to prepare query")
+                .map_err(TicTacToeCreateGameError::Database)?
+                .query_row(
+                    named_params! {
+                        ":guild_id": guild_id,
+                        ":author": author,
+                        ":opponent": opponent,
+                    },
+                    |row| Ok((row.get(0)?, row.get(1)?)),
+                )
+                .optional()
+                .context("failed to query if in game")
+                .map_err(TicTacToeCreateGameError::Database)?;
+
+            if let Some((maybe_x_player_in_game, maybe_o_player_in_game)) = check_in_game_result {
+                if maybe_x_player_in_game == author || maybe_o_player_in_game == author {
+                    return Err(TicTacToeCreateGameError::AuthorInGame);
+                }
+
+                if maybe_x_player_in_game == opponent || maybe_o_player_in_game == opponent {
+                    return Err(TicTacToeCreateGameError::OpponentInGame);
+                }
+            }
+
+            let mut game = TicTacToeGame::new(x_player, o_player);
+
+            // TODO: Iteratively perform AI steps?
+            if x_player.is_computer() {
+                let (_score, index) = tic_tac_toe::minimax(game.board, tic_tac_toe::NUM_TILES);
+                game.board = game.board.set(index, Some(tic_tac_toe::Team::X));
+            }
+
+            let board = game.board.encode_u16();
+            txn.prepare_cached(CREATE_TIC_TAC_TOE_GAME_SQL)
+                .context("failed to prepare query")
+                .map_err(TicTacToeCreateGameError::Database)?
+                .execute(params![board, x_player, o_player, guild_id])
+                .context("failed to create game in database")
+                .map_err(TicTacToeCreateGameError::Database)?;
+
+            txn.commit()
+                .context("failed to commit")
+                .map_err(TicTacToeCreateGameError::Database)?;
+
+            Ok(game)
+        })
+        .await
+        .context("database access failed to join")
+        .map_err(TicTacToeCreateGameError::Database)?
+    }
+
+    /// Try to make a tic-tac-toe move
+    pub async fn try_tic_tac_toe_move(
+        &self,
+        guild_id: MaybeGuildString,
+        player: TicTacToePlayer,
+        move_index: u8,
+    ) -> Result<TicTacToeTryMoveResponse, TicTacToeTryMoveError> {
+        self.access_db(move |db| {
+            let txn = db
+                .transaction_with_behavior(TransactionBehavior::Immediate)
+                .context("failed to create transaction")
+                .map_err(TicTacToeTryMoveError::Database)?;
+
+            let (id, mut game) = get_tic_tac_toe_game(&txn, guild_id, player)
+                .context("failed to get game")
+                .map_err(TicTacToeTryMoveError::Database)?
+                .ok_or(TicTacToeTryMoveError::NotInAGame)?;
+
+            let player_turn = game.get_player_turn();
+            if player != player_turn {
+                return Err(TicTacToeTryMoveError::InvalidTurn);
+            }
+
+            let team_turn = game.get_team_turn();
+            let move_successful = game.try_move(move_index, team_turn);
+            if !move_successful {
+                return Err(TicTacToeTryMoveError::InvalidMove);
+            }
+
+            if let Some(winner_team) = game.board.get_winner() {
+                let winner = game.get_player(winner_team);
+                let loser = game.get_player(winner_team.inverse());
+
+                delete_tic_tac_toe_game(&txn, id)
+                    .context("failed to delete game")
+                    .map_err(TicTacToeTryMoveError::Database)?;
+
+                txn.commit()
+                    .context("failed to commit")
+                    .map_err(TicTacToeTryMoveError::Database)?;
+
+                return Ok(TicTacToeTryMoveResponse::Winner {
+                    game,
+                    winner,
+                    loser,
+                });
+            }
+
+            if game.board.is_draw() {
+                delete_tic_tac_toe_game(&txn, id)
+                    .context("failed to delete game")
+                    .map_err(TicTacToeTryMoveError::Database)?;
+
+                txn.commit()
+                    .context("failed to commit")
+                    .map_err(TicTacToeTryMoveError::Database)?;
+
+                return Ok(TicTacToeTryMoveResponse::Tie { game });
+            }
+
+            update_tic_tac_toe_game(&txn, id, game.board)
+                .context("failed to update game")
+                .map_err(TicTacToeTryMoveError::Database)?;
+
+            let opponent = game.get_player_turn();
+            if opponent == TicTacToePlayer::Computer {
+                let (_score, index) = tic_tac_toe::minimax(game.board, tic_tac_toe::NUM_TILES);
+                game.board = game.board.set(index, Some(team_turn.inverse()));
+
+                if let Some(winner_team) = game.board.get_winner() {
+                    let winner_player = game.get_player(winner_team);
+                    let loser_player = game.get_player(winner_team.inverse());
+
+                    delete_tic_tac_toe_game(&txn, id)
+                        .context("failed to delete game")
+                        .map_err(TicTacToeTryMoveError::Database)?;
+
+                    txn.commit()
+                        .context("failed to commit")
+                        .map_err(TicTacToeTryMoveError::Database)?;
+
+                    return Ok(TicTacToeTryMoveResponse::Winner {
+                        game,
+                        winner: winner_player,
+                        loser: loser_player,
+                    });
+                }
+
+                if game.board.is_draw() {
+                    delete_tic_tac_toe_game(&txn, id)
+                        .context("failed to delete game")
+                        .map_err(TicTacToeTryMoveError::Database)?;
+
+                    txn.commit()
+                        .context("failed to commit")
+                        .map_err(TicTacToeTryMoveError::Database)?;
+
+                    return Ok(TicTacToeTryMoveResponse::Tie { game });
+                }
+            }
+
+            update_tic_tac_toe_game(&txn, id, game.board)
+                .context("failed to update game")
+                .map_err(TicTacToeTryMoveError::Database)?;
+
+            txn.commit()
+                .context("failed to commit")
+                .map_err(TicTacToeTryMoveError::Database)?;
+
+            Ok(TicTacToeTryMoveResponse::NextTurn { game })
+        })
+        .await
+        .context("database access failed to join")
+        .map_err(TicTacToeTryMoveError::Database)?
+    }
+
+    /// Try to get a tic-tac-toe game by guild and player
+    pub async fn get_tic_tac_toe_game(
+        &self,
+        guild_id: MaybeGuildString,
+        player: TicTacToePlayer,
+    ) -> anyhow::Result<Option<TicTacToeGame>> {
+        self.access_db(move |db| {
+            let txn = db.transaction()?;
+            let ret = get_tic_tac_toe_game(&txn, guild_id, player).context("failed to query")?;
+            txn.commit()
+                .context("failed to commit")
+                .map(|_| ret.map(|ret| ret.1))
+        })
+        .await?
+    }
+
+    /// Try to delete a Tic-Tac-Toe game.
+    ///
+    /// # Returns
+    /// Returns the game if it existed
+    pub async fn delete_tic_tac_toe_game(
+        &self,
+        guild_id: MaybeGuildString,
+        player: TicTacToePlayer,
+    ) -> anyhow::Result<Option<TicTacToeGame>> {
+        self.access_db(move |db| {
+            let txn = db.transaction()?;
+            let ret = get_tic_tac_toe_game(&txn, guild_id, player).context("failed to query")?;
+
+            if let Some((id, _game)) = ret {
+                delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
+            }
+
+            txn.commit()
+                .context("failed to commit")
+                .map(|_| ret.map(|ret| ret.1))
+        })
+        .await?
     }
 }
