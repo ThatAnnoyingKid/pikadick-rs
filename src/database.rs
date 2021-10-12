@@ -1,3 +1,4 @@
+mod disabled_commands;
 mod kv_store;
 pub mod model;
 
@@ -156,54 +157,6 @@ impl Database {
     {
         let db = self.db.clone();
         Ok(tokio::task::spawn_blocking(move || func(&mut db.lock())).await?)
-    }
-
-    /// Disables or enables a command.
-    ///
-    /// # Returns
-    /// Returns the old setting
-    pub async fn set_disabled_command(
-        &self,
-        id: GuildId,
-        cmd: &str,
-        disable: bool,
-    ) -> anyhow::Result<bool> {
-        const SELECT_QUERY: &str =
-            "SELECT disabled from disabled_commands WHERE guild_id = ? AND name = ?;";
-        const UPDATE_QUERY: &str =
-            "INSERT OR REPLACE INTO disabled_commands (guild_id, name, disabled) VALUES (?, ?, ?);";
-
-        let cmd = cmd.to_string();
-        self.access_db(move |db| {
-            let txn = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
-            let old_value = txn
-                .prepare_cached(SELECT_QUERY)?
-                .query_row(params![i64::from(id), cmd], |row| row.get(0))
-                .optional()?
-                .unwrap_or(false);
-
-            txn.prepare_cached(UPDATE_QUERY)?
-                .execute(params![i64::from(id), cmd, disable])?;
-            txn.commit()
-                .context("failed to update disabled command")
-                .map(|_| old_value)
-        })
-        .await?
-    }
-
-    /// Check if a command is disabled
-    pub async fn is_command_disabled(&self, id: GuildId, name: &str) -> anyhow::Result<bool> {
-        let name = name.to_string();
-        self.access_db(move |db| {
-            db.prepare_cached(
-                "SELECT disabled FROM disabled_commands WHERE guild_id = ? AND name = ?",
-            )?
-            .query_row(params![i64::from(id), name], |row| row.get(0))
-            .optional()
-            .context("failed to access db")
-            .map(|row| row.unwrap_or(false))
-        })
-        .await?
     }
 
     /// Enable or disable reddit embeds.
