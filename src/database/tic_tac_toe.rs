@@ -159,6 +159,35 @@ fn set_draw_tic_tac_toe_game(
     Ok(())
 }
 
+/// Set a tic-tac-toe game as a win as part of a larger transaction, consuming it.
+fn set_win_tic_tac_toe_game(
+    txn: rusqlite::Transaction<'_>,
+    id: i64,
+    guild_id: MaybeGuildString,
+    winner: TicTacToePlayer,
+    loser: TicTacToePlayer,
+) -> anyhow::Result<()> {
+    delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
+    
+    if let (TicTacToePlayer::User(winner), TicTacToePlayer::User(loser)) = (winner, loser) {
+        create_user_score_data(&txn, guild_id, winner)?;
+        create_user_score_data(&txn, guild_id, loser)?;
+
+        txn.prepare_cached(
+            "UPDATE tic_tac_toe_scores SET wins = wins + 1 WHERE guild_id = ? AND player = ?;",
+        )?
+        .execute(params![guild_id, i64::from(winner)])?;
+        txn.prepare_cached(
+            "UPDATE tic_tac_toe_scores SET losses = losses + 1 WHERE guild_id = ? AND player = ?;",
+        )?
+        .execute(params![guild_id, i64::from(loser)])?;
+    }
+
+    txn.commit().context("failed to commit")?;
+    
+    Ok(())
+}
+
 impl Database {
     /// Create a new tic-tac-toe game
     pub async fn create_tic_tac_toe_game(
@@ -266,12 +295,7 @@ impl Database {
                 let winner = game.get_player(winner_team);
                 let loser = game.get_player(winner_team.inverse());
 
-                delete_tic_tac_toe_game(&txn, id)
-                    .context("failed to delete game")
-                    .map_err(TicTacToeTryMoveError::Database)?;
-
-                txn.commit()
-                    .context("failed to commit")
+                set_win_tic_tac_toe_game(txn, id, guild_id, winner, loser)
                     .map_err(TicTacToeTryMoveError::Database)?;
 
                 return Ok(TicTacToeTryMoveResponse::Winner {
@@ -293,21 +317,16 @@ impl Database {
                 game.board = game.board.set(index, Some(team_turn.inverse()));
 
                 if let Some(winner_team) = game.board.get_winner() {
-                    let winner_player = game.get_player(winner_team);
-                    let loser_player = game.get_player(winner_team.inverse());
+                    let winner = game.get_player(winner_team);
+                    let loser = game.get_player(winner_team.inverse());
 
-                    delete_tic_tac_toe_game(&txn, id)
-                        .context("failed to delete game")
-                        .map_err(TicTacToeTryMoveError::Database)?;
-
-                    txn.commit()
-                        .context("failed to commit")
+                    set_win_tic_tac_toe_game(txn, id, guild_id, winner, loser)
                         .map_err(TicTacToeTryMoveError::Database)?;
 
                     return Ok(TicTacToeTryMoveResponse::Winner {
                         game,
-                        winner: winner_player,
-                        loser: loser_player,
+                        winner,
+                        loser,
                     });
                 }
 
