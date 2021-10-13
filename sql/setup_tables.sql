@@ -37,8 +37,6 @@ CREATE TABLE IF NOT EXISTS tic_tac_toe_games (
     UNIQUE (guild_id, o_player)
 );
 
--- temp until we decide a schema
-DROP TABLE IF EXISTS tic_tac_toe_scores;
 CREATE TABLE IF NOT EXISTS tic_tac_toe_scores (
     guild_id TEXT NOT NULL CHECK(TYPEOF(guild_id) = 'text'),
     player INTEGER NOT NULL CHECK(TYPEOF(player) = 'integer'),

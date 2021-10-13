@@ -168,7 +168,7 @@ fn set_win_tic_tac_toe_game(
     loser: TicTacToePlayer,
 ) -> anyhow::Result<()> {
     delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
-    
+
     if let (TicTacToePlayer::User(winner), TicTacToePlayer::User(loser)) = (winner, loser) {
         create_user_score_data(&txn, guild_id, winner)?;
         create_user_score_data(&txn, guild_id, loser)?;
@@ -184,7 +184,7 @@ fn set_win_tic_tac_toe_game(
     }
 
     txn.commit().context("failed to commit")?;
-    
+
     Ok(())
 }
 
@@ -368,21 +368,26 @@ impl Database {
         .await?
     }
 
-    /// Try to delete a Tic-Tac-Toe game.
+    /// Try to concede a Tic-Tac-Toe game.
     ///
     /// # Returns
     /// Returns the game if it existed
-    pub async fn delete_tic_tac_toe_game(
+    pub async fn concede_tic_tac_toe_game(
         &self,
         guild_id: MaybeGuildString,
-        player: TicTacToePlayer,
+        player: UserId,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
         self.access_db(move |db| {
             let txn = db.transaction()?;
-            let ret = get_tic_tac_toe_game(&txn, guild_id, player).context("failed to query")?;
+            let ret = get_tic_tac_toe_game(&txn, guild_id, player.into()).context("failed to query")?;
 
             if let Some((id, _game)) = ret {
                 delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
+
+                txn.prepare_cached(
+                    "UPDATE tic_tac_toe_scores SET concedes = concedes + 1 WHERE guild_id = ? AND player = ?",
+                )?
+                .execute(params![guild_id, i64::from(player)])?;
             }
 
             txn.commit()

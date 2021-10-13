@@ -36,7 +36,7 @@ pub async fn concede(ctx: &Context, msg: &Message, _args: Args) -> CommandResult
     let author_id = msg.author.id;
 
     let game = match db
-        .delete_tic_tac_toe_game(guild_id.into(), author_id.into())
+        .concede_tic_tac_toe_game(guild_id.into(), author_id)
         .await
     {
         Ok(Some(game)) => game,
