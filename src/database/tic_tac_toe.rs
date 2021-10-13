@@ -13,6 +13,7 @@ use rusqlite::{
     OptionalExtension,
     TransactionBehavior,
 };
+use serenity::model::prelude::*;
 use tic_tac_toe::Board;
 
 // Tic-Tac-Toe SQL
@@ -111,6 +112,50 @@ fn update_tic_tac_toe_game(
 fn delete_tic_tac_toe_game(txn: &rusqlite::Transaction<'_>, id: i64) -> rusqlite::Result<()> {
     txn.prepare_cached(DELETE_TIC_TAC_TOE_GAME_SQL)?
         .execute([id])?;
+    Ok(())
+}
+
+/// Try to make a user's score data
+fn create_user_score_data(
+    txn: &rusqlite::Transaction<'_>,
+    guild_id: MaybeGuildString,
+    user_id: UserId,
+) -> rusqlite::Result<()> {
+    txn.prepare_cached(
+        "INSERT OR IGNORE INTO tic_tac_toe_scores (guild_id, player) VALUES (?, ?);",
+    )?
+    .execute(params![guild_id, i64::from(user_id)])?;
+
+    Ok(())
+}
+
+/// Set a tic-tac-toe game as a draw as part of a larger transaction, consuming it.
+fn set_draw_tic_tac_toe_game(
+    txn: rusqlite::Transaction<'_>,
+    id: i64,
+    guild_id: MaybeGuildString,
+    game: TicTacToeGame,
+) -> anyhow::Result<()> {
+    const UPDATE_SCORE_TIE_SQL: &str =
+        "UPDATE tic_tac_toe_scores SET ties = ties + 1 WHERE guild_id = ? AND player IN (?, ?);";
+
+    delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
+
+    if let (TicTacToePlayer::User(x_player), TicTacToePlayer::User(o_player)) =
+        (game.x_player, game.o_player)
+    {
+        create_user_score_data(&txn, guild_id, x_player)?;
+        create_user_score_data(&txn, guild_id, o_player)?;
+
+        txn.prepare_cached(UPDATE_SCORE_TIE_SQL)?.execute(params![
+            guild_id,
+            i64::from(x_player),
+            i64::from(o_player)
+        ])?;
+    }
+
+    txn.commit().context("failed to commit")?;
+
     Ok(())
 }
 
@@ -237,20 +282,10 @@ impl Database {
             }
 
             if game.board.is_draw() {
-                delete_tic_tac_toe_game(&txn, id)
-                    .context("failed to delete game")
+                set_draw_tic_tac_toe_game(txn, id, guild_id, game)
                     .map_err(TicTacToeTryMoveError::Database)?;
-
-                txn.commit()
-                    .context("failed to commit")
-                    .map_err(TicTacToeTryMoveError::Database)?;
-
                 return Ok(TicTacToeTryMoveResponse::Tie { game });
             }
-
-            update_tic_tac_toe_game(&txn, id, game.board)
-                .context("failed to update game")
-                .map_err(TicTacToeTryMoveError::Database)?;
 
             let opponent = game.get_player_turn();
             if opponent == TicTacToePlayer::Computer {
@@ -277,14 +312,8 @@ impl Database {
                 }
 
                 if game.board.is_draw() {
-                    delete_tic_tac_toe_game(&txn, id)
-                        .context("failed to delete game")
+                    set_draw_tic_tac_toe_game(txn, id, guild_id, game)
                         .map_err(TicTacToeTryMoveError::Database)?;
-
-                    txn.commit()
-                        .context("failed to commit")
-                        .map_err(TicTacToeTryMoveError::Database)?;
-
                     return Ok(TicTacToeTryMoveResponse::Tie { game });
                 }
             }
