@@ -2048,6 +2048,7 @@ dependencies = [
  "itoa",
  "lazy_static",
  "nekos",
+ "once_cell",
  "openssl",
  "opentelemetry",
  "opentelemetry-otlp",

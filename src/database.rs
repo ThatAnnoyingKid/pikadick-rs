@@ -9,6 +9,7 @@ use crate::database::model::{
     TicTacToePlayer,
 };
 use anyhow::Context;
+use once_cell::sync::Lazy;
 use rusqlite::{
     named_params,
     params,
@@ -17,9 +18,11 @@ use rusqlite::{
 };
 use serenity::model::prelude::*;
 use std::{
+    os::raw::c_int,
     path::Path,
     sync::Arc,
 };
+use tracing::warn;
 
 // Setup
 const SETUP_TABLES_SQL: &str = include_str!("../sql/setup_tables.sql");
@@ -30,6 +33,15 @@ const UPDATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/update_tic_tac_to
 const CREATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/create_tic_tac_toe_game.sql");
 const GET_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/get_tic_tac_toe_game.sql");
 const CHECK_IN_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../sql/check_in_tic_tac_toe_game.sql");
+
+static LOGGER_INIT: Lazy<Result<(), Arc<rusqlite::Error>>> = Lazy::new(|| {
+    // Safety:
+    // 1. `sqlite_logger_func` is threadsafe.
+    // 2. This is called only once.
+    // 3. This is called before any sqlite functions are used
+    // 4. sqlite functions cannot be used until the logger initializes.
+    unsafe { rusqlite::trace::config_log(Some(sqlite_logger_func)).map_err(Arc::new) }
+});
 
 /// Error that may occur while creating a tic-tac-toe game
 #[derive(Debug, thiserror::Error)]
@@ -123,6 +135,10 @@ fn get_tic_tac_toe_game(
         .optional()
 }
 
+fn sqlite_logger_func(error_code: c_int, msg: &str) {
+    warn!("sqlite error code ({}): {}", error_code, msg);
+}
+
 /// The database
 #[derive(Clone, Debug)]
 pub struct Database {
@@ -132,6 +148,10 @@ pub struct Database {
 impl Database {
     //// Make a new [`Database`].
     pub async fn new(path: &Path, create_if_missing: bool) -> anyhow::Result<Self> {
+        LOGGER_INIT
+            .clone()
+            .context("failed to init sqlite logger")?;
+
         let mut flags = rusqlite::OpenFlags::default();
         if !create_if_missing {
             flags.remove(rusqlite::OpenFlags::SQLITE_OPEN_CREATE)
