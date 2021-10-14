@@ -44,9 +44,6 @@ CREATE TABLE IF NOT EXISTS tic_tac_toe_scores (
     losses INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(losses) = 'integer'),
     concedes INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(concedes) = 'integer'),
     ties INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(ties) = 'integer'),
-    computer_wins INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(computer_wins) = 'integer'),
-    computer_losses INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(computer_losses) = 'integer'),
-    computer_ties INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(computer_ties) = 'integer'),
     PRIMARY KEY (guild_id, player),
     UNIQUE (guild_id, player)
 );

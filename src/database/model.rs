@@ -233,3 +233,16 @@ impl FromSql for MaybeGuildString {
         }
     }
 }
+
+/// Tic-Tac-Toe scores
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct TicTacToeScore {
+    /// Wins
+    pub wins: u64,
+    /// Losses
+    pub losses: u64,
+    /// Ties
+    pub ties: u64,
+    /// The number of times the player has conceded
+    pub concedes: u64,
+}

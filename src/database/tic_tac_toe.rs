@@ -3,6 +3,7 @@ use crate::database::{
         MaybeGuildString,
         TicTacToeGame,
         TicTacToePlayer,
+        TicTacToeScore,
     },
     Database,
 };
@@ -377,22 +378,63 @@ impl Database {
         guild_id: MaybeGuildString,
         player: UserId,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
+        const INCREMENT_CONCEDES_SQL: &str = "UPDATE tic_tac_toe_scores SET concedes = concedes + 1 WHERE guild_id = ? AND player = ?";
+        const INCREMENT_WINS_SQL: &str =
+            "UPDATE tic_tac_toe_scores SET wins = wins + 1 WHERE guild_id = ? AND player = ?";
+
         self.access_db(move |db| {
             let txn = db.transaction()?;
-            let ret = get_tic_tac_toe_game(&txn, guild_id, player.into()).context("failed to query")?;
+            let ret =
+                get_tic_tac_toe_game(&txn, guild_id, player.into()).context("failed to query")?;
 
-            if let Some((id, _game)) = ret {
+            if let Some((id, game)) = ret {
                 delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
 
-                txn.prepare_cached(
-                    "UPDATE tic_tac_toe_scores SET concedes = concedes + 1 WHERE guild_id = ? AND player = ?",
-                )?
-                .execute(params![guild_id, i64::from(player)])?;
+                let conceding_player = TicTacToePlayer::from(player);
+                let opponent = game
+                    .get_opponent(conceding_player)
+                    .context("missing opponent")?;
+
+                if let (TicTacToePlayer::User(conceding_player), TicTacToePlayer::User(opponent)) =
+                    (conceding_player, opponent)
+                {
+                    txn.prepare_cached(INCREMENT_CONCEDES_SQL)?
+                        .execute(params![guild_id, i64::from(conceding_player)])?;
+
+                    txn.prepare_cached(INCREMENT_WINS_SQL)?
+                        .execute(params![guild_id, i64::from(opponent)])?;
+                }
             }
 
             txn.commit()
                 .context("failed to commit")
                 .map(|_| ret.map(|ret| ret.1))
+        })
+        .await?
+    }
+
+    /// Get the user's Tic-Tac-Toe scores
+    pub async fn get_tic_tac_toe_score(
+        &self,
+        guild_id: MaybeGuildString,
+        player: UserId,
+    ) -> anyhow::Result<TicTacToeScore> {
+        let query = "SELECT wins, losses, concedes FROM tic_tac_toe_scores WHERE guild_id = ? AND player = ?";
+        self.access_db(move |db| {
+            let txn = db.transaction()?;
+            create_user_score_data(&txn, guild_id, player)?;
+            let ret = txn.prepare_cached(query)?.query_row(
+                params![guild_id, i64::from(player)],
+                |row| {
+                    Ok(TicTacToeScore {
+                        wins: row.get(0)?,
+                        losses: row.get(1)?,
+                        ties: row.get(2)?,
+                        concedes: row.get(3)?,
+                    })
+                },
+            )?;
+            txn.commit().context("failed to commit").map(|_| ret)
         })
         .await?
     }
