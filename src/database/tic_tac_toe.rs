@@ -23,6 +23,17 @@ const UPDATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../../sql/update_tic_tac
 const CREATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../../sql/create_tic_tac_toe_game.sql");
 const GET_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../../sql/get_tic_tac_toe_game.sql");
 const CHECK_IN_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../../sql/check_in_tic_tac_toe_game.sql");
+const CREATE_DEFAULT_SCORE_TIC_TAC_TOE_SQL: &str =
+    include_str!("../../sql/create_default_score_tic_tac_toe.sql");
+const INCREMENT_TIES_SCORE_TIC_TAC_TOE_SQL: &str =
+    include_str!("../../sql/increment_ties_score_tic_tac_toe.sql");
+const INCREMENT_WINS_SCORE_TIC_TAC_TOE_SQL: &str =
+    include_str!("../../sql/increment_wins_score_tic_tac_toe.sql");
+const INCREMENT_LOSSES_SCORE_TIC_TAC_TOE_SQL: &str =
+    include_str!("../../sql/increment_losses_score_tic_tac_toe.sql");
+const INCREMENT_CONCEDES_SCORE_TIC_TAC_TOE_SQL: &str =
+    include_str!("../../sql/increment_concedes_score_tic_tac_toe.sql");
+const GET_TIC_TAC_TOE_SCORE_SQL: &str = include_str!("../../sql/get_tic_tac_toe_score.sql");
 
 /// Error that may occur while creating a tic-tac-toe game
 #[derive(Debug, thiserror::Error)]
@@ -122,10 +133,8 @@ fn create_user_score_data(
     guild_id: MaybeGuildString,
     user_id: UserId,
 ) -> rusqlite::Result<()> {
-    txn.prepare_cached(
-        "INSERT OR IGNORE INTO tic_tac_toe_scores (guild_id, player) VALUES (?, ?);",
-    )?
-    .execute(params![guild_id, i64::from(user_id)])?;
+    txn.prepare_cached(CREATE_DEFAULT_SCORE_TIC_TAC_TOE_SQL)?
+        .execute(params![guild_id, i64::from(user_id)])?;
 
     Ok(())
 }
@@ -137,9 +146,6 @@ fn set_draw_tic_tac_toe_game(
     guild_id: MaybeGuildString,
     game: TicTacToeGame,
 ) -> anyhow::Result<()> {
-    const UPDATE_SCORE_TIE_SQL: &str =
-        "UPDATE tic_tac_toe_scores SET ties = ties + 1 WHERE guild_id = ? AND player IN (?, ?);";
-
     delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
 
     if let (TicTacToePlayer::User(x_player), TicTacToePlayer::User(o_player)) =
@@ -148,11 +154,8 @@ fn set_draw_tic_tac_toe_game(
         create_user_score_data(&txn, guild_id, x_player)?;
         create_user_score_data(&txn, guild_id, o_player)?;
 
-        txn.prepare_cached(UPDATE_SCORE_TIE_SQL)?.execute(params![
-            guild_id,
-            i64::from(x_player),
-            i64::from(o_player)
-        ])?;
+        txn.prepare_cached(INCREMENT_TIES_SCORE_TIC_TAC_TOE_SQL)?
+            .execute(params![guild_id, i64::from(x_player), i64::from(o_player)])?;
     }
 
     txn.commit().context("failed to commit")?;
@@ -174,14 +177,10 @@ fn set_win_tic_tac_toe_game(
         create_user_score_data(&txn, guild_id, winner)?;
         create_user_score_data(&txn, guild_id, loser)?;
 
-        txn.prepare_cached(
-            "UPDATE tic_tac_toe_scores SET wins = wins + 1 WHERE guild_id = ? AND player = ?;",
-        )?
-        .execute(params![guild_id, i64::from(winner)])?;
-        txn.prepare_cached(
-            "UPDATE tic_tac_toe_scores SET losses = losses + 1 WHERE guild_id = ? AND player = ?;",
-        )?
-        .execute(params![guild_id, i64::from(loser)])?;
+        txn.prepare_cached(INCREMENT_WINS_SCORE_TIC_TAC_TOE_SQL)?
+            .execute(params![guild_id, i64::from(winner)])?;
+        txn.prepare_cached(INCREMENT_LOSSES_SCORE_TIC_TAC_TOE_SQL)?
+            .execute(params![guild_id, i64::from(loser)])?;
     }
 
     txn.commit().context("failed to commit")?;
@@ -378,10 +377,6 @@ impl Database {
         guild_id: MaybeGuildString,
         player: UserId,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
-        const INCREMENT_CONCEDES_SQL: &str = "UPDATE tic_tac_toe_scores SET concedes = concedes + 1 WHERE guild_id = ? AND player = ?";
-        const INCREMENT_WINS_SQL: &str =
-            "UPDATE tic_tac_toe_scores SET wins = wins + 1 WHERE guild_id = ? AND player = ?";
-
         self.access_db(move |db| {
             let txn = db.transaction()?;
             let ret =
@@ -398,10 +393,10 @@ impl Database {
                 if let (TicTacToePlayer::User(conceding_player), TicTacToePlayer::User(opponent)) =
                     (conceding_player, opponent)
                 {
-                    txn.prepare_cached(INCREMENT_CONCEDES_SQL)?
+                    txn.prepare_cached(INCREMENT_CONCEDES_SCORE_TIC_TAC_TOE_SQL)?
                         .execute(params![guild_id, i64::from(conceding_player)])?;
 
-                    txn.prepare_cached(INCREMENT_WINS_SQL)?
+                    txn.prepare_cached(INCREMENT_WINS_SCORE_TIC_TAC_TOE_SQL)?
                         .execute(params![guild_id, i64::from(opponent)])?;
                 }
             }
@@ -419,11 +414,10 @@ impl Database {
         guild_id: MaybeGuildString,
         player: UserId,
     ) -> anyhow::Result<TicTacToeScore> {
-        let query = "SELECT wins, losses, ties, concedes FROM tic_tac_toe_scores WHERE guild_id = ? AND player = ?";
         self.access_db(move |db| {
             let txn = db.transaction()?;
             create_user_score_data(&txn, guild_id, player)?;
-            let ret = txn.prepare_cached(query)?.query_row(
+            let ret = txn.prepare_cached(GET_TIC_TAC_TOE_SCORE_SQL)?.query_row(
                 params![guild_id, i64::from(player)],
                 |row| {
                     Ok(TicTacToeScore {

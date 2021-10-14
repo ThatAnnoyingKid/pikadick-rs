@@ -1,5 +1,6 @@
 use crate::{
     checks::ENABLED_CHECK,
+    util::AsciiTable,
     ClientDataKey,
 };
 use anyhow::Context as _;
@@ -13,7 +14,6 @@ use serenity::{
     prelude::*,
 };
 use tracing::error;
-use crate::util::AsciiTable;
 
 #[command]
 #[description("Get personal stats for Tic-Tac-Toe")]
