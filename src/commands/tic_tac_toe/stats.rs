@@ -41,16 +41,17 @@ pub async fn stats(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     };
 
     let mut table = AsciiTable::new(4, 2);
+    table.set_padding(2);
 
     let mut wins_buffer = itoa::Buffer::new();
     let mut losses_buffer = itoa::Buffer::new();
     let mut ties_buffer = itoa::Buffer::new();
     let mut concedes_buffer = itoa::Buffer::new();
 
-    table.set_cell(0, 0, " Wins ");
-    table.set_cell(1, 0, " Losses ");
-    table.set_cell(2, 0, " Ties ");
-    table.set_cell(3, 0, " Concedes ");
+    table.set_cell(0, 0, "Wins");
+    table.set_cell(1, 0, "Losses");
+    table.set_cell(2, 0, "Ties");
+    table.set_cell(3, 0, "Concedes");
 
     table.set_cell(0, 1, wins_buffer.format(scores.wins));
     table.set_cell(1, 1, losses_buffer.format(scores.losses));

@@ -4,6 +4,7 @@ use crate::database::{
         TicTacToeGame,
         TicTacToePlayer,
         TicTacToeScore,
+        TicTacToeTopPlayerScore,
     },
     Database,
 };
@@ -34,6 +35,8 @@ const INCREMENT_LOSSES_SCORE_TIC_TAC_TOE_SQL: &str =
 const INCREMENT_CONCEDES_SCORE_TIC_TAC_TOE_SQL: &str =
     include_str!("../../sql/increment_concedes_score_tic_tac_toe.sql");
 const GET_TIC_TAC_TOE_SCORE_SQL: &str = include_str!("../../sql/get_tic_tac_toe_score.sql");
+const GET_TOP_TIC_TAC_TOE_SCORES_SQL: &str =
+    include_str!("../../sql/get_top_tic_tac_toe_scores.sql");
 
 /// Error that may occur while creating a tic-tac-toe game
 #[derive(Debug, thiserror::Error)]
@@ -429,6 +432,32 @@ impl Database {
                 },
             )?;
             txn.commit().context("failed to commit").map(|_| ret)
+        })
+        .await?
+    }
+
+    /// Get the top Tic-Tac-Toe scores for the current server
+    pub async fn get_top_tic_tac_toe_scores(
+        &self,
+        guild_id: MaybeGuildString,
+    ) -> anyhow::Result<Vec<TicTacToeTopPlayerScore>> {
+        self.access_db(move |db| {
+            let ret = db
+                .prepare_cached(GET_TOP_TIC_TAC_TOE_SCORES_SQL)?
+                .query_map([guild_id], |row| {
+                    let player: i64 = row.get(1)?;
+                    Ok(TicTacToeTopPlayerScore {
+                        score: row.get(0)?,
+                        player: UserId(player as u64),
+                        wins: row.get(2)?,
+                        losses: row.get(3)?,
+                        ties: row.get(4)?,
+                        concedes: row.get(5)?,
+                    })
+                })?
+                .collect::<Result<Vec<_>, _>>()?;
+
+            Ok(ret)
         })
         .await?
     }
