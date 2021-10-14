@@ -5,3 +5,4 @@ data
 .env
 artifacts
 cross-compile-info.toml
+ttt-render-test.png
