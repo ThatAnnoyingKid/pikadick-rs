@@ -153,17 +153,17 @@ impl Board {
 
         // Vertical 1
         if (state & VERTICAL_WIN_1) == VERTICAL_WIN_1 {
-            return Some(WinnerInfo::new(winner, 0, 3, 6, WinType::Vertical));
+            return Some(WinnerInfo::new(winner, 2, 5, 8, WinType::Vertical));
         }
 
         // Vertical 2
         if (state & VERTICAL_WIN_2) == VERTICAL_WIN_2 {
-            return Some(WinnerInfo::new(winner, 0, 3, 6, WinType::Vertical));
+            return Some(WinnerInfo::new(winner, 1, 4, 7, WinType::Vertical));
         }
 
         // Vertical 3
         if (state & VERTICAL_WIN_3) == VERTICAL_WIN_3 {
-            return Some(WinnerInfo::new(winner, 1, 4, 7, WinType::Vertical));
+            return Some(WinnerInfo::new(winner, 0, 3, 6, WinType::Vertical));
         }
 
         // Horizontal 1
@@ -173,12 +173,12 @@ impl Board {
 
         // Horizontal 2
         if (state & HORIZONTAL_WIN_2) == HORIZONTAL_WIN_2 {
-            return Some(WinnerInfo::new(winner, 3, 4, 5, WinType::Horizontal));
+            return Some(WinnerInfo::new(winner, 6, 7, 8, WinType::Horizontal));
         }
 
         // Horizontal 3
         if (state & HORIZONTAL_WIN_3) == HORIZONTAL_WIN_3 {
-            return Some(WinnerInfo::new(winner, 6, 7, 8, WinType::Horizontal));
+            return Some(WinnerInfo::new(winner, 0, 1, 2, WinType::Horizontal));
         }
 
         // Diagonal

@@ -163,6 +163,7 @@ impl Renderer {
             }
         }
 
+        // Draw winning line
         if let Some(winner_info) = board.get_winner_info() {
             stroke.width = 10.0;
             paint.set_color_rgba8(48, 48, 48, 255);
@@ -286,5 +287,22 @@ impl OutlineBuilder for SkiaBuilder {
 
     fn close(&mut self) {
         self.0.close();
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use tic_tac_toe::Team;
+
+    #[test]
+    fn render_board() {
+        let renderer = Renderer::new().expect("failed to make renderer");
+        let board = tic_tac_toe::Board::new()
+            .set(0, Some(Team::X))
+            .set(4, Some(Team::X))
+            .set(8, Some(Team::X));
+        let img = renderer.render_board(board).expect("failed to render");
+        std::fs::write("ttt-render-test.png", img).expect("failed to save");
     }
 }

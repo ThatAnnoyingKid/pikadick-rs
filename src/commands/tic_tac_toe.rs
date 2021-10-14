@@ -2,12 +2,16 @@ mod board;
 mod concede;
 mod play;
 mod renderer;
+mod scoreboard;
+mod stats;
 
 use self::renderer::Renderer;
 pub use self::{
     board::BOARD_COMMAND,
     concede::CONCEDE_COMMAND,
     play::PLAY_COMMAND,
+    scoreboard::SCOREBOARD_COMMAND,
+    stats::STATS_COMMAND,
 };
 use crate::{
     checks::ENABLED_CHECK,
@@ -86,7 +90,7 @@ impl std::fmt::Display for GamePlayerMention {
 
 #[command("tic-tac-toe")]
 #[aliases("ttt")]
-#[sub_commands("play", "concede", "board")]
+#[sub_commands("play", "concede", "board", "stats", "scoreboard")]
 #[description("Play a game of Tic-Tac-Toe")]
 #[usage("<move #>")]
 #[example("0")]

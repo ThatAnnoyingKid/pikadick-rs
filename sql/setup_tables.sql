@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS kv_store (
     key_prefix BLOB NULL CHECK(TYPEOF(key_prefix) IN ('blob', 'null')), 
     key_name BLOB NOT NULL CHECK(TYPEOF(key_name) = 'blob'),
     key_value BLOB NOT NULL CHECK(TYPEOF(key_value) = 'blob'),
-    PRIMARY KEY(key_prefix, key_name),
+    PRIMARY KEY (key_prefix, key_name),
     UNIQUE (key_prefix, key_name)
 );
 
@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS disabled_commands (
     guild_id INTEGER NOT NULL CHECK(TYPEOF(guild_id) = 'integer'),
     name TEXT NOT NULL CHECK(TYPEOF(name) = 'text'),
     disabled INTEGER NOT NULL CHECK(TYPEOF(disabled) = 'integer' AND disabled IN (0, 1)),
-    PRIMARY KEY(guild_id, name),
-    UNIQUE(guild_id, name)
+    PRIMARY KEY (guild_id, name),
+    UNIQUE (guild_id, name)
 );
 
 CREATE TABLE IF NOT EXISTS reddit_embed_guild_settings (
@@ -35,6 +35,17 @@ CREATE TABLE IF NOT EXISTS tic_tac_toe_games (
     UNIQUE (guild_id, x_player, o_player),
     UNIQUE (guild_id, x_player),
     UNIQUE (guild_id, o_player)
+);
+
+CREATE TABLE IF NOT EXISTS tic_tac_toe_scores (
+    guild_id TEXT NOT NULL CHECK(TYPEOF(guild_id) = 'text'),
+    player INTEGER NOT NULL CHECK(TYPEOF(player) = 'integer'),
+    wins INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(wins) = 'integer'),
+    losses INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(losses) = 'integer'),
+    concedes INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(concedes) = 'integer'),
+    ties INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(ties) = 'integer'),
+    PRIMARY KEY (guild_id, player),
+    UNIQUE (guild_id, player)
 );
 
 COMMIT;

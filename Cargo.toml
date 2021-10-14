@@ -19,6 +19,7 @@ iqdb = { path = "./lib/iqdb-rs" }
 itoa = "0.4.8"
 lazy_static = "1.4.0"
 nekos = { path = "./lib/nekos-rs" }
+once_cell = "1.8.0"
 opentelemetry = { version = "0.16.0", features = [ "rt-tokio" ] }
 opentelemetry-otlp = { version = "0.9.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.11.2"
@@ -30,7 +31,7 @@ reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "d46d78445ca94
 reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
-rusqlite = { version = "0.26.0", features = [ "bundled", "blob" ] }
+rusqlite = { version = "0.26.0", features = [ "bundled", "blob", "trace" ] }
 serde = { version = "1.0.130", features = [ "derive" ] }
 serenity = "0.10.9"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
