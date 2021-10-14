@@ -131,7 +131,7 @@ pub async fn stats(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
             &ctx.http,
             format!(
                 "```\n{}'s Tic-Tac-Toe Stats\n{}\n```",
-                msg.author.mention(),
+                msg.author.name,
                 table
             ),
         )

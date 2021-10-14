@@ -419,7 +419,7 @@ impl Database {
         guild_id: MaybeGuildString,
         player: UserId,
     ) -> anyhow::Result<TicTacToeScore> {
-        let query = "SELECT wins, losses, concedes FROM tic_tac_toe_scores WHERE guild_id = ? AND player = ?";
+        let query = "SELECT wins, losses, ties, concedes FROM tic_tac_toe_scores WHERE guild_id = ? AND player = ?";
         self.access_db(move |db| {
             let txn = db.transaction()?;
             create_user_score_data(&txn, guild_id, player)?;
