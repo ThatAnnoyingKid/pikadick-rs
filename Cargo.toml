@@ -36,7 +36,7 @@ serde = { version = "1.0.130", features = [ "derive" ] }
 serenity = "0.10.9"
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
 systemstat = "0.1.8"
-thiserror = "1.0.29"
+thiserror = "1.0.30"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiny-skia = { version = "0.6.1", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.12.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
