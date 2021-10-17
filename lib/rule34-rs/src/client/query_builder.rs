@@ -2,7 +2,7 @@ use crate::{
     Client,
     Error,
     PostListResult,
-    TagsList,
+    TagList,
 };
 use url::Url;
 
@@ -135,7 +135,7 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
 
 /// A query builder to get tags
 #[derive(Debug)]
-pub struct TagsListQueryBuilder<'a, 'b> {
+pub struct TagListQueryBuilder<'a, 'b> {
     /// The id
     pub id: Option<u64>,
 
@@ -161,7 +161,7 @@ pub struct TagsListQueryBuilder<'a, 'b> {
     client: &'a Client,
 }
 
-impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
+impl<'a, 'b> TagListQueryBuilder<'a, 'b> {
     /// Make a new [`TagsListQueryBuilder`]
     pub fn new(client: &'a Client) -> Self {
         Self {
@@ -242,7 +242,7 @@ impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
     }
 
     /// Execute the query
-    pub async fn execute(&self) -> Result<TagsList, Error> {
+    pub async fn execute(&self) -> Result<TagList, Error> {
         let url = self.get_url()?;
 
         // We run this on the blocking threadpool out of an abundance of caution.

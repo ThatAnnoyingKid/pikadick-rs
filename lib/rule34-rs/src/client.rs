@@ -2,7 +2,7 @@ mod query_builder;
 
 pub use self::query_builder::{
     PostListQueryBuilder,
-    TagsListQueryBuilder,
+    TagListQueryBuilder,
 };
 use crate::{
     types::Post,
@@ -138,8 +138,8 @@ impl Client {
     }
 
     /// Get a builder to list tags.
-    pub fn list_tags(&self) -> TagsListQueryBuilder {
-        TagsListQueryBuilder::new(self)
+    pub fn list_tags(&self) -> TagListQueryBuilder {
+        TagListQueryBuilder::new(self)
     }
 
     /// Send a GET web request to a `uri` and copy the result to the given async writer.

@@ -4,16 +4,16 @@ pub mod deleted_images_list;
 pub mod post;
 /// The [`PostListResult`] type
 pub mod post_list_result;
-/// The [`TagsList`] type
-pub mod tags_list;
+/// The [`TagList`] type
+pub mod tag_list;
 
 pub use self::{
     deleted_images_list::DeletedImagesList,
     post::Post,
     post_list_result::PostListResult,
-    tags_list::{
+    tag_list::{
         Tag,
         TagKind,
-        TagsList,
+        TagList,
     },
 };
