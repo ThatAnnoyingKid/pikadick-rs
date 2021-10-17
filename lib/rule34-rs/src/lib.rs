@@ -9,8 +9,9 @@ pub use crate::{
     search_query_builder::SearchQueryBuilder,
     types::{
         DeletedImagesList,
+        HtmlPost,
         Post,
-        PostListResult,
+        PostList,
         Tag,
         TagKind,
         TagList,
@@ -34,7 +35,7 @@ const ACCEPT_STR: &str = "*/*";
 const URL_INDEX: &str = "https://rule34.xxx/index.php";
 
 /// Turn a post id into a post url
-fn post_id_to_post_url(id: u64) -> Url {
+fn post_id_to_html_post_url(id: u64) -> Url {
     // It shouldn't be possible to make this function fail for any valid id.
     Url::parse_with_params(
         crate::URL_INDEX,

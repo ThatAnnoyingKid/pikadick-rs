@@ -1,7 +1,7 @@
 use crate::{
     Client,
     Error,
-    PostListResult,
+    PostList,
     TagList,
 };
 use url::Url;
@@ -77,12 +77,7 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
         let mut limit_buffer = itoa::Buffer::new();
         let mut url = Url::parse_with_params(
             crate::URL_INDEX,
-            &[
-                ("page", "dapi"),
-                ("s", "post"),
-                ("json", "1"),
-                ("q", "index"),
-            ],
+            &[("page", "dapi"), ("s", "post"), ("q", "index")],
         )?;
 
         {
@@ -119,17 +114,20 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
     ///
     /// # Returns
     /// Returns an empty list if there are no results.
-    pub async fn execute(&self) -> Result<Vec<PostListResult>, Error> {
+    pub async fn execute(&self) -> Result<PostList, Error> {
         let url = self.get_url()?;
 
-        // The api sends "" on no results, and serde_json dies instead of giving an empty list.
-        // Therefore, we need to handle json parsing instead of reqwest.
-        let text = self.client.get_text(url.as_str()).await?;
-        if text.is_empty() {
-            return Ok(Vec::new());
-        }
+        // When using JSON, the api sends "" on no results, and `serde_json` dies instead of giving an empty list.
+        // Therefore, we need to handle json parsing instead of `reqwest`.
+        // ```
+        // let text = self.client.get_text(url.as_str()).await?;
+        // if text.is_empty() {
+        //    return Ok(Vec::new());
+        // }
+        // Ok(serde_json::from_str(&text)?)
+        // ```
 
-        Ok(serde_json::from_str(&text)?)
+        self.client.get_xml(url.as_str()).await
     }
 }
 

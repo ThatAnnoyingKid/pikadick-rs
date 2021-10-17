@@ -40,7 +40,7 @@ pub struct Rule34Client {
     // However, we could add an LRU based on [`TimedCache`]
     // in the future, or add a setting to it to cap the maximum
     // number of entries.
-    list_cache: TimedCache<String, Vec<rule34::PostListResult>>,
+    list_cache: TimedCache<String, rule34::PostList>,
 }
 
 impl Rule34Client {
@@ -54,10 +54,7 @@ impl Rule34Client {
 
     /// Search for a query.
     #[tracing::instrument(skip(self))]
-    pub async fn list(
-        &self,
-        tags: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<rule34::PostListResult>>>> {
+    pub async fn list(&self, tags: &str) -> anyhow::Result<Arc<TimedCacheEntry<rule34::PostList>>> {
         if let Some(entry) = self.list_cache.get_if_fresh(tags) {
             return Ok(entry);
         }
@@ -108,6 +105,7 @@ async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         Ok(list_results) => {
             let maybe_list_result: Option<String> = list_results
                 .data()
+                .posts
                 .choose(&mut rand::thread_rng())
                 .map(|list_result| list_result.file_url.to_string());
 

@@ -5,9 +5,9 @@ pub use self::query_builder::{
     TagListQueryBuilder,
 };
 use crate::{
-    types::Post,
     DeletedImagesList,
     Error,
+    HtmlPost,
 };
 use reqwest::header::{
     HeaderMap,
@@ -95,14 +95,14 @@ impl Client {
         PostListQueryBuilder::new(self)
     }
 
-    /// Get a [`Post`] by `id`.
-    pub async fn get_post(&self, id: u64) -> Result<Post, Error> {
+    /// Get a [`HtmlPost`] by `id`.
+    pub async fn get_html_post(&self, id: u64) -> Result<HtmlPost, Error> {
         if id == 0 {
             return Err(Error::InvalidId);
         }
-        let url = crate::post_id_to_post_url(id);
+        let url = crate::post_id_to_html_post_url(id);
         let ret = self
-            .get_html(url.as_str(), |html| Post::from_html(&html))
+            .get_html(url.as_str(), |html| HtmlPost::from_html(&html))
             .await??;
 
         Ok(ret)
@@ -177,22 +177,22 @@ mod test {
             .await
             .expect("failed to search rule34 for `rust`");
         dbg!(&res);
-        assert!(!res.is_empty());
+        assert!(!res.posts.is_empty());
     }
 
-    async fn get_top_post(query: &str) -> Post {
+    async fn get_top_post(query: &str) -> HtmlPost {
         let client = Client::new();
         let res = client
             .list_posts()
             .tags(Some(query))
             .execute()
             .await
-            .unwrap_or_else(|_| panic!("failed to search rule34 for `{}`", query));
-        assert!(!res.is_empty());
+            .unwrap_or_else(|e| panic!("failed to search rule34 for `{}`: {}", query, e));
+        assert!(!res.posts.is_empty());
 
-        let first = res.first().expect("missing first entry");
+        let first = res.posts.first().expect("missing first entry");
         client
-            .get_post(first.id)
+            .get_html_post(first.id)
             .await
             .expect("failed to get first post")
     }

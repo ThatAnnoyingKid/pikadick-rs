@@ -67,7 +67,7 @@ pub enum FromHtmlError {
 
 /// A Post page
 #[derive(Debug)]
-pub struct Post {
+pub struct HtmlPost {
     /// The post id
     pub id: u64,
 
@@ -107,7 +107,7 @@ pub struct Post {
     pub parent_post: Option<u64>,
 }
 
-impl Post {
+impl HtmlPost {
     /// Try to make a [`Post`] from [`Html`].
     pub fn from_html(html: &Html) -> Result<Self, FromHtmlError> {
         lazy_static::lazy_static! {
@@ -290,7 +290,7 @@ impl Post {
             }
         }
 
-        Ok(Post {
+        Ok(Self {
             id,
             date,
             source,
@@ -314,8 +314,8 @@ impl Post {
     /// Get the post url for this post.
     ///
     /// This allocates, so cache the result.
-    pub fn get_post_url(&self) -> Url {
-        crate::post_id_to_post_url(self.id)
+    pub fn get_html_post_url(&self) -> Url {
+        crate::post_id_to_html_post_url(self.id)
     }
 }
 
@@ -358,6 +358,6 @@ mod test {
     #[test]
     fn from_gif_html() {
         let html = Html::parse_document(GIF_HTML_STR);
-        Post::from_html(&html).expect("invalid gif post");
+        HtmlPost::from_html(&html).expect("invalid gif post");
     }
 }
