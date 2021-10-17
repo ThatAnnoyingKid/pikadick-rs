@@ -12,7 +12,7 @@ pub struct PostList {
     pub offset: u64,
 
     /// The posts
-    #[serde(alias = "post")]
+    #[serde(alias = "post", default)]
     pub posts: Vec<Post>,
 }
 

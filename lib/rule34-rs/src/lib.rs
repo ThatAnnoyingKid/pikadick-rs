@@ -8,7 +8,7 @@ pub use crate::{
     error::Error,
     search_query_builder::SearchQueryBuilder,
     types::{
-        DeletedImagesList,
+        DeletedImageList,
         HtmlPost,
         Post,
         PostList,

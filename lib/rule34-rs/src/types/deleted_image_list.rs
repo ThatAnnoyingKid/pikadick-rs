@@ -1,13 +1,13 @@
 /// A list of deleted images
-#[derive(serde::Deserialize, Debug)]
-pub struct DeletedImagesList {
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+pub struct DeletedImageList {
     /// A list of deleted posts
-    #[serde(rename = "post", default)]
+    #[serde(alias = "post", default)]
     pub posts: Vec<Post>,
 }
 
 /// A deleted post
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct Post {
     /// The deleted post id
     pub deleted: u64,

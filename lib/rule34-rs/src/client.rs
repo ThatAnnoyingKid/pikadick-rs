@@ -5,7 +5,7 @@ pub use self::query_builder::{
     TagListQueryBuilder,
 };
 use crate::{
-    DeletedImagesList,
+    DeletedImageList,
     Error,
     HtmlPost,
 };
@@ -113,10 +113,10 @@ impl Client {
     /// Only include ids over `last_id`. Use `None` for no limit.
     /// Due to current technical limitations, this function is not very memory efficient depending on `last_id`.
     /// You should probably limit its use with a semaphore or similar.
-    pub async fn get_deleted_images(
+    pub async fn list_deleted_images(
         &self,
         last_id: Option<u64>,
-    ) -> Result<DeletedImagesList, Error> {
+    ) -> Result<DeletedImageList, Error> {
         let mut url = Url::parse_with_params(
             crate::URL_INDEX,
             &[
@@ -220,7 +220,7 @@ mod test {
     async fn deleted_images_list() {
         let client = Client::new();
         let result = client
-            .get_deleted_images(Some(500_000)) // Just choose a high-ish post id here and update to keep the download limited
+            .list_deleted_images(Some(500_000)) // Just choose a high-ish post id here and update to keep the download limited
             .await
             .expect("failed to get deleted images");
         dbg!(result);

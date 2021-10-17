@@ -1,5 +1,5 @@
-/// The [`DeletedImagesList`] type
-pub mod deleted_images_list;
+/// The [`DeletedImageList`] type
+pub mod deleted_image_list;
 /// The [`HtmlPost`] type
 pub mod html_post;
 /// The [`PostList`] type
@@ -8,7 +8,7 @@ pub mod post_list;
 pub mod tag_list;
 
 pub use self::{
-    deleted_images_list::DeletedImagesList,
+    deleted_image_list::DeletedImageList,
     html_post::HtmlPost,
     post_list::{
         Post,
