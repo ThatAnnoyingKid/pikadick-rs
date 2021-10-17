@@ -115,3 +115,23 @@ pub enum Rating {
     #[serde(rename = "s")]
     Safe,
 }
+
+impl Rating {
+    /// Get this as a char
+    pub fn as_char(self) -> char {
+        match self {
+            Self::Questionable => 'q',
+            Self::Explicit => 'e',
+            Self::Safe => 's',
+        }
+    }
+    
+    /// Get this as a &str
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Questionable => "q",
+            Self::Explicit => "e",
+            Self::Safe => "s",
+        }
+    }
+}
