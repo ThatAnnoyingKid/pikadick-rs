@@ -19,7 +19,9 @@ pub use crate::{
 pub use scraper::Html;
 pub use url::Url;
 
+/// The maximum number of responses per post list request
 pub const POST_LIST_LIMIT_MAX: u16 = 1_000;
+/// The maximum number of responses per tags list request
 pub const TAGS_LIST_LIMIT_MAX: u16 = 1_000;
 
 // Default Header values

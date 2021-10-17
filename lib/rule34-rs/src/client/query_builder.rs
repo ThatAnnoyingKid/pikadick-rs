@@ -244,7 +244,6 @@ impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
     /// Execute the query
     pub async fn execute(&self) -> Result<TagsList, Error> {
         let url = self.get_url()?;
-        let text = self.client.get_text(url.as_str()).await?;
 
         // We run this on the blocking threadpool out of an abundance of caution.
         // On a 10th gen i7, this runs around 2.5 milliseconds tops in release mode.
@@ -257,10 +256,6 @@ impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
         //
         // quick_xml also may get async support via https://github.com/tafia/quick-xml/pull/314 in the future as well,
         // making all this optimizing a moot point.
-        tokio::task::spawn_blocking(move || {
-            let data: TagsList = quick_xml::de::from_str(&text)?;
-            Ok(data)
-        })
-        .await?
+        self.client.get_xml(url.as_str()).await
     }
 }

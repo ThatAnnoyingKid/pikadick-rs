@@ -80,6 +80,16 @@ impl Client {
         Ok(ret)
     }
 
+    /// Send a GET web request to a `uri` and get the result as xml, deserializing it to the given type.
+    pub async fn get_xml<T>(&self, uri: &str) -> Result<T, Error>
+    where
+        T: serde::de::DeserializeOwned + Send + 'static,
+    {
+        let text = self.get_text(uri).await?;
+        let ret = tokio::task::spawn_blocking(move || quick_xml::de::from_str(&text)).await??;
+        Ok(ret)
+    }
+
     /// Create a builder to list posts from rule34.
     pub fn list_posts<'a, 'b>(&'a self) -> PostListQueryBuilder<'a, 'b> {
         PostListQueryBuilder::new(self)
@@ -121,15 +131,10 @@ impl Client {
             url.query_pairs_mut()
                 .append_pair("last_id", last_id_buf.format(last_id));
         }
-        let text = self.get_text(url.as_str()).await?;
         // Parse on a threadpool since the full returned string is currently around 30 megabytes in size,
         // and we need to run in under a few milliseconds.
         // We need to buffer this all in memory though, since `quick_xml` does not provide a streaming api.
-        tokio::task::spawn_blocking(move || {
-            let data: DeletedImagesList = quick_xml::de::from_str(&text)?;
-            Ok(data)
-        })
-        .await?
+        self.get_xml(url.as_str()).await
     }
 
     /// Get a builder to list tags.
