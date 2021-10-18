@@ -2,12 +2,12 @@ mod query_builder;
 
 pub use self::query_builder::{
     PostListQueryBuilder,
-    TagsListQueryBuilder,
+    TagListQueryBuilder,
 };
 use crate::{
-    types::Post,
-    DeletedImagesList,
+    DeletedImageList,
     Error,
+    HtmlPost,
 };
 use reqwest::header::{
     HeaderMap,
@@ -80,19 +80,29 @@ impl Client {
         Ok(ret)
     }
 
+    /// Send a GET web request to a `uri` and get the result as xml, deserializing it to the given type.
+    pub async fn get_xml<T>(&self, uri: &str) -> Result<T, Error>
+    where
+        T: serde::de::DeserializeOwned + Send + 'static,
+    {
+        let text = self.get_text(uri).await?;
+        let ret = tokio::task::spawn_blocking(move || quick_xml::de::from_str(&text)).await??;
+        Ok(ret)
+    }
+
     /// Create a builder to list posts from rule34.
     pub fn list_posts<'a, 'b>(&'a self) -> PostListQueryBuilder<'a, 'b> {
         PostListQueryBuilder::new(self)
     }
 
-    /// Get a [`Post`] by `id`.
-    pub async fn get_post(&self, id: u64) -> Result<Post, Error> {
+    /// Get a [`HtmlPost`] by `id`.
+    pub async fn get_html_post(&self, id: u64) -> Result<HtmlPost, Error> {
         if id == 0 {
             return Err(Error::InvalidId);
         }
-        let url = crate::post_id_to_post_url(id);
+        let url = crate::post_id_to_html_post_url(id);
         let ret = self
-            .get_html(url.as_str(), |html| Post::from_html(&html))
+            .get_html(url.as_str(), |html| HtmlPost::from_html(&html))
             .await??;
 
         Ok(ret)
@@ -103,10 +113,10 @@ impl Client {
     /// Only include ids over `last_id`. Use `None` for no limit.
     /// Due to current technical limitations, this function is not very memory efficient depending on `last_id`.
     /// You should probably limit its use with a semaphore or similar.
-    pub async fn get_deleted_images(
+    pub async fn list_deleted_images(
         &self,
         last_id: Option<u64>,
-    ) -> Result<DeletedImagesList, Error> {
+    ) -> Result<DeletedImageList, Error> {
         let mut url = Url::parse_with_params(
             crate::URL_INDEX,
             &[
@@ -121,20 +131,15 @@ impl Client {
             url.query_pairs_mut()
                 .append_pair("last_id", last_id_buf.format(last_id));
         }
-        let text = self.get_text(url.as_str()).await?;
         // Parse on a threadpool since the full returned string is currently around 30 megabytes in size,
         // and we need to run in under a few milliseconds.
         // We need to buffer this all in memory though, since `quick_xml` does not provide a streaming api.
-        tokio::task::spawn_blocking(move || {
-            let data: DeletedImagesList = quick_xml::de::from_str(&text)?;
-            Ok(data)
-        })
-        .await?
+        self.get_xml(url.as_str()).await
     }
 
     /// Get a builder to list tags.
-    pub fn list_tags(&self) -> TagsListQueryBuilder {
-        TagsListQueryBuilder::new(self)
+    pub fn list_tags(&self) -> TagListQueryBuilder {
+        TagListQueryBuilder::new(self)
     }
 
     /// Send a GET web request to a `uri` and copy the result to the given async writer.
@@ -172,22 +177,22 @@ mod test {
             .await
             .expect("failed to search rule34 for `rust`");
         dbg!(&res);
-        assert!(!res.is_empty());
+        assert!(!res.posts.is_empty());
     }
 
-    async fn get_top_post(query: &str) -> Post {
+    async fn get_top_post(query: &str) -> HtmlPost {
         let client = Client::new();
         let res = client
             .list_posts()
             .tags(Some(query))
             .execute()
             .await
-            .unwrap_or_else(|_| panic!("failed to search rule34 for `{}`", query));
-        assert!(!res.is_empty());
+            .unwrap_or_else(|e| panic!("failed to search rule34 for `{}`: {}", query, e));
+        assert!(!res.posts.is_empty());
 
-        let first = res.first().expect("missing first entry");
+        let first = res.posts.first().expect("missing first entry");
         client
-            .get_post(first.id)
+            .get_html_post(first.id)
             .await
             .expect("failed to get first post")
     }
@@ -215,7 +220,7 @@ mod test {
     async fn deleted_images_list() {
         let client = Client::new();
         let result = client
-            .get_deleted_images(Some(500_000)) // Just choose a high-ish post id here and update to keep the download limited
+            .list_deleted_images(Some(500_000)) // Just choose a high-ish post id here and update to keep the download limited
             .await
             .expect("failed to get deleted images");
         dbg!(result);

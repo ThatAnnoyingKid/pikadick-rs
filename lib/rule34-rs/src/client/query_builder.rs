@@ -1,8 +1,8 @@
 use crate::{
     Client,
     Error,
-    PostListResult,
-    TagsList,
+    PostList,
+    TagList,
 };
 use url::Url;
 
@@ -77,12 +77,7 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
         let mut limit_buffer = itoa::Buffer::new();
         let mut url = Url::parse_with_params(
             crate::URL_INDEX,
-            &[
-                ("page", "dapi"),
-                ("s", "post"),
-                ("json", "1"),
-                ("q", "index"),
-            ],
+            &[("page", "dapi"), ("s", "post"), ("q", "index")],
         )?;
 
         {
@@ -119,23 +114,26 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
     ///
     /// # Returns
     /// Returns an empty list if there are no results.
-    pub async fn execute(&self) -> Result<Vec<PostListResult>, Error> {
+    pub async fn execute(&self) -> Result<PostList, Error> {
         let url = self.get_url()?;
 
-        // The api sends "" on no results, and serde_json dies instead of giving an empty list.
-        // Therefore, we need to handle json parsing instead of reqwest.
-        let text = self.client.get_text(url.as_str()).await?;
-        if text.is_empty() {
-            return Ok(Vec::new());
-        }
+        // When using JSON, the api sends "" on no results, and `serde_json` dies instead of giving an empty list.
+        // Therefore, we need to handle json parsing instead of `reqwest`.
+        // ```
+        // let text = self.client.get_text(url.as_str()).await?;
+        // if text.is_empty() {
+        //    return Ok(Vec::new());
+        // }
+        // Ok(serde_json::from_str(&text)?)
+        // ```
 
-        Ok(serde_json::from_str(&text)?)
+        self.client.get_xml(url.as_str()).await
     }
 }
 
 /// A query builder to get tags
 #[derive(Debug)]
-pub struct TagsListQueryBuilder<'a, 'b> {
+pub struct TagListQueryBuilder<'a, 'b, 'c> {
     /// The id
     pub id: Option<u64>,
 
@@ -158,10 +156,18 @@ pub struct TagsListQueryBuilder<'a, 'b> {
     /// This option is undocumented
     pub name: Option<&'b str>,
 
+    /// The name pattern to look up using a SQL LIKE clause.
+    ///
+    /// % = multi char wildcard
+    /// _ = single char wildcard
+    /// This option is undocumented.
+    pub name_pattern: Option<&'c str>,
+
+    /// The client
     client: &'a Client,
 }
 
-impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
+impl<'a, 'b, 'c> TagListQueryBuilder<'a, 'b, 'c> {
     /// Make a new [`TagsListQueryBuilder`]
     pub fn new(client: &'a Client) -> Self {
         Self {
@@ -169,6 +175,7 @@ impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
             limit: None,
             pid: None,
             name: None,
+            name_pattern: None,
 
             client,
         }
@@ -208,6 +215,16 @@ impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
         self
     }
 
+    /// The name pattern to look up using a SQL LIKE clause.
+    ///
+    /// % = multi char wildcard
+    /// _ = single char wildcard
+    /// This option is undocumented.
+    pub fn name_pattern(&'a mut self, name_pattern: Option<&'c str>) -> &'a mut Self {
+        self.name_pattern = name_pattern;
+        self
+    }
+
     /// Get the url for this query.
     pub fn get_url(&self) -> Result<Url, Error> {
         let mut url = Url::parse_with_params(
@@ -236,15 +253,18 @@ impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
             if let Some(name) = self.name {
                 query_pairs.append_pair("name", name);
             }
+
+            if let Some(name_pattern) = self.name_pattern {
+                query_pairs.append_pair("name_pattern", name_pattern);
+            }
         }
 
         Ok(url)
     }
 
     /// Execute the query
-    pub async fn execute(&self) -> Result<TagsList, Error> {
+    pub async fn execute(&self) -> Result<TagList, Error> {
         let url = self.get_url()?;
-        let text = self.client.get_text(url.as_str()).await?;
 
         // We run this on the blocking threadpool out of an abundance of caution.
         // On a 10th gen i7, this runs around 2.5 milliseconds tops in release mode.
@@ -257,10 +277,6 @@ impl<'a, 'b> TagsListQueryBuilder<'a, 'b> {
         //
         // quick_xml also may get async support via https://github.com/tafia/quick-xml/pull/314 in the future as well,
         // making all this optimizing a moot point.
-        tokio::task::spawn_blocking(move || {
-            let data: TagsList = quick_xml::de::from_str(&text)?;
-            Ok(data)
-        })
-        .await?
+        self.client.get_xml(url.as_str()).await
     }
 }

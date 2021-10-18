@@ -1,5 +1,5 @@
-/// The Error that occurs when a `Post` could not be parsed.
-pub type PostError = crate::types::post::FromHtmlError;
+/// The Error that occurs when a `HtmlPost` could not be parsed.
+pub type HtmlPostError = crate::types::html_post::FromHtmlError;
 
 /// Crate Error Type
 #[derive(Debug, thiserror::Error)]
@@ -22,7 +22,7 @@ pub enum Error {
 
     /// Invalid Post
     #[error("invalid post")]
-    InvalidPost(#[from] PostError),
+    InvalidHtmlPost(#[from] HtmlPostError),
 
     /// A tokio task failed to complete
     #[error("failed to join tokio task")]

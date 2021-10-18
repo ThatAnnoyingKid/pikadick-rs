@@ -1,6 +1,6 @@
 /// A list of tags
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct TagsList {
+pub struct TagList {
     /// The tag list kind?
     ///
     /// So far, this has only been "array"

@@ -12,12 +12,12 @@ pub struct Options {
 }
 
 pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<()> {
-    let results = client
-        .get_deleted_images(options.last_id)
+    let list = client
+        .list_deleted_images(options.last_id)
         .await
         .context("failed to get deleted images")?;
 
-    for (i, post) in results.posts.iter().enumerate() {
+    for (i, post) in list.posts.iter().enumerate() {
         println!("{})", i + 1);
         println!("ID: {}", post.deleted);
         println!("MD5: {}", post.md5);

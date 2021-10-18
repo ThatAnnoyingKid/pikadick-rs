@@ -8,18 +8,21 @@ pub use crate::{
     error::Error,
     search_query_builder::SearchQueryBuilder,
     types::{
-        DeletedImagesList,
+        DeletedImageList,
+        HtmlPost,
         Post,
-        PostListResult,
+        PostList,
         Tag,
         TagKind,
-        TagsList,
+        TagList,
     },
 };
 pub use scraper::Html;
 pub use url::Url;
 
+/// The maximum number of responses per post list request
 pub const POST_LIST_LIMIT_MAX: u16 = 1_000;
+/// The maximum number of responses per tags list request
 pub const TAGS_LIST_LIMIT_MAX: u16 = 1_000;
 
 // Default Header values
@@ -32,7 +35,7 @@ const ACCEPT_STR: &str = "*/*";
 const URL_INDEX: &str = "https://rule34.xxx/index.php";
 
 /// Turn a post id into a post url
-fn post_id_to_post_url(id: u64) -> Url {
+fn post_id_to_html_post_url(id: u64) -> Url {
     // It shouldn't be possible to make this function fail for any valid id.
     Url::parse_with_params(
         crate::URL_INDEX,

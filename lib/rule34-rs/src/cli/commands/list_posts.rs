@@ -59,7 +59,7 @@ impl FromStr for OutputType {
 }
 
 pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<()> {
-    let results = client
+    let list = client
         .list_posts()
         .tags(options.tags.as_deref())
         .pid(options.pid)
@@ -70,20 +70,22 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
 
     match options.output_type {
         OutputType::Human => {
-            if results.is_empty() {
+            println!("Count: {}", list.count);
+            println!("Offset: {}", list.offset);
+            if list.posts.is_empty() {
                 println!("No Results");
             }
 
-            for (i, result) in results.iter().enumerate() {
+            for (i, post) in list.posts.iter().enumerate() {
                 println!("{})", i + 1);
-                println!("ID: {}", result.id);
-                println!("Url: {}", result.get_post_url());
-                println!("Tags: {}", result.tags);
+                println!("ID: {}", post.id);
+                println!("Url: {}", post.get_html_post_url());
+                println!("Tags: {}", post.tags);
                 println!();
             }
         }
         OutputType::Json => {
-            println!("{}", serde_json::to_string(&results)?);
+            println!("{}", serde_json::to_string(&list)?);
         }
     }
 
