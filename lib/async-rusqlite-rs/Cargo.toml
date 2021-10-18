@@ -2,6 +2,7 @@
 name = "async-rusqlite"
 version = "0.0.0"
 edition = "2018"
+license = "MIT"
 
 [dependencies]
 parking_lot = "0.11.2"
