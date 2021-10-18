@@ -10,6 +10,7 @@ use std::{
 const MESSAGE_CHANNEL_SIZE: usize = 128;
 
 type CloseDbResult = Result<(), (Connection, rusqlite::Error)>;
+type DbThreadJoinHandle = std::thread::JoinHandle<CloseDbResult>;
 
 /// Error
 #[derive(Debug, thiserror::Error)]
@@ -39,7 +40,7 @@ pub enum Error {
     ThreadJoin,
 }
 
-pub enum Message {
+enum Message {
     Access {
         func: Box<dyn FnOnce(&mut Connection) + Send + 'static>,
     },
@@ -62,7 +63,7 @@ impl std::fmt::Debug for Message {
 pub struct Database {
     sender: tokio::sync::mpsc::Sender<Message>,
 
-    handle: Arc<parking_lot::Mutex<Option<std::thread::JoinHandle<CloseDbResult>>>>,
+    handle: Arc<parking_lot::Mutex<Option<DbThreadJoinHandle>>>,
 }
 
 impl std::fmt::Debug for Database {
@@ -94,9 +95,6 @@ impl Database {
     where
         S: FnMut(&mut rusqlite::Connection) -> Result<(), Error> + Send + 'static,
     {
-        // Setup communication
-        let (sender, mut rx) = tokio::sync::mpsc::channel(MESSAGE_CHANNEL_SIZE);
-
         // Setup flags
         let mut flags = rusqlite::OpenFlags::default();
         if !create_if_missing {
@@ -108,6 +106,9 @@ impl Database {
 
         // Init connection
         setup_func(&mut db)?;
+
+        // Setup channel
+        let (sender, mut rx) = tokio::sync::mpsc::channel(MESSAGE_CHANNEL_SIZE);
 
         // Start background handling thread
         let handle = std::thread::spawn(move || {
@@ -169,10 +170,17 @@ impl Database {
     /// Future calls will fail.
     /// You should generally close the db connection before joining.
     pub async fn join(&self) -> Result<(), Error> {
-        let handle = self.handle.lock().take().ok_or(Error::AlreadyJoined)?;
-        let result =
-            tokio::task::spawn_blocking(move || handle.join().map_err(|_| Error::ThreadJoin))
-                .await??;
+        // Clone to allow user to retry if failed to spawn tokio task.
+        let handle = self.handle.clone();
+        let result = tokio::task::spawn_blocking(move || {
+            handle
+                .lock()
+                .take()
+                .ok_or(Error::AlreadyJoined)?
+                .join()
+                .map_err(|_| Error::ThreadJoin)
+        })
+        .await??;
         if let Err((_connection, error)) = result {
             return Err(Error::from(error));
         }
