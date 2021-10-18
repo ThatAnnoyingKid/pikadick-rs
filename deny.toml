@@ -10,7 +10,11 @@ targets = [
 vulnerability = "deny"
 unmaintained = "deny"
 notice = "deny"
-ignore = []
+ignore = [
+    # Blocked on updating `chrono` and `systemstat`.
+    # We don't mess with the env much so this should't be too much of an issue.
+    "RUSTSEC-2020-0071"
+]
 
 [licenses]
 unlicensed = "deny"
