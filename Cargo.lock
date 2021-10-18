@@ -212,6 +212,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-rusqlite"
+version = "0.0.0"
+dependencies = [
+ "parking_lot",
+ "rusqlite",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "async-stream"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2099,6 +2109,7 @@ name = "pikadick"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-rusqlite",
  "bincode",
  "chrono",
  "crossbeam",

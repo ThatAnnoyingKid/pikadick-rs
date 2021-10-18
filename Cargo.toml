@@ -6,6 +6,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.44"
+async-rusqlite = { path = "./lib/async-rusqlite-rs" }
 bincode = "1.3.3"
 chrono = "0.4.19"
 crossbeam = "0.8.1"
@@ -87,6 +88,7 @@ members = [
     "lib/iqdb-rs",
     "lib/sauce-nao-rs",
     "lib/tic-tac-toe-rs",
+    "lib/async-rusqlite-rs",
 ]
 
 # To make image drawing times sane
