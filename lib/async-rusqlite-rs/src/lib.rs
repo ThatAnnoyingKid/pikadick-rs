@@ -87,7 +87,7 @@ impl Database {
     }
 
     /// Open a db in a blocking manner.
-    fn open_blocking<S>(
+    pub fn open_blocking<S>(
         path: PathBuf,
         create_if_missing: bool,
         mut setup_func: S,
