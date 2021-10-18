@@ -12,6 +12,8 @@ const MESSAGE_CHANNEL_SIZE: usize = 128;
 type CloseDbResult = Result<(), (Connection, rusqlite::Error)>;
 type DbThreadJoinHandle = std::thread::JoinHandle<CloseDbResult>;
 
+type BoxedError = Box<dyn std::error::Error + Send + Sync + 'static>;
+
 /// Error
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -38,6 +40,10 @@ pub enum Error {
     /// Bad thread join
     #[error("failed to join thread")]
     ThreadJoin,
+
+    /// Setup failed to run
+    #[error("init func failed")]
+    SetupFunc(#[source] BoxedError),
 }
 
 enum Message {
@@ -77,7 +83,7 @@ impl Database {
     /// Open a database at the given path with the setup func.
     pub async fn open<S>(path: &Path, create_if_missing: bool, setup_func: S) -> Result<Self, Error>
     where
-        S: FnMut(&mut rusqlite::Connection) -> Result<(), Error> + Send + 'static,
+        S: FnMut(&mut rusqlite::Connection) -> Result<(), BoxedError> + Send + 'static,
     {
         let path = path.to_path_buf();
         tokio::task::spawn_blocking(move || {
@@ -93,7 +99,7 @@ impl Database {
         mut setup_func: S,
     ) -> Result<Self, Error>
     where
-        S: FnMut(&mut rusqlite::Connection) -> Result<(), Error> + Send + 'static,
+        S: FnMut(&mut rusqlite::Connection) -> Result<(), BoxedError> + Send + 'static,
     {
         // Setup flags
         let mut flags = rusqlite::OpenFlags::default();
@@ -105,7 +111,7 @@ impl Database {
         let mut db = Connection::open_with_flags(path, flags)?;
 
         // Init connection
-        setup_func(&mut db)?;
+        setup_func(&mut db).map_err(Error::SetupFunc)?;
 
         // Setup channel
         let (sender, mut rx) = tokio::sync::mpsc::channel(MESSAGE_CHANNEL_SIZE);

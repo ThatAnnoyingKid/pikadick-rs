@@ -48,11 +48,12 @@ impl Database {
             .context("failed to init sqlite logger")?;
 
         let db = async_rusqlite::Database::open(path, create_if_missing, |db| {
-            db.execute_batch(SETUP_TABLES_SQL)?;
+            db.execute_batch(SETUP_TABLES_SQL)
+                .context("failed to setup database")?;
             Ok(())
         })
         .await
-        .context("failed to open and setup database")?;
+        .context("failed to open database")?;
 
         Ok(Database { db })
     }
