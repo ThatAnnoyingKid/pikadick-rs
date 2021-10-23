@@ -14,7 +14,7 @@ use crate::{
     ClientDataKey,
 };
 use anyhow::Context as _;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use reddit_tube::{
     types::get_video_response::GetVideoResponseOk,
     GetVideoResponse,
@@ -38,10 +38,9 @@ use url::Url;
 type SubReddit = String;
 type PostId = String;
 
-lazy_static! {
-    /// Source: https://urlregex.com/
-    static ref URL_REGEX: Regex = Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex");
-}
+/// Source: https://urlregex.com/
+static URL_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex"));
 
 #[derive(Clone, Default)]
 pub struct RedditEmbedData {
