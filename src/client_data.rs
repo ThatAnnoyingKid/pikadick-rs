@@ -15,6 +15,7 @@ use crate::{
     },
     config::Config,
     database::Database,
+    reddit::RedditClient,
     tic_tac_toe::TicTacToeData,
 };
 use serenity::{
@@ -100,6 +101,8 @@ pub struct ClientData {
     pub tic_tac_toe_data: TicTacToeData,
     /// The iqdb client
     pub iqdb_client: IqdbClient,
+    /// Reddit client
+    pub reddit_client: RedditClient,
 
     /// The database
     pub db: Database,
@@ -137,6 +140,7 @@ impl ClientData {
             xkcd_client: Default::default(),
             tic_tac_toe_data: Default::default(),
             iqdb_client: Default::default(),
+            reddit_client: Default::default(),
 
             db,
 

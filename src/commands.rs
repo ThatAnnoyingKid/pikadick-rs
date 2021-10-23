@@ -11,6 +11,7 @@ pub mod ping;
 pub mod quizizz;
 pub mod r6stats;
 pub mod r6tracker;
+pub mod reddit;
 pub mod reddit_embed;
 pub mod rule34;
 pub mod shift;
@@ -36,6 +37,7 @@ pub use crate::commands::{
     quizizz::QUIZIZZ_COMMAND,
     r6stats::R6STATS_COMMAND,
     r6tracker::R6TRACKER_COMMAND,
+    reddit::REDDIT_COMMAND,
     reddit_embed::REDDIT_EMBED_COMMAND,
     rule34::RULE34_COMMAND,
     shift::SHIFT_COMMAND,

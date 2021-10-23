@@ -1,5 +1,6 @@
 use dashmap::DashMap;
 use parking_lot::Mutex;
+use rand::seq::IteratorRandom;
 use std::{
     borrow::Borrow,
     hash::Hash,
@@ -53,6 +54,16 @@ where
                 None
             }
         })
+    }
+
+    /// Get a random fresh value
+    pub fn get_random_if_fresh(&self) -> Option<Arc<TimedCacheEntry<V>>> {
+        self.0
+            .cache
+            .iter()
+            .filter(|entry| entry.is_fresh(self.0.expiry_time))
+            .choose(&mut rand::thread_rng())
+            .map(|v| v.value().clone())
     }
 
     /// Insert a K/V
