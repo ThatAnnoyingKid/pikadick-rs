@@ -4,11 +4,12 @@ use crate::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
-    util::TimedCache,
+    util::LoadingReaction,
     ClientDataKey,
 };
 use anyhow::Context as _;
 use dashmap::DashMap;
+use rand::seq::SliceRandom;
 use reddit::PostHint;
 use serenity::{
     client::Context,
@@ -19,13 +20,20 @@ use serenity::{
     },
     model::prelude::*,
 };
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{
+        Duration,
+        Instant,
+    },
+};
+use tracing::info;
 
 /// The Reddit client
 #[derive(Clone)]
 pub struct RedditClient {
     client: reddit::Client,
-    cache: Arc<DashMap<String, TimedCache<String, String>>>,
+    cache: Arc<DashMap<String, (Instant, Vec<String>)>>,
 }
 
 impl RedditClient {
@@ -39,21 +47,25 @@ impl RedditClient {
 
     /// Get a random post url for a subreddit
     pub async fn get_random_post(&self, subreddit: &str) -> anyhow::Result<Option<String>> {
-        let subreddit_cache = self
-            .cache
-            .entry(subreddit.to_string())
-            .or_insert_with(TimedCache::new)
-            .value()
-            .clone();
+        {
+            let urls = self.cache.get(subreddit);
 
-        if let Some(url) = subreddit_cache.get_random_if_fresh() {
-            return Ok(Some(url.data().clone()));
+            if let Some(url) = urls.and_then(|v| {
+                let (last_update, urls) = v.value();
+                if last_update.elapsed() > Duration::from_secs(10 * 60) {
+                    return None;
+                }
+                urls.choose(&mut rand::thread_rng()).cloned()
+            }) {
+                return Ok(Some(url));
+            }
         }
 
+        info!("fetching reddit posts for '{}'", subreddit);
         let mut maybe_url = None;
         let list = self.client.get_subreddit(subreddit, 100).await?;
         if let Some(listing) = list.data.into_listing() {
-            let posts_iter = listing
+            let posts: Vec<_> = listing
                 .children
                 .into_iter()
                 .filter_map(|child| child.data.into_link())
@@ -62,16 +74,14 @@ impl RedditClient {
                         || link.url.as_str().ends_with(".jpg")
                         || link.url.as_str().ends_with(".png")
                         || link.url.as_str().ends_with(".gif")
-                });
+                })
+                .map(|link| link.url)
+                .collect();
 
-            for post in posts_iter {
-                if maybe_url.is_none() {
-                    maybe_url = Some(post.url.clone());
-                }
-                subreddit_cache.insert(post.id, post.url);
-            }
-        } else {
-            return Ok(None);
+            maybe_url = posts.choose(&mut rand::thread_rng()).cloned();
+
+            self.cache
+                .insert(subreddit.to_string(), (Instant::now(), posts));
         }
 
         Ok(maybe_url)
@@ -96,7 +106,7 @@ impl CacheStatsProvider for RedditClient {
         cache_stats_builder.publish_stat(
             "reddit",
             "cache",
-            self.cache.iter().map(|v| v.value().len()).sum::<usize>() as f32,
+            self.cache.iter().map(|v| v.value().1.len()).sum::<usize>() as f32,
         );
     }
 }
@@ -117,6 +127,8 @@ async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let client = client_data.reddit_client.clone();
     drop(data_lock);
 
+    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
+
     let subreddit = args.single::<String>().expect("missing arg");
     match client
         .get_random_post(&subreddit)
@@ -125,6 +137,7 @@ async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     {
         Ok(Some(url)) => {
             msg.channel_id.say(&ctx.http, url).await?;
+            loading.send_ok();
         }
         Ok(None) => {
             msg.channel_id
