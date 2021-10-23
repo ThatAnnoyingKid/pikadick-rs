@@ -165,6 +165,7 @@ impl ClientData {
             &self.deviantart_client,
             &self.urban_client,
             &self.iqdb_client,
+            &self.reddit_client,
         ];
 
         for cache_stat_provider in cache_stat_providers {

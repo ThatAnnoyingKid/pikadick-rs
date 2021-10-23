@@ -1,5 +1,9 @@
 use crate::{
     checks::ENABLED_CHECK,
+    client_data::{
+        CacheStatsBuilder,
+        CacheStatsProvider,
+    },
     util::TimedCache,
     ClientDataKey,
 };
@@ -84,6 +88,16 @@ impl std::fmt::Debug for RedditClient {
 impl Default for RedditClient {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl CacheStatsProvider for RedditClient {
+    fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
+        cache_stats_builder.publish_stat(
+            "reddit",
+            "cache",
+            self.cache.iter().map(|v| v.value().len()).sum::<usize>() as f32,
+        );
     }
 }
 
