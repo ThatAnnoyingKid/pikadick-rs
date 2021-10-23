@@ -38,7 +38,7 @@ use url::Url;
 type SubReddit = String;
 type PostId = String;
 
-/// Source: https://urlregex.com/
+/// Source: <https://urlregex.com/>
 static URL_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex"));
 
