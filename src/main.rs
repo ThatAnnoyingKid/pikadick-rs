@@ -470,7 +470,7 @@ async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<(
 
     tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
 
-    let client_data = ClientData::init(client.shard_manager.clone(), config, db)
+    let client_data = ClientData::init(client.shard_manager.clone(), config, db.clone())
         .await
         .context("client data initialization failed")?;
 
@@ -490,6 +490,9 @@ async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<(
     }
 
     drop(client);
+
+    info!("closing db...");
+    db.close().await.context("failed to close db")?;
 
     Ok(())
 }

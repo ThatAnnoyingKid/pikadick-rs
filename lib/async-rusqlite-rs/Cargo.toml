@@ -1,0 +1,14 @@
+[package]
+name = "async-rusqlite"
+version = "0.0.0"
+edition = "2018"
+license = "MIT"
+
+[dependencies]
+parking_lot = "0.11.2"
+rusqlite = "0.26.0"
+thiserror = "1.0.30"
+tokio = { version = "1.12.0", features = [ "rt", "sync", "parking_lot" ] }
+
+[features]
+bundled = [ "rusqlite/bundled" ]

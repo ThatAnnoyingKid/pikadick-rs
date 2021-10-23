@@ -66,7 +66,6 @@ fn main() {
 
         if let Err(e) = client.get_to(video_url.as_str(), &mut file).await {
             eprintln!("Failed to download video: {}", e);
-            return;
         }
     });
 
