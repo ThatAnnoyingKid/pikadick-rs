@@ -10,11 +10,14 @@ use crate::{
     util::{
         LoadingReaction,
         TimedCache,
+        TimedCacheEntry,
     },
     ClientDataKey,
 };
 use anyhow::Context as _;
+use dashmap::DashMap;
 use once_cell::sync::Lazy;
+use rand::seq::SliceRandom;
 use reddit_tube::{
     types::get_video_response::GetVideoResponseOk,
     GetVideoResponse,
@@ -29,8 +32,16 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
+use std::{
+    sync::Arc,
+    time::{
+        Duration,
+        Instant,
+    },
+};
 use tracing::{
     error,
+    info,
     warn,
 };
 use url::Url;
@@ -42,19 +53,28 @@ type PostId = String;
 static URL_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex"));
 
-#[derive(Clone, Default)]
+// pub struct SubredditPostIdentifier {}
+
+#[derive(Clone)]
 pub struct RedditEmbedData {
     reddit_client: reddit::Client,
     reddit_tube_client: reddit_tube::Client,
+
     cache: TimedCache<(SubReddit, PostId), String>,
+    video_data_cache: TimedCache<String, GetVideoResponseOk>,
+    random_post_cache: Arc<DashMap<String, Arc<(Instant, Vec<Arc<reddit::Link>>)>>>,
 }
 
 impl RedditEmbedData {
+    /// Make a new [`RedditEmbedData`].
     pub fn new() -> Self {
         RedditEmbedData {
             reddit_client: reddit::Client::new(),
             reddit_tube_client: reddit_tube::Client::new(),
+
             cache: Default::default(),
+            video_data_cache: TimedCache::new(),
+            random_post_cache: Arc::new(DashMap::new()),
         }
     }
 
@@ -109,7 +129,7 @@ impl RedditEmbedData {
     }
 
     /// Get video data from reddit.tube. Takes a reddit url.
-    pub async fn get_video_data(&self, url: &Url) -> anyhow::Result<GetVideoResponseOk> {
+    pub async fn get_video_data(&self, url: &str) -> anyhow::Result<GetVideoResponseOk> {
         let main_page = self
             .reddit_tube_client
             .get_main_page()
@@ -117,7 +137,7 @@ impl RedditEmbedData {
             .context("failed to get main page")?;
         let video_data = self
             .reddit_tube_client
-            .get_video(&main_page, url.as_str())
+            .get_video(&main_page, url)
             .await
             .context("failed to get video data")?;
 
@@ -125,6 +145,59 @@ impl RedditEmbedData {
             GetVideoResponse::Ok(video_data) => Ok(video_data),
             GetVideoResponse::Error(e) => Err(e).context("bad video response"),
         }
+    }
+
+    /// Get video data, but using a cache.
+    pub async fn get_video_data_cached(
+        &self,
+        url: &str,
+    ) -> anyhow::Result<Arc<TimedCacheEntry<GetVideoResponseOk>>> {
+        if let Some(response) = self.video_data_cache.get_if_fresh(url) {
+            return Ok(response);
+        }
+
+        let video_data = self.get_video_data(url).await?;
+
+        Ok(self
+            .video_data_cache
+            .insert_and_get(url.to_string(), video_data))
+    }
+
+    /// Create a video url for a url to a reddit video post.
+    pub async fn create_video_url(&self, url: &str) -> anyhow::Result<Url> {
+        let maybe_url = self
+            .get_video_data_cached(url)
+            .await
+            .with_context(|| format!("failed to get reddit video info for '{}'", url))
+            .map(|video_data| video_data.data().url.clone());
+
+        if let Err(e) = maybe_url.as_ref() {
+            warn!("{:?}", e);
+        }
+
+        maybe_url
+    }
+
+    /// Get a reddit embed url for a given subreddit and post id
+    pub async fn get_embed_url(&self, url: &Url) -> anyhow::Result<String> {
+        let (subreddit, post_id) = parse_post_url(url).context("failed to parse post")?;
+
+        let original_post = self
+            .get_original_post(subreddit, post_id)
+            .await
+            .context("failed to get reddit post")
+            .map_err(|e| {
+                warn!("{:?}", e);
+                e
+            })?;
+
+        if !original_post.is_video {
+            return Ok(original_post.url);
+        }
+
+        self.create_video_url(url.as_str())
+            .await
+            .map(|url| url.into())
     }
 
     /// Process a message and insert an embed if neccesary.
@@ -137,27 +210,25 @@ impl RedditEmbedData {
         let db = client_data.db.clone();
         drop(data_lock);
 
+        // Only embed guild links
         let guild_id = match msg.guild_id {
             Some(id) => id,
             None => {
-                // Only embed guild links
                 return Ok(());
             }
         };
 
-        let is_enabled_for_guild =
-            db.get_reddit_embed_enabled(guild_id)
-                .await
-                .unwrap_or_else(|e| {
-                    error!(
-                        "failed to get reddit-embed guild data for '{}': {}",
-                        guild_id, e
-                    );
-                    false
-                });
+        let is_enabled_for_guild = db
+            .get_reddit_embed_enabled(guild_id)
+            .await
+            .with_context(|| format!("failed to get reddit-embed server data for '{}'", guild_id))
+            .unwrap_or_else(|e| {
+                error!("{:?}", e);
+                false
+            });
 
+        // Don't process if it isn't enabled or the author is a bot
         if !is_enabled_for_guild || msg.author.bot {
-            // Don't process if it isn't enabled or the author is a bot
             return Ok(());
         }
 
@@ -199,25 +270,7 @@ impl RedditEmbedData {
                 let data = if let Some(value) = maybe_url.clone() {
                     Some(value)
                 } else {
-                    match self.get_original_post(subreddit, post_id).await {
-                        Ok(post) => {
-                            if !post.is_video {
-                                Some(post.url)
-                            } else {
-                                match self.get_video_data(url).await {
-                                    Ok(video_data) => Some(video_data.url.into()),
-                                    Err(e) => {
-                                        warn!("Failed to get reddit video info, got error: {}", e);
-                                        None
-                                    }
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            warn!("Failed to get reddit post, got error: {}", e);
-                            None
-                        }
-                    }
+                    self.get_embed_url(url).await.ok()
                 };
 
                 if let Some(data) = data {
@@ -231,58 +284,103 @@ impl RedditEmbedData {
                     }
                 }
             } else {
-                error!("Failed to parse reddit post url");
+                error!("failed to parse reddit post url");
                 // TODO: Maybe expand this to an actual error to give better feedback
             }
         }
 
         self.cache.trim();
+        self.video_data_cache.trim();
 
         Ok(())
     }
-}
 
-/// Gets the subreddit and post id from a reddit url.
-///
-/// # Returns
-/// Returns a tuple or the the subreddit and post id in that order.
-pub fn parse_post_url(url: &Url) -> Option<(&str, &str)> {
-    // Reddit path:
-    // /r/dankmemes/comments/h966lq/davie_is_shookt/
+    /// Get a random post url for a subreddit
+    pub async fn get_random_post(&self, subreddit: &str) -> anyhow::Result<Option<String>> {
+        {
+            let urls = self.random_post_cache.get(subreddit);
 
-    // Template:
-    // /r/<subreddit>/comments/<post_id>/<post_title (irrelevant)>/
+            if let Some(link) = urls.and_then(|v| {
+                let entry = v.value().clone();
+                if entry.0.elapsed() > Duration::from_secs(10 * 60) {
+                    return None;
+                }
+                entry.1.choose(&mut rand::thread_rng()).cloned()
+            }) {
+                let url = self.reddit_link_to_embed_url(&link).await?;
+                return Ok(Some(url));
+            }
+        }
 
-    // Parts:
-    // r
-    // <subreddit>
-    // comments
-    // <post_id>
-    // <post_title>
-    // (Nothing, should be empty or not existent)
+        info!("fetching reddit posts for '{}'", subreddit);
+        let mut maybe_url = None;
+        let list = self.reddit_client.get_subreddit(subreddit, 100).await?;
+        if let Some(listing) = list.data.into_listing() {
+            let posts: Vec<Arc<reddit::Link>> = listing
+                .children
+                .into_iter()
+                .filter_map(|child| child.data.into_link())
+                .filter_map(|post| {
+                    if let Some(mut post) = post.crosspost_parent_list {
+                        if post.is_empty() {
+                            None
+                        } else {
+                            Some(post.swap_remove(0).into())
+                        }
+                    } else {
+                        Some(post)
+                    }
+                })
+                .map(|link| Arc::new(*link))
+                .collect();
 
-    let mut iter = url.path_segments()?;
+            let maybe_link = posts.choose(&mut rand::thread_rng()).cloned();
+            if let Some(link) = maybe_link {
+                maybe_url = Some(self.reddit_link_to_embed_url(&link).await?);
+            }
 
-    if iter.next()? != "r" {
-        return None;
+            self.random_post_cache
+                .insert(subreddit.to_string(), Arc::new((Instant::now(), posts)));
+        }
+
+        Ok(maybe_url)
     }
 
-    let subreddit = iter.next()?;
+    /// Convert a reddit link to an embed url
+    async fn reddit_link_to_embed_url(&self, link: &reddit::Link) -> anyhow::Result<String> {
+        let post_url = format!("https://www.reddit.com{}", link.permalink);
 
-    if iter.next()? != "comments" {
-        return None;
+        // Discord should be able to embed non-18 stuff
+        if !link.over_18 {
+            return Ok(post_url);
+        }
+
+        match link.post_hint {
+            Some(reddit::PostHint::HostedVideo) => {
+                let url = self.create_video_url(&post_url).await?;
+                Ok(url.into())
+            }
+            _ => Ok(link.url.clone().into()),
+        }
     }
-
-    let post_id = iter.next()?;
-
-    // TODO: Should we reject urls with the wrong ending?
-
-    Some((subreddit, post_id))
 }
 
 impl CacheStatsProvider for RedditEmbedData {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
         cache_stats_builder.publish_stat("reddit_embed", "link_cache", self.cache.len() as f32);
+        cache_stats_builder.publish_stat(
+            "reddit_embed",
+            "video_data_cache",
+            self.video_data_cache.len() as f32,
+        );
+        cache_stats_builder.publish_stat(
+            "reddit_embed",
+            "random_post_cache",
+            self.random_post_cache
+                .iter()
+                .map(|v| v.value().1.len())
+                .sum::<usize>() as f32,
+        );
     }
 }
 
@@ -293,6 +391,12 @@ impl std::fmt::Debug for RedditEmbedData {
             .field("reddit_tube_client", &self.reddit_tube_client)
             .field("cache", &self.cache)
             .finish()
+    }
+}
+
+impl Default for RedditEmbedData {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -364,4 +468,42 @@ async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     }
 
     Ok(())
+}
+
+/// Gets the subreddit and post id from a reddit url.
+///
+/// # Returns
+/// Returns a tuple or the the subreddit and post id in that order.
+pub fn parse_post_url(url: &Url) -> Option<(&str, &str)> {
+    // Reddit path:
+    // /r/dankmemes/comments/h966lq/davie_is_shookt/
+
+    // Template:
+    // /r/<subreddit>/comments/<post_id>/<post_title (irrelevant)>/
+
+    // Parts:
+    // r
+    // <subreddit>
+    // comments
+    // <post_id>
+    // <post_title>
+    // (Nothing, should be empty or not existent)
+
+    let mut iter = url.path_segments()?;
+
+    if iter.next()? != "r" {
+        return None;
+    }
+
+    let subreddit = iter.next()?;
+
+    if iter.next()? != "comments" {
+        return None;
+    }
+
+    let post_id = iter.next()?;
+
+    // TODO: Should we reject urls with the wrong ending?
+
+    Some((subreddit, post_id))
 }

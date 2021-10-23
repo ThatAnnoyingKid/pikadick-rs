@@ -11,12 +11,11 @@ use crate::{
         reddit_embed::RedditEmbedData,
         rule34::Rule34Client,
         shift::ShiftClient,
+        tic_tac_toe::TicTacToeData,
         urban::UrbanClient,
     },
     config::Config,
     database::Database,
-    reddit::RedditClient,
-    tic_tac_toe::TicTacToeData,
 };
 use serenity::{
     client::bridge::gateway::ShardManager,
@@ -101,8 +100,6 @@ pub struct ClientData {
     pub tic_tac_toe_data: TicTacToeData,
     /// The iqdb client
     pub iqdb_client: IqdbClient,
-    /// Reddit client
-    pub reddit_client: RedditClient,
 
     /// The database
     pub db: Database,
@@ -140,7 +137,6 @@ impl ClientData {
             xkcd_client: Default::default(),
             tic_tac_toe_data: Default::default(),
             iqdb_client: Default::default(),
-            reddit_client: Default::default(),
 
             db,
 
@@ -165,7 +161,6 @@ impl ClientData {
             &self.deviantart_client,
             &self.urban_client,
             &self.iqdb_client,
-            &self.reddit_client,
         ];
 
         for cache_stat_provider in cache_stat_providers {
