@@ -69,11 +69,23 @@ impl RedditClient {
                 .children
                 .into_iter()
                 .filter_map(|child| child.data.into_link())
+                .filter_map(|post| {
+                    if let Some(mut post) = post.crosspost_parent_list {
+                        if post.is_empty() {
+                            None
+                        } else {
+                            Some(post.swap_remove(0).into())
+                        }
+                    } else {
+                        Some(post)
+                    }
+                })
                 .filter(|link| {
+                    let link_url = link.url.as_str();
                     link.post_hint == Some(PostHint::Image)
-                        || link.url.as_str().ends_with(".jpg")
-                        || link.url.as_str().ends_with(".png")
-                        || link.url.as_str().ends_with(".gif")
+                        || link_url.ends_with(".jpg")
+                        || link_url.ends_with(".png")
+                        || link_url.ends_with(".gif")
                 })
                 .map(|link| link.url)
                 .collect();
