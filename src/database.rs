@@ -37,7 +37,7 @@ fn sqlite_logger_func(error_code: c_int, msg: &str) {
 /// The database
 #[derive(Clone, Debug)]
 pub struct Database {
-    db: Arc<parking_lot::Mutex<rusqlite::Connection>>,
+    db: async_rusqlite::Database,
 }
 
 impl Database {
@@ -47,31 +47,31 @@ impl Database {
             .clone()
             .context("failed to init sqlite logger")?;
 
-        let mut flags = rusqlite::OpenFlags::default();
-        if !create_if_missing {
-            flags.remove(rusqlite::OpenFlags::SQLITE_OPEN_CREATE)
-        }
-        let path = path.to_owned();
-        let db: anyhow::Result<_> = tokio::task::spawn_blocking(move || {
-            let db = rusqlite::Connection::open_with_flags(path, flags)
-                .context("failed to open database")?;
+        let db = async_rusqlite::Database::open(path, create_if_missing, |db| {
             db.execute_batch(SETUP_TABLES_SQL)
                 .context("failed to setup database")?;
-            Ok(Arc::new(parking_lot::Mutex::new(db)))
+            Ok(())
         })
-        .await?;
-        let db = db?;
+        .await
+        .context("failed to open database")?;
 
         Ok(Database { db })
     }
 
-    /// Access the db on the tokio threadpool
+    /// Access the db
     async fn access_db<F, R>(&self, func: F) -> anyhow::Result<R>
     where
         F: FnOnce(&mut rusqlite::Connection) -> R + Send + 'static,
         R: Send + 'static,
     {
-        let db = self.db.clone();
-        Ok(tokio::task::spawn_blocking(move || func(&mut db.lock())).await?)
+        Ok(self.db.access_db(move |db| func(db)).await?)
+    }
+
+    /// Close the db
+    pub async fn close(&self) -> anyhow::Result<()> {
+        self.db.close().await?;
+        self.db.join().await?;
+
+        Ok(())
     }
 }
