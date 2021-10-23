@@ -17,7 +17,7 @@
     future_incompatible,
     nonstandard_style
 )]
-#![allow(missing_doc_code_examples)] // TODO: Document everything properly
+#![allow(rustdoc::missing_doc_code_examples)] // TODO: Document everything properly
 
 //! # Pikadick
 
