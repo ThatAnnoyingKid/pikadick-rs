@@ -13,7 +13,10 @@ notice = "deny"
 ignore = [
     # Blocked on updating `chrono` and `systemstat`.
     # We don't mess with the env much so this should't be too much of an issue.
-    "RUSTSEC-2020-0071"
+    "RUSTSEC-2020-0071",
+    
+    # Blocked on tracing removing `chrono`
+    "RUSTSEC-2020-0159",
 ]
 
 [licenses]
