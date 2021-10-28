@@ -56,7 +56,7 @@ xkcd = { path = "lib/xkcd-rs" }
 zalgo = { git = "https://github.com/adumbidiot/zalgo-rs", rev = "a5e0ce60cb37daee1f4b954c5270c30d1034c4af" }
 
 # Optional
-openssl = { version = "0.10.36", optional = true, features = [ "vendored" ] }
+openssl = { version = "0.10.37", optional = true, features = [ "vendored" ] }
 
 [features]
 # Note: This is needed for cross comp as sqlx has a hard, non-optional dependency on native-tls
