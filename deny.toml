@@ -73,8 +73,8 @@ skip = [
     { name = "semver", version = "0.11.0" },
     { name = "rustc_version", version = "0.3.3" },
     
-    # Blocked on systemstat updating nom
-    { name = "nom",  version = "6.1.2" },
+    # Blocked on time updating to 0.3.0
+    { name = "time", version = "0.2.27" },
     
 ]
 

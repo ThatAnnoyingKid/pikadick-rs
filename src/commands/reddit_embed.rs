@@ -49,6 +49,8 @@ use url::Url;
 type SubReddit = String;
 type PostId = String;
 
+type LinkVec = Vec<Arc<reddit::Link>>;
+
 /// Source: <https://urlregex.com/>
 static URL_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex"));
@@ -61,8 +63,8 @@ pub struct RedditEmbedData {
     reddit_tube_client: reddit_tube::Client,
 
     cache: TimedCache<(SubReddit, PostId), String>,
-    video_data_cache: TimedCache<String, GetVideoResponseOk>,
-    random_post_cache: Arc<DashMap<String, Arc<(Instant, Vec<Arc<reddit::Link>>)>>>,
+    video_data_cache: TimedCache<String, Box<GetVideoResponseOk>>,
+    random_post_cache: Arc<DashMap<String, Arc<(Instant, LinkVec)>>>,
 }
 
 impl RedditEmbedData {
@@ -129,7 +131,7 @@ impl RedditEmbedData {
     }
 
     /// Get video data from reddit.tube. Takes a reddit url.
-    pub async fn get_video_data(&self, url: &str) -> anyhow::Result<GetVideoResponseOk> {
+    pub async fn get_video_data(&self, url: &str) -> anyhow::Result<Box<GetVideoResponseOk>> {
         let main_page = self
             .reddit_tube_client
             .get_main_page()
@@ -151,7 +153,7 @@ impl RedditEmbedData {
     pub async fn get_video_data_cached(
         &self,
         url: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<GetVideoResponseOk>>> {
+    ) -> anyhow::Result<Arc<TimedCacheEntry<Box<GetVideoResponseOk>>>> {
         if let Some(response) = self.video_data_cache.get_if_fresh(url) {
             return Ok(response);
         }
@@ -360,7 +362,7 @@ impl RedditEmbedData {
                 let url = self.create_video_url(&post_url).await?;
                 Ok(url.into())
             }
-            _ => Ok(link.url.clone().into()),
+            _ => Ok(link.url.clone()),
         }
     }
 }

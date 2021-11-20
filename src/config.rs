@@ -160,7 +160,7 @@ pub struct StatusConfig {
     url: Option<String>,
 
     #[serde(flatten)]
-    extra: HashMap<String, toml::Value>,
+    pub extra: HashMap<String, toml::Value>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Deserialize, Serialize)]

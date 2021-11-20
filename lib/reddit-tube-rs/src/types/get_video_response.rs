@@ -6,7 +6,7 @@ use url::Url;
 #[serde(tag = "status")]
 pub enum GetVideoResponse {
     #[serde(rename = "ok")]
-    Ok(GetVideoResponseOk),
+    Ok(Box<GetVideoResponseOk>),
 
     #[serde(rename = "error")]
     Error(GetVideoResponseError),
