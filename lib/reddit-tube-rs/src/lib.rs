@@ -35,8 +35,14 @@ mod test {
     async fn it_works() {
         let video_url = "https://www.reddit.com/r/dankvideos/comments/h8p0py/pp_removal_time/?utm_source=share&utm_medium=web2x";
         let client = Client::new();
-        let main_page = client.get_main_page().await.unwrap();
-        let vid = client.get_video(&main_page, video_url).await.unwrap();
+        let main_page = client
+            .get_main_page()
+            .await
+            .expect("failed to get main page");
+        let vid = client
+            .get_video(&main_page, video_url)
+            .await
+            .expect("failed to get video");
 
         dbg!(vid);
     }
