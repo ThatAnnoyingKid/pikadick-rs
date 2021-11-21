@@ -11,11 +11,11 @@ use crate::{
         reddit_embed::RedditEmbedData,
         rule34::Rule34Client,
         shift::ShiftClient,
+        tic_tac_toe::TicTacToeData,
         urban::UrbanClient,
     },
     config::Config,
     database::Database,
-    tic_tac_toe::TicTacToeData,
 };
 use serenity::{
     client::bridge::gateway::ShardManager,
