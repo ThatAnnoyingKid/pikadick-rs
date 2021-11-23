@@ -24,7 +24,7 @@ serde_json = "1.0.71"
 
 # Optional
 argh = { version = "0.1.6", optional = true }
-anyhow = { version = "1.0.47", optional = true }
+anyhow = { version = "1.0.48", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.14.0", features = [ "macros" ] }
