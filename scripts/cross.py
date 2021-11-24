@@ -50,6 +50,7 @@ RUSTFLAGS += "-Clinker={} ".format(linker)
 print("Compiling")
 cmd_list = [ "cargo", "build" ]
 cmd_list.extend([ "--target", TARGET ])
+cmd_list.extend([ "--features", "use-openssl-vendored" ])
 cmd_list.extend([ "--release" ])
 
 env = {}
