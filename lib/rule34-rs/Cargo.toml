@@ -16,7 +16,7 @@ lazy_static = "1.4.0"
 quick-xml = { version = "0.22.0", features = [ "serialize" ] }
 reqwest = { version = "0.11.6", features = [ "json", "brotli" ] }
 scraper = { version = "0.12.0", default-features = false }
-serde = { version = "1.0.130", features = [ "derive" ] }
+serde = { version = "1.0.131", features = [ "derive" ] }
 thiserror = "1.0.30"
 tokio = "1.14.0"
 url = { version = "2.2.2", features = [ "serde" ] }
