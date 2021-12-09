@@ -20,7 +20,7 @@ tokio = { version = "1.14.0", features = [ "io-util" ] }
 url = "2.2.2"
 
 # Optional
-argh = { version = "0.1.6", optional = true }
+argh = { version = "0.1.7", optional = true }
 anyhow = { version = "1.0.47", optional = true }
 
 [dev-dependencies]
