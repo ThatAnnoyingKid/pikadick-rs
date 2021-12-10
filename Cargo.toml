@@ -36,6 +36,7 @@ rusqlite = { version = "0.26.3", features = [ "bundled", "blob", "trace" ] }
 serde = { version = "1.0.131", features = [ "derive" ] }
 serenity = { version = "0.10.9", features = [ "client", "standard_framework", "voice" ] }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
+songbird = "0.2.0"
 systemstat = "0.1.10"
 thiserror = "1.0.30"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }

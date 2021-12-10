@@ -89,6 +89,20 @@ skip = [
     { name = "tokio-rustls", version = "0.22.0" },
     { name = "rustls", version = "0.19.1" },
     { name = "sct", version = "0.6.1" },
+    
+    # Blocked on ring updating their version of spin to 0.9
+    { name = "spin", version = "0.9.2" },
+    
+    # Blocked on serenity-voice-model moving away from enum_primitive
+    { name = "num-traits", version = "0.1.43" },
+    
+    # Blocked on songbird updating symphonia-core to 0.4.0
+    { name = "arrayvec", version = "0.4.12" },
+    
+    # Blocked on serenity updating async-tungstenite to 0.14.0
+    { name = "tungstenite", version = "0.11.1" },
+    { name = "input_buffer", version = "0.3.1" },
+    { name = "async-tungstenite", version = "0.11.0" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
