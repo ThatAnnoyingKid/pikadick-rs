@@ -17,6 +17,9 @@ ignore = [
     
     # Blocked on tracing removing `chrono`
     "RUSTSEC-2020-0159",
+    
+    # Blocked on criterion moving away from "serde_cbor". This is fine as criterion is a dev-dependency.
+    "RUSTSEC-2021-0127",
 ]
 
 [licenses]
@@ -45,6 +48,13 @@ license-files = [
     { path = "LICENSE", hash = 0x001c7e6c },
 ]
 
+[[licenses.clarify]]
+name = "encoding_rs"
+expression = "(Apache-2.0 OR MIT) AND BSD-3-Clause"
+license-files = [
+    { path = "COPYRIGHT", hash = 0x39f8ad31 }
+]
+
 [bans]
 multiple-versions = "deny"
 highlight = "all"
@@ -58,7 +68,7 @@ skip = [
     # Blocked on rustls, and tungstentite bumping base64 to 0.13.x
     { name = "base64", version = "0.12.3" },
     
-    # Blocked on async-tungstenite updating webpki-roots to 0.21.x
+    # Blocked on reqwest updating webpki-roots to 0.21.x
     { name = "webpki-roots", version = "0.20.0" },
     
     # Blocked on phf_generator, tempfile, tungstenite, and zalgo moving to rand 0.8.x
@@ -69,13 +79,30 @@ skip = [
     # Blocked on input_buffer and sqlx moving to bytes 1.0.x
     { name = "bytes", version = "0.5.6" },
     
-    # This is duped by criterion, which isn't present in the main build
-    { name = "semver", version = "0.11.0" },
-    { name = "rustc_version", version = "0.3.3" },
-    
     # Blocked on time updating to 0.3.0
     { name = "time", version = "0.2.27" },
     
+    # Blocked on reqwest updating webpki
+    { name = "webpki", version = "0.21.4" },
+    
+    # Blocked on async-tungstenite and tonic updating tokio-rustls to 0.23.1 and rustls to 0.20.x
+    { name = "tokio-rustls", version = "0.22.0" },
+    { name = "rustls", version = "0.19.1" },
+    { name = "sct", version = "0.6.1" },
+    
+    # Blocked on ring updating their version of spin to 0.9
+    { name = "spin", version = "0.9.2" },
+    
+    # Blocked on serenity-voice-model moving away from enum_primitive
+    { name = "num-traits", version = "0.1.43" },
+    
+    # Blocked on songbird updating symphonia-core to 0.4.0
+    { name = "arrayvec", version = "0.4.12" },
+    
+    # Blocked on serenity updating async-tungstenite to 0.14.0
+    { name = "tungstenite", version = "0.11.1" },
+    { name = "input_buffer", version = "0.3.1" },
+    { name = "async-tungstenite", version = "0.11.0" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs

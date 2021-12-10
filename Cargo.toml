@@ -5,7 +5,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.47"
+anyhow = "1.0.51"
 async-rusqlite = { path = "./lib/async-rusqlite-rs", features = [ "bundled" ] }
 bincode = "1.3.3"
 chrono = "0.4.19"
@@ -32,10 +32,11 @@ reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "d46d78445ca94
 reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
-rusqlite = { version = "0.26.1", features = [ "bundled", "blob", "trace" ] }
-serde = { version = "1.0.130", features = [ "derive" ] }
-serenity = "0.10.9"
+rusqlite = { version = "0.26.3", features = [ "bundled", "blob", "trace" ] }
+serde = { version = "1.0.131", features = [ "derive" ] }
+serenity = { version = "0.10.9", features = [ "client", "standard_framework", "voice" ] }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
+songbird = "0.2.0"
 systemstat = "0.1.10"
 thiserror = "1.0.30"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
@@ -47,8 +48,8 @@ tracing = "0.1.29"
 tracing-appender = "0.2.0"
 tracing-log = "0.1.2"
 tracing-opentelemetry = "0.16.0"
-tracing-subscriber = { version = "0.3.2", features = [ "env-filter", "fmt", "parking_lot" ] }
-ttf-parser = "0.13.3"
+tracing-subscriber = { version = "0.3.3", features = [ "env-filter", "fmt", "parking_lot" ] }
+ttf-parser = "0.13.4"
 uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs" }
 url = "2.2.2"
@@ -56,10 +57,10 @@ xkcd = { path = "lib/xkcd-rs" }
 zalgo = { git = "https://github.com/adumbidiot/zalgo-rs", rev = "a5e0ce60cb37daee1f4b954c5270c30d1034c4af" }
 
 # Optional
-openssl = { version = "0.10.36", optional = true, features = [ "vendored" ] }
+openssl = { version = "0.10.38", optional = true, features = [ "vendored" ] }
 
 [features]
-# Note: This is needed for cross comp as sqlx has a hard, non-optional dependency on native-tls
+# Note: This is needed for cross comp
 use-openssl-vendored = [ "openssl" ]
 
 [patch.crates-io]
