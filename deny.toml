@@ -48,6 +48,13 @@ license-files = [
     { path = "LICENSE", hash = 0x001c7e6c },
 ]
 
+[[licenses.clarify]]
+name = "encoding_rs"
+expression = "(Apache-2.0 OR MIT) AND BSD-3-Clause"
+license-files = [
+    { path = "COPYRIGHT", hash = 0x39f8ad31 }
+]
+
 [bans]
 multiple-versions = "deny"
 highlight = "all"
@@ -71,10 +78,6 @@ skip = [
     
     # Blocked on input_buffer and sqlx moving to bytes 1.0.x
     { name = "bytes", version = "0.5.6" },
-    
-    # This is duped by criterion, which isn't present in the main build
-    { name = "semver", version = "0.11.0" },
-    { name = "rustc_version", version = "0.3.3" },
     
     # Blocked on time updating to 0.3.0
     { name = "time", version = "0.2.27" },
