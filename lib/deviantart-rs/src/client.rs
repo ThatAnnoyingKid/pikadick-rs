@@ -205,7 +205,7 @@ impl Client {
         &self,
         deviation: &Deviation,
         mut writer: impl AsyncWrite + Unpin,
-    ) -> Result<(), Error> {        
+    ) -> Result<(), Error> {
         let url = deviation
             .get_download_url()
             .or_else(|| deviation.get_fullview_url())
