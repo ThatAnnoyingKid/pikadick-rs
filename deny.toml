@@ -103,6 +103,9 @@ skip = [
     { name = "tungstenite", version = "0.11.1" },
     { name = "input_buffer", version = "0.3.1" },
     { name = "async-tungstenite", version = "0.11.0" },
+    
+    # Blocked on a lot of crates moving to version 1. Re-evaluate in like a month or two. 12/7/2021.
+    { name = "itoa", version = "0.4.8" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
