@@ -6,6 +6,7 @@ pub mod insta_dl;
 pub mod invite;
 pub mod iqdb;
 pub mod latency;
+pub mod leave;
 pub mod nekos;
 pub mod ping;
 pub mod quizizz;
@@ -32,6 +33,7 @@ pub use crate::commands::{
     invite::INVITE_COMMAND,
     iqdb::IQDB_COMMAND,
     latency::LATENCY_COMMAND,
+    leave::LEAVE_COMMAND,
     nekos::NEKOS_COMMAND,
     ping::PING_COMMAND,
     quizizz::QUIZIZZ_COMMAND,
