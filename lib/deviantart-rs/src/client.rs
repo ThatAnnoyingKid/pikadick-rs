@@ -199,6 +199,8 @@ impl Client {
     /// Download a [`Deviation`].
     ///
     /// Only works with images. It will attempt to get the highest quality image it can.
+    ///
+    /// This is discouraged as you really need all the data from a scraped webpage to give a good try at high-quality downloads.
     pub async fn download_deviation(
         &self,
         deviation: &Deviation,
@@ -206,7 +208,7 @@ impl Client {
     ) -> Result<(), Error> {
         let url = deviation
             .get_download_url()
-            .or_else(|| deviation.get_media_url())
+            .or_else(|| deviation.get_fullview_url())
             .ok_or(Error::MissingMediaToken)?;
 
         let mut res = self
@@ -233,6 +235,7 @@ impl Default for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tokio::fs::File;
 
     #[derive(serde::Deserialize)]
     struct Config {
@@ -254,8 +257,11 @@ mod tests {
         // dbg!(&results);
         let first = &results.deviations[0];
         // dbg!(first);
-        let image = tokio::fs::File::create("test.jpg").await.unwrap();
-        client.download_deviation(first, image).await.unwrap();
+        let image = File::create("test.jpg").await.expect("failed to save file");
+        client
+            .download_deviation(first, image)
+            .await
+            .expect("failed to download deviation");
     }
 
     #[tokio::test]

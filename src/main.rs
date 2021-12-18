@@ -61,6 +61,7 @@ use serenity::{
     prelude::*,
     FutureExt,
 };
+use songbird::SerenityInit;
 use std::{
     collections::HashSet,
     path::Path,
@@ -176,7 +177,8 @@ async fn help(
     xkcd,
     tic_tac_toe,
     iqdb,
-    reddit
+    reddit,
+    leave
 )]
 struct General;
 
@@ -423,16 +425,12 @@ fn real_main(
     ret
 }
 
-/// The async entry
-async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<()> {
-    info!("opening database...");
-    let db_path = config.data_dir.join("pikadick.sqlite");
-    // TODO: Is there a good reason to not remake the db if it is missing?
-    let db = Database::new(&db_path, true) // missing_data_dir
-        .await
-        .context("failed to open database")?;
-
+/// Set up a serenity client
+async fn setup_client(config: &Config) -> anyhow::Result<Client> {
+    // Create second prefix that is uppercase so we are case-insensitive
     let uppercase_prefix = config.prefix.to_uppercase();
+
+    // Build the standard framework
     let framework = StandardFramework::new()
         .configure(|c| {
             c.prefixes(&[&config.prefix, &uppercase_prefix])
@@ -463,13 +461,33 @@ async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<(
 
     info!("using prefix '{}'", &config.prefix);
 
-    let mut client = Client::builder(&config.token)
+    // Build the client
+    let client = Client::builder(&config.token)
         .event_handler(Handler)
         .framework(framework)
+        .register_songbird()
         .await
         .context("failed to create client")?;
 
+    // TODO: Spawn a task for this earlier?
+    // Spawn the ctrl-c handler
     tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
+
+    Ok(client)
+}
+
+/// The async entry
+async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<()> {
+    info!("opening database...");
+    let db_path = config.data_dir.join("pikadick.sqlite");
+    // TODO: Is there a good reason to not remake the db if it is missing?
+    let db = Database::new(&db_path, true) // missing_data_dir
+        .await
+        .context("failed to open database")?;
+
+    let mut client = setup_client(&config)
+        .await
+        .context("failed to set up client")?;
 
     let client_data = ClientData::init(client.shard_manager.clone(), config, db.clone())
         .await
@@ -486,10 +504,7 @@ async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<(
     }
 
     info!("logging in...");
-    if let Err(why) = client.start().await {
-        error!("error while running client: {}", why);
-    }
-
+    client.start().await.context("failed to run client")?;
     drop(client);
 
     info!("closing db...");
