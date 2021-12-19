@@ -178,7 +178,8 @@ async fn help(
     tic_tac_toe,
     iqdb,
     reddit,
-    leave
+    leave,
+    stop
 )]
 struct General;
 
