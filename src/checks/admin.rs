@@ -18,7 +18,7 @@ pub async fn admin_check(
     _args: &mut Args,
     _opts: &CommandOptions,
 ) -> Result<(), Reason> {
-    if let Some(guild) = msg.guild(&ctx.cache).await {
+    if let Some(guild) = msg.guild(&ctx.cache) {
         let channel = match guild.channels.get(&msg.channel_id) {
             Some(channel) => channel,
             None => return Err(Reason::Unknown),
@@ -29,12 +29,20 @@ pub async fn admin_check(
                 return Err(Reason::User(format!("Failed to fetch member info: {}", e)));
             }
         };
-        let perms = match guild.user_permissions_in(channel, &member) {
+        let guild_channel = match channel {
+            Channel::Guild(channel) => channel,
+            _ => {
+                return Err(Reason::Unknown);
+            }
+        };
+        let perms = match guild.user_permissions_in(guild_channel, &member) {
             Ok(perms) => perms,
             Err(e) => {
                 error!(
-                    "Error getting permissions for user {} in channel {}: {}",
-                    member.user.id, channel.id, e
+                    "error getting permissions for user {} in channel {}: {}",
+                    member.user.id,
+                    channel.id(),
+                    e
                 );
                 return Err(Reason::Unknown);
             }
