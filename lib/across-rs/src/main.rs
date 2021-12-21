@@ -24,6 +24,12 @@ struct Options {
     #[argh(switch, description = "whether to build in release")]
     release: bool,
 
+    #[argh(switch, long = "vv", description = "very verbose")]
+    very_verbose: bool,
+
+    #[argh(switch, description = "whether to run strip on the binary")]
+    use_strip: bool,
+
     #[argh(
         option,
         short = 'c',
@@ -47,10 +53,6 @@ pub struct ConfigTarget {
     /// The linker exe name.
     /// Example: "arm-linux-gnueabihf-gcc"
     pub linker: String,
-
-    /// The strip exe name.
-    /// Example: "arm-linux-gnueabihf-strip"
-    pub strip: String,
 
     /// Env vars set for this target.
     ///
@@ -95,7 +97,11 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         .context("missing config for target")?;
 
     let mut rust_flags = String::with_capacity(64);
-    write!(&mut rust_flags, "-Clinker={}", target_config.linker)?;
+    write!(&mut rust_flags, "-Clinker={} ", target_config.linker)?;
+    if options.use_strip {
+        // TODO: allow user to specify strip level
+        write!(&mut rust_flags, "-Cstrip=symbols ")?;
+    }
 
     let mut envs = target_config.env.clone();
     envs.insert("RUSTFLAGS".to_string(), rust_flags);
@@ -109,6 +115,9 @@ fn real_main(options: Options) -> anyhow::Result<()> {
     }
     if options.release {
         command.arg("--release");
+    }
+    if options.very_verbose {
+        command.arg("-vv");
     }
     command.envs(envs.iter());
 
