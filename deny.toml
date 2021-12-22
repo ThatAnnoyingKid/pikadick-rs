@@ -65,22 +65,10 @@ skip = [
     # Blocked on rand updating getrandom to 0.2.x 
     { name = "getrandom", version = "0.1.15" },
     
-    # Blocked on rustls, and tungstentite bumping base64 to 0.13.x
-    { name = "base64", version = "0.12.3" },
-    
-    # Blocked on reqwest updating webpki-roots to 0.21.x
-    { name = "webpki-roots", version = "0.20.0" },
-    
     # Blocked on phf_generator, tempfile, tungstenite, and zalgo moving to rand 0.8.x
     { name = "rand", version = "0.7.3" },
     { name = "rand_core", version = "0.5.1" },
     { name = "rand_chacha", version = "0.2.2" },
-    
-    # Blocked on input_buffer and sqlx moving to bytes 1.0.x
-    { name = "bytes", version = "0.5.6" },
-    
-    # Blocked on time updating to 0.3.0
-    { name = "time", version = "0.2.27" },
     
     # Blocked on reqwest updating webpki
     { name = "webpki", version = "0.21.4" },
@@ -99,13 +87,19 @@ skip = [
     # Blocked on songbird updating symphonia-core to 0.4.0
     { name = "arrayvec", version = "0.4.12" },
     
-    # Blocked on serenity updating async-tungstenite to 0.14.0
-    { name = "tungstenite", version = "0.11.1" },
-    { name = "input_buffer", version = "0.3.1" },
-    { name = "async-tungstenite", version = "0.11.0" },
+    # Blocked on serenity updating tungstenite to 0.16.0
+    { name = "tungstenite", version = "0.13.0" },
+    { name = "webpki-roots", version = "0.21.1" },
+    { name = "async-tungstenite", version = "0.14.0" },
+    
+    # Blocked on time getting updated from a lot of crates 
+    { name = "time", version = "0.2.27" },  
     
     # Blocked on a lot of crates moving to version 1. Re-evaluate in like a month or two. 12/7/2021.
     { name = "itoa", version = "0.4.8" },
+    
+    # Blocked on songbird updating to 5.0.0
+    { name = "dashmap", version = "4.0.2" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -166,4 +160,7 @@ allow-git = [
     "https://github.com/adumbidiot/reddit-rs",
     "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
+    "https://github.com/adumbidiot/songbird",
+    "https://github.com/serenity-rs/serenity",
+    "https://github.com/alexcrichton/cmake-rs",
 ]
