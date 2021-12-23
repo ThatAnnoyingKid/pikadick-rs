@@ -256,8 +256,9 @@ impl HtmlPost {
                             parent_post = element
                                 .select(&A_SELECTOR)
                                 .next()
-                                .and_then(|element| element.value().attr("href"))
-                                .map(|url| {
+                                .and_then(|element| {
+                                    let url = element.value().attr("href")?;
+
                                     let mut trimmed = false;
                                     let query = url.trim_start_matches(|c| {
                                         if !trimmed && c == '?' {
@@ -281,7 +282,6 @@ impl HtmlPost {
                                         },
                                     )
                                 })
-                                .flatten()
                                 .transpose()?;
                         }
                     }

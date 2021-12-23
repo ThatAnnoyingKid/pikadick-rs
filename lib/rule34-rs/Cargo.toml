@@ -2,8 +2,8 @@
 name = "rule34"
 version = "0.0.0"
 authors = [ "ProfessionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
-edition = "2018"
-license = "MIT/Apache-2.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [[bin]]
 name = "rule34"
@@ -14,7 +14,7 @@ path = "src/cli/main.rs"
 itoa = "1.0.1"
 lazy_static = "1.4.0"
 quick-xml = { version = "0.22.0", features = [ "serialize" ] }
-reqwest = { version = "0.11.7", features = [ "json", "brotli" ] }
+reqwest = { version = "0.11.7", default-features = false, features = [ "json", "brotli" ] }
 scraper = { version = "0.12.0", default-features = false }
 serde = { version = "1.0.132", features = [ "derive" ] }
 thiserror = "1.0.30"
@@ -30,6 +30,17 @@ anyhow = { version = "1.0.51", optional = true }
 tokio = { version = "1.15.0", features = [ "macros" ] }
 
 [features]
+# Use reqwest's default by default.
+default = [ "default-tls" ]
+
+# Use the default TLS for this platform. 
+# This is reqwest's default.
+default-tls = [ "reqwest/default-tls" ]
+# Use native-tls for TLS
+native-tls = [ "reqwest/native-tls" ]
+# Use rustls for TLS
+rustls-tls = [ "reqwest/rustls-tls" ]
+
 cli = [
     "argh",
     "anyhow",
