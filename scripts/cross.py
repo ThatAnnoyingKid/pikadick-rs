@@ -27,4 +27,6 @@ if is_ci:
 ###############
 ### RUNNING ###
 ###############
-subprocess.run(f'cargo run -p across --release -- --config {cross_compile_info_file_name} --target {TARGET} --features use-openssl-vendored --use-strip --release', check=True, shell=True)
+
+# Avoid `--use-strip` until it hits rust stable in 1.58
+subprocess.run(f'cargo run -p across --release -- --config {cross_compile_info_file_name} --target {TARGET} --features use-openssl-vendored --release', check=True, shell=True)
