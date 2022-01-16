@@ -14,7 +14,7 @@ dashmap = "5.0.0"
 deviantart = { path = "./lib/deviantart-rs" }
 fml = { path = "./lib/fml-rs" }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
-indexmap = "1.7.0"
+indexmap = "1.8.0"
 insta = { path = "./lib/insta-rs" }
 iqdb = { path = "./lib/iqdb-rs" }
 itoa = "1.0.1"
