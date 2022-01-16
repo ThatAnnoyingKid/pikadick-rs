@@ -33,7 +33,7 @@ reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
 rusqlite = { version = "0.26.3", features = [ "bundled", "blob", "trace" ] }
-serde = { version = "1.0.132", features = [ "derive" ] }
+serde = { version = "1.0.133", features = [ "derive" ] }
 serenity = { version = "0.10.9", features = [ "client", "standard_framework", "voice" ] }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
 songbird = "0.2.0"
