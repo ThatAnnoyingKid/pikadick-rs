@@ -128,8 +128,9 @@ impl Deviation {
         // Otherwise, assume failure
         None
     }
-
     /// Try to get the original extension of this [`Deviation`]
+    // Shows as bug in earlier clippy versions
+    #[allow(clippy::or_fun_call)]
     pub fn get_extension(&self) -> Option<&str> {
         if self.is_image() {
             let url = self
