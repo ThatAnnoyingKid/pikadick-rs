@@ -134,7 +134,7 @@ mod test {
         let _sessions_err = client
             .get_sessions("", Platform::Pc)
             .await
-            .unwrap()
+            .expect("failed to get sessions")
             .into_result()
             .unwrap_err();
     }
