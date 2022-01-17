@@ -6,15 +6,20 @@ use crate::{
 };
 use scraper::Html;
 
+/// Client
 #[derive(Clone, Debug)]
 pub struct Client {
     client: reqwest::Client,
 }
 
 impl Client {
+    /// Make a new [`Client`].
     pub fn new() -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .user_agent("iqdb-rs")
+                .build()
+                .expect("failed to build iqdb client"),
         }
     }
 
