@@ -29,7 +29,6 @@ use serenity::{
         Args,
         CommandResult,
     },
-    http::AttachmentType,
     model::{
         channel::Message,
         prelude::*,
