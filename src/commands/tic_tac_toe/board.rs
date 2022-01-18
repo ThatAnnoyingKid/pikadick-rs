@@ -9,7 +9,6 @@ use serenity::{
         Args,
         CommandResult,
     },
-    http::AttachmentType,
     model::prelude::*,
 };
 use tracing::error;
