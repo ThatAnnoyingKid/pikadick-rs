@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.51"
 argh = "0.1.7"
-serde = { version = "1.0.132", features = [ "derive" ] }
+serde = { version = "1.0.134", features = [ "derive" ] }
 toml = "0.5.8"
