@@ -146,9 +146,15 @@ async fn help(
     groups: &[&'static CommandGroup],
     owners: HashSet<UserId>,
 ) -> CommandResult {
-    let _ = help_commands::with_embeds(ctx, msg, args, help_options, groups, owners)
+    match help_commands::with_embeds(ctx, msg, args, help_options, groups, owners)
         .await
-        .is_some();
+        .context("failed to send help")
+    {
+        Ok(_) => {}
+        Err(e) => {
+            error!("{:?}", e);
+        }
+    }
     Ok(())
 }
 
@@ -245,14 +251,16 @@ fn process_dispatch_error<'fut>(
     ctx: &'fut Context,
     msg: &'fut Message,
     error: DispatchError,
+    cmd_name: &'fut str,
 ) -> BoxFuture<'fut, ()> {
-    process_dispatch_error_future(ctx, msg, error).boxed()
+    process_dispatch_error_future(ctx, msg, error, cmd_name).boxed()
 }
 
 async fn process_dispatch_error_future<'fut>(
     ctx: &'fut Context,
     msg: &'fut Message,
     error: DispatchError,
+    _cmd_name: &'fut str,
 ) {
     match error {
         DispatchError::Ratelimited(s) => {
@@ -412,7 +420,9 @@ fn real_main(
     missing_data_dir: bool,
     _worker_guard: WorkerGuard,
 ) -> anyhow::Result<()> {
-    let ret = tokio_rt.block_on(async_main(config, missing_data_dir));
+    // We spawn this is a seperate thread/task as the main thread does not have enough stack space
+    let _enter_guard = tokio_rt.enter();
+    let ret = tokio_rt.block_on(tokio::spawn(async_main(config, missing_data_dir)));
 
     let shutdown_start = Instant::now();
     info!(
@@ -423,18 +433,20 @@ fn real_main(
     info!("shutdown tokio runtime in {:?}", shutdown_start.elapsed());
 
     info!("successful shutdown");
-    ret
+    ret?
 }
 
 /// Set up a serenity client
 async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     // Create second prefix that is uppercase so we are case-insensitive
-    let uppercase_prefix = config.prefix.to_uppercase();
+    let config_prefix = config.prefix.clone();
+    let uppercase_prefix = config_prefix.to_uppercase();
 
     // Build the standard framework
+    info!("using prefix '{}'", &config_prefix);
     let framework = StandardFramework::new()
         .configure(|c| {
-            c.prefixes(&[&config.prefix, &uppercase_prefix])
+            c.prefixes(&[&config_prefix, &uppercase_prefix])
                 .case_insensitivity(true)
         })
         .help(&HELP)
@@ -460,10 +472,9 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
         .unrecognised_command(unrecognised_command_handler)
         .on_dispatch_error(process_dispatch_error);
 
-    info!("using prefix '{}'", &config.prefix);
-
     // Build the client
-    let client = Client::builder(&config.token)
+    let config_token = config.token.clone();
+    let client = Client::builder(config_token)
         .event_handler(Handler)
         .framework(framework)
         .register_songbird()

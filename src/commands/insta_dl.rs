@@ -32,7 +32,7 @@ async fn insta_dl(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     let url = args.trimmed().current().expect("missing url");
 
-    info!("Downloading instagram post '{}'", url);
+    info!("downloading instagram post '{}'", url);
     let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
     match client.get_post(url).await {
@@ -63,11 +63,7 @@ async fn insta_dl(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
             };
 
             msg.channel_id
-                .send_files(
-                    &ctx.http,
-                    std::array::IntoIter::new([(buffer.as_slice(), file_name)]),
-                    |m| m,
-                )
+                .send_files(&ctx.http, [(buffer.as_slice(), file_name)], |m| m)
                 .await?;
             loading.send_ok();
         }

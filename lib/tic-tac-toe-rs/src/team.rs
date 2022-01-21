@@ -61,6 +61,7 @@ pub enum Team {
 
 impl Team {
     /// Invert the teams
+    #[must_use]
     pub fn inverse(self) -> Self {
         match self {
             Self::X => Self::O,
