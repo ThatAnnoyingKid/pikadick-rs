@@ -26,6 +26,7 @@ pub mod client_data;
 pub mod commands;
 pub mod config;
 pub mod database;
+pub mod framework;
 pub mod logger;
 pub mod util;
 
@@ -38,6 +39,11 @@ use crate::{
         Severity,
     },
     database::Database,
+    framework::{
+        Framework,
+        FrameworkBuilder,
+        FrameworkCommandBuilder,
+    },
 };
 use anyhow::Context as _;
 use serenity::{
@@ -90,6 +96,10 @@ impl EventHandler for Handler {
         let client_data = data_lock
             .get::<ClientDataKey>()
             .expect("missing client data");
+        let framework = data_lock
+            .get::<FrameworkKey>()
+            .expect("missing framework")
+            .clone();
         let config = client_data.config.clone();
         drop(data_lock);
 
@@ -106,6 +116,15 @@ impl EventHandler for Handler {
                     ctx.set_activity(Activity::playing(status)).await;
                 }
             }
+        }
+
+        // TODO: Consider shutting down the bot. It might be possible to use old data though.
+        if let Err(e) = framework
+            .register(ctx.clone())
+            .await
+            .context("failed to register slash commands")
+        {
+            warn!("{:?}", e);
         }
 
         info!("logged in as '{}'", ready.user.name);
@@ -128,6 +147,17 @@ impl EventHandler for Handler {
             error!("failed to generate reddit embed: {}", e);
         }
     }
+
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        let data_lock = ctx.data.read().await;
+        let framework = data_lock
+            .get::<FrameworkKey>()
+            .expect("missing framework")
+            .clone();
+        drop(data_lock);
+
+        framework.process_interaction_create(ctx, interaction).await;
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -135,6 +165,13 @@ pub struct ClientDataKey;
 
 impl TypeMapKey for ClientDataKey {
     type Value = ClientData;
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct FrameworkKey;
+
+impl TypeMapKey for FrameworkKey {
+    type Value = Framework;
 }
 
 #[help]
@@ -437,6 +474,55 @@ fn real_main(
 
 /// Set up a serenity client
 async fn setup_client(config: &Config) -> anyhow::Result<Client> {
+    // Setup slash framework
+    let slash_framework = FrameworkBuilder::new()
+        .command(
+            FrameworkCommandBuilder::new()
+                .name("nekos")
+                .description("Get a random neko")
+                .on_process(|ctx, interaction| {
+                    Box::pin(async move {
+                        let data_lock = ctx.data.read().await;
+                        let client_data = data_lock
+                            .get::<ClientDataKey>()
+                            .expect("failed to get client data");
+                        let nekos_client = client_data.nekos_client.clone();
+                        drop(data_lock);
+
+                        match nekos_client
+                            .get_rand(false) // nsfw
+                            .await
+                            .context("failed to repopulate nekos caches")
+                        {
+                            Ok(url) => {
+                                interaction
+                                    .create_interaction_response(&ctx.http, |res| {
+                                        res.interaction_response_data(|res| {
+                                            res.content(url.as_str())
+                                        })
+                                    })
+                                    .await?;
+                            }
+                            Err(e) => {
+                                error!("{:?}", e);
+
+                                interaction
+                                    .create_interaction_response(&ctx.http, |res| {
+                                        res.interaction_response_data(|res| {
+                                            res.content(format!("{:?}", e))
+                                        })
+                                    })
+                                    .await?;
+                            }
+                        }
+
+                        Ok(())
+                    })
+                })
+                .build()?,
+        )?
+        .build()?;
+
     // Create second prefix that is uppercase so we are case-insensitive
     let config_prefix = config.prefix.clone();
     let uppercase_prefix = config_prefix.to_uppercase();
@@ -475,10 +561,19 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     let config_token = config.token.clone();
     let client = Client::builder(config_token)
         .event_handler(Handler)
+        .application_id(config.application_id)
         .framework(framework)
         .register_songbird()
         .await
         .context("failed to create client")?;
+
+    {
+        client
+            .data
+            .write()
+            .await
+            .insert::<FrameworkKey>(slash_framework);
+    }
 
     // TODO: Spawn a task for this earlier?
     // Spawn the ctrl-c handler

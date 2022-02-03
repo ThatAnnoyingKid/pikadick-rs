@@ -23,6 +23,9 @@ pub struct Config {
     /// The discord token
     pub token: String,
 
+    /// The application id
+    pub application_id: u64,
+
     /// Prefix for the bot
     #[serde(default = "default_prefix")]
     pub prefix: String,
