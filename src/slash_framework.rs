@@ -24,11 +24,11 @@ type OnProcessFuture = Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 
 
 /// A framework
 #[derive(Clone)]
-pub struct Framework {
-    commands: Arc<HashMap<Box<str>, Arc<FrameworkCommand>>>,
+pub struct SlashFramework {
+    commands: Arc<HashMap<Box<str>, Arc<SlashFrameworkCommand>>>,
 }
 
-impl Framework {
+impl SlashFramework {
     /// Register the framework
     pub async fn register(&self, ctx: Context) -> anyhow::Result<()> {
         for (_name, framework_command) in self.commands.iter() {
@@ -79,21 +79,21 @@ impl Framework {
     }
 }
 
-impl std::fmt::Debug for Framework {
+impl std::fmt::Debug for SlashFramework {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Framework")
+        f.debug_struct("SlashFramework")
             .field("commands", &self.commands)
             .finish()
     }
 }
 
 /// A FrameworkBuilder for slash commands.
-pub struct FrameworkBuilder {
-    commands: HashMap<Box<str>, Arc<FrameworkCommand>>,
+pub struct SlashFrameworkBuilder {
+    commands: HashMap<Box<str>, Arc<SlashFrameworkCommand>>,
 }
 
-impl FrameworkBuilder {
-    /// Make a new [`FrameworkBuilder`].
+impl SlashFrameworkBuilder {
+    /// Make a new [`SlashFrameworkBuilder`].
     pub fn new() -> Self {
         Self {
             commands: HashMap::new(),
@@ -101,7 +101,7 @@ impl FrameworkBuilder {
     }
 
     /// Add a command
-    pub fn command(&mut self, command: FrameworkCommand) -> anyhow::Result<&mut Self> {
+    pub fn command(&mut self, command: SlashFrameworkCommand) -> anyhow::Result<&mut Self> {
         let command_name = command.name.clone();
         let had_duplicate = self
             .commands
@@ -112,29 +112,29 @@ impl FrameworkBuilder {
     }
 
     /// Build a framework
-    pub fn build(&mut self) -> anyhow::Result<Framework> {
-        Ok(Framework {
+    pub fn build(&mut self) -> anyhow::Result<SlashFramework> {
+        Ok(SlashFramework {
             commands: Arc::new(std::mem::take(&mut self.commands)),
         })
     }
 }
 
-impl std::fmt::Debug for FrameworkBuilder {
+impl std::fmt::Debug for SlashFrameworkBuilder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("FrameworkBuilder")
+        f.debug_struct("SlashFrameworkBuilder")
             .field("commands", &self.commands)
             .finish()
     }
 }
 
-impl Default for FrameworkBuilder {
+impl Default for SlashFrameworkBuilder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-/// A framework command
-pub struct FrameworkCommand {
+/// A slash framework command
+pub struct SlashFrameworkCommand {
     /// The name of the command
     name: Box<str>,
 
@@ -146,9 +146,9 @@ pub struct FrameworkCommand {
     >,
 }
 
-impl std::fmt::Debug for FrameworkCommand {
+impl std::fmt::Debug for SlashFrameworkCommand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("FrameworkCommand")
+        f.debug_struct("SlashFrameworkCommand")
             .field("name", &self.name)
             .field("description", &self.description)
             .field("on_process", &"<func>")
@@ -156,8 +156,8 @@ impl std::fmt::Debug for FrameworkCommand {
     }
 }
 
-/// A builder for a [`FrameworkCommand`].
-pub struct FrameworkCommandBuilder<'a, 'b> {
+/// A builder for a [`SlashFrameworkCommand`].
+pub struct SlashFrameworkCommandBuilder<'a, 'b> {
     name: Option<&'a str>,
     description: Option<&'b str>,
 
@@ -171,7 +171,7 @@ pub struct FrameworkCommandBuilder<'a, 'b> {
     >,
 }
 
-impl<'a, 'b> FrameworkCommandBuilder<'a, 'b> {
+impl<'a, 'b> SlashFrameworkCommandBuilder<'a, 'b> {
     /// Make a new [`FrameworkCommandBuilder`].
     pub fn new() -> Self {
         Self {
@@ -203,12 +203,12 @@ impl<'a, 'b> FrameworkCommandBuilder<'a, 'b> {
     }
 
     /// Build the [`FrameworkCommand`]
-    pub fn build(&mut self) -> anyhow::Result<FrameworkCommand> {
+    pub fn build(&mut self) -> anyhow::Result<SlashFrameworkCommand> {
         let name = self.name.take().context("missing name")?;
         let description = self.description.take().context("missing description")?;
         let on_process = self.on_process.take().context("missing on_process")?;
 
-        Ok(FrameworkCommand {
+        Ok(SlashFrameworkCommand {
             name: name.into(),
             description: description.into(),
             on_process,
@@ -216,9 +216,9 @@ impl<'a, 'b> FrameworkCommandBuilder<'a, 'b> {
     }
 }
 
-impl std::fmt::Debug for FrameworkCommandBuilder<'_, '_> {
+impl std::fmt::Debug for SlashFrameworkCommandBuilder<'_, '_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("FrameworkCommandBuilder")
+        f.debug_struct("SlashFrameworkCommandBuilder")
             .field("name", &self.name)
             .field("description", &self.description)
             .field("on_process", &"<func>")
@@ -226,7 +226,7 @@ impl std::fmt::Debug for FrameworkCommandBuilder<'_, '_> {
     }
 }
 
-impl Default for FrameworkCommandBuilder<'_, '_> {
+impl Default for SlashFrameworkCommandBuilder<'_, '_> {
     fn default() -> Self {
         Self::new()
     }

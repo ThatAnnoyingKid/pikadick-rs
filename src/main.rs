@@ -26,8 +26,8 @@ pub mod client_data;
 pub mod commands;
 pub mod config;
 pub mod database;
-pub mod framework;
 pub mod logger;
+pub mod slash_framework;
 pub mod util;
 
 use crate::{
@@ -39,10 +39,10 @@ use crate::{
         Severity,
     },
     database::Database,
-    framework::{
-        Framework,
-        FrameworkBuilder,
-        FrameworkCommandBuilder,
+    slash_framework::{
+        SlashFramework,
+        SlashFrameworkBuilder,
+        SlashFrameworkCommandBuilder,
     },
 };
 use anyhow::Context as _;
@@ -96,9 +96,9 @@ impl EventHandler for Handler {
         let client_data = data_lock
             .get::<ClientDataKey>()
             .expect("missing client data");
-        let framework = data_lock
-            .get::<FrameworkKey>()
-            .expect("missing framework")
+        let slash_framework = data_lock
+            .get::<SlashFrameworkKey>()
+            .expect("missing slash framework")
             .clone();
         let config = client_data.config.clone();
         drop(data_lock);
@@ -119,7 +119,7 @@ impl EventHandler for Handler {
         }
 
         // TODO: Consider shutting down the bot. It might be possible to use old data though.
-        if let Err(e) = framework
+        if let Err(e) = slash_framework
             .register(ctx.clone())
             .await
             .context("failed to register slash commands")
@@ -151,8 +151,8 @@ impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         let data_lock = ctx.data.read().await;
         let framework = data_lock
-            .get::<FrameworkKey>()
-            .expect("missing framework")
+            .get::<SlashFrameworkKey>()
+            .expect("missing slash framework")
             .clone();
         drop(data_lock);
 
@@ -168,10 +168,10 @@ impl TypeMapKey for ClientDataKey {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct FrameworkKey;
+pub struct SlashFrameworkKey;
 
-impl TypeMapKey for FrameworkKey {
-    type Value = Framework;
+impl TypeMapKey for SlashFrameworkKey {
+    type Value = SlashFramework;
 }
 
 #[help]
@@ -476,9 +476,9 @@ fn real_main(
 /// Set up a serenity client
 async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     // Setup slash framework
-    let slash_framework = FrameworkBuilder::new()
+    let slash_framework = SlashFrameworkBuilder::new()
         .command(
-            FrameworkCommandBuilder::new()
+            SlashFrameworkCommandBuilder::new()
                 .name("nekos")
                 .description("Get a random neko")
                 .on_process(|ctx, interaction| {
@@ -573,7 +573,7 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
             .data
             .write()
             .await
-            .insert::<FrameworkKey>(slash_framework);
+            .insert::<SlashFrameworkKey>(slash_framework);
     }
 
     // TODO: Spawn a task for this earlier?
