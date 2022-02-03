@@ -43,7 +43,7 @@ tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiny-skia = { version = "0.6.3", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.16.1", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"
-tonic = "0.5.1"
+tonic = "0.6.2"
 tracing = "0.1.29"
 tracing-appender = "0.2.0"
 tracing-log = "0.1.2"
