@@ -30,7 +30,11 @@ pub struct SlashFramework {
 
 impl SlashFramework {
     /// Register the framework
-    pub async fn register(&self, ctx: Context) -> anyhow::Result<()> {
+    pub async fn register(
+        &self,
+        ctx: Context,
+        test_guild_id: Option<GuildId>,
+    ) -> anyhow::Result<()> {
         for (_name, framework_command) in self.commands.iter() {
             ApplicationCommand::create_global_application_command(&ctx.http, |command| {
                 command
@@ -40,19 +44,20 @@ impl SlashFramework {
             .await?;
         }
 
-        let guild_id = GuildId(282036235776819201);
-        GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
-            for (_name, framework_command) in self.commands.iter() {
-                commands.create_application_command(|command| {
-                    command
-                        .name(&framework_command.name)
-                        .description(&framework_command.description)
-                });
-            }
+        if let Some(guild_id) = test_guild_id {
+            GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
+                for (_name, framework_command) in self.commands.iter() {
+                    commands.create_application_command(|command| {
+                        command
+                            .name(&framework_command.name)
+                            .description(&framework_command.description)
+                    });
+                }
 
-            commands
-        })
-        .await?;
+                commands
+            })
+            .await?;
+        }
 
         Ok(())
     }
@@ -172,7 +177,7 @@ pub struct SlashFrameworkCommandBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> SlashFrameworkCommandBuilder<'a, 'b> {
-    /// Make a new [`FrameworkCommandBuilder`].
+    /// Make a new [`SlashFrameworkCommandBuilder`].
     pub fn new() -> Self {
         Self {
             name: None,
@@ -202,7 +207,7 @@ impl<'a, 'b> SlashFrameworkCommandBuilder<'a, 'b> {
         self
     }
 
-    /// Build the [`FrameworkCommand`]
+    /// Build the [`SlashFrameworkCommand`]
     pub fn build(&mut self) -> anyhow::Result<SlashFrameworkCommand> {
         let name = self.name.take().context("missing name")?;
         let description = self.description.take().context("missing description")?;

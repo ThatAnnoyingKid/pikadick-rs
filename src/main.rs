@@ -120,7 +120,7 @@ impl EventHandler for Handler {
 
         // TODO: Consider shutting down the bot. It might be possible to use old data though.
         if let Err(e) = slash_framework
-            .register(ctx.clone())
+            .register(ctx.clone(), config.test_guild)
             .await
             .context("failed to register slash commands")
         {
@@ -148,6 +148,7 @@ impl EventHandler for Handler {
         }
     }
 
+    #[tracing::instrument(skip(self, ctx, interaction))]
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         let data_lock = ctx.data.read().await;
         let framework = data_lock
