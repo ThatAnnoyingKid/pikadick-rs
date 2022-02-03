@@ -6,6 +6,8 @@ use crate::{
     },
     util::LoadingReaction,
     ClientDataKey,
+    SlashFrameworkCommand,
+    SlashFrameworkCommandBuilder,
 };
 use anyhow::Context as _;
 use crossbeam::queue::ArrayQueue;
@@ -268,4 +270,47 @@ async fn nekos(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     }
 
     Ok(())
+}
+
+/// Make a nekos slash command
+pub fn create_slash_command() -> anyhow::Result<SlashFrameworkCommand> {
+    SlashFrameworkCommandBuilder::new()
+        .name("nekos")
+        .description("Get a random neko")
+        .on_process(|ctx, interaction| {
+            Box::pin(async move {
+                let data_lock = ctx.data.read().await;
+                let client_data = data_lock
+                    .get::<ClientDataKey>()
+                    .expect("failed to get client data");
+                let nekos_client = client_data.nekos_client.clone();
+                drop(data_lock);
+
+                match nekos_client
+                    .get_rand(false) // nsfw
+                    .await
+                    .context("failed to repopulate nekos caches")
+                {
+                    Ok(url) => {
+                        interaction
+                            .create_interaction_response(&ctx.http, |res| {
+                                res.interaction_response_data(|res| res.content(url.as_str()))
+                            })
+                            .await?;
+                    }
+                    Err(e) => {
+                        error!("{:?}", e);
+
+                        interaction
+                            .create_interaction_response(&ctx.http, |res| {
+                                res.interaction_response_data(|res| res.content(format!("{:?}", e)))
+                            })
+                            .await?;
+                    }
+                }
+
+                Ok(())
+            })
+        })
+        .build()
 }

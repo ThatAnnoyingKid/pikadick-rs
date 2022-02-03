@@ -3,7 +3,10 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use serenity::client::validate_token;
+use serenity::{
+    client::validate_token,
+    model::prelude::GuildId,
+};
 use std::{
     borrow::Cow,
     collections::HashMap,
@@ -12,7 +15,6 @@ use std::{
         PathBuf,
     },
 };
-use serenity::model::prelude::GuildId;
 
 fn default_prefix() -> String {
     "p!".to_string()
@@ -36,7 +38,7 @@ pub struct Config {
 
     /// Data dir
     pub data_dir: PathBuf,
-    
+
     /// The test guild
     pub test_guild: Option<GuildId>,
 

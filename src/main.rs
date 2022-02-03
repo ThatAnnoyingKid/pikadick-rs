@@ -30,6 +30,7 @@ pub mod logger;
 pub mod slash_framework;
 pub mod util;
 
+use self::slash_framework::SlashFrameworkCommand;
 use crate::{
     client_data::ClientData,
     commands::*,
@@ -478,51 +479,7 @@ fn real_main(
 async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     // Setup slash framework
     let slash_framework = SlashFrameworkBuilder::new()
-        .command(
-            SlashFrameworkCommandBuilder::new()
-                .name("nekos")
-                .description("Get a random neko")
-                .on_process(|ctx, interaction| {
-                    Box::pin(async move {
-                        let data_lock = ctx.data.read().await;
-                        let client_data = data_lock
-                            .get::<ClientDataKey>()
-                            .expect("failed to get client data");
-                        let nekos_client = client_data.nekos_client.clone();
-                        drop(data_lock);
-
-                        match nekos_client
-                            .get_rand(false) // nsfw
-                            .await
-                            .context("failed to repopulate nekos caches")
-                        {
-                            Ok(url) => {
-                                interaction
-                                    .create_interaction_response(&ctx.http, |res| {
-                                        res.interaction_response_data(|res| {
-                                            res.content(url.as_str())
-                                        })
-                                    })
-                                    .await?;
-                            }
-                            Err(e) => {
-                                error!("{:?}", e);
-
-                                interaction
-                                    .create_interaction_response(&ctx.http, |res| {
-                                        res.interaction_response_data(|res| {
-                                            res.content(format!("{:?}", e))
-                                        })
-                                    })
-                                    .await?;
-                            }
-                        }
-
-                        Ok(())
-                    })
-                })
-                .build()?,
-        )?
+        .command(self::commands::nekos::create_slash_command()?)?
         .build()?;
 
     // Create second prefix that is uppercase so we are case-insensitive
