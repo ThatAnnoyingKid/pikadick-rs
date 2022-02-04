@@ -2307,6 +2307,7 @@ name = "pikadick-slash-framework"
 version = "0.0.0"
 dependencies = [
  "serenity",
+ "thiserror",
 ]
 
 [[package]]

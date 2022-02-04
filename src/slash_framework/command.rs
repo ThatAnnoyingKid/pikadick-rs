@@ -1,5 +1,10 @@
 use super::OnProcessFuture;
 use anyhow::Context as _;
+pub use pikadick_slash_framework::{
+    ArgumentKind as SlashFrameworkArgumentKind,
+    ArgumentParam as SlashFrameworkArgument,
+    ArgumentParamBuilder as SlashFrameworkArgumentBuilder,
+};
 use serenity::{
     builder::CreateApplicationCommand,
     model::prelude::application_command::{
@@ -9,7 +14,6 @@ use serenity::{
     prelude::*,
 };
 use std::future::Future;
-pub use pikadick_slash_framework::ArgumentKind as SlashFrameworkArgumentKind;
 
 /// A builder for a [`SlashFrameworkCommand`].
 pub struct SlashFrameworkCommandBuilder<'a, 'b> {
@@ -150,9 +154,9 @@ impl SlashFrameworkCommand {
         for argument in self.arguments().iter() {
             command.create_option(|option| {
                 option
-                    .name(&argument.name)
-                    .description(&argument.description)
-                    .kind(match argument.kind {
+                    .name(argument.name())
+                    .description(argument.description())
+                    .kind(match argument.kind() {
                         SlashFrameworkArgumentKind::Boolean => {
                             ApplicationCommandOptionType::Boolean
                         }
@@ -170,72 +174,6 @@ impl std::fmt::Debug for SlashFrameworkCommand {
             .field("on_process", &"<func>")
             .finish()
     }
-}
-
-/// A slash framework argument builder
-#[derive(Debug)]
-pub struct SlashFrameworkArgumentBuilder<'a, 'b> {
-    name: Option<&'a str>,
-    kind: Option<SlashFrameworkArgumentKind>,
-    description: Option<&'b str>,
-}
-
-impl<'a, 'b> SlashFrameworkArgumentBuilder<'a, 'b> {
-    /// Make a new [`SlashFrameworkArgumentBuilder`].
-    pub fn new() -> Self {
-        Self {
-            name: None,
-            kind: None,
-            description: None,
-        }
-    }
-
-    /// Set the name
-    pub fn name(&mut self, name: &'a str) -> &mut Self {
-        self.name = Some(name);
-        self
-    }
-
-    /// Set the kind
-    pub fn kind(&mut self, kind: SlashFrameworkArgumentKind) -> &mut Self {
-        self.kind = Some(kind);
-        self
-    }
-
-    /// Set the description
-    pub fn description(&mut self, description: &'b str) -> &mut Self {
-        self.description = Some(description);
-        self
-    }
-
-    /// Build the argument
-    pub fn build(&mut self) -> anyhow::Result<SlashFrameworkArgument> {
-        let name = self.name.context("missing name")?;
-        let kind = self.kind.context("missing kind")?;
-        let description = self.description.context("missing description")?;
-
-        Ok(SlashFrameworkArgument {
-            name: name.to_string(),
-            kind,
-            description: description.to_string(),
-        })
-    }
-}
-
-impl<'a, 'b> Default for SlashFrameworkArgumentBuilder<'a, 'b> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-/// An argument.
-///
-/// Specifically, this is a parameter, not a value.
-#[derive(Debug)]
-pub struct SlashFrameworkArgument {
-    name: String,
-    kind: SlashFrameworkArgumentKind,
-    description: String,
 }
 
 /*
