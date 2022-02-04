@@ -10,6 +10,7 @@ use anyhow::{
     ensure,
     Context as _,
 };
+use pikadick_slash_framework::BoxError;
 use serenity::{
     model::{
         interactions::application_command::ApplicationCommand,
@@ -22,8 +23,6 @@ use serenity::{
 };
 use std::{
     collections::HashMap,
-    future::Future,
-    pin::Pin,
     sync::Arc,
 };
 use tracing::{
@@ -31,7 +30,29 @@ use tracing::{
     warn,
 };
 
-type OnProcessFuture = Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'static>>;
+/// A wrapper for [`BoxError`] that impls error
+struct WrapBoxError(BoxError);
+
+impl WrapBoxError {
+    /// Make a new [`WrapBoxError`] from an error
+    fn new(e: BoxError) -> Self {
+        Self(e)
+    }
+}
+
+impl std::fmt::Debug for WrapBoxError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl std::fmt::Display for WrapBoxError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl std::error::Error for WrapBoxError {}
 
 /// A framework
 #[derive(Clone)]
@@ -101,6 +122,7 @@ impl SlashFramework {
         if let Err(e) = framework_command
             .fire_on_process(ctx, command)
             .await
+            .map_err(WrapBoxError::new)
             .context("failed to process command")
         {
             // TODO: handle error with handler

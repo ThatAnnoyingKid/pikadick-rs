@@ -328,4 +328,5 @@ pub fn create_slash_command() -> anyhow::Result<SlashFrameworkCommand> {
             Ok(())
         })
         .build()
+        .context("failed to build command")
 }

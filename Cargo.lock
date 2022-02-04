@@ -1359,7 +1359,7 @@ dependencies = [
 [[package]]
 name = "heim"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/vectordotdev/heim?branch=update-nix#76fa765c7ed7fbe43d1465bf52da6b8d19f2d2a9"
 dependencies = [
  "heim-common",
  "heim-cpu",
@@ -1372,7 +1372,7 @@ dependencies = [
 [[package]]
 name = "heim-common"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/vectordotdev/heim?branch=update-nix#76fa765c7ed7fbe43d1465bf52da6b8d19f2d2a9"
 dependencies = [
  "cfg-if 1.0.0",
  "core-foundation",
@@ -1390,7 +1390,7 @@ dependencies = [
 [[package]]
 name = "heim-cpu"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/vectordotdev/heim?branch=update-nix#76fa765c7ed7fbe43d1465bf52da6b8d19f2d2a9"
 dependencies = [
  "cfg-if 1.0.0",
  "futures",
@@ -1408,7 +1408,7 @@ dependencies = [
 [[package]]
 name = "heim-host"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/vectordotdev/heim?branch=update-nix#76fa765c7ed7fbe43d1465bf52da6b8d19f2d2a9"
 dependencies = [
  "cfg-if 1.0.0",
  "heim-common",
@@ -1425,7 +1425,7 @@ dependencies = [
 [[package]]
 name = "heim-memory"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/vectordotdev/heim?branch=update-nix#76fa765c7ed7fbe43d1465bf52da6b8d19f2d2a9"
 dependencies = [
  "cfg-if 1.0.0",
  "heim-common",
@@ -1439,7 +1439,7 @@ dependencies = [
 [[package]]
 name = "heim-runtime"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/vectordotdev/heim?branch=update-nix#76fa765c7ed7fbe43d1465bf52da6b8d19f2d2a9"
 dependencies = [
  "futures",
  "futures-timer",
@@ -1450,7 +1450,7 @@ dependencies = [
 [[package]]
 name = "heim-virt"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/heim-rs/heim?rev=b292f1535bb27c03800cdb7509fa81a40859fbbb#b292f1535bb27c03800cdb7509fa81a40859fbbb"
+source = "git+https://github.com/vectordotdev/heim?branch=update-nix#76fa765c7ed7fbe43d1465bf52da6b8d19f2d2a9"
 dependencies = [
  "cfg-if 1.0.0",
  "futures",
@@ -1930,14 +1930,15 @@ checksum = "e4a24736216ec316047a1fc4252e27dabb04218aa4a3f37c6e7ddbf1f9782b54"
 
 [[package]]
 name = "nix"
-version = "0.20.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa9b4819da1bc61c0ea48b63b7bc8604064dd43013e7cc325df098d49cd7c18a"
+checksum = "9f866317acbd3a240710c63f065ffb1e4fd466259045ccb504130b7f668f35c6"
 dependencies = [
  "bitflags",
  "cc",
  "cfg-if 1.0.0",
  "libc",
+ "memoffset",
 ]
 
 [[package]]

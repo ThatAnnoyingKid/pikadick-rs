@@ -100,6 +100,9 @@ skip = [
     
     # Blocked on songbird updating to 5.0.0
     { name = "dashmap", version = "4.0.2" },
+    
+    # Blocked on updates to cssparser
+    { name = "phf_shared", version = "0.8.0" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -158,10 +161,11 @@ allow-git = [
     "https://github.com/adumbidiot/zalgo-rs",
     "https://github.com/adumbidiot/shift-client-rs",
     "https://github.com/adumbidiot/reddit-rs",
-    "https://github.com/heim-rs/heim",
+    # "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
     "https://github.com/adumbidiot/songbird",
     "https://github.com/serenity-rs/serenity",
     "https://github.com/alexcrichton/cmake-rs",
     "https://github.com/adumbidiot/serenity",
+    "https://github.com/vectordotdev/heim",
 ]
