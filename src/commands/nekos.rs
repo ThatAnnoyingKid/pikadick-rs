@@ -4,8 +4,10 @@ use crate::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
+    slash_framework::SlashFrameworkArgumentBuilder,
     util::LoadingReaction,
     ClientDataKey,
+    SlashFrameworkArgumentKind,
     SlashFrameworkCommand,
     SlashFrameworkCommandBuilder,
 };
@@ -277,6 +279,13 @@ pub fn create_slash_command() -> anyhow::Result<SlashFrameworkCommand> {
     SlashFrameworkCommandBuilder::new()
         .name("nekos")
         .description("Get a random neko")
+        .argument(
+            SlashFrameworkArgumentBuilder::new()
+                .name("nsfw")
+                .kind(SlashFrameworkArgumentKind::Boolean)
+                .description("whether this should use nsfw results")
+                .build()?,
+        )
         .on_process(|ctx, interaction| {
             Box::pin(async move {
                 let data_lock = ctx.data.read().await;
@@ -286,8 +295,16 @@ pub fn create_slash_command() -> anyhow::Result<SlashFrameworkCommand> {
                 let nekos_client = client_data.nekos_client.clone();
                 drop(data_lock);
 
+                let nsfw = interaction
+                    .data
+                    .options
+                    .iter()
+                    .find(|option| option.name == "nsfw")
+                    .and_then(|option| option.value.as_ref()?.as_bool())
+                    .unwrap_or(false);
+
                 match nekos_client
-                    .get_rand(false) // nsfw
+                    .get_rand(nsfw)
                     .await
                     .context("failed to repopulate nekos caches")
                 {

@@ -30,7 +30,10 @@ pub mod logger;
 pub mod slash_framework;
 pub mod util;
 
-use self::slash_framework::SlashFrameworkCommand;
+use self::slash_framework::{
+    SlashFrameworkArgumentKind,
+    SlashFrameworkCommand,
+};
 use crate::{
     client_data::ClientData,
     commands::*,

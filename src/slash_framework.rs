@@ -1,6 +1,8 @@
 mod command;
 
 pub use self::command::{
+    SlashFrameworkArgumentBuilder,
+    SlashFrameworkArgumentKind,
     SlashFrameworkCommand,
     SlashFrameworkCommandBuilder,
 };
@@ -8,7 +10,6 @@ use anyhow::{
     ensure,
     Context as _,
 };
-use tracing::info;
 use serenity::{
     model::{
         interactions::application_command::ApplicationCommand,
@@ -25,7 +26,10 @@ use std::{
     pin::Pin,
     sync::Arc,
 };
-use tracing::warn;
+use tracing::{
+    info,
+    warn,
+};
 
 type OnProcessFuture = Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'static>>;
 
@@ -47,9 +51,9 @@ impl SlashFramework {
     ) -> anyhow::Result<()> {
         for (_name, framework_command) in self.commands.iter() {
             ApplicationCommand::create_global_application_command(&ctx.http, |command| {
+                framework_command.register(command);
+
                 command
-                    .name(&framework_command.name())
-                    .description(&framework_command.description())
             })
             .await?;
         }
@@ -58,9 +62,8 @@ impl SlashFramework {
             GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
                 for (_name, framework_command) in self.commands.iter() {
                     commands.create_application_command(|command| {
+                        framework_command.register(command);
                         command
-                            .name(&framework_command.name())
-                            .description(&framework_command.description())
                     });
                 }
 
@@ -80,7 +83,7 @@ impl SlashFramework {
         }
     }
 
-    #[tracing::instrument(skip(self, ctx, command), fields(id = %command.id, author = %command.user.id, guild = ?command.guild_id))]
+    #[tracing::instrument(skip(self, ctx, command), fields(id = %command.id, author = %command.user.id, guild = ?command.guild_id, channel_id = %command.channel_id))]
     async fn process_interaction_create_application_command(
         &self,
         ctx: Context,
