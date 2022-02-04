@@ -286,48 +286,46 @@ pub fn create_slash_command() -> anyhow::Result<SlashFrameworkCommand> {
                 .description("whether this should use nsfw results")
                 .build()?,
         )
-        .on_process(|ctx, interaction| {
-            Box::pin(async move {
-                let data_lock = ctx.data.read().await;
-                let client_data = data_lock
-                    .get::<ClientDataKey>()
-                    .expect("failed to get client data");
-                let nekos_client = client_data.nekos_client.clone();
-                drop(data_lock);
+        .on_process(|ctx, interaction| async move {
+            let data_lock = ctx.data.read().await;
+            let client_data = data_lock
+                .get::<ClientDataKey>()
+                .expect("failed to get client data");
+            let nekos_client = client_data.nekos_client.clone();
+            drop(data_lock);
 
-                let nsfw = interaction
-                    .data
-                    .options
-                    .iter()
-                    .find(|option| option.name == "nsfw")
-                    .and_then(|option| option.value.as_ref()?.as_bool())
-                    .unwrap_or(false);
+            let nsfw = interaction
+                .data
+                .options
+                .iter()
+                .find(|option| option.name == "nsfw")
+                .and_then(|option| option.value.as_ref()?.as_bool())
+                .unwrap_or(false);
 
-                match nekos_client
-                    .get_rand(nsfw)
-                    .await
-                    .context("failed to repopulate nekos caches")
-                {
-                    Ok(url) => {
-                        interaction
-                            .create_interaction_response(&ctx.http, |res| {
-                                res.interaction_response_data(|res| res.content(url.as_str()))
-                            })
-                            .await?;
-                    }
-                    Err(e) => {
-                        error!("{:?}", e);
-
-                        interaction
-                            .create_interaction_response(&ctx.http, |res| {
-                                res.interaction_response_data(|res| res.content(format!("{:?}", e)))
-                            })
-                            .await?;
-                    }
+            match nekos_client
+                .get_rand(nsfw)
+                .await
+                .context("failed to repopulate nekos caches")
+            {
+                Ok(url) => {
+                    interaction
+                        .create_interaction_response(&ctx.http, |res| {
+                            res.interaction_response_data(|res| res.content(url.as_str()))
+                        })
+                        .await?;
                 }
+                Err(e) => {
+                    error!("{:?}", e);
 
-                Ok(())
-            })
+                    interaction
+                        .create_interaction_response(&ctx.http, |res| {
+                            res.interaction_response_data(|res| res.content(format!("{:?}", e)))
+                        })
+                        .await?;
+                }
+            }
+
+            Ok(())
         })
         .build()
 }

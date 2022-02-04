@@ -8,6 +8,7 @@ use serenity::{
     },
     prelude::*,
 };
+use std::future::Future;
 
 /// A builder for a [`SlashFrameworkCommand`].
 pub struct SlashFrameworkCommandBuilder<'a, 'b> {
@@ -56,11 +57,15 @@ impl<'a, 'b> SlashFrameworkCommandBuilder<'a, 'b> {
     }
 
     /// The on_process hook
-    pub fn on_process<P>(&mut self, on_process: P) -> &mut Self
+    pub fn on_process<P, F>(&mut self, on_process: P) -> &mut Self
     where
-        P: Fn(Context, ApplicationCommandInteraction) -> OnProcessFuture + Send + Sync + 'static,
+        P: Fn(Context, ApplicationCommandInteraction) -> F + Send + Sync + 'static,
+        F: Future<Output = anyhow::Result<()>> + Send + 'static,
     {
-        self.on_process = Some(Box::new(on_process));
+        self.on_process = Some(Box::new(move |ctx, interaction| {
+            Box::pin(on_process(ctx, interaction))
+        }));
+
         self
     }
 
