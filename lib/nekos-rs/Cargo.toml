@@ -14,9 +14,9 @@ required-features = [ "cli" ]
 itoa = "1.0.1"
 reqwest = { version = "0.11.7", features = [ "json" ] }
 serde = { version = "1.0.136", features = [ "derive" ] }
-serde_json = "1.0.73"
+serde_json = "1.0.78"
 thiserror = "1.0.30"
-tokio = { version = "1.15.0", features = [ "io-util" ] }
+tokio = { version = "1.16.1", features = [ "io-util" ] }
 url = "2.2.2"
 
 # Optional
@@ -24,7 +24,7 @@ argh = { version = "0.1.7", optional = true }
 anyhow = { version = "1.0.53", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.15.0", features = [ "macros" ] }
+tokio = { version = "1.16.1", features = [ "macros" ] }
 
 [features]
 cli = [
