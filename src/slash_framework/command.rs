@@ -9,6 +9,7 @@ use serenity::{
     prelude::*,
 };
 use std::future::Future;
+pub use pikadick_slash_framework::ArgumentKind as SlashFrameworkArgumentKind;
 
 /// A builder for a [`SlashFrameworkCommand`].
 pub struct SlashFrameworkCommandBuilder<'a, 'b> {
@@ -225,13 +226,6 @@ impl<'a, 'b> Default for SlashFrameworkArgumentBuilder<'a, 'b> {
     fn default() -> Self {
         Self::new()
     }
-}
-
-/// The kind of argument
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum SlashFrameworkArgumentKind {
-    /// A boolean
-    Boolean,
 }
 
 /// An argument.
