@@ -1,16 +1,14 @@
-mod command;
-
-pub use self::command::{
-    SlashFrameworkArgumentBuilder,
-    SlashFrameworkArgumentKind,
-    SlashFrameworkCommand,
-    SlashFrameworkCommandBuilder,
-};
 use anyhow::{
     ensure,
     Context as _,
 };
 use pikadick_slash_framework::BoxError;
+pub use pikadick_slash_framework::{
+    ArgumentKind as SlashFrameworkArgumentKind,
+    ArgumentParamBuilder as SlashFrameworkArgumentBuilder,
+    Command as SlashFrameworkCommand,
+    CommandBuilder as SlashFrameworkCommandBuilder,
+};
 use serenity::{
     model::{
         interactions::application_command::ApplicationCommand,
@@ -29,6 +27,14 @@ use tracing::{
     info,
     warn,
 };
+
+/*
+/// An argument for the slash framework
+enum SlashFrameworkArgument {
+    /// A boolean
+    Boolean(bool),
+}
+*/
 
 /// A wrapper for [`BoxError`] that impls error
 struct WrapBoxError(BoxError);
