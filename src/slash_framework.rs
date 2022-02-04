@@ -8,10 +8,14 @@ use anyhow::{
     ensure,
     Context as _,
 };
+use tracing::info;
 use serenity::{
     model::{
         interactions::application_command::ApplicationCommand,
-        prelude::*,
+        prelude::{
+            application_command::ApplicationCommandInteraction,
+            *,
+        },
     },
     prelude::*,
 };
@@ -32,7 +36,10 @@ pub struct SlashFramework {
 }
 
 impl SlashFramework {
-    /// Register the framework
+    /// Register the framework.
+    ///
+    /// `test_guild_id` is an optional guild where the commands will be registered as guild commands,
+    /// so they update faster for testing purposes.
     pub async fn register(
         &self,
         ctx: Context,
@@ -68,22 +75,33 @@ impl SlashFramework {
     /// Process an interaction create event
     pub async fn process_interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
-            let framework_command = match self.commands.get(command.data.name.as_str()) {
-                Some(command) => command,
-                None => {
-                    // TODO: Unknown
-                    return;
-                }
-            };
-
-            if let Err(e) = framework_command
-                .fire_on_process(ctx, command)
+            self.process_interaction_create_application_command(ctx, command)
                 .await
-                .context("failed to process command")
-            {
-                // TODO: handle error with handler
-                warn!("{:?}", e);
+        }
+    }
+
+    #[tracing::instrument(skip(self, ctx, command), fields(id = %command.id, author = %command.user.id, guild = ?command.guild_id))]
+    async fn process_interaction_create_application_command(
+        &self,
+        ctx: Context,
+        command: ApplicationCommandInteraction,
+    ) {
+        let framework_command = match self.commands.get(command.data.name.as_str()) {
+            Some(command) => command,
+            None => {
+                // TODO: Fire unknown command
+                return;
             }
+        };
+
+        info!("Processing command `{}`", framework_command.name());
+        if let Err(e) = framework_command
+            .fire_on_process(ctx, command)
+            .await
+            .context("failed to process command")
+        {
+            // TODO: handle error with handler
+            warn!("{:?}", e);
         }
     }
 }

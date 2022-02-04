@@ -149,7 +149,6 @@ impl EventHandler for Handler {
         }
     }
 
-    #[tracing::instrument(skip(self, ctx, interaction))]
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         let data_lock = ctx.data.read().await;
         let framework = data_lock
