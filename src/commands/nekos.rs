@@ -15,6 +15,11 @@ use anyhow::Context as _;
 use crossbeam::queue::ArrayQueue;
 use indexmap::set::IndexSet;
 use parking_lot::RwLock;
+use pikadick_slash_framework::{
+    ConvertError,
+    DataType,
+    FromApplicationCommandInteraction,
+};
 use rand::Rng;
 use serenity::{
     framework::standard::{
@@ -22,7 +27,13 @@ use serenity::{
         Args,
         CommandResult,
     },
-    model::prelude::*,
+    model::prelude::{
+        application_command::{
+            ApplicationCommandInteraction,
+            ApplicationCommandInteractionDataOptionValue,
+        },
+        *,
+    },
     prelude::*,
 };
 use std::{
@@ -274,6 +285,36 @@ async fn nekos(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     Ok(())
 }
 
+/// Arguments for the nekos command
+#[derive(Debug, Copy, Clone)]
+pub struct NekosArguments {
+    /// Whether the command should look for nsfw pictures
+    pub nsfw: Option<bool>,
+}
+
+impl FromApplicationCommandInteraction for NekosArguments {
+    fn from_interaction(interaction: &ApplicationCommandInteraction) -> Result<Self, ConvertError> {
+        let mut nsfw = None;
+
+        for option in interaction.data.options.iter() {
+            if option.name == "nsfw" {
+                nsfw = option.resolved.as_ref().map(|value| match value {
+                    ApplicationCommandInteractionDataOptionValue::Boolean(b) => Ok(*b),
+                    t => Err(ConvertError::UnexpectedType {
+                        name: "nsfw",
+                        expected: DataType::Boolean,
+                        actual: DataType::from_data_option_value(t),
+                    }),
+                });
+            }
+        }
+
+        let nsfw = nsfw.transpose()?;
+
+        Ok(Self { nsfw })
+    }
+}
+
 /// Make a nekos slash command
 pub fn create_slash_command() -> anyhow::Result<SlashFrameworkCommand> {
     SlashFrameworkCommandBuilder::new()
@@ -294,16 +335,10 @@ pub fn create_slash_command() -> anyhow::Result<SlashFrameworkCommand> {
             let nekos_client = client_data.nekos_client.clone();
             drop(data_lock);
 
-            let nsfw = interaction
-                .data
-                .options
-                .iter()
-                .find(|option| option.name == "nsfw")
-                .and_then(|option| option.value.as_ref()?.as_bool())
-                .unwrap_or(false);
+            let args = NekosArguments::from_interaction(&interaction)?;
 
             let content = match nekos_client
-                .get_rand(nsfw)
+                .get_rand(args.nsfw.unwrap_or(false))
                 .await
                 .context("failed to repopulate nekos caches")
             {

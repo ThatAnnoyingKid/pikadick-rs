@@ -7,6 +7,8 @@ pub use pikadick_slash_framework::{
     ArgumentParamBuilder as SlashFrameworkArgumentBuilder,
     Command as SlashFrameworkCommand,
     CommandBuilder as SlashFrameworkCommandBuilder,
+    ConvertError,
+    FromApplicationCommandInteraction,
 };
 use pikadick_slash_framework::{
     BoxError,
@@ -30,14 +32,6 @@ use tracing::{
     info,
     warn,
 };
-
-/*
-/// An argument for the slash framework
-enum SlashFrameworkArgument {
-    /// A boolean
-    Boolean(bool),
-}
-*/
 
 /// A wrapper for [`BoxError`] that impls error
 struct WrapBoxError(BoxError);
