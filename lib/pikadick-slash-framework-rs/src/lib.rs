@@ -40,7 +40,7 @@ pub enum Error {
 }
 
 /// A trait that allows converting from an application command interaction
-pub trait FromApplicationCommandInteraction: std::fmt::Debug
+pub trait FromApplicationCommandInteraction: std::fmt::Debug + Send
 where
     Self: Sized,
 {

@@ -327,15 +327,13 @@ pub fn create_slash_command() -> anyhow::Result<SlashFrameworkCommand> {
                 .description("whether this should use nsfw results")
                 .build()?,
         )
-        .on_process(|ctx, interaction| async move {
+        .on_process(|ctx, interaction, args: NekosArguments| async move {
             let data_lock = ctx.data.read().await;
             let client_data = data_lock
                 .get::<ClientDataKey>()
                 .expect("failed to get client data");
             let nekos_client = client_data.nekos_client.clone();
             drop(data_lock);
-
-            let args = NekosArguments::from_interaction(&interaction)?;
 
             let content = match nekos_client
                 .get_rand(args.nsfw.unwrap_or(false))

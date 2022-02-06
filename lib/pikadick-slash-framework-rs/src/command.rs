@@ -4,6 +4,7 @@ use crate::{
     BoxError,
     BoxFuture,
     Error,
+    FromApplicationCommandInteraction,
 };
 use serenity::{
     builder::CreateApplicationCommand,
@@ -21,7 +22,7 @@ pub type OnProcessFuture = BoxFuture<'static, OnProcessResult>;
 // Keep these types in sync.
 type OnProcessFutureFn =
     Box<dyn Fn(Context, ApplicationCommandInteraction) -> OnProcessFuture + Send + Sync>;
-type OnProcessFutureFnPtr<F> = fn(Context, ApplicationCommandInteraction) -> F;
+type OnProcessFutureFnPtr<F, A> = fn(Context, ApplicationCommandInteraction, A) -> F;
 
 /// A slash framework command
 pub struct Command {
@@ -132,14 +133,17 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
     }
 
     /// The on_process hook
-    pub fn on_process<F>(&mut self, on_process: OnProcessFutureFnPtr<F>) -> &mut Self
+    pub fn on_process<F, A>(&mut self, on_process: OnProcessFutureFnPtr<F, A>) -> &mut Self
     where
         F: Future<Output = Result<(), BoxError>> + Send + 'static,
+        A: FromApplicationCommandInteraction + 'static,
     {
         // Trampoline so user does not have to box manually
         self.on_process = Some(Box::new(move |ctx, interaction| {
-            let fut = (on_process)(ctx, interaction);
-            Box::pin(fut)
+            Box::pin(async move {
+                let args = A::from_interaction(&interaction)?;
+                (on_process)(ctx, interaction, args).await
+            })
         }));
 
         self
