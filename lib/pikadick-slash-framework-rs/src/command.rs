@@ -138,7 +138,7 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
         F: Future<Output = Result<(), BoxError>> + Send + 'static,
         A: FromOptions + 'static,
     {
-        // Trampoline so user does not have to box manually
+        // Trampoline so user does not have to box manually and parse their args manually
         self.on_process = Some(Box::new(move |ctx, interaction| {
             Box::pin(async move {
                 let args = A::from_options(&interaction)?;

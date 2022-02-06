@@ -17,7 +17,7 @@ use indexmap::set::IndexSet;
 use parking_lot::RwLock;
 use pikadick_slash_framework::{
     ConvertError,
-    FromOptionValue,
+    FromOptions,
 };
 use rand::Rng;
 use serenity::{

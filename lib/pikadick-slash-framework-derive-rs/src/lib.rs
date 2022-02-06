@@ -34,6 +34,7 @@ pub fn derive_from_options(input: proc_macro::TokenStream) -> proc_macro::TokenS
     proc_macro::TokenStream::from(expanded)
 }
 
+// Make the FromOptions impl
 fn gen_from_options_impl(data: &Data) -> Result<TokenStream> {
     match data {
         Data::Struct(data) => match &data.fields {
