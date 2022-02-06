@@ -26,9 +26,7 @@ use serenity::{
         Args,
         CommandResult,
     },
-    model::prelude::{
-        *,
-    },
+    model::prelude::*,
     prelude::*,
 };
 use std::{
