@@ -4,12 +4,8 @@ use crate::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
-    slash_framework::SlashFrameworkArgumentBuilder,
     util::LoadingReaction,
     ClientDataKey,
-    SlashFrameworkArgumentKind,
-    SlashFrameworkCommand,
-    SlashFrameworkCommandBuilder,
 };
 use anyhow::Context as _;
 use crossbeam::queue::ArrayQueue;
@@ -286,14 +282,14 @@ pub struct NekosArguments {
 }
 
 /// Make a nekos slash command
-pub fn create_slash_command() -> anyhow::Result<SlashFrameworkCommand> {
-    SlashFrameworkCommandBuilder::new()
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
+    pikadick_slash_framework::CommandBuilder::new()
         .name("nekos")
         .description("Get a random neko")
         .argument(
-            SlashFrameworkArgumentBuilder::new()
+            pikadick_slash_framework::ArgumentParamBuilder::new()
                 .name("nsfw")
-                .kind(SlashFrameworkArgumentKind::Boolean)
+                .kind(pikadick_slash_framework::ArgumentKind::Boolean)
                 .description("whether this should use nsfw results")
                 .build()?,
         )

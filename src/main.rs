@@ -27,13 +27,8 @@ pub mod commands;
 pub mod config;
 pub mod database;
 pub mod logger;
-pub mod slash_framework;
 pub mod util;
 
-use self::slash_framework::{
-    SlashFrameworkArgumentKind,
-    SlashFrameworkCommand,
-};
 use crate::{
     client_data::ClientData,
     commands::*,
@@ -43,11 +38,6 @@ use crate::{
         Severity,
     },
     database::Database,
-    slash_framework::{
-        SlashFramework,
-        SlashFrameworkBuilder,
-        SlashFrameworkCommandBuilder,
-    },
 };
 use anyhow::Context as _;
 use serenity::{
@@ -175,7 +165,7 @@ impl TypeMapKey for ClientDataKey {
 pub struct SlashFrameworkKey;
 
 impl TypeMapKey for SlashFrameworkKey {
-    type Value = SlashFramework;
+    type Value = pikadick_slash_framework::Framework;
 }
 
 #[help]
@@ -480,7 +470,7 @@ fn real_main(
 /// Set up a serenity client
 async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     // Setup slash framework
-    let slash_framework = SlashFrameworkBuilder::new()
+    let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
         .check(self::checks::enabled::slash_check)
         .command(self::commands::nekos::create_slash_command()?)?
         .build()?;
