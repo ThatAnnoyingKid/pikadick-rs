@@ -8,7 +8,7 @@ pub use pikadick_slash_framework::{
     Command as SlashFrameworkCommand,
     CommandBuilder as SlashFrameworkCommandBuilder,
     ConvertError,
-    FromApplicationCommandInteraction,
+    FromOptions,
 };
 use pikadick_slash_framework::{
     BoxError,
@@ -130,7 +130,11 @@ impl SlashFramework {
 
         match check_result {
             Ok(()) => {
-                info!("processing command `{}`", framework_command.name());
+                info!(
+                    "processing command `{}`, options={}",
+                    framework_command.name(),
+                    FmtOptionsHelper(&command)
+                );
                 if let Err(e) = framework_command
                     .fire_on_process(ctx, command)
                     .await
@@ -226,5 +230,22 @@ impl std::fmt::Debug for SlashFrameworkBuilder {
 impl Default for SlashFrameworkBuilder {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+struct FmtOptionsHelper<'a>(&'a ApplicationCommandInteraction);
+
+impl std::fmt::Display for FmtOptionsHelper<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+        let len = self.0.data.options.len();
+        for (i, option) in self.0.data.options.iter().enumerate() {
+            if i + 1 == len {
+                write!(f, "'{}'={:?}", option.name, option.resolved)?;
+            }
+        }
+        write!(f, "]")?;
+
+        Ok(())
     }
 }

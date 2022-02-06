@@ -107,6 +107,7 @@ members = [
     "lib/async-rusqlite-rs",
     "lib/across-rs",
     "lib/pikadick-slash-framework-rs",
+    "lib/pikadick-slash-framework-derive-rs"
 ]
 
 # To make image drawing times sane

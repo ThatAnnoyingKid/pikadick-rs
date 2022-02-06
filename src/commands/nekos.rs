@@ -17,8 +17,7 @@ use indexmap::set::IndexSet;
 use parking_lot::RwLock;
 use pikadick_slash_framework::{
     ConvertError,
-    DataType,
-    FromApplicationCommandInteraction,
+    FromOptionValue,
 };
 use rand::Rng;
 use serenity::{
@@ -28,10 +27,6 @@ use serenity::{
         CommandResult,
     },
     model::prelude::{
-        application_command::{
-            ApplicationCommandInteraction,
-            ApplicationCommandInteractionDataOptionValue,
-        },
         *,
     },
     prelude::*,
@@ -286,33 +281,10 @@ async fn nekos(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 }
 
 /// Arguments for the nekos command
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, FromOptions)]
 pub struct NekosArguments {
     /// Whether the command should look for nsfw pictures
     pub nsfw: Option<bool>,
-}
-
-impl FromApplicationCommandInteraction for NekosArguments {
-    fn from_interaction(interaction: &ApplicationCommandInteraction) -> Result<Self, ConvertError> {
-        let mut nsfw = None;
-
-        for option in interaction.data.options.iter() {
-            if option.name == "nsfw" {
-                nsfw = option.resolved.as_ref().map(|value| match value {
-                    ApplicationCommandInteractionDataOptionValue::Boolean(b) => Ok(*b),
-                    t => Err(ConvertError::UnexpectedType {
-                        name: "nsfw",
-                        expected: DataType::Boolean,
-                        actual: DataType::from_data_option_value(t),
-                    }),
-                });
-            }
-        }
-
-        let nsfw = nsfw.transpose()?;
-
-        Ok(Self { nsfw })
-    }
 }
 
 /// Make a nekos slash command

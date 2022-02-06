@@ -4,7 +4,7 @@ use crate::{
     BoxError,
     BoxFuture,
     Error,
-    FromApplicationCommandInteraction,
+    FromOptions,
 };
 use serenity::{
     builder::CreateApplicationCommand,
@@ -136,12 +136,12 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
     pub fn on_process<F, A>(&mut self, on_process: OnProcessFutureFnPtr<F, A>) -> &mut Self
     where
         F: Future<Output = Result<(), BoxError>> + Send + 'static,
-        A: FromApplicationCommandInteraction + 'static,
+        A: FromOptions + 'static,
     {
         // Trampoline so user does not have to box manually
         self.on_process = Some(Box::new(move |ctx, interaction| {
             Box::pin(async move {
-                let args = A::from_interaction(&interaction)?;
+                let args = A::from_options(&interaction)?;
                 (on_process)(ctx, interaction, args).await
             })
         }));

@@ -2307,8 +2307,18 @@ dependencies = [
 name = "pikadick-slash-framework"
 version = "0.0.0"
 dependencies = [
+ "pikadick-slash-framework-derive",
  "serenity",
  "thiserror",
+]
+
+[[package]]
+name = "pikadick-slash-framework-derive"
+version = "0.0.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
