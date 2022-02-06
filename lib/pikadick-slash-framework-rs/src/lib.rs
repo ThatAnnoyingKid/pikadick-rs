@@ -17,6 +17,8 @@ pub use self::{
     command::{
         Command,
         CommandBuilder,
+        HelpCommand,
+        HelpCommandBuilder,
         OnProcessFuture,
     },
     convert::{

@@ -290,7 +290,7 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
             pikadick_slash_framework::ArgumentParamBuilder::new()
                 .name("nsfw")
                 .kind(pikadick_slash_framework::ArgumentKind::Boolean)
-                .description("whether this should use nsfw results")
+                .description("Whether this should use nsfw results")
                 .build()?,
         )
         .on_process(|ctx, interaction, args: NekosArguments| async move {

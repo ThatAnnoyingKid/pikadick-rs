@@ -472,7 +472,28 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     // Setup slash framework
     let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
         .check(self::checks::enabled::slash_check)
-        .command(self::commands::nekos::create_slash_command()?)?
+        .help_command(
+            pikadick_slash_framework::HelpCommandBuilder::new()
+                .description("Get information about commands and their use")
+                .argument(
+                    pikadick_slash_framework::ArgumentParamBuilder::new()
+                        .name("command")
+                        .description("The command you need help for")
+                        .kind(pikadick_slash_framework::ArgumentKind::String)
+                        .build()?,
+                )
+                .on_process(|ctx, interaction, _args: ()| async move {
+                    interaction
+                        .create_interaction_response(&ctx.http, |res| {
+                            res.interaction_response_data(|res| res.content("TODO: Help"))
+                        })
+                        .await?;
+
+                    Ok(())
+                })
+                .build()?,
+        )
+        .command(self::commands::nekos::create_slash_command()?)
         .build()?;
 
     // Create second prefix that is uppercase so we are case-insensitive

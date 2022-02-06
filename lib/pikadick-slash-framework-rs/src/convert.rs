@@ -38,6 +38,13 @@ where
     fn from_options(interaction: &ApplicationCommandInteraction) -> Result<Self, ConvertError>;
 }
 
+// Allow the user to fill values while developing, or use a command with no arguments
+impl FromOptions for () {
+    fn from_options(_interaction: &ApplicationCommandInteraction) -> Result<Self, ConvertError> {
+        Ok(())
+    }
+}
+
 /// A datatype
 #[derive(Debug, Copy, Clone)]
 pub enum DataType {

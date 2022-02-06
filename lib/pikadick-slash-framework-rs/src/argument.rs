@@ -5,6 +5,9 @@ use crate::BuilderError;
 pub enum ArgumentKind {
     /// A boolean
     Boolean,
+
+    /// A string
+    String,
 }
 
 /// An argument.

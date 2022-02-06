@@ -3,6 +3,7 @@ use crate::{
     BuilderError,
     CheckFn,
     Command,
+    HelpCommand,
 };
 use serenity::{
     client::Context,
@@ -69,6 +70,7 @@ impl std::fmt::Display for FmtOptionsHelper<'_> {
 #[derive(Clone)]
 pub struct Framework {
     commands: Arc<HashMap<Box<str>, Command>>,
+    help_command: Option<Arc<HelpCommand>>,
     checks: Arc<[CheckFn]>,
 }
 
@@ -82,7 +84,16 @@ impl Framework {
         ctx: Context,
         test_guild_id: Option<GuildId>,
     ) -> Result<(), serenity::Error> {
-        for (_name, framework_command) in self.commands.iter() {
+        for framework_command in self.commands.values() {
+            ApplicationCommand::create_global_application_command(&ctx.http, |command| {
+                framework_command.register(command);
+
+                command
+            })
+            .await?;
+        }
+
+        if let Some(framework_command) = self.help_command.as_deref() {
             ApplicationCommand::create_global_application_command(&ctx.http, |command| {
                 framework_command.register(command);
 
@@ -93,7 +104,14 @@ impl Framework {
 
         if let Some(guild_id) = test_guild_id {
             GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
-                for (_name, framework_command) in self.commands.iter() {
+                for framework_command in self.commands.values() {
+                    commands.create_application_command(|command| {
+                        framework_command.register(command);
+                        command
+                    });
+                }
+
+                if let Some(framework_command) = self.help_command.as_deref() {
                     commands.create_application_command(|command| {
                         framework_command.register(command);
                         command
@@ -122,6 +140,33 @@ impl Framework {
         ctx: Context,
         command: ApplicationCommandInteraction,
     ) {
+        if command.data.name.as_str() == "help" {
+            // Keep comments
+            #[allow(clippy::single_match)]
+            match self.help_command.as_ref() {
+                Some(framework_command) => {
+                    info!(
+                        "processing help command, options={}",
+                        FmtOptionsHelper(&command)
+                    );
+                    if let Err(e) = framework_command
+                        .fire_on_process(ctx, command)
+                        .await
+                        .map_err(WrapBoxError::new)
+                    {
+                        // TODO: handle error with handler
+                        warn!("{}", e);
+                    }
+                }
+                None => {
+                    // Don't log, as we assume the user does not want to provide help.
+                    // Logging would be extra noise.
+                }
+            }
+
+            return;
+        }
+
         let framework_command = match self.commands.get(command.data.name.as_str()) {
             Some(command) => command,
             None => {
@@ -188,7 +233,10 @@ impl std::fmt::Debug for Framework {
 /// A FrameworkBuilder for slash commands.
 pub struct FrameworkBuilder {
     commands: HashMap<Box<str>, Command>,
+    help_command: Option<HelpCommand>,
     checks: Vec<CheckFn>,
+
+    error: Option<BuilderError>,
 }
 
 impl FrameworkBuilder {
@@ -196,35 +244,75 @@ impl FrameworkBuilder {
     pub fn new() -> Self {
         Self {
             commands: HashMap::new(),
+            help_command: None,
             checks: Vec::new(),
+
+            error: None,
         }
     }
 
     /// Add a command
-    pub fn command(&mut self, command: Command) -> Result<&mut Self, BuilderError> {
-        let command_name: Box<str> = command.name().into();
-        let had_duplicate = self
-            .commands
-            .insert(command_name.clone(), command)
-            .is_some();
-
-        if had_duplicate {
-            return Err(BuilderError::Duplicate(command_name));
+    pub fn command(&mut self, command: Command) -> &mut Self {
+        if self.error.is_some() {
+            return self;
         }
 
-        Ok(self)
+        let command_name: Box<str> = command.name().into();
+
+        // A help command cannot be registered like this
+        if &*command_name == "help" {
+            self.error = Some(BuilderError::Duplicate(command_name));
+            return self;
+        }
+
+        // Don't overwrite commands
+        if self.commands.get(&command_name).is_some() {
+            self.error = Some(BuilderError::Duplicate(command_name));
+            return self;
+        }
+
+        self.commands.insert(command_name, command);
+
+        self
+    }
+
+    /// Add a help command
+    pub fn help_command(&mut self, command: HelpCommand) -> &mut Self {
+        if self.error.is_some() {
+            return self;
+        }
+
+        // Don't overwrite commands
+        if self.help_command.is_some() {
+            self.error = Some(BuilderError::Duplicate("help".into()));
+            return self;
+        }
+
+        self.help_command = Some(command);
+
+        self
     }
 
     /// Add a check
     pub fn check(&mut self, check: CheckFn) -> &mut Self {
+        if self.error.is_some() {
+            return self;
+        }
+
         self.checks.push(check);
         self
     }
 
     /// Build a framework
     pub fn build(&mut self) -> Result<Framework, BuilderError> {
+        if let Some(error) = self.error.take() {
+            return Err(error);
+        }
+
         Ok(Framework {
             commands: Arc::new(std::mem::take(&mut self.commands)),
+            help_command: self.help_command.take().map(Arc::new),
+
             checks: std::mem::take(&mut self.checks).into(),
         })
     }
