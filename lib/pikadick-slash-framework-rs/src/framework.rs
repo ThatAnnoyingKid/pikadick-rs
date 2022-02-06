@@ -68,7 +68,7 @@ impl std::fmt::Display for FmtOptionsHelper<'_> {
 /// A framework
 #[derive(Clone)]
 pub struct Framework {
-    commands: Arc<HashMap<Box<str>, Arc<Command>>>,
+    commands: Arc<HashMap<Box<str>, Command>>,
     checks: Arc<[CheckFn]>,
 }
 
@@ -187,7 +187,7 @@ impl std::fmt::Debug for Framework {
 
 /// A FrameworkBuilder for slash commands.
 pub struct FrameworkBuilder {
-    commands: HashMap<Box<str>, Arc<Command>>,
+    commands: HashMap<Box<str>, Command>,
     checks: Vec<CheckFn>,
 }
 
@@ -205,7 +205,7 @@ impl FrameworkBuilder {
         let command_name: Box<str> = command.name().into();
         let had_duplicate = self
             .commands
-            .insert(command_name.clone(), Arc::new(command))
+            .insert(command_name.clone(), command)
             .is_some();
 
         if had_duplicate {
