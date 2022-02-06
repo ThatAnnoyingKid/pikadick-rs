@@ -3,7 +3,7 @@ use crate::{
     ArgumentParam,
     BoxError,
     BoxFuture,
-    Error,
+    BuilderError,
     FromOptions,
 };
 use serenity::{
@@ -150,16 +150,16 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
     }
 
     /// Build the [`Command`]
-    pub fn build(&mut self) -> Result<Command, Error> {
-        let name = self.name.take().ok_or(Error::MissingField("name"))?;
+    pub fn build(&mut self) -> Result<Command, BuilderError> {
+        let name = self.name.take().ok_or(BuilderError::MissingField("name"))?;
         let description = self
             .description
             .take()
-            .ok_or(Error::MissingField("description"))?;
+            .ok_or(BuilderError::MissingField("description"))?;
         let on_process = self
             .on_process
             .take()
-            .ok_or(Error::MissingField("on_process"))?;
+            .ok_or(BuilderError::MissingField("on_process"))?;
 
         Ok(Command {
             name: name.into(),

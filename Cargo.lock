@@ -2310,6 +2310,7 @@ dependencies = [
  "pikadick-slash-framework-derive",
  "serenity",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]

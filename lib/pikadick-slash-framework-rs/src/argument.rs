@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::BuilderError;
 
 /// The kind of argument
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -71,10 +71,12 @@ impl<'a, 'b> ArgumentParamBuilder<'a, 'b> {
     }
 
     /// Build the argument param
-    pub fn build(&mut self) -> Result<ArgumentParam, Error> {
-        let name = self.name.ok_or(Error::MissingField("name"))?;
-        let kind = self.kind.ok_or(Error::MissingField("kind"))?;
-        let description = self.description.ok_or(Error::MissingField("description"))?;
+    pub fn build(&mut self) -> Result<ArgumentParam, BuilderError> {
+        let name = self.name.ok_or(BuilderError::MissingField("name"))?;
+        let kind = self.kind.ok_or(BuilderError::MissingField("kind"))?;
+        let description = self
+            .description
+            .ok_or(BuilderError::MissingField("description"))?;
 
         Ok(ArgumentParam {
             name: name.into(),
