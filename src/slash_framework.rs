@@ -2,12 +2,15 @@ use anyhow::{
     ensure,
     Context as _,
 };
-use pikadick_slash_framework::BoxError;
 pub use pikadick_slash_framework::{
     ArgumentKind as SlashFrameworkArgumentKind,
     ArgumentParamBuilder as SlashFrameworkArgumentBuilder,
     Command as SlashFrameworkCommand,
     CommandBuilder as SlashFrameworkCommandBuilder,
+};
+use pikadick_slash_framework::{
+    BoxError,
+    CheckFn,
 };
 use serenity::{
     model::{
@@ -64,6 +67,7 @@ impl std::error::Error for WrapBoxError {}
 #[derive(Clone)]
 pub struct SlashFramework {
     commands: Arc<HashMap<Box<str>, Arc<SlashFrameworkCommand>>>,
+    checks: Arc<[CheckFn]>,
 }
 
 impl SlashFramework {
@@ -124,15 +128,46 @@ impl SlashFramework {
             }
         };
 
-        info!("Processing command `{}`", framework_command.name());
-        if let Err(e) = framework_command
-            .fire_on_process(ctx, command)
-            .await
-            .map_err(WrapBoxError::new)
-            .context("failed to process command")
-        {
-            // TODO: handle error with handler
-            warn!("{:?}", e);
+        // TODO: Consider making parallel
+        let mut check_result = Ok(());
+        for check in self.checks.iter() {
+            check_result = check_result.and(check(&ctx, &command, framework_command).await);
+        }
+
+        match check_result {
+            Ok(()) => {
+                info!("processing command `{}`", framework_command.name());
+                if let Err(e) = framework_command
+                    .fire_on_process(ctx, command)
+                    .await
+                    .map_err(WrapBoxError::new)
+                    .context("failed to process command")
+                {
+                    // TODO: handle error with handler
+                    warn!("{:?}", e);
+                }
+            }
+            Err(e) => {
+                let content = if let Some(user) = e.user.as_deref() {
+                    user
+                } else {
+                    "check failed for unknown reason"
+                };
+
+                if let Some(log) = e.log {
+                    warn!("{}", log);
+                }
+
+                if let Err(e) = command
+                    .create_interaction_response(&ctx.http, |res| {
+                        res.interaction_response_data(|res| res.content(content))
+                    })
+                    .await
+                    .context("failed to send check failure response")
+                {
+                    warn!("{:?}", e);
+                }
+            }
         }
     }
 }
@@ -148,6 +183,7 @@ impl std::fmt::Debug for SlashFramework {
 /// A FrameworkBuilder for slash commands.
 pub struct SlashFrameworkBuilder {
     commands: HashMap<Box<str>, Arc<SlashFrameworkCommand>>,
+    checks: Vec<CheckFn>,
 }
 
 impl SlashFrameworkBuilder {
@@ -155,6 +191,7 @@ impl SlashFrameworkBuilder {
     pub fn new() -> Self {
         Self {
             commands: HashMap::new(),
+            checks: Vec::new(),
         }
     }
 
@@ -169,10 +206,17 @@ impl SlashFrameworkBuilder {
         Ok(self)
     }
 
+    /// Add a check
+    pub fn check(&mut self, check: CheckFn) -> &mut Self {
+        self.checks.push(check);
+        self
+    }
+
     /// Build a framework
     pub fn build(&mut self) -> anyhow::Result<SlashFramework> {
         Ok(SlashFramework {
             commands: Arc::new(std::mem::take(&mut self.commands)),
+            checks: std::mem::take(&mut self.checks).into(),
         })
     }
 }

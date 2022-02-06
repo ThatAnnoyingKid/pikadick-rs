@@ -1,5 +1,10 @@
 use crate::ClientDataKey;
 use parking_lot::Mutex;
+use pikadick_slash_framework::{
+    BoxFuture,
+    Command,
+    Reason as SlashReason,
+};
 use serenity::{
     client::Context,
     framework::standard::{
@@ -10,7 +15,10 @@ use serenity::{
         CommandOptions,
         Reason,
     },
-    model::prelude::*,
+    model::prelude::{
+        application_command::ApplicationCommandInteraction,
+        *,
+    },
 };
 use std::{
     collections::HashMap,
@@ -171,4 +179,44 @@ pub async fn enabled_check(
             Err(Reason::Unknown)
         }
     }
+}
+
+/// Check if a command is enabled via slash framework
+pub fn slash_check<'a>(
+    ctx: &'a Context,
+    interaction: &'a ApplicationCommandInteraction,
+    command: &'a Command,
+) -> BoxFuture<'a, Result<(), SlashReason>> {
+    Box::pin(async move {
+        let guild_id = match interaction.guild_id {
+            Some(id) => id,
+            None => {
+                // Let's not care about dms for now.
+                // They'll probably need special handling anyways.
+                // This will also probably only be useful in Group DMs,
+                // which I don't think bots can participate in anyways.
+                return Ok(());
+            }
+        };
+
+        let data_lock = ctx.data.read().await;
+        let client_data = data_lock
+            .get::<ClientDataKey>()
+            .expect("missing client data");
+        let db = client_data.db.clone();
+        drop(data_lock);
+
+        let command_name = command.name();
+
+        match db.is_command_disabled(guild_id, command_name).await {
+            Ok(true) => Err(SlashReason::new_user("Command Disabled.".to_string())),
+            Ok(false) => Ok(()),
+            Err(e) => {
+                error!("failed to read disabled commands: {}", e);
+                // DB failure, return false to be safe.
+                // Avoid being specific with error to prevent users from spamming knowingly.
+                Err(SlashReason::new_unknown())
+            }
+        }
+    })
 }

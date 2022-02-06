@@ -15,9 +15,13 @@ use serenity::{
 };
 use std::future::Future;
 
-pub type OnProcessFuture = BoxFuture<Result<(), BoxError>>;
+type OnProcessResult = Result<(), BoxError>;
+pub type OnProcessFuture = BoxFuture<'static, OnProcessResult>;
+
+// Keep these types in sync.
 type OnProcessFutureFn =
-    Box<dyn Fn(Context, ApplicationCommandInteraction) -> OnProcessFuture + Send + Sync + 'static>;
+    Box<dyn Fn(Context, ApplicationCommandInteraction) -> OnProcessFuture + Send + Sync>;
+type OnProcessFutureFnPtr<F> = fn(Context, ApplicationCommandInteraction) -> F;
 
 /// A slash framework command
 pub struct Command {
@@ -28,7 +32,7 @@ pub struct Command {
     description: Box<str>,
 
     /// Arguments
-    arguments: Vec<ArgumentParam>,
+    arguments: Box<[ArgumentParam]>,
 
     /// The main "process" func
     on_process: OnProcessFutureFn,
@@ -51,12 +55,12 @@ impl Command {
     }
 
     /// Fire the on_process hook
-    pub fn fire_on_process(
+    pub async fn fire_on_process(
         &self,
         ctx: Context,
         interaction: ApplicationCommandInteraction,
-    ) -> OnProcessFuture {
-        (self.on_process)(ctx, interaction)
+    ) -> Result<(), BoxError> {
+        (self.on_process)(ctx, interaction).await
     }
 
     /// Register this command
@@ -82,6 +86,7 @@ impl std::fmt::Debug for Command {
             .field("name", &self.name)
             .field("description", &self.description)
             .field("arguments", &self.arguments)
+            .field("checks", &"<checks>")
             .field("on_process", &"<func>")
             .finish()
     }
@@ -127,14 +132,14 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
     }
 
     /// The on_process hook
-    pub fn on_process<P, F>(&mut self, on_process: P) -> &mut Self
+    pub fn on_process<F>(&mut self, on_process: OnProcessFutureFnPtr<F>) -> &mut Self
     where
-        P: Fn(Context, ApplicationCommandInteraction) -> F + Send + Sync + 'static,
         F: Future<Output = Result<(), BoxError>> + Send + 'static,
     {
         // Trampoline so user does not have to box manually
         self.on_process = Some(Box::new(move |ctx, interaction| {
-            Box::pin(on_process(ctx, interaction))
+            let fut = (on_process)(ctx, interaction);
+            Box::pin(fut)
         }));
 
         self
@@ -155,7 +160,7 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
         Ok(Command {
             name: name.into(),
             description: description.into(),
-            arguments: std::mem::take(&mut self.arguments),
+            arguments: std::mem::take(&mut self.arguments).into_boxed_slice(),
 
             on_process,
         })
@@ -168,7 +173,7 @@ impl std::fmt::Debug for CommandBuilder<'_, '_> {
             .field("name", &self.name)
             .field("description", &self.description)
             .field("arguments", &self.arguments)
-            .field("on_process", &"<func>")
+            .field("on_process", &self.on_process.as_ref().map(|_| "<func>"))
             .finish()
     }
 }

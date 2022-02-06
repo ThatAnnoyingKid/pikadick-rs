@@ -302,28 +302,23 @@ pub fn create_slash_command() -> anyhow::Result<SlashFrameworkCommand> {
                 .and_then(|option| option.value.as_ref()?.as_bool())
                 .unwrap_or(false);
 
-            match nekos_client
+            let content = match nekos_client
                 .get_rand(nsfw)
                 .await
                 .context("failed to repopulate nekos caches")
             {
-                Ok(url) => {
-                    interaction
-                        .create_interaction_response(&ctx.http, |res| {
-                            res.interaction_response_data(|res| res.content(url.as_str()))
-                        })
-                        .await?;
-                }
+                Ok(url) => url.into(),
                 Err(e) => {
                     error!("{:?}", e);
-
-                    interaction
-                        .create_interaction_response(&ctx.http, |res| {
-                            res.interaction_response_data(|res| res.content(format!("{:?}", e)))
-                        })
-                        .await?;
+                    format!("{:?}", e)
                 }
-            }
+            };
+
+            interaction
+                .create_interaction_response(&ctx.http, |res| {
+                    res.interaction_response_data(|res| res.content(content))
+                })
+                .await?;
 
             Ok(())
         })

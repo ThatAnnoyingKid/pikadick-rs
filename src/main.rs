@@ -481,6 +481,7 @@ fn real_main(
 async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     // Setup slash framework
     let slash_framework = SlashFrameworkBuilder::new()
+        .check(self::checks::enabled::slash_check)
         .command(self::commands::nekos::create_slash_command()?)?
         .build()?;
 
