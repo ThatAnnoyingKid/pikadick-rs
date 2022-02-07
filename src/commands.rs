@@ -89,12 +89,17 @@ pub fn create_slash_help_command() -> anyhow::Result<pikadick_slash_framework::H
                                                 .title(command.name())
                                                 .description(command.description());
 
-                                            for argument in command.arguments().iter() {
-                                                embed.field(
-                                                    argument.name(),
-                                                    argument.description(),
-                                                    false,
-                                                );
+                                            if !command.arguments().is_empty() {
+                                                let mut arguments = String::with_capacity(256);
+                                                for argument in command.arguments().iter() {
+                                                    arguments.push_str("**");
+                                                    arguments.push_str(argument.name());
+                                                    arguments.push_str("**");
+
+                                                    arguments.push_str(": ");
+                                                    arguments.push_str(argument.description());
+                                                }
+                                                embed.field("Arguments", arguments, false);
                                             }
                                         }
                                         None => {
