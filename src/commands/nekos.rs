@@ -1,10 +1,8 @@
 use crate::{
-    checks::ENABLED_CHECK,
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
-    util::LoadingReaction,
     ClientDataKey,
 };
 use anyhow::Context as _;
@@ -13,15 +11,6 @@ use indexmap::set::IndexSet;
 use parking_lot::RwLock;
 use pikadick_slash_framework::FromOptions;
 use rand::Rng;
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
-};
 use std::{
     str::FromStr,
     sync::Arc,
@@ -235,41 +224,6 @@ impl Default for NekosClient {
 
 // TODO:
 // Consider adding https://nekos.life/api/v2/endpoints
-
-#[command]
-#[bucket("nekos")]
-#[description("Get a random neko")]
-#[checks(Enabled)]
-async fn nekos(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("failed to get client data");
-    let nekos_client = client_data.nekos_client.clone();
-    drop(data_lock);
-
-    let nsfw = args.single::<NsfwArg>().map(|_| true).unwrap_or(false);
-
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
-
-    match nekos_client
-        .get_rand(nsfw)
-        .await
-        .context("failed to repopulate nekos caches")
-    {
-        Ok(url) => {
-            loading.send_ok();
-            msg.channel_id.say(&ctx.http, url.as_str()).await?;
-        }
-        Err(e) => {
-            error!("{:?}", e);
-
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
-        }
-    }
-
-    Ok(())
-}
 
 /// Arguments for the nekos command
 #[derive(Debug, Copy, Clone, FromOptions)]

@@ -192,7 +192,6 @@ async fn help(
 #[group]
 #[commands(
     ping,
-    nekos,
     r6stats,
     r6tracker,
     rule34,
@@ -489,8 +488,6 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
         })
         .help(&HELP)
         .group(&GENERAL_GROUP)
-        .bucket("nekos", |b| b.delay(1))
-        .await
         .bucket("r6stats", |b| b.delay(7))
         .await
         .bucket("r6tracker", |b| b.delay(7))

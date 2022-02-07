@@ -35,7 +35,6 @@ pub use crate::commands::{
     iqdb::IQDB_COMMAND,
     latency::LATENCY_COMMAND,
     leave::LEAVE_COMMAND,
-    nekos::NEKOS_COMMAND,
     ping::PING_COMMAND,
     quizizz::QUIZIZZ_COMMAND,
     r6stats::R6STATS_COMMAND,
