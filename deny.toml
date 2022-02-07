@@ -160,6 +160,5 @@ allow-git = [
     "https://github.com/adumbidiot/songbird",
     "https://github.com/serenity-rs/serenity",
     "https://github.com/alexcrichton/cmake-rs",
-    "https://github.com/adumbidiot/serenity",
     "https://github.com/vectordotdev/heim",
 ]
