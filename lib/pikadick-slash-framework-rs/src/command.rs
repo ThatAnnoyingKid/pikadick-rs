@@ -93,6 +93,7 @@ impl Command {
                         ArgumentKind::Boolean => ApplicationCommandOptionType::Boolean,
                         ArgumentKind::String => ApplicationCommandOptionType::String,
                     })
+                    .required(argument.required())
             });
         }
     }

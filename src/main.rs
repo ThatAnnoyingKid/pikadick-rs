@@ -473,6 +473,7 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
         .help_command(create_slash_help_command()?)
         .command(self::commands::nekos::create_slash_command()?)
         .command(self::commands::ping::create_slash_command()?)
+        .command(self::commands::r6stats::create_slash_command()?)
         .build()?;
 
     // Create second prefix that is uppercase so we are case-insensitive

@@ -18,6 +18,7 @@ pub struct ArgumentParam {
     name: Box<str>,
     kind: ArgumentKind,
     description: Box<str>,
+    required: bool,
 }
 
 impl ArgumentParam {
@@ -35,6 +36,11 @@ impl ArgumentParam {
     pub fn description(&self) -> &str {
         &self.description
     }
+
+    /// Check if the argument is required
+    pub fn required(&self) -> bool {
+        self.required
+    }
 }
 
 /// An argument param builder
@@ -43,6 +49,7 @@ pub struct ArgumentParamBuilder<'a, 'b> {
     name: Option<&'a str>,
     kind: Option<ArgumentKind>,
     description: Option<&'b str>,
+    required: bool,
 }
 
 impl<'a, 'b> ArgumentParamBuilder<'a, 'b> {
@@ -52,6 +59,7 @@ impl<'a, 'b> ArgumentParamBuilder<'a, 'b> {
             name: None,
             kind: None,
             description: None,
+            required: false,
         }
     }
 
@@ -73,6 +81,12 @@ impl<'a, 'b> ArgumentParamBuilder<'a, 'b> {
         self
     }
 
+    /// Set if the argument is required
+    pub fn required(&mut self, required: bool) -> &mut Self {
+        self.required = required;
+        self
+    }
+
     /// Build the argument param
     pub fn build(&mut self) -> Result<ArgumentParam, BuilderError> {
         let name = self.name.ok_or(BuilderError::MissingField("name"))?;
@@ -85,6 +99,7 @@ impl<'a, 'b> ArgumentParamBuilder<'a, 'b> {
             name: name.into(),
             kind,
             description: description.into(),
+            required: self.required,
         })
     }
 }
