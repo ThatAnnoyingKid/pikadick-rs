@@ -11,10 +11,7 @@ use anyhow::Context as _;
 use crossbeam::queue::ArrayQueue;
 use indexmap::set::IndexSet;
 use parking_lot::RwLock;
-use pikadick_slash_framework::{
-    ConvertError,
-    FromOptions,
-};
+use pikadick_slash_framework::FromOptions;
 use rand::Rng;
 use serenity::{
     framework::standard::{

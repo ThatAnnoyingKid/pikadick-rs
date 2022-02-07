@@ -46,7 +46,7 @@ fn gen_from_options_impl(data: &Data) -> Result<TokenStream> {
                     }
                 });
 
-                let recurse = fields.named.iter().map(|f| {
+                let match_recurse = fields.named.iter().map(|f| {
                     let name = &f
                         .ident
                         .as_ref()
@@ -72,10 +72,17 @@ fn gen_from_options_impl(data: &Data) -> Result<TokenStream> {
                     quote_spanned! {f.span()=>
                         let #name = #name
                             .or_else(<#ty as ::pikadick_slash_framework::FromOptionValue>::get_missing_default)
-                            .ok_or(ConvertError::MissingRequiredField {
+                            .ok_or(::pikadick_slash_framework::ConvertError::MissingRequiredField {
                                 name: #name_lit,
                                 expected: <#ty as ::pikadick_slash_framework::FromOptionValue>::get_expected_data_type()
                             })?;
+                    }
+                });
+
+                let recurse = fields.named.iter().map(|f| {
+                    let name = &f.ident;
+                    quote_spanned! {f.span()=>
+                        #name,
                     }
                 });
 
@@ -84,14 +91,14 @@ fn gen_from_options_impl(data: &Data) -> Result<TokenStream> {
 
                     for option in interaction.data.options.iter() {
                         match option.name.as_str() {
-                            #(#recurse)*
+                            #(#match_recurse)*
                             _ => {}
                         }
                     }
 
                     #(#unwrap_field_recurse)*
 
-                    Ok(Self { nsfw })
+                    Ok(Self { #(#recurse)* })
                 })
             }
             Fields::Unnamed(fields) => Err(Error::new(

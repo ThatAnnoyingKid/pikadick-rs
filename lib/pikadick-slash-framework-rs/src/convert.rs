@@ -138,6 +138,35 @@ impl FromOptionValue for bool {
     }
 }
 
+impl FromOptionValue for String {
+    fn from_option_value(
+        name: &'static str,
+        option: Option<&ApplicationCommandInteractionDataOptionValue>,
+    ) -> Result<Self, ConvertError> {
+        let expected = Self::get_expected_data_type();
+
+        let option = match option {
+            Some(option) => option,
+            None => {
+                return Err(ConvertError::MissingRequiredField { name, expected });
+            }
+        };
+
+        match option {
+            ApplicationCommandInteractionDataOptionValue::String(s) => Ok(s.clone()),
+            t => Err(ConvertError::UnexpectedType {
+                name,
+                expected,
+                actual: DataType::from_data_option_value(t),
+            }),
+        }
+    }
+
+    fn get_expected_data_type() -> DataType {
+        DataType::String
+    }
+}
+
 impl<T> FromOptionValue for Option<T>
 where
     T: FromOptionValue,
