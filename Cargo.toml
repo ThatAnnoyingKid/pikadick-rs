@@ -48,7 +48,7 @@ tracing = "0.1.29"
 tracing-appender = "0.2.0"
 tracing-log = "0.1.2"
 tracing-opentelemetry = "0.16.0"
-tracing-subscriber = { version = "0.3.7", features = [ "env-filter", "fmt", "parking_lot" ] }
+tracing-subscriber = { version = "0.3.8", features = [ "env-filter", "fmt", "parking_lot" ] }
 ttf-parser = "0.14.0"
 uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs" }
