@@ -150,7 +150,7 @@ impl Framework {
                         FmtOptionsHelper(&command)
                     );
                     if let Err(e) = framework_command
-                        .fire_on_process(ctx, command)
+                        .fire_on_process(ctx, command, self.commands.clone())
                         .await
                         .map_err(WrapBoxError::new)
                     {

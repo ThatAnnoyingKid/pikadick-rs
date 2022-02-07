@@ -482,10 +482,24 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
                         .kind(pikadick_slash_framework::ArgumentKind::String)
                         .build()?,
                 )
-                .on_process(|ctx, interaction, _args: ()| async move {
+                .on_process(|ctx, interaction, map, _args: ()| async move {
                     interaction
                         .create_interaction_response(&ctx.http, |res| {
-                            res.interaction_response_data(|res| res.content("TODO: Help"))
+                            res.interaction_response_data(|res| {
+                                res.create_embed(|embed| {
+                                    embed.title("Help").color(0xF4D665_u32);
+
+                                    let mut description = String::with_capacity(256);
+                                    for name in map.keys() {
+                                        description.push('`');
+                                        description.push_str(name);
+                                        description.push('`');
+                                        description.push('\n');
+                                    }
+
+                                    embed.description(description)
+                                })
+                            })
                         })
                         .await?;
 

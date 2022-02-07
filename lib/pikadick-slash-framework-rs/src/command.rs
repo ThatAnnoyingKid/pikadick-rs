@@ -14,7 +14,11 @@ use serenity::{
         ApplicationCommandOptionType,
     },
 };
-use std::future::Future;
+use std::{
+    collections::HashMap,
+    future::Future,
+    sync::Arc,
+};
 
 type OnProcessResult = Result<(), BoxError>;
 pub type OnProcessFuture = BoxFuture<'static, OnProcessResult>;
@@ -24,9 +28,17 @@ type OnProcessFutureFn =
     Box<dyn Fn(Context, ApplicationCommandInteraction) -> OnProcessFuture + Send + Sync>;
 type OnProcessFutureFnPtr<F, A> = fn(Context, ApplicationCommandInteraction, A) -> F;
 
-type HelpOnProcessFutureFn =
-    Box<dyn Fn(Context, ApplicationCommandInteraction) -> OnProcessFuture + Send + Sync>;
-type HelpOnProcessFutureFnPtr<F, A> = fn(Context, ApplicationCommandInteraction, A) -> F;
+type HelpOnProcessFutureFn = Box<
+    dyn Fn(
+            Context,
+            ApplicationCommandInteraction,
+            Arc<HashMap<Box<str>, Command>>,
+        ) -> OnProcessFuture
+        + Send
+        + Sync,
+>;
+type HelpOnProcessFutureFnPtr<F, A> =
+    fn(Context, ApplicationCommandInteraction, Arc<HashMap<Box<str>, Command>>, A) -> F;
 
 /// A slash framework command
 pub struct Command {
@@ -137,7 +149,7 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
     }
 
     /// The on_process hook
-    pub fn on_process<F, A>(&mut self, on_process: HelpOnProcessFutureFnPtr<F, A>) -> &mut Self
+    pub fn on_process<F, A>(&mut self, on_process: OnProcessFutureFnPtr<F, A>) -> &mut Self
     where
         F: Future<Output = Result<(), BoxError>> + Send + 'static,
         A: FromOptions + 'static,
@@ -220,8 +232,9 @@ impl HelpCommand {
         &self,
         ctx: Context,
         interaction: ApplicationCommandInteraction,
+        map: Arc<HashMap<Box<str>, Command>>,
     ) -> Result<(), BoxError> {
-        (self.on_process)(ctx, interaction).await
+        (self.on_process)(ctx, interaction, map).await
     }
 
     /// Register this help command
@@ -257,7 +270,7 @@ pub struct HelpCommandBuilder<'a> {
     description: Option<&'a str>,
     arguments: Vec<ArgumentParam>,
 
-    on_process: Option<OnProcessFutureFn>,
+    on_process: Option<HelpOnProcessFutureFn>,
 }
 
 impl<'a> HelpCommandBuilder<'a> {
@@ -284,16 +297,16 @@ impl<'a> HelpCommandBuilder<'a> {
     }
 
     /// The on_process hook
-    pub fn on_process<F, A>(&mut self, on_process: OnProcessFutureFnPtr<F, A>) -> &mut Self
+    pub fn on_process<F, A>(&mut self, on_process: HelpOnProcessFutureFnPtr<F, A>) -> &mut Self
     where
         F: Future<Output = Result<(), BoxError>> + Send + 'static,
         A: FromOptions + 'static,
     {
         // Trampoline so user does not have to box manually and parse their args manually
-        self.on_process = Some(Box::new(move |ctx, interaction| {
+        self.on_process = Some(Box::new(move |ctx, interaction, map| {
             Box::pin(async move {
                 let args = A::from_options(&interaction)?;
-                (on_process)(ctx, interaction, args).await
+                (on_process)(ctx, interaction, map, args).await
             })
         }));
 
