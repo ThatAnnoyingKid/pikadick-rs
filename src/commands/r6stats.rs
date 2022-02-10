@@ -170,7 +170,10 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
 
             info!("getting r6 stats for '{}' using r6stats", args.name);
 
-            let result = client.get_stats(&args.name).await;
+            let result = client
+                .get_stats(&args.name)
+                .await
+                .with_context(|| format!("failed to get stats for '{}' using r6stats", args.name));
 
             interaction
                 .create_interaction_response(&ctx.http, |res| {
@@ -198,12 +201,9 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                         }),
                         Ok(None) => res.content("No results"),
                         Err(e) => {
-                            error!(
-                                "failed to get r6 stats for '{}' using r6stats: {}",
-                                args.name, e
-                            );
+                            error!("{:?}", e);
 
-                            res.content(format!("Failed to get stats: {}", e))
+                            res.content(format!("{:?}", e))
                         }
                     })
                 })
