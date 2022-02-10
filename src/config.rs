@@ -4,8 +4,8 @@ use serde::{
     Serialize,
 };
 use serenity::{
-    client::validate_token,
     model::prelude::GuildId,
+    utils::validate_token,
 };
 use std::{
     borrow::Cow,
