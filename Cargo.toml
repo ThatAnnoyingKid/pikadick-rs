@@ -77,8 +77,6 @@ servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca146
 songbird = { git = "https://github.com/adumbidiot/songbird", branch = "audiopus-0.3.0" }
 # songbird requires serenity:next, dashmap v5 is unsound
 serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next" }
-# cmake crates.io chokes on windows -> linux cross compilation right now
-cmake = { git = "https://github.com/alexcrichton/cmake-rs", branch = "master" }
 
 [workspace]
 members = [ 
@@ -101,7 +99,8 @@ members = [
     "lib/async-rusqlite-rs",
     "lib/across-rs",
     "lib/pikadick-slash-framework-rs",
-    "lib/pikadick-slash-framework-derive-rs"
+    "lib/pikadick-slash-framework-derive-rs",
+    "lib/rpi-deploy-rs",
 ]
 
 # To make image drawing times sane

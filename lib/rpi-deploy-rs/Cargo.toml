@@ -1,0 +1,8 @@
+[package]
+name = "rpi-deploy"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.54"
+argh = "0.1.7"

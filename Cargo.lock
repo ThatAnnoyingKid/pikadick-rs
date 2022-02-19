@@ -9,6 +9,7 @@ dependencies = [
  "anyhow",
  "argh",
  "serde",
+ "tempfile",
  "toml",
 ]
 
@@ -80,9 +81,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.53"
+version = "1.0.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94a45b455c14666b85fc40a019e8ab9eb75e3a124e05494f5397122bc9eb06e0"
+checksum = "7a99269dff3bc004caa411f38845c20303f1e393ca2bd6581576fa3a7f59577d"
 
 [[package]]
 name = "argh"
@@ -552,7 +553,8 @@ dependencies = [
 [[package]]
 name = "cmake"
 version = "0.1.48"
-source = "git+https://github.com/alexcrichton/cmake-rs?branch=master#7793895d88acc45d29fac7c711ddaef11c897ea9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8ad8cef104ac57b68b89df3208164d228503abbdce70f6880ffa3d970e7443a"
 dependencies = [
  "cc",
 ]
@@ -2879,6 +2881,14 @@ dependencies = [
  "untrusted",
  "web-sys",
  "winapi",
+]
+
+[[package]]
+name = "rpi-deploy"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "argh",
 ]
 
 [[package]]
