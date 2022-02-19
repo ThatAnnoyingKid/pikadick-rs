@@ -3,7 +3,10 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use serenity::client::validate_token;
+use serenity::{
+    model::prelude::GuildId,
+    utils::validate_token,
+};
 use std::{
     borrow::Cow,
     collections::HashMap,
@@ -23,6 +26,9 @@ pub struct Config {
     /// The discord token
     pub token: String,
 
+    /// The application id
+    pub application_id: u64,
+
     /// Prefix for the bot
     #[serde(default = "default_prefix")]
     pub prefix: String,
@@ -32,6 +38,9 @@ pub struct Config {
 
     /// Data dir
     pub data_dir: PathBuf,
+
+    /// The test guild
+    pub test_guild: Option<GuildId>,
 
     /// FML config
     pub fml: FmlConfig,

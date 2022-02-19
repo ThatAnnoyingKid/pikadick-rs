@@ -1,19 +1,18 @@
-use crate::checks::ENABLED_CHECK;
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
-};
+use anyhow::Context as _;
 
-#[command]
-#[description("Respond with pong")]
-#[checks(Enabled)]
-#[bucket("default")]
-async fn ping(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    msg.channel_id.say(&ctx.http, "pong").await?;
-    Ok(())
+/// Create a slash command
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
+    pikadick_slash_framework::CommandBuilder::new()
+        .name("ping")
+        .description("Respond with pong")
+        .on_process(|ctx, interaction, _args: ()| async move {
+            interaction
+                .create_interaction_response(&ctx.http, |res| {
+                    res.interaction_response_data(|res| res.content("pong"))
+                })
+                .await?;
+            Ok(())
+        })
+        .build()
+        .context("failed to build command")
 }

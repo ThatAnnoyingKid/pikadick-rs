@@ -100,6 +100,9 @@ skip = [
     
     # Blocked on songbird updating to 5.0.0
     { name = "dashmap", version = "4.0.2" },
+    
+    # Blocked on updates to cssparser
+    { name = "phf_shared", version = "0.8.0" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -107,7 +110,7 @@ deny = [
     # https://github.com/RustSec/advisory-db/issues/305
     { name = "rental", version = "*" },
     
-    # Appears to be moving towards integrating rio more tightly for io_uring support
+    # This is basically Rust written like C.
     { name = "sled", version = "*" },
     
     # The general idea seems unsound, and the current version does contain UB.
@@ -127,27 +130,21 @@ deny = [
     # https://github.com/RustSec/advisory-db/issues/743
     { name = "fast-floats", version = "*" },
     
-    # https://github.com/RustSec/advisory-db/issues/880
-    { name = "nalgebra", version = "<0.26.2" },
-    
     # https://github.com/RustSec/advisory-db/issues/913
     { name = "hexchat", version = ">=0.3.0" },
     
     # https://github.com/RustSec/advisory-db/issues/613
     { name = "out-reference", version = "*" },
     
-    # https://github.com/RustSec/advisory-db/issues/235
-    { name = "shamir", version = "<2.0.0" },
+    # https://github.com/rustsec/advisory-db/issues/1175
+    { name = "futures-intrusive", version = "*" },
     
-    # https://github.com/RustSec/advisory-db/pull/671/files
-    # This is currently disabled as it is used by heim
-    # { name = "raw-cpuid", version = ">3.1.0" },
+    # Probably abandoned. Commented as it is used by `tracing-subscriber`.
+    # https://github.com/rustsec/advisory-db/issues/1095
+    # { name = "ansi_term", version = "*" },
     
-    # https://github.com/RustSec/advisory-db/pull/649
-    { name = "derive-com-impl", version = "<=0.1.1" },
-    
-    # https://github.com/RustSec/advisory-db/pull/593
-    { name = "bite", version = "*" },
+    # https://github.com/rustsec/advisory-db/issues/1173
+    { name = "prettytables-rs", version = "*" },
 ]
 
 [sources]
@@ -158,10 +155,10 @@ allow-git = [
     "https://github.com/adumbidiot/zalgo-rs",
     "https://github.com/adumbidiot/shift-client-rs",
     "https://github.com/adumbidiot/reddit-rs",
-    "https://github.com/heim-rs/heim",
+    # "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
     "https://github.com/adumbidiot/songbird",
     "https://github.com/serenity-rs/serenity",
     "https://github.com/alexcrichton/cmake-rs",
-    "https://github.com/adumbidiot/serenity",
+    "https://github.com/vectordotdev/heim",
 ]

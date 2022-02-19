@@ -90,6 +90,10 @@ impl EventHandler for Handler {
         let client_data = data_lock
             .get::<ClientDataKey>()
             .expect("missing client data");
+        let slash_framework = data_lock
+            .get::<SlashFrameworkKey>()
+            .expect("missing slash framework")
+            .clone();
         let config = client_data.config.clone();
         drop(data_lock);
 
@@ -106,6 +110,15 @@ impl EventHandler for Handler {
                     ctx.set_activity(Activity::playing(status)).await;
                 }
             }
+        }
+
+        // TODO: Consider shutting down the bot. It might be possible to use old data though.
+        if let Err(e) = slash_framework
+            .register(ctx.clone(), config.test_guild)
+            .await
+            .context("failed to register slash commands")
+        {
+            warn!("{:?}", e);
         }
 
         info!("logged in as '{}'", ready.user.name);
@@ -128,6 +141,17 @@ impl EventHandler for Handler {
             error!("failed to generate reddit embed: {}", e);
         }
     }
+
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        let data_lock = ctx.data.read().await;
+        let framework = data_lock
+            .get::<SlashFrameworkKey>()
+            .expect("missing slash framework")
+            .clone();
+        drop(data_lock);
+
+        framework.process_interaction_create(ctx, interaction).await;
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -135,6 +159,13 @@ pub struct ClientDataKey;
 
 impl TypeMapKey for ClientDataKey {
     type Value = ClientData;
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct SlashFrameworkKey;
+
+impl TypeMapKey for SlashFrameworkKey {
+    type Value = pikadick_slash_framework::Framework;
 }
 
 #[help]
@@ -160,8 +191,6 @@ async fn help(
 
 #[group]
 #[commands(
-    ping,
-    nekos,
     r6stats,
     r6tracker,
     rule34,
@@ -438,6 +467,15 @@ fn real_main(
 
 /// Set up a serenity client
 async fn setup_client(config: &Config) -> anyhow::Result<Client> {
+    // Setup slash framework
+    let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
+        .check(self::checks::enabled::slash_check)
+        .help_command(create_slash_help_command()?)
+        .command(self::commands::nekos::create_slash_command()?)
+        .command(self::commands::ping::create_slash_command()?)
+        .command(self::commands::r6stats::create_slash_command()?)
+        .build()?;
+
     // Create second prefix that is uppercase so we are case-insensitive
     let config_prefix = config.prefix.clone();
     let uppercase_prefix = config_prefix.to_uppercase();
@@ -451,8 +489,6 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
         })
         .help(&HELP)
         .group(&GENERAL_GROUP)
-        .bucket("nekos", |b| b.delay(1))
-        .await
         .bucket("r6stats", |b| b.delay(7))
         .await
         .bucket("r6tracker", |b| b.delay(7))
@@ -476,10 +512,19 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     let config_token = config.token.clone();
     let client = Client::builder(config_token)
         .event_handler(Handler)
+        .application_id(config.application_id)
         .framework(framework)
         .register_songbird()
         .await
         .context("failed to create client")?;
+
+    {
+        client
+            .data
+            .write()
+            .await
+            .insert::<SlashFrameworkKey>(slash_framework);
+    }
 
     // TODO: Spawn a task for this earlier?
     // Spawn the ctrl-c handler

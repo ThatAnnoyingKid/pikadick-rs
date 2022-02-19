@@ -1,26 +1,16 @@
 use crate::{
-    checks::ENABLED_CHECK,
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
-    util::LoadingReaction,
     ClientDataKey,
 };
 use anyhow::Context as _;
 use crossbeam::queue::ArrayQueue;
 use indexmap::set::IndexSet;
 use parking_lot::RwLock;
+use pikadick_slash_framework::FromOptions;
 use rand::Rng;
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
-};
 use std::{
     str::FromStr,
     sync::Arc,
@@ -235,37 +225,53 @@ impl Default for NekosClient {
 // TODO:
 // Consider adding https://nekos.life/api/v2/endpoints
 
-#[command]
-#[bucket("nekos")]
-#[description("Get a random neko")]
-#[checks(Enabled)]
-async fn nekos(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("failed to get client data");
-    let nekos_client = client_data.nekos_client.clone();
-    drop(data_lock);
+/// Arguments for the nekos command
+#[derive(Debug, Copy, Clone, FromOptions)]
+pub struct NekosArguments {
+    /// Whether the command should look for nsfw pictures
+    pub nsfw: Option<bool>,
+}
 
-    let nsfw = args.single::<NsfwArg>().map(|_| true).unwrap_or(false);
+/// Make a nekos slash command
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
+    pikadick_slash_framework::CommandBuilder::new()
+        .name("nekos")
+        .description("Get a random neko")
+        .argument(
+            pikadick_slash_framework::ArgumentParamBuilder::new()
+                .name("nsfw")
+                .kind(pikadick_slash_framework::ArgumentKind::Boolean)
+                .description("Whether this should use nsfw results")
+                .build()?,
+        )
+        .on_process(|ctx, interaction, args: NekosArguments| async move {
+            let data_lock = ctx.data.read().await;
+            let client_data = data_lock
+                .get::<ClientDataKey>()
+                .expect("failed to get client data");
+            let nekos_client = client_data.nekos_client.clone();
+            drop(data_lock);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
+            let content = match nekos_client
+                .get_rand(args.nsfw.unwrap_or(false))
+                .await
+                .context("failed to repopulate nekos caches")
+            {
+                Ok(url) => url.into(),
+                Err(e) => {
+                    error!("{:?}", e);
+                    format!("{:?}", e)
+                }
+            };
 
-    match nekos_client
-        .get_rand(nsfw)
-        .await
-        .context("failed to repopulate nekos caches")
-    {
-        Ok(url) => {
-            loading.send_ok();
-            msg.channel_id.say(&ctx.http, url.as_str()).await?;
-        }
-        Err(e) => {
-            error!("{:?}", e);
+            interaction
+                .create_interaction_response(&ctx.http, |res| {
+                    res.interaction_response_data(|res| res.content(content))
+                })
+                .await?;
 
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
-        }
-    }
-
-    Ok(())
+            Ok(())
+        })
+        .build()
+        .context("failed to build command")
 }

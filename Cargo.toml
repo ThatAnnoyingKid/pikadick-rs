@@ -14,16 +14,17 @@ dashmap = "4.0.2"
 deviantart = { path = "./lib/deviantart-rs" }
 fml = { path = "./lib/fml-rs" }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
-indexmap = "1.7.0"
+indexmap = "1.8.0"
 insta = { path = "./lib/insta-rs" }
 iqdb = { path = "./lib/iqdb-rs" }
 itoa = "1.0.1"
 lazy_static = "1.4.0"
 nekos = { path = "./lib/nekos-rs" }
 once_cell = "1.9.0"
-opentelemetry = { version = "0.16.0", features = [ "rt-tokio" ] }
-opentelemetry-otlp = { version = "0.9.0", features = [ "tls", "tls-roots" ] }
+opentelemetry = { version = "0.17.0", features = [ "rt-tokio" ] }
+opentelemetry-otlp = { version = "0.10.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.11.2"
+pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
 quizizz = { path = "./lib/quizizz-rs" }
 r6stats = { path = "./lib/r6stats-rs" }
 r6tracker = { path = "./lib/r6tracker-rs" }
@@ -34,7 +35,7 @@ regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
 rusqlite = { version = "0.26.3", features = [ "bundled", "blob", "trace" ] }
 serde = { version = "1.0.136", features = [ "derive" ] }
-serenity = { version = "0.10.9", features = [ "client", "standard_framework", "voice" ] }
+serenity = { version = "0.10.10", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
 songbird = "0.2.0"
 systemstat = "0.1.10"
@@ -43,12 +44,12 @@ tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiny-skia = { version = "0.6.3", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.16.1", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"
-tonic = "0.5.1"
-tracing = "0.1.29"
+tonic = "0.6.2"
+tracing = "0.1.30"
 tracing-appender = "0.2.0"
 tracing-log = "0.1.2"
-tracing-opentelemetry = "0.16.0"
-tracing-subscriber = { version = "0.3.7", features = [ "env-filter", "fmt", "parking_lot" ] }
+tracing-opentelemetry = "0.17.0"
+tracing-subscriber = { version = "0.3.8", features = [ "env-filter", "fmt", "parking_lot" ] }
 ttf-parser = "0.14.0"
 uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs" }
@@ -65,7 +66,8 @@ use-openssl-vendored = [ "openssl" ]
 
 [patch.crates-io]
 # Fix security advisory.
-heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }
+# heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }
+heim = { git = "https://github.com/vectordotdev/heim", branch = "update-nix" }
 
 # `servo_arc` has UB on crates.io. This still has UB, but less and I haven't seen any issues with it yet.
 # To fix this, I think https://doc.rust-lang.org/std/mem/fn.size_of_val_raw.html needs to stabilize.
@@ -73,16 +75,10 @@ servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca146
 
 # Fix cross compilation, crates.io songbird does not support it
 songbird = { git = "https://github.com/adumbidiot/songbird", branch = "audiopus-0.3.0" }
-# songbird requires serenity:next
-# serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next" }
-# dashmap v5 is unsound
-serenity = { git = "https://github.com/adumbidiot/serenity", branch = "next-downgrade-dashmap" }
+# songbird requires serenity:next, dashmap v5 is unsound
+serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next" }
 # cmake crates.io chokes on windows -> linux cross compilation right now
 cmake = { git = "https://github.com/alexcrichton/cmake-rs", branch = "master" }
-
-[patch.'https://github.com/serenity-rs/serenity']
-# dashmap v5 is unsound
-serenity = { git = "https://github.com/adumbidiot/serenity", branch = "next-downgrade-dashmap" }
 
 [workspace]
 members = [ 
@@ -104,6 +100,8 @@ members = [
     "lib/tic-tac-toe-rs",
     "lib/async-rusqlite-rs",
     "lib/across-rs",
+    "lib/pikadick-slash-framework-rs",
+    "lib/pikadick-slash-framework-derive-rs"
 ]
 
 # To make image drawing times sane

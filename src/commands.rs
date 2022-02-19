@@ -35,8 +35,6 @@ pub use crate::commands::{
     iqdb::IQDB_COMMAND,
     latency::LATENCY_COMMAND,
     leave::LEAVE_COMMAND,
-    nekos::NEKOS_COMMAND,
-    ping::PING_COMMAND,
     quizizz::QUIZIZZ_COMMAND,
     r6stats::R6STATS_COMMAND,
     r6tracker::R6TRACKER_COMMAND,
@@ -53,3 +51,87 @@ pub use crate::commands::{
     xkcd::XKCD_COMMAND,
     zalgo::ZALGO_COMMAND,
 };
+use anyhow::Context;
+use pikadick_slash_framework::FromOptions;
+
+/// Help Options
+#[derive(Debug, FromOptions)]
+pub struct HelpCommandOptions {
+    /// The command
+    pub command: Option<String>,
+}
+
+/// Create a slash help command
+pub fn create_slash_help_command() -> anyhow::Result<pikadick_slash_framework::HelpCommand> {
+    pikadick_slash_framework::HelpCommandBuilder::new()
+        .description("Get information about commands and their use")
+        .argument(
+            pikadick_slash_framework::ArgumentParamBuilder::new()
+                .name("command")
+                .description("The command you need help for")
+                .kind(pikadick_slash_framework::ArgumentKind::String)
+                .build()?,
+        )
+        .on_process(
+            |ctx, interaction, map, args: HelpCommandOptions| async move {
+                interaction
+                    .create_interaction_response(&ctx.http, |res| {
+                        res.interaction_response_data(|res| {
+                            res.create_embed(|embed| {
+                                embed.color(0xF4D665_u32);
+
+                                if let Some(command) = args.command {
+                                    let maybe_command = map.get(command.as_str());
+
+                                    match maybe_command {
+                                        Some(command) => {
+                                            embed
+                                                .title(command.name())
+                                                .description(command.description());
+
+                                            if !command.arguments().is_empty() {
+                                                let mut arguments = String::with_capacity(256);
+                                                for argument in command.arguments().iter() {
+                                                    arguments.push_str("**");
+                                                    arguments.push_str(argument.name());
+                                                    arguments.push_str("**");
+
+                                                    arguments.push_str(": ");
+                                                    arguments.push_str(argument.description());
+                                                }
+                                                embed.field("Arguments", arguments, false);
+                                            }
+                                        }
+                                        None => {
+                                            embed.title("Unknown Command").description(format!(
+                                                "Command `{}` was not found.",
+                                                command
+                                            ));
+                                        }
+                                    }
+                                } else {
+                                    embed.title("Help");
+
+                                    let mut description = String::with_capacity(256);
+                                    for name in map.keys() {
+                                        description.push('`');
+                                        description.push_str(name);
+                                        description.push('`');
+                                        description.push('\n');
+                                    }
+
+                                    embed.description(description);
+                                }
+
+                                embed
+                            })
+                        })
+                    })
+                    .await?;
+
+                Ok(())
+            },
+        )
+        .build()
+        .context("failed to build help command")
+}
