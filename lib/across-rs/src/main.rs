@@ -58,7 +58,7 @@ pub struct ConfigTarget {
     pub linker: String,
 
     /// The contents of s cmake toolchain file
-    pub cmake_toolchain: Option<String>,
+    pub cmake_toolchain_file: Option<String>,
 
     /// Env vars set for this target.
     ///
@@ -117,35 +117,36 @@ fn real_main(options: Options) -> anyhow::Result<()> {
 
     // Generate cmake toolchain file if needed
     // TODO: Allow caching in specialized dir
-    let _cmake_toolchain_path =
-        if let Some(cmake_toolchain_str) = target_config.cmake_toolchain.as_ref() {
-            let mut cmake_toolchain =
-                NamedTempFile::new().context("failed to create cmake toolchain file")?;
-            cmake_toolchain
-                .write_all(cmake_toolchain_str.as_bytes())
-                .context("failed to write cmake toolchain contents")?;
-            cmake_toolchain
-                .as_file()
-                .sync_all()
-                .context("failed to sync cmake toolchain contents")?;
+    let _cmake_toolchain_file_path = if let Some(cmake_toolchain_file_str) =
+        target_config.cmake_toolchain_file.as_ref()
+    {
+        let mut cmake_toolchain_file =
+            NamedTempFile::new().context("failed to create cmake toolchain file")?;
+        cmake_toolchain_file
+            .write_all(cmake_toolchain_file_str.as_bytes())
+            .context("failed to write cmake toolchain file contents")?;
+        cmake_toolchain_file
+            .as_file()
+            .sync_all()
+            .context("failed to sync cmake toolchain file contents")?;
 
-            let path = cmake_toolchain.into_temp_path();
-            let path_str = path
-                .to_str()
-                .context("cmake_toolchain file path is not valid unicode")?;
-            let value = envs.insert("CMAKE_TOOLCHAIN".to_string(), path_str.to_string());
-            if let Some(value) = value {
-                bail!(
-                    "`CMAKE_TOOLCHAIN` is already specified in the environment with value `{}`",
-                    value
-                );
-            }
+        let path = cmake_toolchain_file.into_temp_path();
+        let path_str = path
+            .to_str()
+            .context("cmake toolchain file path is not valid unicode")?;
+        let value = envs.insert("CMAKE_TOOLCHAIN_FILE".to_string(), path_str.to_string());
+        if let Some(value) = value {
+            bail!(
+                "`CMAKE_TOOLCHAIN_FILE` is already specified in the environment with value `{}`",
+                value
+            );
+        }
 
-            // Keep alive to ensure file lives until compilation finishes
-            Some(path)
-        } else {
-            None
-        };
+        // Keep alive to ensure file lives until compilation finishes
+        Some(path)
+    } else {
+        None
+    };
 
     let mut command = Command::new("cargo");
     command.args(&["build", "--target", options.target.as_str()]);
