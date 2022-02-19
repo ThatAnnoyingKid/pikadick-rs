@@ -3,9 +3,11 @@ use anyhow::{
     ensure,
     Context,
 };
+use cargo_metadata::MetadataCommand;
 use std::{
     collections::HashMap,
     fmt::Write,
+    fs::File,
     io::Write as _,
     path::{
         Path,
@@ -13,7 +15,6 @@ use std::{
     },
     process::Command,
 };
-use tempfile::NamedTempFile;
 
 #[derive(argh::FromArgs)]
 #[argh(description = "a tool to help in cross compilation")]
@@ -90,6 +91,15 @@ fn main() {
 
 /// The real entry point
 fn real_main(options: Options) -> anyhow::Result<()> {
+    println!("# fetching cargo metadata...");
+    let metadata = MetadataCommand::new()
+        .exec()
+        .context("failed to get cargo metadata")?;
+
+    // Make across dir in target to cache files
+    let across_dir = metadata.target_directory.join_os("across");
+    std::fs::create_dir_all(&across_dir).context("failed to create across directory")?;
+
     let config_path = options
         .config
         .canonicalize()
@@ -116,37 +126,32 @@ fn real_main(options: Options) -> anyhow::Result<()> {
     envs.insert("RUST_BACKTRACE".to_string(), "1".to_string());
 
     // Generate cmake toolchain file if needed
-    // TODO: Allow caching in specialized dir
-    let _cmake_toolchain_file_path = if let Some(cmake_toolchain_file_str) =
-        target_config.cmake_toolchain_file.as_ref()
-    {
-        let mut cmake_toolchain_file =
-            NamedTempFile::new().context("failed to create cmake toolchain file")?;
+    if let Some(cmake_toolchain_file_str) = target_config.cmake_toolchain_file.as_ref() {
+        let cmake_toolchain_file_path =
+            across_dir.join(format!("{}.cmake", options.target.as_str()));
+        let mut cmake_toolchain_file = File::create(&cmake_toolchain_file_path)
+            .context("failed to create cmake toolchain file")?;
         cmake_toolchain_file
             .write_all(cmake_toolchain_file_str.as_bytes())
             .context("failed to write cmake toolchain file contents")?;
         cmake_toolchain_file
-            .as_file()
             .sync_all()
             .context("failed to sync cmake toolchain file contents")?;
 
-        let path = cmake_toolchain_file.into_temp_path();
-        let path_str = path
+        let cmake_toolchain_file_path_str = cmake_toolchain_file_path
             .to_str()
             .context("cmake toolchain file path is not valid unicode")?;
-        let value = envs.insert("CMAKE_TOOLCHAIN_FILE".to_string(), path_str.to_string());
+        let value = envs.insert(
+            "CMAKE_TOOLCHAIN_FILE".to_string(),
+            cmake_toolchain_file_path_str.to_string(),
+        );
         if let Some(value) = value {
             bail!(
                 "`CMAKE_TOOLCHAIN_FILE` is already specified in the environment with value `{}`",
                 value
             );
         }
-
-        // Keep alive to ensure file lives until compilation finishes
-        Some(path)
-    } else {
-        None
-    };
+    }
 
     let mut command = Command::new("cargo");
     command.args(&["build", "--target", options.target.as_str()]);

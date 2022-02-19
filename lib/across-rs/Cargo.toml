@@ -6,6 +6,6 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.53"
 argh = "0.1.7"
+cargo_metadata = "0.14.2"
 serde = { version = "1.0.136", features = [ "derive" ] }
-tempfile = "3.3.0"
 toml = "0.5.8"
