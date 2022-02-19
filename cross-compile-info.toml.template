@@ -3,7 +3,6 @@
 linker = "[LINKER EXE NAME]" # Example: "arm-linux-gnueabihf-gcc"
 strip = "[STRIP_EXE_NAME]" # Example: "arm-linux-gnueabihf-strip"
 cmake_toolchain_file = """ # A CMake toolchain file that is saved verbatim and passed to the compiler. Only matters for CMake builds.
-set(CMAKE_GENERATOR Ninja)
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR arm)
 """
