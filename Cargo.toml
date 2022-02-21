@@ -3,6 +3,9 @@ name = "pikadick"
 version = "0.0.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
+readme = "README.md"
+description = "yet another discord bot"
+authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 
 [dependencies]
 anyhow = "1.0.53"
@@ -78,6 +81,36 @@ songbird = { git = "https://github.com/adumbidiot/songbird", branch = "audiopus-
 # songbird requires serenity:next, dashmap v5 is unsound
 serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next" }
 
+# To make image drawing times sane
+[profile.dev.package.tiny-skia]
+opt-level = 3
+
+# To make image encoding times sane
+[profile.dev.package.png]
+opt-level = 3
+
+# To make image encoding times sane
+[profile.dev.package.miniz_oxide]
+opt-level = 3
+
+# To make image encoding times sane
+[profile.dev.package.crc32fast]
+opt-level = 3
+
+# To make image encoding times sane
+[profile.dev.package.deflate]
+opt-level = 3
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+
+[profile.bench]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+
 [workspace]
 members = [ 
     "lib/fml-rs",
@@ -103,32 +136,4 @@ members = [
     "lib/rpi-deploy-rs",
 ]
 
-# To make image drawing times sane
-[profile.dev.package.tiny-skia]
-opt-level = 3
-
-# To make image encoding times sane
-[profile.dev.package.png]
-opt-level = 3
-
-# To make image encoding times sane
-[profile.dev.package.miniz_oxide]
-opt-level = 3
-
-# To make image encoding times sane
-[profile.dev.package.crc32fast]
-opt-level = 3
-
-# To make image encoding times sane
-[profile.dev.package.deflate]
-opt-level = 3
-
-[profile.release]
-lto = true
-codegen-units = 1
-opt-level = 3
-
-[profile.bench]
-lto = true
-codegen-units = 1
-opt-level = 3
+[package.metadata.deb]
