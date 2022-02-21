@@ -4,6 +4,7 @@ targets = [
     { triple = "x86_64-apple-darwin" },
     { triple = "x86_64-pc-windows-msvc" },
     { triple = "armv7-unknown-linux-gnueabihf" },
+    { triple = "aarch64-unknown-linux-gnueabihf" },
 ]
 
 [advisories]
