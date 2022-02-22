@@ -48,7 +48,7 @@ tonic = "0.6.2"
 tracing = "0.1.30"
 tracing-appender = "0.2.0"
 tracing-log = "0.1.2"
-tracing-opentelemetry = "0.17.0"
+tracing-opentelemetry = "0.17.2"
 tracing-subscriber = { version = "0.3.8", features = [ "env-filter", "fmt", "parking_lot" ] }
 ttf-parser = "0.14.0"
 uom = "0.31.1"
