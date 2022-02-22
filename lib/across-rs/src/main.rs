@@ -64,6 +64,7 @@ pub struct ConfigTarget {
     /// Env vars set for this target.
     ///
     /// Example PERL = "C:/Users/username/scoop/apps/msys2/current/usr/bin/perl"
+    #[serde(default)]
     pub env: HashMap<String, String>,
 }
 
