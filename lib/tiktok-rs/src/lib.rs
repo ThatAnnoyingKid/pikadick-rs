@@ -44,7 +44,7 @@ mod test {
         let url = "https://vm.tiktok.com/TTPdrksrdc/";
         let client = Client::new();
 
-        let post = client.get_post(&url).await.expect("failed to get post");
+        let post = client.get_post(url).await.expect("failed to get post");
 
         dbg!(&post);
         dbg!(&post.get_video_download_url());
