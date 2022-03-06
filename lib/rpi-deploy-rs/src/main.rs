@@ -74,7 +74,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
             println!("Packaging...");
             println!();
             for target in ctx.cargo_toml_config.targets.iter() {
-                ctx.package_target(&target)?;
+                ctx.package_target(target)?;
             }
         }
         Subcommand::Deploy(options) => {
