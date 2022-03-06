@@ -3801,12 +3801,12 @@ dependencies = [
 name = "tiktok"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "argh",
  "open-graph",
  "reqwest",
  "thiserror",
  "tokio",
- "url",
 ]
 
 [[package]]
