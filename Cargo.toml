@@ -26,7 +26,7 @@ nekos = { path = "./lib/nekos-rs" }
 once_cell = "1.9.0"
 opentelemetry = { version = "0.17.0", features = [ "rt-tokio" ] }
 opentelemetry-otlp = { version = "0.10.0", features = [ "tls", "tls-roots" ] }
-parking_lot = "0.11.2"
+parking_lot = "0.12.0"
 pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
 quizizz = { path = "./lib/quizizz-rs" }
 r6stats = { path = "./lib/r6stats-rs" }
@@ -36,7 +36,7 @@ reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "d46d78445ca94
 reddit-tube = { path = "./lib/reddit-tube-rs" }
 regex = "1.5.4"
 rule34 = { path = "./lib/rule34-rs" }
-rusqlite = { version = "0.26.3", features = [ "bundled", "blob", "trace" ] }
+rusqlite = { version = "0.27.0", features = [ "bundled", "blob", "trace" ] }
 serde = { version = "1.0.136", features = [ "derive" ] }
 serenity = { version = "0.10.10", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 

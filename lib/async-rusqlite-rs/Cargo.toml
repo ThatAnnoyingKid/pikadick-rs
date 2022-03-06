@@ -5,8 +5,8 @@ edition = "2018"
 license = "MIT"
 
 [dependencies]
-parking_lot = "0.11.2"
-rusqlite = "0.26.3"
+parking_lot = "0.12.0"
+rusqlite = "0.27.0"
 thiserror = "1.0.30"
 tokio = { version = "1.16.1", features = [ "rt", "sync", "parking_lot" ] }
 

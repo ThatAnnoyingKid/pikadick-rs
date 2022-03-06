@@ -30,7 +30,7 @@ allow-osi-fsf-free = "neither"
 confidence-threshold = 0.93
 default = "deny"
 private = { ignore = true }
-allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0", "CC0-1.0" ]
+allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0" ]
 exceptions = [
     { name = "ring", allow = [ "MIT", "ISC", "OpenSSL" ] },
 ]
@@ -104,6 +104,13 @@ skip = [
     
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.8.0" },
+    
+    # Blocked on the ecosystem updating to parking_lot 0.12.x
+    { name = "parking_lot", version = "0.11.2" },
+    { name = "parking_lot_core", version = "0.8.5" },
+    
+    # Blocked on flate2 updating their miniz_oxide  to 0.5.x
+    { name = "miniz_oxide", version = "0.4.4" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
