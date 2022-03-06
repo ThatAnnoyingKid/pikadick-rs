@@ -77,7 +77,7 @@ pub fn create_slash_help_command() -> anyhow::Result<pikadick_slash_framework::H
                 interaction
                     .create_interaction_response(&ctx.http, |res| {
                         res.interaction_response_data(|res| {
-                            res.create_embed(|embed| {
+                            res.embed(|embed| {
                                 embed.color(0xF4D665_u32);
 
                                 if let Some(command) = args.command {
