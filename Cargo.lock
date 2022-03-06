@@ -3493,8 +3493,8 @@ dependencies = [
 
 [[package]]
 name = "songbird"
-version = "0.2.1"
-source = "git+https://github.com/adumbidiot/songbird?branch=audiopus-0.3.0#98643ca433b15204741b39724a03cd445c176528"
+version = "0.2.2"
+source = "git+https://github.com/adumbidiot/songbird?branch=audiopus-0.3.0#b8e96d014a091ca982efb725a9ed6b4f9a6304ad"
 dependencies = [
  "async-trait",
  "async-tungstenite 0.14.0",
