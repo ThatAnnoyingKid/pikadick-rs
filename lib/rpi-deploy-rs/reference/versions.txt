@@ -1,0 +1,10 @@
+[tasks.setup-python]
+workspace = false
+command = "pip"
+args = [ 
+    "install", 
+    "paramiko==2.8.1", 
+    "scp==0.14.2", 
+    "python-dotenv==0.19.2", 
+    "tqdm==4.62.3",
+]
