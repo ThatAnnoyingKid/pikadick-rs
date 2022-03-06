@@ -53,7 +53,7 @@ async fn async_main(options: CommandOptions) -> anyhow::Result<()> {
         .get_post(options.url.as_str())
         .await
         .context("failed to get post")?;
-    let video_url = post.video_url.as_ref().context("missing video url")?;
+    let video_url = post.get_video_download_url().context("missing video url")?;
 
     eprintln!("Downloading video from '{}'", video_url.as_str());
     let mut file = File::create(&options.out_file)

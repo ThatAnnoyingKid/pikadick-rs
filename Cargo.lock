@@ -3803,10 +3803,16 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "argh",
+ "once_cell",
  "open-graph",
+ "regex",
  "reqwest",
+ "scraper",
+ "serde",
+ "serde_json",
  "thiserror",
  "tokio",
+ "url",
 ]
 
 [[package]]
