@@ -2341,7 +2341,7 @@ dependencies = [
  "bincode",
  "chrono",
  "crossbeam",
- "dashmap 4.0.2",
+ "dashmap 5.1.0",
  "deviantart",
  "fml",
  "heim",
