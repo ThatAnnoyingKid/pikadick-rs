@@ -39,7 +39,7 @@ rule34 = { path = "./lib/rule34-rs" }
 rusqlite = { version = "0.27.0", features = [ "bundled", "blob", "trace" ] }
 serde = { version = "1.0.136", features = [ "derive" ] }
 serenity = { version = "0.10.10", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
-shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
+shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs" } 
 songbird = "0.2.0"
 systemstat = "0.1.10"
 thiserror = "1.0.30"

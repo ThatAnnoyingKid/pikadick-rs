@@ -3415,13 +3415,14 @@ dependencies = [
 [[package]]
 name = "shift-orcz"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/shift-client-rs?rev=f131491d81042c0858ec781ae1f2ac6cbe7ef68a#f131491d81042c0858ec781ae1f2ac6cbe7ef68a"
+source = "git+https://github.com/adumbidiot/shift-client-rs#8f31c8dec0dc54616b121e28a2d6ec5f8a41d878"
 dependencies = [
- "chrono",
  "logos",
+ "once_cell",
  "reqwest",
  "scraper",
  "thiserror",
+ "time 0.3.7",
  "tokio",
 ]
 
@@ -3829,7 +3830,7 @@ dependencies = [
  "libc",
  "standback",
  "stdweb",
- "time-macros",
+ "time-macros 0.1.1",
  "version_check",
  "winapi",
 ]
@@ -3843,6 +3844,7 @@ dependencies = [
  "itoa 1.0.1",
  "libc",
  "num_threads",
+ "time-macros 0.2.3",
 ]
 
 [[package]]
@@ -3854,6 +3856,12 @@ dependencies = [
  "proc-macro-hack",
  "time-macros-impl",
 ]
+
+[[package]]
+name = "time-macros"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25eb0ca3468fc0acc11828786797f6ef9aa1555e4a211a60d64cc8e4d1be47d6"
 
 [[package]]
 name = "time-macros-impl"
