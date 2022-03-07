@@ -3,6 +3,7 @@ mod kv_store;
 pub mod model;
 mod reddit_embed;
 mod tic_tac_toe;
+mod tiktok_embed;
 
 pub use self::tic_tac_toe::{
     TicTacToeCreateGameError,

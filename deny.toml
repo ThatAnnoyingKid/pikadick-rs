@@ -4,6 +4,7 @@ targets = [
     { triple = "x86_64-apple-darwin" },
     { triple = "x86_64-pc-windows-msvc" },
     { triple = "armv7-unknown-linux-gnueabihf" },
+    { triple = "aarch64-unknown-linux-gnueabihf" },
 ]
 
 [advisories]
@@ -29,7 +30,7 @@ allow-osi-fsf-free = "neither"
 confidence-threshold = 0.93
 default = "deny"
 private = { ignore = true }
-allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0", "CC0-1.0" ]
+allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0" ]
 exceptions = [
     { name = "ring", allow = [ "MIT", "ISC", "OpenSSL" ] },
 ]
@@ -103,6 +104,16 @@ skip = [
     
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.8.0" },
+    
+    # Blocked on the ecosystem updating to parking_lot 0.12.x
+    { name = "parking_lot", version = "0.11.2" },
+    { name = "parking_lot_core", version = "0.8.5" },
+    
+    # Blocked on flate2 updating their miniz_oxide  to 0.5.x
+    { name = "miniz_oxide", version = "0.4.4" },
+    
+    # Blocked on cookie updating to time 0.3
+    { name = "time-macros", version = "0.1.1" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -159,6 +170,5 @@ allow-git = [
     "https://github.com/servo/servo",
     "https://github.com/adumbidiot/songbird",
     "https://github.com/serenity-rs/serenity",
-    "https://github.com/alexcrichton/cmake-rs",
     "https://github.com/vectordotdev/heim",
 ]

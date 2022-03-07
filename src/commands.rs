@@ -19,6 +19,7 @@ pub mod shift;
 pub mod stop;
 pub mod system;
 pub mod tic_tac_toe;
+pub mod tiktok_embed;
 pub mod urban;
 pub mod uwuify;
 pub mod vaporwave;
@@ -45,6 +46,7 @@ pub use crate::commands::{
     stop::STOP_COMMAND,
     system::SYSTEM_COMMAND,
     tic_tac_toe::TIC_TAC_TOE_COMMAND,
+    tiktok_embed::TIKTOK_EMBED_COMMAND,
     urban::URBAN_COMMAND,
     uwuify::UWUIFY_COMMAND,
     vaporwave::VAPORWAVE_COMMAND,
@@ -77,7 +79,7 @@ pub fn create_slash_help_command() -> anyhow::Result<pikadick_slash_framework::H
                 interaction
                     .create_interaction_response(&ctx.http, |res| {
                         res.interaction_response_data(|res| {
-                            res.create_embed(|embed| {
+                            res.embed(|embed| {
                                 embed.color(0xF4D665_u32);
 
                                 if let Some(command) = args.command {

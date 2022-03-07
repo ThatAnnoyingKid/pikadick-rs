@@ -12,6 +12,7 @@ use crate::{
         rule34::Rule34Client,
         shift::ShiftClient,
         tic_tac_toe::TicTacToeData,
+        tiktok_embed::TikTokData,
         urban::UrbanClient,
     },
     config::Config,
@@ -100,6 +101,8 @@ pub struct ClientData {
     pub tic_tac_toe_data: TicTacToeData,
     /// The iqdb client
     pub iqdb_client: IqdbClient,
+    /// TikTokData
+    pub tiktok_data: TikTokData,
 
     /// The database
     pub db: Database,
@@ -137,6 +140,7 @@ impl ClientData {
             xkcd_client: Default::default(),
             tic_tac_toe_data: Default::default(),
             iqdb_client: Default::default(),
+            tiktok_data: Default::default(),
 
             db,
 

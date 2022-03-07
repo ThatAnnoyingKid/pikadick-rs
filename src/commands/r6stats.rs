@@ -178,7 +178,7 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
             interaction
                 .create_interaction_response(&ctx.http, |res| {
                     res.interaction_response_data(|res| match result {
-                        Ok(Some(entry)) => res.create_embed(|e| {
+                        Ok(Some(entry)) => res.embed(|e| {
                             let data = entry.data();
 
                             e.title(&data.username).image(data.avatar_url_256.as_str());
