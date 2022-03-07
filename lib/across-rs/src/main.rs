@@ -84,6 +84,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
     let mut command_builder = CrossCompileCommandBuilder::new();
     command_builder
         .target(options.target.as_str())
+        .linker(target_config.linker.as_str())
         .release(options.release)
         .very_verbose(options.very_verbose)
         .use_strip(options.use_strip);
