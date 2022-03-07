@@ -55,7 +55,7 @@ tracing-appender = "0.2.1"
 tracing-log = "0.1.2"
 tracing-opentelemetry = "0.17.2"
 tracing-subscriber = { version = "0.3.9", features = [ "env-filter", "fmt", "parking_lot" ] }
-ttf-parser = "0.14.0"
+ttf-parser = "0.15.0"
 uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs" }
 url = "2.2.2"
