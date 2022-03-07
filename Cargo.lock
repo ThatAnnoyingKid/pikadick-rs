@@ -2339,6 +2339,7 @@ dependencies = [
  "anyhow",
  "async-rusqlite",
  "bincode",
+ "bytes",
  "chrono",
  "crossbeam",
  "dashmap 5.1.0",
