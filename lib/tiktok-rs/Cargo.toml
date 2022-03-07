@@ -23,7 +23,7 @@ url = { version = "2.2.2", features = [ "serde" ] }
 
 # Optional
 argh = { version = "0.1.7", optional = true }
-anyhow = { version = "1.0.55", optional = true }
+anyhow = { version = "1.0.56", optional = true }
 
 
 [dev-dependencies]
