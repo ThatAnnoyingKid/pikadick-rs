@@ -1,3 +1,6 @@
+mod config;
+
+pub use self::config::Config;
 use anyhow::{
     bail,
     ensure,
@@ -6,13 +9,9 @@ use anyhow::{
 use cargo_metadata::MetadataCommand;
 use std::{
     collections::HashMap,
-    fmt::Write,
     fs::File,
     io::Write as _,
-    path::{
-        Path,
-        PathBuf,
-    },
+    path::PathBuf,
     process::Command,
 };
 
@@ -43,39 +42,6 @@ struct Options {
     config: PathBuf,
 }
 
-/// The config file
-#[derive(Debug, serde::Deserialize)]
-pub struct Config {
-    /// The targets for which config is provided.
-    #[serde(flatten)]
-    pub targets: HashMap<String, ConfigTarget>,
-}
-
-/// A target in the config
-#[derive(Debug, serde::Deserialize)]
-pub struct ConfigTarget {
-    /// The linker exe name.
-    /// Example: "arm-linux-gnueabihf-gcc"
-    pub linker: String,
-
-    /// The contents of s cmake toolchain file
-    pub cmake_toolchain_file: Option<String>,
-
-    /// Env vars set for this target.
-    ///
-    /// Example PERL = "C:/Users/username/scoop/apps/msys2/current/usr/bin/perl"
-    #[serde(default)]
-    pub env: HashMap<String, String>,
-}
-
-impl Config {
-    /// Load a config from a path
-    pub fn load_from_path(config_path: &Path) -> anyhow::Result<Self> {
-        let config_str = std::fs::read_to_string(&config_path).context("failed to read config")?;
-        toml::from_str(&config_str).context("failed to parse config")
-    }
-}
-
 /// The entry point
 fn main() {
     let options: Options = argh::from_env();
@@ -92,20 +58,20 @@ fn main() {
 
 /// The real entry point
 fn real_main(options: Options) -> anyhow::Result<()> {
-    println!("# fetching cargo metadata...");
+    println!("Fetching cargo metadata...");
     let metadata = MetadataCommand::new()
         .exec()
         .context("failed to get cargo metadata")?;
 
     // Make across dir in target to cache files
-    let across_dir = metadata.target_directory.join_os("across");
+    let across_dir = metadata.target_directory.join("across");
     std::fs::create_dir_all(&across_dir).context("failed to create across directory")?;
 
     let config_path = options
         .config
         .canonicalize()
         .context("failed to canonicalize config path")?;
-    println!("# loading `{}`...", config_path.display());
+    println!("Loading `{}`...", config_path.display());
     let config = Config::load_from_path(&config_path).context("failed to load config")?;
 
     // Get target config
@@ -114,17 +80,19 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         .get(options.target.as_str())
         .context("missing config for target")?;
 
-    let mut rust_flags = String::with_capacity(64);
-    write!(&mut rust_flags, "-Clinker={} ", target_config.linker)?;
-    if options.use_strip {
-        // TODO: allow user to specify strip level
-        write!(&mut rust_flags, "-Cstrip=symbols ")?;
+    // Setup command builder
+    let mut command_builder = CrossCompileCommandBuilder::new();
+    command_builder
+        .target(options.target.as_str())
+        .release(options.release)
+        .very_verbose(options.very_verbose)
+        .use_strip(options.use_strip);
+
+    if let Some(features) = options.features.as_deref() {
+        command_builder.features(features);
     }
 
     let mut envs = target_config.env.clone();
-    envs.insert("RUSTFLAGS".to_string(), rust_flags);
-    // TODO: Make configurable
-    envs.insert("RUST_BACKTRACE".to_string(), "1".to_string());
 
     // Generate cmake toolchain file if needed
     if let Some(cmake_toolchain_file_str) = target_config.cmake_toolchain_file.as_ref() {
@@ -139,12 +107,9 @@ fn real_main(options: Options) -> anyhow::Result<()> {
             .sync_all()
             .context("failed to sync cmake toolchain file contents")?;
 
-        let cmake_toolchain_file_path_str = cmake_toolchain_file_path
-            .to_str()
-            .context("cmake toolchain file path is not valid unicode")?;
         let value = envs.insert(
             "CMAKE_TOOLCHAIN_FILE".to_string(),
-            cmake_toolchain_file_path_str.to_string(),
+            cmake_toolchain_file_path.to_string(),
         );
         if let Some(value) = value {
             bail!(
@@ -154,20 +119,15 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         }
     }
 
-    let mut command = Command::new("cargo");
-    command.args(&["build", "--target", options.target.as_str()]);
-    if let Some(features) = options.features.as_ref() {
-        command.args(&["--features", features]);
+    for (key, value) in envs.iter() {
+        command_builder.environment_variable(key.as_str(), value.as_str());
     }
-    if options.release {
-        command.arg("--release");
-    }
-    if options.very_verbose {
-        command.arg("-vv");
-    }
-    command.envs(envs.iter());
 
-    println!("# compiling...");
+    let mut command = command_builder
+        .build_command()
+        .context("failed to build command")?;
+
+    println!("Compiling...");
     let status = command.status().context("failed to call compile command")?;
     let code = status.code();
     ensure!(
@@ -181,4 +141,180 @@ fn real_main(options: Options) -> anyhow::Result<()> {
     );
 
     Ok(())
+}
+
+/// A builder for cross compile commands
+pub struct CrossCompileCommandBuilder {
+    /// The target triple
+    pub target: Option<Box<str>>,
+
+    /// Build features
+    pub features: Option<Box<str>>,
+
+    /// Whether to build in release mode
+    pub release: bool,
+
+    /// Whether to set the very verbose flag
+    pub very_verbose: bool,
+
+    /// Environment Variables
+    pub environment_variables: HashMap<Box<str>, Box<str>>,
+
+    /// The linker
+    pub linker: Option<Box<str>>,
+
+    /// Whether to strip the final binary
+    pub use_strip: bool,
+
+    /// This is some if the builder errored.
+    pub error: Option<anyhow::Error>,
+}
+
+impl CrossCompileCommandBuilder {
+    /// A cross compile command
+    pub fn new() -> Self {
+        Self {
+            target: None,
+            features: None,
+            release: true,
+            very_verbose: false,
+            environment_variables: HashMap::with_capacity(16),
+            linker: None,
+            use_strip: false,
+
+            error: None,
+        }
+    }
+
+    /// Set the target
+    pub fn target(&mut self, target: impl Into<Box<str>>) -> &mut Self {
+        self.target = Some(target.into());
+        self
+    }
+
+    /// Set the build features
+    pub fn features(&mut self, features: impl Into<Box<str>>) -> &mut Self {
+        self.features = Some(features.into());
+        self
+    }
+
+    /// Set the release flag
+    pub fn release(&mut self, release: bool) -> &mut Self {
+        self.release = release;
+        self
+    }
+
+    /// Set the very verbose flag
+    pub fn very_verbose(&mut self, very_verbose: bool) -> &mut Self {
+        self.very_verbose = very_verbose;
+        self
+    }
+
+    /// Add a single env var
+    pub fn environment_variable(
+        &mut self,
+        key: impl Into<Box<str>>,
+        value: impl Into<Box<str>>,
+    ) -> &mut Self {
+        let key = key.into();
+
+        // We will be adding more in the future
+        #[allow(clippy::collapsible_if)]
+        if key.is_ascii() {
+            // We dynamically generate the following env flags.
+            // Throw an error if the user tries to override to avoid confusion.
+            if key.eq_ignore_ascii_case("RUSTFLAGS") {
+                self.error = Some(anyhow::Error::msg("cannot set the `RUSTFLAGS` environment variable as it is dynamically generated"));
+                return self;
+            }
+        }
+
+        self.environment_variables.insert(key, value.into());
+        self
+    }
+
+    /// Set the linker
+    pub fn linker(&mut self, linker: impl Into<Box<str>>) -> &mut Self {
+        self.linker = Some(linker.into());
+        self
+    }
+
+    /// Choose whether to strip the final binary
+    pub fn use_strip(&mut self, use_strip: bool) -> &mut Self {
+        self.use_strip = use_strip;
+        self
+    }
+
+    /// Build a command to execute which will perform the cross compile
+    pub fn build_command(&mut self) -> anyhow::Result<Command> {
+        // Take all data from self, leaving it empty
+        let target = self.target.take();
+        let features = self.features.take();
+        let release = self.release;
+        let very_verbose = self.very_verbose;
+        let environment_variables = std::mem::take(&mut self.environment_variables);
+        let linker = self.linker.take();
+        let use_strip = self.use_strip;
+        let error = self.error.take();
+
+        // Return error if the builder errored out somewhere
+        if let Some(error) = error {
+            return Err(error);
+        }
+
+        // Return error if missing a mandatory field
+        let target = target.context("missing `target` field")?;
+        let linker = linker.context("missing `linker` field")?;
+
+        // Generate RUSTFLAGS environment variable
+        let mut rust_flags = String::with_capacity(64);
+        rust_flags.push_str("-Clinker=");
+        rust_flags.push_str(&*linker);
+        rust_flags.push(' ');
+        if use_strip {
+            // TODO: allow user to specify strip level
+            rust_flags.push_str("-Cstrip=symbols");
+            rust_flags.push(' ');
+        }
+
+        // Init cargo build command
+        let mut command = Command::new("cargo");
+        command.arg("build");
+
+        // Set target
+        command.args(&["--target", &*target]);
+
+        // Set features if present
+        if let Some(features) = features {
+            command.args(&["--features", &*features]);
+        }
+
+        // Set release flag if requested
+        if release {
+            command.arg("--release");
+        }
+
+        // Set the very verbose flag if requested
+        if very_verbose {
+            command.arg("-vv");
+        }
+
+        // Add user environment variables
+        command.envs(
+            environment_variables
+                .iter()
+                .map(|(key, value)| (&**key, &**value)),
+        );
+
+        // Add RUSTFLAGS to command environment
+        command.env("RUSTFLAGS", rust_flags);
+
+        Ok(command)
+    }
+}
+
+impl Default for CrossCompileCommandBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
