@@ -44,6 +44,7 @@ songbird = "0.2.0"
 systemstat = "0.1.10"
 thiserror = "1.0.30"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
+tiktok = { path = "lib/tiktok-rs" }
 tiny-skia = { version = "0.6.3", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.17.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.8"

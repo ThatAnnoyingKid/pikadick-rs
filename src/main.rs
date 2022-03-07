@@ -38,8 +38,11 @@ use crate::{
         Severity,
     },
     database::Database,
+    util::LoadingReaction,
 };
 use anyhow::Context as _;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serenity::{
     client::bridge::gateway::ShardManager,
     framework::standard::{
@@ -78,8 +81,13 @@ use tracing::{
     warn,
 };
 use tracing_appender::non_blocking::WorkerGuard;
+use url::Url;
 
 const TOKIO_RT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Source: <https://urlregex.com/>
+static URL_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex"));
 
 struct Handler;
 
@@ -135,10 +143,115 @@ impl EventHandler for Handler {
             .get::<ClientDataKey>()
             .expect("missing client data");
         let reddit_embed_data = client_data.reddit_embed_data.clone();
+        let tiktok_data = client_data.tiktok_data.clone();
+        let db = client_data.db.clone();
         drop(data_lock);
 
-        if let Err(e) = reddit_embed_data.process_msg(&ctx, &msg).await {
-            error!("failed to generate reddit embed: {}", e);
+        // Process URL Embeds
+        {
+            // Only embed guild links
+            let guild_id = match msg.guild_id {
+                Some(id) => id,
+                None => {
+                    return;
+                }
+            };
+
+            // No Bots
+            if msg.author.bot {
+                return;
+            }
+
+            // Get enabled data for embeds
+            let reddit_embed_is_enabled_for_guild = db
+                .get_reddit_embed_enabled(guild_id)
+                .await
+                .with_context(|| {
+                    format!("failed to get reddit-embed server data for '{}'", guild_id)
+                })
+                .unwrap_or_else(|e| {
+                    error!("{:?}", e);
+                    false
+                });
+            let tiktok_embed_is_enabled_for_guild = db
+                .get_tiktok_embed_enabled(guild_id)
+                .await
+                .with_context(|| {
+                    format!("failed to get tiktok-embed server data for '{}'", guild_id)
+                })
+                .unwrap_or_else(|e| {
+                    error!("{:?}", e);
+                    false
+                });
+
+            // Extract urls
+            // NOTE: Regex doesn't HAVE to be perfect.
+            // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
+            // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
+            let urls: Vec<Url> = URL_REGEX
+                .find_iter(&msg.content)
+                .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
+                .collect();
+
+            // Check to see if it we will even try to embed
+            let will_try_embedding = urls.iter().any(|url| {
+                let url_host = match url.host() {
+                    Some(host) => host,
+                    None => return false,
+                };
+
+                let reddit_url =
+                    matches!(url_host, url::Host::Domain("www.reddit.com" | "reddit.com"));
+
+                let tiktok_url =
+                    matches!(url_host, url::Host::Domain("vm.tiktok.com" | "tiktok.com"));
+
+                (reddit_url && reddit_embed_is_enabled_for_guild)
+                    || (tiktok_url && tiktok_embed_is_enabled_for_guild)
+            });
+
+            // Return if we won't try embedding
+            if !will_try_embedding {
+                return;
+            }
+
+            let mut loading_reaction = Some(LoadingReaction::new(ctx.http.clone(), &msg));
+
+            // Embed for each url
+            // NOTE: we short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem,
+            // especially since serenity retries each req once
+            for url in urls.iter() {
+                match url.host() {
+                    Some(url::Host::Domain("www.reddit.com" | "reddit.com")) => {
+                        // Don't process if it isn't enabled
+                        if reddit_embed_is_enabled_for_guild {
+                            if let Err(e) = reddit_embed_data
+                                .try_embed_url(&ctx, &msg, url, &mut loading_reaction)
+                                .await
+                                .context("failed to generate reddit embed")
+                            {
+                                error!("{:?}", e);
+                            }
+                        }
+                    }
+                    Some(url::Host::Domain("vm.tiktok.com" | "tiktok.com")) => {
+                        if tiktok_embed_is_enabled_for_guild {
+                            if let Err(e) = tiktok_data
+                                .try_embed_url(&ctx, &msg, url, &mut loading_reaction)
+                                .await
+                                .context("failed to generate tiktok embed")
+                            {
+                                error!("{:?}", e);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            // Trim caches
+            reddit_embed_data.cache.trim();
+            reddit_embed_data.video_data_cache.trim();
         }
     }
 
@@ -214,7 +327,8 @@ async fn help(
     iqdb,
     reddit,
     leave,
-    stop
+    stop,
+    tiktok_embed
 )]
 struct General;
 

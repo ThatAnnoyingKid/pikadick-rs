@@ -14,15 +14,16 @@ use crate::{
     },
     ClientDataKey,
 };
-use anyhow::Context as _;
+use anyhow::{
+    bail,
+    Context as _,
+};
 use dashmap::DashMap;
-use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
 use reddit_tube::{
     types::get_video_response::GetVideoResponseOk,
     GetVideoResponse,
 };
-use regex::Regex;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -51,10 +52,6 @@ type PostId = String;
 
 type LinkVec = Vec<Arc<reddit::Link>>;
 
-/// Source: <https://urlregex.com/>
-static URL_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex"));
-
 // pub struct SubredditPostIdentifier {}
 
 #[derive(Clone)]
@@ -62,8 +59,8 @@ pub struct RedditEmbedData {
     reddit_client: reddit::Client,
     reddit_tube_client: reddit_tube::Client,
 
-    cache: TimedCache<(SubReddit, PostId), String>,
-    video_data_cache: TimedCache<String, Box<GetVideoResponseOk>>,
+    pub cache: TimedCache<(SubReddit, PostId), String>,
+    pub video_data_cache: TimedCache<String, Box<GetVideoResponseOk>>,
     random_post_cache: Arc<DashMap<String, Arc<(Instant, LinkVec)>>>,
 }
 
@@ -91,25 +88,25 @@ impl RedditEmbedData {
         let mut post_data = self.reddit_client.get_post(subreddit, post_id).await?;
 
         if post_data.is_empty() {
-            anyhow::bail!("missing post");
+            bail!("missing post");
         }
 
         let mut post_data = post_data
             .swap_remove(0)
             .data
             .into_listing()
-            .ok_or_else(|| anyhow::anyhow!("missing post"))?
+            .context("missing post")?
             .children;
 
         if post_data.is_empty() {
-            anyhow::bail!("missing post");
+            bail!("missing post");
         }
 
         let mut post = post_data
             .swap_remove(0)
             .data
             .into_link()
-            .ok_or_else(|| anyhow::anyhow!("missing post"))?;
+            .context("missing post")?;
 
         // If cross post, resolve one level. Is it possible to crosspost a crosspost?
 
@@ -202,98 +199,43 @@ impl RedditEmbedData {
             .map(|url| url.into())
     }
 
-    /// Process a message and insert an embed if neccesary.
-    #[tracing::instrument(level = "info", skip(self, ctx, msg))]
-    pub async fn process_msg(&self, ctx: &Context, msg: &Message) -> CommandResult {
-        let data_lock = ctx.data.read().await;
-        let client_data = data_lock
-            .get::<ClientDataKey>()
-            .expect("missing client data");
-        let db = client_data.db.clone();
-        drop(data_lock);
+    /// Try to embed a url
+    pub async fn try_embed_url(
+        &self,
+        ctx: &Context,
+        msg: &Message,
+        url: &Url,
+        loading_reaction: &mut Option<LoadingReaction>,
+    ) -> anyhow::Result<()> {
+        // This is sometimes TOO smart and finds data for invalid urls...
+        // TODO: Consider making parsing stricter
+        if let Some((subreddit, post_id)) = parse_post_url(url) {
+            // Try cache
+            let maybe_url = self
+                .cache
+                .get_if_fresh(&(subreddit.into(), post_id.into()))
+                .map(|el| el.data().clone());
 
-        // Only embed guild links
-        let guild_id = match msg.guild_id {
-            Some(id) => id,
-            None => {
-                return Ok(());
-            }
-        };
-
-        let is_enabled_for_guild = db
-            .get_reddit_embed_enabled(guild_id)
-            .await
-            .with_context(|| format!("failed to get reddit-embed server data for '{}'", guild_id))
-            .unwrap_or_else(|e| {
-                error!("{:?}", e);
-                false
-            });
-
-        // Don't process if it isn't enabled or the author is a bot
-        if !is_enabled_for_guild || msg.author.bot {
-            return Ok(());
-        }
-
-        // NOTE: Regex doesn't HAVE to be perfect.
-        // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
-        // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
-        let urls: Vec<Url> = URL_REGEX
-            .find_iter(&msg.content)
-            .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
-            .filter(|url| {
-                let host_str = match url.host_str() {
-                    Some(url) => url,
-                    None => return false,
-                };
-
-                host_str == "www.reddit.com" || host_str == "reddit.com"
-            })
-            .collect();
-
-        let mut loading_reaction = if !urls.is_empty() {
-            Some(LoadingReaction::new(ctx.http.clone(), msg))
-        } else {
-            None
-        };
-
-        // Embed for each url
-        // NOTE: we short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem,
-        // especially since serenity retries each req once
-        for url in urls.iter() {
-            // This is sometimes TOO smart and finds data for invalid urls...
-            // TODO: Consider making parsing stricter
-            if let Some((subreddit, post_id)) = parse_post_url(url) {
-                // Try cache
-                let maybe_url = self
-                    .cache
-                    .get_if_fresh(&(subreddit.into(), post_id.into()))
-                    .map(|el| el.data().clone());
-
-                let data = if let Some(value) = maybe_url.clone() {
-                    Some(value)
-                } else {
-                    self.get_embed_url(url).await.ok()
-                };
-
-                if let Some(data) = data {
-                    self.cache
-                        .insert((subreddit.into(), post_id.into()), data.clone());
-
-                    // TODO: Consider downloading and reposting?
-                    msg.channel_id.say(&ctx.http, data).await?;
-                    if let Some(mut loading_reaction) = loading_reaction.take() {
-                        loading_reaction.send_ok();
-                    }
-                }
+            let data = if let Some(value) = maybe_url.clone() {
+                Some(value)
             } else {
-                error!("failed to parse reddit post url");
-                // TODO: Maybe expand this to an actual error to give better feedback
+                self.get_embed_url(url).await.ok()
+            };
+
+            if let Some(data) = data {
+                self.cache
+                    .insert((subreddit.into(), post_id.into()), data.clone());
+
+                // TODO: Consider downloading and reposting?
+                msg.channel_id.say(&ctx.http, data).await?;
+                if let Some(mut loading_reaction) = loading_reaction.take() {
+                    loading_reaction.send_ok();
+                }
             }
+        } else {
+            error!("failed to parse reddit post url");
+            // TODO: Maybe expand this to an actual error to give better feedback
         }
-
-        self.cache.trim();
-        self.video_data_cache.trim();
-
         Ok(())
     }
 
