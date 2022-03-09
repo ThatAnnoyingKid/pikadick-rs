@@ -35,7 +35,7 @@ r6tracker = { path = "./lib/r6tracker-rs" }
 rand = "0.8.5"
 reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "d46d78445ca94023aee417fe92bd43e86faf36dc", features = [ "force-rustls-tls" ] }
 reddit-tube = { path = "./lib/reddit-tube-rs" }
-regex = "1.5.4"
+regex = "1.5.5"
 rule34 = { path = "./lib/rule34-rs" }
 rusqlite = { version = "0.27.0", features = [ "bundled", "blob", "trace" ] }
 serde = { version = "1.0.136", features = [ "derive" ] }
