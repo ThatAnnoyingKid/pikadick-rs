@@ -37,8 +37,6 @@ pub use crate::commands::{
     latency::LATENCY_COMMAND,
     leave::LEAVE_COMMAND,
     quizizz::QUIZIZZ_COMMAND,
-    r6stats::R6STATS_COMMAND,
-    r6tracker::R6TRACKER_COMMAND,
     reddit::REDDIT_COMMAND,
     reddit_embed::REDDIT_EMBED_COMMAND,
     rule34::RULE34_COMMAND,
