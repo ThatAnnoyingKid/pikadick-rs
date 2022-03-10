@@ -267,5 +267,5 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
             Ok(())
         })
         .build()
-        .context("failed to build r6stats command")
+        .context("failed to build r6tracker command")
 }

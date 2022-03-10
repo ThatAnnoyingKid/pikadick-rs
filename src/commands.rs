@@ -39,7 +39,6 @@ pub use crate::commands::{
     quizizz::QUIZIZZ_COMMAND,
     reddit::REDDIT_COMMAND,
     reddit_embed::REDDIT_EMBED_COMMAND,
-    rule34::RULE34_COMMAND,
     shift::SHIFT_COMMAND,
     stop::STOP_COMMAND,
     system::SYSTEM_COMMAND,
