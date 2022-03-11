@@ -132,7 +132,7 @@ pub struct OverwolfPlayer {
 
     /// Seasonal Operator Stats
     #[serde(rename = "seasonalOperators")]
-    pub seasonal_operators: SeasonalOperators,
+    pub seasonal_operators: Option<SeasonalOperators>,
 
     /// Unknown keys
     #[serde(flatten)]
