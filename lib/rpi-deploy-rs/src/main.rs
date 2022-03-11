@@ -169,6 +169,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
             println!();
             {
                 let mut ssh_channel = session.channel_session()?;
+                ssh_channel.handle_extended_data(ssh2::ExtendedData::Merge)?;
                 ssh_channel.exec(
                     format!("sudo dpkg -i --force-confold {}", remote_package_file_path).as_str(),
                 )?;
@@ -180,12 +181,21 @@ fn real_main(options: Options) -> anyhow::Result<()> {
 
                 ssh_channel.close()?;
                 ssh_channel.wait_close()?;
+
+                let exit_status = ssh_channel.exit_status()?;
+
+                ensure!(
+                    exit_status == 0,
+                    "command exited with exit code {}",
+                    exit_status
+                );
             }
 
             println!("Deleting tmp file...");
             println!();
             {
                 let mut ssh_channel = session.channel_session()?;
+                ssh_channel.handle_extended_data(ssh2::ExtendedData::Merge)?;
                 ssh_channel.exec(format!("rm {}", remote_package_file_path).as_str())?;
 
                 {
@@ -195,6 +205,14 @@ fn real_main(options: Options) -> anyhow::Result<()> {
 
                 ssh_channel.close()?;
                 ssh_channel.wait_close()?;
+
+                let exit_status = ssh_channel.exit_status()?;
+
+                ensure!(
+                    exit_status == 0,
+                    "command exited with exit code {}",
+                    exit_status
+                );
             }
             println!();
         }
