@@ -2,7 +2,7 @@
 name = "tiktok"
 version = "0.0.0"
 edition = "2021"
-license = "MIT"
+license = "MIT OR APACHE-2.0"
 
 [[bin]]
 name = "tiktok"
@@ -10,7 +10,6 @@ required-features = [ "cli" ]
 path = "src/main.rs"
 
 [dependencies]
-open-graph = { path = "../open-graph-rs" }
 reqwest = { version = "0.11.10", default-features = false, features = [ "cookies", "rustls-tls" ] } 
 thiserror = "1.0.30"
 tokio = "1.17.0"

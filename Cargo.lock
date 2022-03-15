@@ -2818,7 +2818,7 @@ dependencies = [
 [[package]]
 name = "reddit"
 version = "0.0.1"
-source = "git+https://github.com/adumbidiot/reddit-rs?rev=d46d78445ca94023aee417fe92bd43e86faf36dc#d46d78445ca94023aee417fe92bd43e86faf36dc"
+source = "git+https://github.com/adumbidiot/reddit-rs#3fa43ca9f702f23da7a9985f4d3c4e46c166f29f"
 dependencies = [
  "reqwest",
  "serde",
@@ -3418,7 +3418,7 @@ dependencies = [
 [[package]]
 name = "shift-orcz"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/shift-client-rs#a5f0f9004e705d4f4bdd70d74ffcec0a40e62d3c"
+source = "git+https://github.com/adumbidiot/shift-client-rs#c896865551a05a51a8af8ea663d0c39f4c965e3a"
 dependencies = [
  "logos",
  "once_cell",
@@ -3807,7 +3807,6 @@ dependencies = [
  "anyhow",
  "argh",
  "once_cell",
- "open-graph",
  "regex",
  "reqwest",
  "scraper",

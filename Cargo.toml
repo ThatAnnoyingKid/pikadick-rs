@@ -17,10 +17,10 @@ chrono = "0.4.19"
 crossbeam = "0.8.1"
 dashmap = "5.2.0"
 deviantart = { path = "./lib/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
-fml = { path = "./lib/fml-rs" }
+fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
 indexmap = "1.8.0"
-insta = { path = "./lib/insta-rs" }
+insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }
 itoa = "1.0.1"
 lazy_static = "1.4.0"

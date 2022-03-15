@@ -2,8 +2,8 @@
 name = "open-graph"
 version = "0.0.0"
 authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
-edition = "2018"
-license = "MIT/Apache-2.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [[bin]]
 name = "open-graph"
@@ -18,7 +18,7 @@ url = "2.2.2"
 # Optional
 anyhow = { version = "1.0.56", optional = true }
 argh = { version = "0.1.7", optional = true }
-reqwest = { version = "0.11.10", optional = true }
+reqwest = { version = "0.11.10", default-features = false, optional = true }
 tokio = { version = "1.17.0", optional = true }
 
 [features]
@@ -28,6 +28,22 @@ client = [
     "tokio",
     "tokio/rt",
 ]
+
+client-default-tls = [
+    "client",
+    "reqwest/default-tls"
+]
+
+client-native-tls = [
+    "client",
+    "reqwest/native-tls"
+]
+
+client-rustls-tls = [
+    "client",
+    "reqwest/rustls-tls"
+]
+
 cli = [ 
     "anyhow",
     "argh",

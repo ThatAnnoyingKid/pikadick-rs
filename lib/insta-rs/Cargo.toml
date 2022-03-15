@@ -11,3 +11,9 @@ thiserror = "1.0.30"
 
 [dev-dependencies]
 tokio = { version = "1.17.0", features = [ "macros" ] }
+
+[features]
+default = [ "open-graph/client-default-tls" ]
+
+native-tls = [ "open-graph/client-native-tls" ]
+rustls-tls = [ "open-graph/client-rustls-tls" ]
