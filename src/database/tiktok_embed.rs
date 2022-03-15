@@ -1,21 +1,24 @@
-use crate::database::Database;
+use crate::database::{
+    model::TikTokEmbedFlags,
+    Database,
+};
 use anyhow::Context;
 use rusqlite::{
-    params,
+    named_params,
     OptionalExtension,
     TransactionBehavior,
 };
-use serenity::model::prelude::GuildId;
+use serenity::model::prelude::*;
 
 // Tiktok Embed SQL
-const GET_TIKTOK_EMBED_ENABLED_SQL: &str = include_str!("../../sql/get_tiktok_embed_enabled.sql");
-const SET_TIKTOK_EMBED_ENABLED_SQL: &str = include_str!("../../sql/set_tiktok_embed_enabled.sql");
+const GET_TIKTOK_EMBED_FLAGS_SQL: &str = include_str!("../../sql/get_tiktok_embed_flags.sql");
+const SET_TIKTOK_EMBED_FLAGS_SQL: &str = include_str!("../../sql/set_tiktok_embed_flags.sql");
 
 impl Database {
-    /// Enable or disable tiktok embeds.
+    /// Set the enabled flag for tiktok embeds.
     ///
     /// # Returns
-    /// Returns the old value
+    /// Returns the old enabled value
     pub async fn set_tiktok_embed_enabled(
         &self,
         guild_id: GuildId,
@@ -23,29 +26,49 @@ impl Database {
     ) -> anyhow::Result<bool> {
         self.access_db(move |db| {
             let txn = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
-            let old_data = txn
-                .prepare_cached(GET_TIKTOK_EMBED_ENABLED_SQL)?
-                .query_row([i64::from(guild_id)], |row| row.get(0))
+            let old_data: TikTokEmbedFlags = txn
+                .prepare_cached(GET_TIKTOK_EMBED_FLAGS_SQL)?
+                .query_row(
+                    named_params! {
+                        ":guild_id": i64::from(guild_id),
+                    },
+                    |row| row.get(0),
+                )
                 .optional()?
-                .unwrap_or(false);
-            txn.prepare_cached(SET_TIKTOK_EMBED_ENABLED_SQL)?
-                .execute(params![i64::from(guild_id), enabled])?;
+                .unwrap_or_default();
+
+            let mut modified = old_data;
+            modified.set(TikTokEmbedFlags::ENABLED, enabled);
+
+            txn.prepare_cached(SET_TIKTOK_EMBED_FLAGS_SQL)?
+                .execute(named_params! {
+                    ":guild_id": i64::from(guild_id),
+                    ":flags": modified,
+                })?;
 
             txn.commit()
                 .context("failed to set tiktok embed")
-                .map(|_| old_data)
+                .map(|_| old_data.contains(TikTokEmbedFlags::ENABLED))
         })
         .await?
     }
 
-    /// Get the tiktok embed setting.
-    pub async fn get_tiktok_embed_enabled(&self, guild_id: GuildId) -> anyhow::Result<bool> {
+    /// Get the tiktok embed flags.
+    pub async fn get_tiktok_embed_flags(
+        &self,
+        guild_id: GuildId,
+    ) -> anyhow::Result<TikTokEmbedFlags> {
         self.access_db(move |db| {
-            db.prepare_cached(GET_TIKTOK_EMBED_ENABLED_SQL)?
-                .query_row([i64::from(guild_id)], |row| row.get(0))
+            db.prepare_cached(GET_TIKTOK_EMBED_FLAGS_SQL)?
+                .query_row(
+                    named_params! {
+                        ":guild_id": i64::from(guild_id),
+                    },
+                    |row| row.get(0),
+                )
                 .optional()
                 .context("failed to read database")
-                .map(|v| v.unwrap_or(false))
+                .map(|v| v.unwrap_or_default())
         })
         .await?
     }

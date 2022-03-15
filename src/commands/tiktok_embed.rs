@@ -31,6 +31,7 @@ use url::Url;
 /// TikTok Data
 #[derive(Debug, Clone)]
 pub struct TikTokData {
+    /// The inner client
     client: tiktok::Client,
 
     /// A cache of post urls => post pages
@@ -150,7 +151,7 @@ impl CacheStatsProvider for TikTokData {
 }
 
 #[command("tiktok-embed")]
-#[description("Enable automaitc tiktok embedding for this server")]
+#[description("Enable automatic tiktok embedding for this server")]
 #[usage("<enable/disable>")]
 #[example("enable")]
 #[min_args(1)]
@@ -194,7 +195,6 @@ async fn tiktok_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     };
 
     let old_val = db.set_tiktok_embed_enabled(guild_id, enable).await?;
-
     let status_str = if enable { "enabled" } else { "disabled" };
 
     if enable == old_val {
@@ -208,7 +208,7 @@ async fn tiktok_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
         msg.channel_id
             .say(
                 &ctx.http,
-                format!("TikTok embeds are now {} for this guild", status_str),
+                format!("TikTok embeds are now {} for this server", status_str),
             )
             .await?;
     }

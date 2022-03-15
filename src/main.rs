@@ -37,7 +37,10 @@ use crate::{
         Config,
         Severity,
     },
-    database::Database,
+    database::{
+        model::TikTokEmbedFlags,
+        Database,
+    },
     util::LoadingReaction,
 };
 use anyhow::Context as _;
@@ -120,6 +123,8 @@ impl EventHandler for Handler {
             }
         }
 
+        info!("logged in as '{}'", ready.user.name);
+        
         // TODO: Consider shutting down the bot. It might be possible to use old data though.
         if let Err(e) = slash_framework
             .register(ctx.clone(), config.test_guild)
@@ -128,8 +133,8 @@ impl EventHandler for Handler {
         {
             warn!("{:?}", e);
         }
-
-        info!("logged in as '{}'", ready.user.name);
+        
+        info!("registered slash commands");
     }
 
     async fn resume(&self, _ctx: Context, resumed: ResumedEvent) {
@@ -174,8 +179,9 @@ impl EventHandler for Handler {
                     false
                 });
             let tiktok_embed_is_enabled_for_guild = db
-                .get_tiktok_embed_enabled(guild_id)
+                .get_tiktok_embed_flags(guild_id)
                 .await
+                .map(|flags| flags.contains(TikTokEmbedFlags::ENABLED))
                 .with_context(|| {
                     format!("failed to get tiktok-embed server data for '{}'", guild_id)
                 })

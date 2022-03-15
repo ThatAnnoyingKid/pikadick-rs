@@ -2339,6 +2339,7 @@ dependencies = [
  "anyhow",
  "async-rusqlite",
  "bincode",
+ "bitflags",
  "bytes",
  "chrono",
  "crossbeam",
