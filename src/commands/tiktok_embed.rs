@@ -220,3 +220,68 @@ async fn tiktok_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
 
     Ok(())
 }
+
+/// Options for tiktok-embed
+#[derive(Debug, pikadick_slash_framework::FromOptions)]
+struct TikTokEmbedOptions {
+    /// Whether embeds should be enabled for this server
+    enable: Option<bool>,
+    // /// Whether source messages should be deleted
+    // pub delete_link: Option<bool>,
+}
+
+/// Create a slash command
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
+    pikadick_slash_framework::CommandBuilder::new()
+        .name("tiktok-embed")
+        .description("Configure tiktok embeds for this server")
+        .check(crate::checks::admin::create_slash_check)
+        .argument(
+            pikadick_slash_framework::ArgumentParamBuilder::new()
+                .name("enable")
+                .description("Whether embeds should be enabled for this server")
+                .kind(pikadick_slash_framework::ArgumentKind::Boolean)
+                .build()?,
+        )
+        .on_process(|ctx, interaction, args: TikTokEmbedOptions| async move {
+            let data_lock = ctx.data.read().await;
+            let client_data = data_lock.get::<ClientDataKey>().unwrap();
+            let db = client_data.db.clone();
+            drop(data_lock);
+
+            let guild_id = match interaction.guild_id {
+                Some(id) => id,
+                None => {
+                    interaction
+                        .create_interaction_response(&ctx.http, |res| {
+                            res.interaction_response_data(|res| {
+                                res.content("Missing server id. Are you in a server right now?")
+                            })
+                        })
+                        .await?;
+                    return Ok(());
+                }
+            };
+
+            if let Some(enable) = args.enable {
+                let old_val = db.set_tiktok_embed_enabled(guild_id, enable).await?;
+                let status_str = if enable { "enabled" } else { "disabled" };
+
+                let content = if enable == old_val {
+                    format!("TikTok embeds are already {} for this server", status_str)
+                } else {
+                    format!("TikTok embeds are now {} for this server", status_str)
+                };
+
+                interaction
+                    .create_interaction_response(&ctx.http, |res| {
+                        res.interaction_response_data(|res| res.content(content))
+                    })
+                    .await?;
+            }
+
+            Ok(())
+        })
+        .build()
+        .context("failed to build command")
+}

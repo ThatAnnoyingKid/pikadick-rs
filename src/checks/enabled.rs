@@ -182,7 +182,7 @@ pub async fn enabled_check(
 }
 
 /// Check if a command is enabled via slash framework
-pub fn slash_check<'a>(
+pub fn create_slash_check<'a>(
     ctx: &'a Context,
     interaction: &'a ApplicationCommandInteraction,
     command: &'a Command,

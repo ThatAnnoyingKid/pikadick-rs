@@ -177,6 +177,12 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
         self
     }
 
+    /// Add a check to this specific command
+    pub fn check(&mut self, check: CheckFn) -> &mut Self {
+        self.checks.push(check);
+        self
+    }
+
     /// Build the [`Command`]
     pub fn build(&mut self) -> Result<Command, BuilderError> {
         let name = self.name.take().ok_or(BuilderError::MissingField("name"))?;
