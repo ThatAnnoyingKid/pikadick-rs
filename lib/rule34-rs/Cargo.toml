@@ -36,8 +36,10 @@ default = [ "default-tls" ]
 # Use the default TLS for this platform. 
 # This is reqwest's default.
 default-tls = [ "reqwest/default-tls" ]
+
 # Use native-tls for TLS
 native-tls = [ "reqwest/native-tls" ]
+
 # Use rustls for TLS
 rustls-tls = [ "reqwest/rustls-tls" ]
 

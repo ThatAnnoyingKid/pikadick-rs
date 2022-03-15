@@ -1,8 +1,5 @@
-use chrono::{
-    DateTime,
-    Utc,
-};
 use std::collections::HashMap;
+use time::OffsetDateTime;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct GenericStats {
@@ -127,8 +124,16 @@ pub struct QueueStat {
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct Timestamps {
-    pub created: DateTime<Utc>,
-    pub last_updated: DateTime<Utc>,
+    #[serde(
+        deserialize_with = "time::serde::rfc3339::deserialize",
+        serialize_with = "time::serde::rfc3339::serialize"
+    )]
+    pub created: OffsetDateTime,
+    #[serde(
+        deserialize_with = "time::serde::rfc3339::deserialize",
+        serialize_with = "time::serde::rfc3339::serialize"
+    )]
+    pub last_updated: OffsetDateTime,
 
     #[serde(flatten)]
     pub unknown: HashMap<String, serde_json::Value>,

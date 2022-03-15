@@ -11,7 +11,7 @@ required-features = [ "cli" ]
 
 [dependencies]
 lazy_static = "1.4.0"
-reqwest = { version = "0.11.10", features = [ "multipart", "stream" ] }
+reqwest = { version = "0.11.10", default-features = false, features = [ "multipart", "stream" ] }
 scraper = { version = "0.12.0", default-features = false }
 thiserror = "1.0.30"
 tokio = { version = "1.17.0", features = [ "fs", "rt" ] }
@@ -26,7 +26,11 @@ argh = { version = "0.1.7", optional = true }
 tokio = { version = "1.17.0", features = [ "macros" ] }
 
 [features]
-default = []
+default = [ "reqwest/default-tls" ]
+
+native-tls = [ "reqwest/native-tls" ]
+rustls-tls = [ "reqwest/rustls-tls" ]
+
 cli = [
     "anyhow",
     "argh",

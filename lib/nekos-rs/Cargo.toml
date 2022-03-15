@@ -2,8 +2,8 @@
 name = "nekos"
 version = "0.0.1"
 authors = [ "ProfessionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
-edition = "2018"
-license = "MIT/Apache-2.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [[bin]]
 name = "nekos"
@@ -12,7 +12,7 @@ required-features = [ "cli" ]
 
 [dependencies]
 itoa = "1.0.1"
-reqwest = { version = "0.11.10", features = [ "json" ] }
+reqwest = { version = "0.11.10", default-features = false, features = [ "json" ] }
 serde = { version = "1.0.136", features = [ "derive" ] }
 serde_json = "1.0.79"
 thiserror = "1.0.30"
@@ -27,6 +27,11 @@ anyhow = { version = "1.0.56", optional = true }
 tokio = { version = "1.17.0", features = [ "macros" ] }
 
 [features]
+default = [ "reqwest/default-tls" ]
+
+native-tls = [ "reqwest/native-tls" ]
+rustls-tls = [ "reqwest/rustls-tls" ]
+
 cli = [
     "argh",
     "tokio/fs",

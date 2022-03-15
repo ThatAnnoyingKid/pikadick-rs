@@ -2,14 +2,20 @@
 name = "fml"
 version = "0.0.1"
 authors = [ "ProfessionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
-edition = "2018"
-license = "MIT/Apache-2.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
-reqwest = "0.11.10"
+reqwest = { version = "0.11.10", default-features = false }
 serde = { version = "1.0.136", features = [ "derive" ] }
 serde_json = "1.0.79"
 thiserror = "1.0.30"
 
 [dev-dependencies]
 tokio = { version = "1.17.0", features = [ "macros" ] }
+
+[features]
+default = [ "reqwest/default-tls" ]
+
+native-tls = [ "reqwest/native-tls" ]
+rustls-tls = [ "reqwest/rustls-tls" ]
