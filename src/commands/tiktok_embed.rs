@@ -104,13 +104,18 @@ impl TikTokData {
         url: &Url,
         loading_reaction: &mut Option<LoadingReaction>,
     ) -> anyhow::Result<()> {
-        let video_url = self
-            .get_post_cached(url.as_str())
-            .await?
-            .data()
-            .get_video_download_url()
-            .cloned()
-            .context("missing video url")?;
+        let (video_url, _desc) = {
+            let post = self.get_post_cached(url.as_str()).await?;
+            let post = post.data();
+            let item_module_post = post
+                .get_item_module_post()
+                .context("missing item module post")?;
+
+            let video_url = item_module_post.video.download_addr.clone();
+            let desc = item_module_post.desc.clone();
+
+            (video_url, desc)
+        };
 
         let video_data = self.get_video_data_cached(video_url.as_str()).await?;
 

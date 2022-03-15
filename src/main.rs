@@ -124,7 +124,7 @@ impl EventHandler for Handler {
         }
 
         info!("logged in as '{}'", ready.user.name);
-        
+
         // TODO: Consider shutting down the bot. It might be possible to use old data though.
         if let Err(e) = slash_framework
             .register(ctx.clone(), config.test_guild)
@@ -133,7 +133,7 @@ impl EventHandler for Handler {
         {
             warn!("{:?}", e);
         }
-        
+
         info!("registered slash commands");
     }
 
