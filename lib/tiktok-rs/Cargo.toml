@@ -11,7 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 open-graph = { path = "../open-graph-rs" }
-reqwest = { version = "0.11.9", default-features = false, features = [ "cookies", "rustls-tls" ] } 
+reqwest = { version = "0.11.10", default-features = false, features = [ "cookies", "rustls-tls" ] } 
 thiserror = "1.0.30"
 tokio = "1.17.0"
 scraper = { version = "0.12.0", default-features = false }
