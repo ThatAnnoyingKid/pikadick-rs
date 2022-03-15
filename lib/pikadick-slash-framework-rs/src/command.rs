@@ -4,6 +4,7 @@ use crate::{
     BoxError,
     BoxFuture,
     BuilderError,
+    CheckFn,
     FromOptions,
 };
 use serenity::{
@@ -53,6 +54,9 @@ pub struct Command {
 
     /// The main "process" func
     on_process: OnProcessFutureFn,
+
+    /// Checks that must pass before this command is run
+    checks: Vec<CheckFn>,
 }
 
 impl Command {
@@ -78,6 +82,11 @@ impl Command {
         interaction: ApplicationCommandInteraction,
     ) -> Result<(), BoxError> {
         (self.on_process)(ctx, interaction).await
+    }
+
+    /// Get the inner checks
+    pub fn checks(&self) -> &[CheckFn] {
+        &self.checks
     }
 
     /// Register this command
@@ -117,6 +126,7 @@ pub struct CommandBuilder<'a, 'b> {
     arguments: Vec<ArgumentParam>,
 
     on_process: Option<OnProcessFutureFn>,
+    checks: Vec<CheckFn>,
 }
 
 impl<'a, 'b> CommandBuilder<'a, 'b> {
@@ -128,6 +138,7 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
             arguments: Vec::new(),
 
             on_process: None,
+            checks: Vec::new(),
         }
     }
 
@@ -177,6 +188,7 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
             .on_process
             .take()
             .ok_or(BuilderError::MissingField("on_process"))?;
+        let checks = std::mem::take(&mut self.checks);
 
         Ok(Command {
             name: name.into(),
@@ -184,6 +196,7 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
             arguments: std::mem::take(&mut self.arguments).into_boxed_slice(),
 
             on_process,
+            checks,
         })
     }
 }

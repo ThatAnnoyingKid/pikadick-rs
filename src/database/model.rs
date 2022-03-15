@@ -270,6 +270,7 @@ bitflags! {
     pub struct TikTokEmbedFlags: u32 {
         /// Whether embeds are enabled
         const ENABLED = 1 << 0;
+
         /// Whether the bot should delete old links
         const DELETE_LINK = 1 << 1;
     }
