@@ -24,7 +24,8 @@ impl CargoTomlConfig {
                 )
             })?;
 
-        serde_json::from_value(value.clone()).context("failed to parse Cargo.toml metadata config")
+        serde_json::from_value(value.clone())
+            .context("failed to parse `Cargo.toml` metadata config")
     }
 }
 
@@ -39,9 +40,15 @@ pub struct FileConfig {
 impl FileConfig {
     /// Load a file config
     pub fn new() -> anyhow::Result<Self> {
-        let config_str =
-            std::fs::read_to_string(FILE_CONFIG_FILE_NAME).context("failed to read file config")?;
+        let config_str = std::fs::read_to_string(FILE_CONFIG_FILE_NAME).with_context(|| {
+            format!("failed to read file config at `{}`", FILE_CONFIG_FILE_NAME)
+        })?;
         toml::from_str(&config_str).context("failed to parse file config")
+    }
+
+    /// Get the machine config for a key
+    pub fn get_machine_config(&self, name: &str) -> Option<&MachineConfig> {
+        self.machines.get(name)
     }
 }
 

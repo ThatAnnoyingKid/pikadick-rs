@@ -80,9 +80,10 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         Subcommand::Deploy(options) => {
             let machine_config = ctx
                 .file_config
-                .machines
-                .get(&options.name)
-                .context("missing machine config")?;
+                .get_machine_config(&options.name)
+                .with_context(|| {
+                    format!("missing machine config for machine `{}`", options.name)
+                })?;
 
             println!("Packaging...");
             ctx.package_target(&machine_config.target)?;

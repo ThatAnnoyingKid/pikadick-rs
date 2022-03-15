@@ -140,3 +140,6 @@ members = [
 ]
 
 [package.metadata.deb]
+
+[package.metadata.rpi-deploy]
+targets = [ "armv7-unknown-linux-gnueabihf" ]
