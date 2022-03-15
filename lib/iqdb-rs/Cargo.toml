@@ -11,15 +11,15 @@ required-features = [ "cli" ]
 
 [dependencies]
 lazy_static = "1.4.0"
-reqwest = { version = "0.11.9", features = [ "multipart", "stream" ] }
+reqwest = { version = "0.11.10", features = [ "multipart", "stream" ] }
 scraper = { version = "0.12.0", default-features = false }
 thiserror = "1.0.30"
 tokio = { version = "1.17.0", features = [ "fs", "rt" ] }
-tokio-util = { version = "0.6.9", features = ["codec"] }
+tokio-util = { version = "0.7.0", features = ["codec"] }
 url = "2.2.2"
 
 # Optional
-anyhow = { version = "1.0.55", optional = true }
+anyhow = { version = "1.0.56", optional = true }
 argh = { version = "0.1.7", optional = true }
 
 [dev-dependencies]

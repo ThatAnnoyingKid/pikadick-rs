@@ -114,6 +114,9 @@ skip = [
     
     # Blocked on cookie updating to time 0.3
     { name = "time-macros", version = "0.1.1" },
+    
+    # Blocked on h2 updating tokio-util to v 7
+    { name = "tokio-util", version = "0.6.9" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
