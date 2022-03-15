@@ -34,14 +34,14 @@ quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "r
 r6stats = { path = "./lib/r6stats-rs", default-features = false, features = [ "rustls-tls" ] }
 r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = [ "rustls-tls" ] }
 rand = "0.8.5"
-reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "d46d78445ca94023aee417fe92bd43e86faf36dc", features = [ "force-rustls-tls" ] }
+reddit = { git = "https://github.com/adumbidiot/reddit-rs", features = [ "force-rustls-tls" ] }
 reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls-tls" ] }
 regex = "1.5.5"
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
 rusqlite = { version = "0.27.0", features = [ "bundled", "blob", "trace" ] }
 serde = { version = "1.0.136", features = [ "derive" ] }
 serenity = { version = "0.10.10", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
-shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs" } 
+shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
 songbird = "0.2.0"
 systemstat = "0.1.10"
 thiserror = "1.0.30"

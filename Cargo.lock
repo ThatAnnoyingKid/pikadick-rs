@@ -3418,7 +3418,7 @@ dependencies = [
 [[package]]
 name = "shift-orcz"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/shift-client-rs#8f31c8dec0dc54616b121e28a2d6ec5f8a41d878"
+source = "git+https://github.com/adumbidiot/shift-client-rs#a5f0f9004e705d4f4bdd70d74ffcec0a40e62d3c"
 dependencies = [
  "logos",
  "once_cell",
@@ -3691,9 +3691,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.87"
+version = "1.0.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e59d925cf59d8151f25a3bedf97c9c157597c9df7324d32d68991cc399ed08b"
+checksum = "ebd69e719f31e88618baa1eaa6ee2de5c9a1c004f1e9ecdb58e8352a13f20a01"
 dependencies = [
  "proc-macro2",
  "quote",
