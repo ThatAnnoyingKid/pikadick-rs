@@ -160,7 +160,8 @@ deny = [
     # https://github.com/rustsec/advisory-db/issues/1173
     { name = "prettytables-rs", version = "*" },
     
-    # Makes cross-comp a pain
+    # Makes cross-comp a pain. 
+    # This is commented out as cargo-deny does not seem to pick it up as disabled through features
     # { name = "openssl", version = "*" },
 ]
 
