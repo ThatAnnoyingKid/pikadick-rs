@@ -114,6 +114,9 @@ skip = [
     
     # Blocked on cookie updating to time 0.3
     { name = "time-macros", version = "0.1.1" },
+    
+    # Blocked on h2 updating tokio-util to v 7
+    { name = "tokio-util", version = "0.6.9" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -156,6 +159,10 @@ deny = [
     
     # https://github.com/rustsec/advisory-db/issues/1173
     { name = "prettytables-rs", version = "*" },
+    
+    # Makes cross-comp a pain. 
+    # This is commented out as cargo-deny does not seem to pick it up as disabled through features
+    # { name = "openssl", version = "*" },
 ]
 
 [sources]

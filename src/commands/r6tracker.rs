@@ -1,27 +1,16 @@
 use crate::{
-    checks::ENABLED_CHECK,
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
     util::{
-        LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
     ClientDataKey,
 };
 use anyhow::Context as _;
-use serenity::{
-    builder::CreateEmbed,
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
-};
+use serenity::builder::CreateEmbed;
 use std::sync::Arc;
 use tracing::{
     error,
@@ -223,57 +212,60 @@ impl CacheStatsProvider for R6TrackerClient {
     }
 }
 
-#[command]
-#[description("Get r6 stats for a user from r6tracker")]
-#[usage("<player>")]
-#[example("KingGeorge")]
-#[bucket("r6tracker")]
-#[min_args(1)]
-#[max_args(1)]
-#[checks(Enabled)]
-async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let client = client_data.r6tracker_client.clone();
-    drop(data_lock);
+/// Options for r6tracker
+#[derive(Debug, pikadick_slash_framework::FromOptions)]
+struct R6TrackerOptions {
+    /// The user name
+    name: String,
+}
 
-    let name = args.trimmed().current().expect("missing name");
+/// Create a slash command
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
+    pikadick_slash_framework::CommandBuilder::new()
+        .name("r6tracker")
+        .description("Get r6 stats for a user from r6tracker")
+        .argument(
+            pikadick_slash_framework::ArgumentParamBuilder::new()
+                .name("name")
+                .description("The name of the user")
+                .kind(pikadick_slash_framework::ArgumentKind::String)
+                .required(true)
+                .build()?,
+        )
+        .on_process(|ctx, interaction, args: R6TrackerOptions| async move {
+            let data_lock = ctx.data.read().await;
+            let client_data = data_lock
+                .get::<ClientDataKey>()
+                .expect("missing client data");
+            let client = client_data.r6tracker_client.clone();
+            drop(data_lock);
 
-    info!("Getting r6 stats for '{}' using R6Tracker", name);
+            info!("Getting r6 stats for '{}' using R6Tracker", args.name);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
+            let result = client
+                .get_stats(&args.name)
+                .await
+                .with_context(|| format!("failed to get r6tracker stats for '{}'", args.name));
 
-    match client
-        .get_stats(name)
-        .await
-        .context("failed to get r6tracker stats")
-    {
-        Ok(entry) => {
-            loading.send_ok();
-            msg.channel_id
-                .send_message(&ctx.http, |m| {
-                    let stats = entry.data();
-
-                    match stats {
-                        Some(stats) => m.embed(|e| stats.populate_embed(e)),
-                        None => m.content("No Results"),
-                    }
+            interaction
+                .create_interaction_response(&ctx.http, |res| {
+                    res.interaction_response_data(|res| {
+                        match result.as_ref().map(|entry| entry.data()) {
+                            Ok(Some(stats)) => res.embed(|e| stats.populate_embed(e)),
+                            Ok(None) => res.content("No Results"),
+                            Err(e) => {
+                                error!("{:?}", e);
+                                res.content(format!("{:?}", e))
+                            }
+                        }
+                    })
                 })
                 .await?;
-        }
-        Err(e) => {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
 
-            error!(
-                "Failed to get r6 stats for '{}' using r6tracker: {:?}",
-                name, e
-            );
-        }
-    }
+            client.search_cache.trim();
 
-    client.search_cache.trim();
-
-    Ok(())
+            Ok(())
+        })
+        .build()
+        .context("failed to build r6tracker command")
 }

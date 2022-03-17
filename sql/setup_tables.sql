@@ -48,5 +48,11 @@ CREATE TABLE IF NOT EXISTS tic_tac_toe_scores (
 
 CREATE TABLE IF NOT EXISTS tiktok_embed_guild_settings (
     guild_id INTEGER NOT NULL PRIMARY KEY UNIQUE,
-    enabled INTEGER NOT NULL CHECK(enabled IN (0, 1))
+    
+    -- flags for tiktok embed settings
+    --
+    -- bit | name         | Description
+    -- 0   | enabled?     | Whether the bot should try to embed links
+    -- 1   | delete-link? | Whether the bot should delete the original link on success
+    flags INTEGER NOT NULL DEFAULT 0
 ) STRICT;

@@ -1,11 +1,9 @@
 use crate::{
-    checks::ENABLED_CHECK,
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
     util::{
-        LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
@@ -13,15 +11,6 @@ use crate::{
 };
 use anyhow::Context as _;
 use rand::seq::SliceRandom;
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
-};
 use std::sync::Arc;
 use tracing::{
     error,
@@ -77,61 +66,75 @@ impl CacheStatsProvider for Rule34Client {
     }
 }
 
-#[command]
-#[aliases("r34")]
-#[description("Look up rule34 for almost anything")]
-#[usage("\"<query>\"")]
-#[example("\"test\"")]
-#[min_args(1)]
-#[checks(Enabled)]
-#[bucket("default")]
-async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let client = client_data.rule34_client.clone();
-    drop(data_lock);
+/// Options for the rule34 command
+#[derive(Debug, pikadick_slash_framework::FromOptions)]
+pub struct Rule34Options {
+    // The search query
+    query: String,
+}
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
+/// Create a slash command
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
+    pikadick_slash_framework::CommandBuilder::new()
+        .name("rule34")
+        .description("Look up rule34 for almost anything")
+        .argument(
+            pikadick_slash_framework::ArgumentParamBuilder::new()
+                .name("query")
+                .description("The search query")
+                .kind(pikadick_slash_framework::ArgumentKind::String)
+                .required(true)
+                .build()?,
+        )
+        .on_process(|ctx, interaction, args: Rule34Options| async move {
+            let data_lock = ctx.data.read().await;
+            let client_data = data_lock
+                .get::<ClientDataKey>()
+                .expect("missing client data");
+            let client = client_data.rule34_client.clone();
+            drop(data_lock);
 
-    let query_str = rule34::SearchQueryBuilder::new()
-        .add_tag_iter(args.raw_quoted())
-        .take_query_string();
+            let query_str = rule34::SearchQueryBuilder::new()
+                .add_tag_iter(args.query.split(' '))
+                .take_query_string();
 
-    info!("searching rule34 for '{}'", query_str);
+            info!("searching rule34 for '{}'", query_str);
 
-    match client.list(&query_str).await {
-        Ok(list_results) => {
-            let maybe_list_result: Option<String> = list_results
-                .data()
-                .posts
-                .choose(&mut rand::thread_rng())
-                .map(|list_result| list_result.file_url.to_string());
+            let result = client
+                .list(&query_str)
+                .await
+                .context("failed to get search results");
 
-            if let Some(file_url) = maybe_list_result {
-                info!("sending {}", file_url);
-                msg.channel_id.say(&ctx.http, file_url).await?;
-                loading.send_ok();
-            } else {
-                info!("no results");
-                msg.channel_id
-                    .say(
-                        &ctx.http,
-                        format!("No results for '{}'. Searching is tag based, so make sure to use quotes to seperate tag arguments. ", query_str),
-                    )
-                    .await?;
-            }
-        }
-        Err(e) => {
-            error!("failed to get search results: {:?}", e);
-            msg.channel_id
-                .say(&ctx.http, format!("Failed to get rule34 post, got: {}", e))
+            interaction
+                .create_interaction_response(&ctx.http, |res| {
+                    res.interaction_response_data(|res| match result {
+                        Ok(list_results) => {
+                            let maybe_list_result: Option<String> = list_results
+                                .data()
+                                .posts
+                                .choose(&mut rand::thread_rng())
+                                .map(|list_result| list_result.file_url.to_string());
+
+                            if let Some(file_url) = maybe_list_result {
+                                info!("sending {}", file_url);
+                                res.content(file_url)
+                            } else {
+                                info!("no results");
+                                res.content(format!("No results for '{}'", query_str))
+                            }
+                        }
+                        Err(e) => {
+                            error!("{:?}", e);
+                            res.content(format!("{:?}", e))
+                        }
+                    })
+                })
                 .await?;
-        }
-    }
 
-    client.list_cache.trim();
+            client.list_cache.trim();
 
-    Ok(())
+            Ok(())
+        })
+        .build()
+        .context("failed to build rule34 command")
 }

@@ -7,11 +7,6 @@ pub use self::{
     client::Client,
     types::PostPage,
 };
-pub use open_graph::{
-    self,
-    Html,
-    OpenGraphObject,
-};
 
 /// Error Type
 #[derive(Debug, thiserror::Error)]
@@ -23,10 +18,6 @@ pub enum Error {
     /// A Tokio task failed to join
     #[error(transparent)]
     TokioJoin(#[from] tokio::task::JoinError),
-
-    /// Failed to parse an [`OpenGraphObject`].
-    #[error("invalid ogp object")]
-    InvalidOpenGraphObject(#[from] open_graph::open_graph_object::FromHtmlError),
 
     /// failed to parse a [`PostPage`]
     #[error("invalid post page")]

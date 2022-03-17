@@ -1,7 +1,7 @@
 INSERT OR REPLACE INTO tiktok_embed_guild_settings (
     guild_id, 
-    enabled
+    flags
 ) VALUES (
-    ?, 
-    ?
+    :guild_id, 
+    :flags
 );

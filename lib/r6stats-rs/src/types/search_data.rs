@@ -1,11 +1,8 @@
 pub mod generic_stats;
 
 pub use self::generic_stats::GenericStats;
-use chrono::{
-    DateTime,
-    Utc,
-};
 use std::collections::HashMap;
+use time::OffsetDateTime;
 use url::Url;
 
 /// Api Response
@@ -25,7 +22,11 @@ pub struct UserData {
     #[serde(rename = "genericStats")]
     pub generic_stats: Option<GenericStats>,
 
-    pub last_updated: DateTime<Utc>,
+    #[serde(
+        deserialize_with = "time::serde::rfc3339::deserialize",
+        serialize_with = "time::serde::rfc3339::serialize"
+    )]
+    pub last_updated: OffsetDateTime,
     pub platform: String,
 
     #[serde(rename = "progressionStats")]
@@ -71,8 +72,16 @@ pub struct ProgressionStats {
 pub struct SeasonalStats {
     pub abandons: u32,
     pub champions_rank_position: Option<u32>,
-    pub created_at: DateTime<Utc>,
-    pub created_for_date: DateTime<Utc>,
+    #[serde(
+        deserialize_with = "time::serde::rfc3339::deserialize",
+        serialize_with = "time::serde::rfc3339::serialize"
+    )]
+    pub created_at: OffsetDateTime,
+    #[serde(
+        deserialize_with = "time::serde::rfc3339::deserialize",
+        serialize_with = "time::serde::rfc3339::serialize"
+    )]
+    pub created_for_date: OffsetDateTime,
     pub deaths: Option<u32>,
     pub kills: Option<u32>,
     pub last_match_mmr_change: Option<i32>,
@@ -88,7 +97,11 @@ pub struct SeasonalStats {
     pub region: String,
     pub skill_mean: f64,
     pub skill_standard_deviation: f64,
-    pub updated_at: DateTime<Utc>,
+    #[serde(
+        deserialize_with = "time::serde::rfc3339::deserialize",
+        serialize_with = "time::serde::rfc3339::serialize"
+    )]
+    pub updated_at: OffsetDateTime,
     pub wins: u32,
 
     #[serde(flatten)]
@@ -104,7 +117,8 @@ mod test {
 
     #[tokio::test]
     async fn parse_valid() {
-        let valid = serde_json::from_str::<Vec<UserData>>(VALID_DATA).unwrap();
+        let valid = serde_json::from_str::<Vec<UserData>>(VALID_DATA)
+            .expect("failed to parse valid search data");
         dbg!(&valid);
     }
 

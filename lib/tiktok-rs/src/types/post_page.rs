@@ -54,18 +54,14 @@ impl PostPage {
         Ok(Self { sigi_state })
     }
 
+    /// Get the item module post for this post page
+    pub fn get_item_module_post(&self) -> Option<&ItemModulePost> {
+        self.sigi_state.item_module.posts.values().next()
+    }
+
     /// Get the video download url for a post by id, if it exists
     pub fn get_video_download_url(&self) -> Option<&Url> {
-        Some(
-            &self
-                .sigi_state
-                .item_module
-                .posts
-                .values()
-                .next()?
-                .video
-                .download_addr,
-        )
+        Some(&self.get_item_module_post()?.video.download_addr)
     }
 }
 
@@ -98,6 +94,9 @@ pub struct ItemModule {
 pub struct ItemModulePost {
     /// Post author
     pub author: String,
+
+    /// Video description
+    pub desc: String,
 
     /// Nickname?
     pub nickname: String,

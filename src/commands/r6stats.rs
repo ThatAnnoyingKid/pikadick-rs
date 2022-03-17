@@ -1,11 +1,9 @@
 use crate::{
-    checks::ENABLED_CHECK,
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
     util::{
-        LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
@@ -13,15 +11,6 @@ use crate::{
 };
 use anyhow::Context as _;
 use r6stats::UserData;
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
-};
 use std::sync::Arc;
 use tracing::{
     error,
@@ -69,75 +58,6 @@ impl CacheStatsProvider for R6StatsClient {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
         cache_stats_builder.publish_stat("r6stats", "search_cache", self.search_cache.len() as f32);
     }
-}
-
-#[command]
-#[description("Get r6 stats for a user from r6stats")]
-#[usage("<player>")]
-#[example("KingGeorge")]
-#[bucket("r6stats")]
-#[min_args(1)]
-#[max_args(1)]
-#[checks(Enabled)]
-async fn r6stats(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let client = client_data.r6stats_client.clone();
-    drop(data_lock);
-
-    let name = args.trimmed().current().expect("missing name");
-
-    info!("Getting r6 stats for '{}' using r6stats", name);
-
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
-
-    match client.get_stats(name).await {
-        Ok(Some(entry)) => {
-            loading.send_ok();
-
-            msg.channel_id
-                .send_message(&ctx.http, |m| {
-                    m.embed(|e| {
-                        let data = entry.data();
-
-                        e.title(&data.username).image(data.avatar_url_256.as_str());
-
-                        if let Some(kd) = data.kd() {
-                            e.field("Overall Kill / Death", kd, true);
-                        }
-
-                        if let Some(wl) = data.wl() {
-                            e.field("Overall Win / Loss", wl, true);
-                        }
-
-                        if let Some(stats) = data.seasonal_stats.as_ref() {
-                            e.field("MMR", stats.mmr, true);
-                            e.field("Max MMR", stats.max_mmr, true);
-                            e.field("Mean Skill", stats.skill_mean, true);
-                        }
-
-                        e
-                    })
-                })
-                .await?;
-        }
-        Ok(None) => {
-            msg.channel_id.say(&ctx.http, "No results").await?;
-        }
-        Err(e) => {
-            msg.channel_id
-                .say(&ctx.http, format!("Failed to get stats: {}", e))
-                .await?;
-
-            error!("Failed to get r6 stats for '{}' using r6stats: {}", name, e);
-        }
-    }
-
-    client.search_cache.trim();
-
-    Ok(())
 }
 
 /// Options for r6stats
