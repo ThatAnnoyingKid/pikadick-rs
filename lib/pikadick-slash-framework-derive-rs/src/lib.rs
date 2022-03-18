@@ -39,21 +39,32 @@ fn gen_from_options_impl(data: &Data) -> Result<TokenStream> {
     match data {
         Data::Struct(data) => match &data.fields {
             Fields::Named(fields) => {
-                let optional_field_recurse = fields.named.iter().map(|f| {
-                    let name = &f.ident;
-                    quote_spanned! {f.span()=>
+                let fields: Vec<Field> = fields
+                    .named
+                    .iter()
+                    .map(|field| Field {
+                        ident: field
+                            .ident
+                            .as_ref()
+                            .expect("named struct fields should have names for all fields"),
+                        span: field.span(),
+                        ty: &field.ty,
+                    })
+                    .collect();
+
+                let optional_field_recurse = fields.iter().map(|field| {
+                    let name = &field.ident;
+                    quote_spanned! {field.span=>
                         let mut #name = ::std::option::Option::None;
                     }
                 });
 
-                let match_recurse = fields.named.iter().map(|f| {
-                    let name = &f
-                        .ident
-                        .as_ref()
-                        .expect("named struct fields should have names for all fields");
+                let match_recurse = fields.iter().map(|field| {
+                    let name = &field
+                        .ident;
                     let name_lit = LitStr::new(&name.to_string(), name.span());
-                    let ty = &f.ty;
-                    quote_spanned! {f.span()=>
+                    let ty = &field.ty;
+                    quote_spanned! {field.span=>
                         #name_lit => {
                             #name = Some(
                                 <#ty as ::pikadick_slash_framework::FromOptionValue>::from_option_value(
@@ -65,11 +76,11 @@ fn gen_from_options_impl(data: &Data) -> Result<TokenStream> {
                     }
                 });
 
-                let unwrap_field_recurse = fields.named.iter().map(|f| {
-                    let name = &f.ident.as_ref().expect("named struct fields should have names for all fields");
+                let unwrap_field_recurse = fields.iter().map(|field| {
+                    let name = &field.ident;
                     let name_lit = LitStr::new(&name.to_string(), name.span());
-                    let ty = &f.ty;
-                    quote_spanned! {f.span()=>
+                    let ty = &field.ty;
+                    quote_spanned! {field.span=>
                         let #name = #name
                             .or_else(<#ty as ::pikadick_slash_framework::FromOptionValue>::get_missing_default)
                             .ok_or(::pikadick_slash_framework::ConvertError::MissingRequiredField {
@@ -79,9 +90,9 @@ fn gen_from_options_impl(data: &Data) -> Result<TokenStream> {
                     }
                 });
 
-                let recurse = fields.named.iter().map(|f| {
-                    let name = &f.ident;
-                    quote_spanned! {f.span()=>
+                let recurse = fields.iter().map(|field| {
+                    let name = &field.ident;
+                    quote_spanned! {field.span=>
                         #name,
                     }
                 });
@@ -119,4 +130,10 @@ fn gen_from_options_impl(data: &Data) -> Result<TokenStream> {
             "unions are not supported",
         )),
     }
+}
+
+struct Field<'a> {
+    ident: &'a proc_macro2::Ident,
+    span: proc_macro2::Span,
+    ty: &'a syn::Type,
 }
