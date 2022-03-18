@@ -588,13 +588,14 @@ fn real_main(
 async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     // Setup slash framework
     let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
-        .check(self::checks::enabled::slash_check)
+        .check(self::checks::enabled::create_slash_check)
         .help_command(create_slash_help_command()?)
         .command(self::commands::nekos::create_slash_command()?)
         .command(self::commands::ping::create_slash_command()?)
         .command(self::commands::r6stats::create_slash_command()?)
         .command(self::commands::r6tracker::create_slash_command()?)
         .command(self::commands::rule34::create_slash_command()?)
+        .command(self::commands::tiktok_embed::create_slash_command()?)
         .build()?;
 
     // Create second prefix that is uppercase so we are case-insensitive
