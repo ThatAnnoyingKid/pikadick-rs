@@ -1,59 +1,136 @@
-pub use open_graph::{
-    self,
-    OpenGraphObject,
-};
+mod client;
+mod types;
 
-/// Result type
-pub type InstaResult<T> = Result<T, InstaError>;
+pub use self::{
+    client::Client,
+    types::{
+        LoginResponse,
+        PostPage,
+    },
+};
+pub use cookie_store::CookieStore;
+pub use reqwest_cookie_store::CookieStoreMutex;
+
+const USER_AGENT_STR: &str = "Instagram 123.0.0.21.114 (iPhone; CPU iPhone OS 11_4 like Mac OS X; en_US; en-US; scale=2.00; 750x1334) AppleWebKit/605.1.15";
 
 /// Error type
 #[derive(Debug, thiserror::Error)]
-pub enum InstaError {
-    /// Failed to fetch and decode an [`OpenGraphObject`].
+pub enum Error {
+    /// Reqwest Error
     #[error(transparent)]
-    OpenGraphClient(#[from] open_graph::client::ClientError),
-}
+    Reqwest(#[from] reqwest::Error),
 
-/// A Client
-#[derive(Debug, Clone)]
-pub struct Client {
-    /// The inner open graph client.
-    pub client: open_graph::Client,
-}
+    /// Instagram is forcing a log-in
+    #[error("login required")]
+    LoginRequired,
 
-impl Client {
-    /// Make a new [`Client`].
-    pub fn new() -> Self {
-        Client {
-            client: open_graph::Client::new(),
-        }
-    }
+    /// Missing a csrf token
+    #[error("missing csrf token")]
+    MissingCsrfToken,
 
-    /// Get a post by url.
-    pub async fn get_post(&self, url: &str) -> InstaResult<OpenGraphObject> {
-        Ok(self.client.get_object(url).await?)
-    }
-}
+    /// Missing additionalDataLoaded
+    #[error("missing `additionalDataLoaded` field")]
+    MissingAdditionalDataLoaded,
 
-impl Default for Client {
-    fn default() -> Self {
-        Self::new()
-    }
+    /// Json
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use tokio::sync::OnceCell;
+    use std::sync::Arc;
+
+    #[derive(Debug, serde::Deserialize)]
+    struct TestConfig {
+        username: String,
+        password: String,
+    }
+
+    impl TestConfig {
+        fn new() -> Self {
+            let data = std::fs::read_to_string("test-config.json")
+                .expect("failed to load `test-config.json`");
+            serde_json::from_str(&data).expect("failed to parse `test-config.json`")
+        }
+    }
+
+    async fn get_client() -> &'static Client {
+        static CLIENT: OnceCell<Client> = OnceCell::const_new();
+
+        CLIENT
+            .get_or_init(|| async move {
+                tokio::task::spawn_blocking(|| {
+                    use std::{
+                        fs::File,
+                        io::BufReader,
+                    };
+                    use tokio::runtime::Handle;
+
+                    let session_file_path = "session.json";
+
+                    match File::open(session_file_path).map(BufReader::new) {
+                        Ok(file) => {
+                            let cookie_store =
+                                CookieStore::load_json(file).expect("failed to load session file");
+                            Client::with_cookie_store(Arc::new(CookieStoreMutex::new(cookie_store)))
+                        }
+                        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                            let test_config = TestConfig::new();
+
+                            let client = Client::new();
+                            Handle::current().block_on(async {
+                                let login_response = client
+                                    .login(&test_config.username, &test_config.password)
+                                    .await
+                                    .expect("failed to log in");
+
+                                assert!(login_response.authenticated);
+                            });
+
+                            let mut session_file = File::create(session_file_path)
+                                .expect("failed to open session file");
+
+                            client
+                                .cookie_store
+                                .lock()
+                                .expect("cookie jar poisoned")
+                                .save_json(&mut session_file)
+                                .expect("failed to save to session file");
+
+                            client
+                        }
+                        Err(e) => {
+                            panic!("failed to open session file: {}", e);
+                        }
+                    }
+                })
+                .await
+                .expect("task failed to join")
+            })
+            .await
+    }
 
     /// Fails on CI since other people hit the rate limit.
     #[ignore]
     #[tokio::test]
     async fn get_post() {
-        let client = Client::new();
-        let res = client
+        let client = get_client().await;
+
+        let post_page = client
             .get_post("https://www.instagram.com/p/CIlZpXKFfNt/")
             .await
-            .expect("failed to get post");
-        dbg!(res);
+            .expect("failed to get post page");
+
+        let video_version = post_page
+            .items
+            .first()
+            .expect("missing post item")
+            .get_best_video_version()
+            .expect("failed to get the best video version");
+
+        dbg!(video_version);
     }
 }
