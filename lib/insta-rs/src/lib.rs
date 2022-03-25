@@ -40,8 +40,8 @@ pub enum Error {
 #[cfg(test)]
 mod test {
     use super::*;
-    use tokio::sync::OnceCell;
     use std::sync::Arc;
+    use tokio::sync::OnceCell;
 
     #[derive(Debug, serde::Deserialize)]
     struct TestConfig {

@@ -1,11 +1,13 @@
+use crate::{
+    Error,
+    LoginResponse,
+    PostPage,
+    USER_AGENT_STR,
+};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::sync::Arc;
-use crate::Error;
-use crate::PostPage;
-use crate::LoginResponse;
-use crate::USER_AGENT_STR;
 use reqwest_cookie_store::CookieStoreMutex;
+use std::sync::Arc;
 
 /// A Client
 #[derive(Debug, Clone)]

@@ -23,8 +23,19 @@ pub struct PostPage {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct AdditionalDataLoadedItem {
-    /// ?
-    pub video_versions: Vec<VideoVersion>,
+    /// The media type
+    pub media_type: u8,
+
+    /// Versions of a video post.
+    ///
+    /// Only present on video posts
+    pub video_versions: Option<Vec<VideoVersion>>,
+
+    /// Versions of an image post
+    pub image_versions2: Option<ImageVersions2>,
+
+    /// The post code
+    pub code: String,
 
     /// Extra fields
     #[serde(flatten)]
@@ -32,9 +43,29 @@ pub struct AdditionalDataLoadedItem {
 }
 
 impl AdditionalDataLoadedItem {
+    /// Returns `true` if this is a photo.
+    pub fn is_photo(&self) -> bool {
+        self.media_type == 1
+    }
+
+    /// Returns `true` if this is a video.
+    pub fn is_video(&self) -> bool {
+        self.media_type == 2
+    }
+
+    /// Get the best image_versions2 candidate
+    pub fn get_best_image_versions2_candidate(&self) -> Option<&ImageVersions2Candidate> {
+        self.image_versions2
+            .as_ref()?
+            .candidates
+            .iter()
+            .max_by_key(|image_versions2_candidate| image_versions2_candidate.height)
+    }
+
     /// Get the best video version
     pub fn get_best_video_version(&self) -> Option<&VideoVersion> {
         self.video_versions
+            .as_ref()?
             .iter()
             .max_by_key(|video_version| video_version.height)
     }
@@ -57,6 +88,34 @@ pub struct VideoVersion {
 
     /// ?
     pub id: String,
+
+    /// Extra fields
+    #[serde(flatten)]
+    pub extra: HashMap<String, serde_json::Value>,
+}
+
+/// The image_versions2 field
+#[derive(Debug, serde::Deserialize)]
+pub struct ImageVersions2 {
+    /// Candidate images
+    pub candidates: Vec<ImageVersions2Candidate>,
+
+    /// Extra fields
+    #[serde(flatten)]
+    pub extra: HashMap<String, serde_json::Value>,
+}
+
+/// A ImageVersions2 candidate
+#[derive(Debug, serde::Deserialize)]
+pub struct ImageVersions2Candidate {
+    /// The image height in pixels
+    pub width: u32,
+
+    /// The image width in pixels
+    pub height: u32,
+
+    /// The url
+    pub url: Url,
 
     /// Extra fields
     #[serde(flatten)]
