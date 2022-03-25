@@ -1,7 +1,7 @@
 use crate::{
+    types::AdditionalDataLoaded,
     Error,
     LoginResponse,
-    PostPage,
     USER_AGENT_STR,
 };
 use once_cell::sync::Lazy;
@@ -104,7 +104,7 @@ impl Client {
     }
 
     /// Get a post by url.
-    pub async fn get_post(&self, url: &str) -> Result<PostPage, Error> {
+    pub async fn get_post(&self, url: &str) -> Result<AdditionalDataLoaded, Error> {
         static ADDITIONAL_DATA_LOADED_REGEX: Lazy<Regex> = Lazy::new(|| {
             Regex::new("window\\.__additionalDataLoaded\\('.*',(.*)\\);")
                 .expect("failed to compile `ADDITIONAL_DATA_LOADED_REGEX`")

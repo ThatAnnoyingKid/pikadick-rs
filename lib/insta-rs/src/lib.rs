@@ -4,7 +4,9 @@ mod types;
 pub use self::{
     client::Client,
     types::{
+        AdditionalDataLoaded,
         LoginResponse,
+        MediaType,
         PostPage,
     },
 };

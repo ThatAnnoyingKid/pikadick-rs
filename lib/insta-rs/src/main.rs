@@ -7,6 +7,7 @@ use directories_next::ProjectDirs;
 use insta::{
     Client,
     CookieStore,
+    MediaType,
 };
 use std::path::Path;
 use tokio::{
@@ -247,48 +248,90 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
 
             let post_page_item = post_page.items.first().context("missing post item")?;
 
-            if post_page_item.is_photo() {
-                let image_versions2_candidate = post_page_item
-                    .get_best_image_versions2_candidate()
-                    .context("failed to select an image_versions2_candidate")?;
+            match post_page_item.media_type {
+                MediaType::Photo => {
+                    let image_versions2_candidate = post_page_item
+                        .get_best_image_versions2_candidate()
+                        .context("failed to select an image_versions2_candidate")?;
 
-                let extension = get_extension_from_url(&image_versions2_candidate.url)
-                    .context("missing image extension")?;
-                let file_name = format!("{}.{}", post_page_item.code, extension);
-                let mut file = tokio::fs::OpenOptions::new()
-                    .create_new(true)
-                    .write(true)
-                    .open(file_name)
-                    .await
-                    .context("failed to open output file")?;
+                    let extension = get_extension_from_url(&image_versions2_candidate.url)
+                        .context("missing image extension")?;
+                    let file_name = format!("{}.{}", post_page_item.code, extension);
+                    let mut file = tokio::fs::OpenOptions::new()
+                        .create_new(true)
+                        .write(true)
+                        .open(file_name)
+                        .await
+                        .context("failed to open output file")?;
 
-                download_to_file(
-                    &client.client,
-                    image_versions2_candidate.url.as_str(),
-                    &mut file,
-                )
-                .await
-                .context("failed to download")?;
-            } else if post_page_item.is_video() {
-                let video_version = post_page_item
-                    .get_best_video_version()
-                    .context("failed to get the best video version")?;
-
-                let extension =
-                    get_extension_from_url(&video_version.url).context("missing extension")?;
-                let file_name = format!("{}.{}", post_page_item.code, extension);
-                let mut file = tokio::fs::OpenOptions::new()
-                    .create_new(true)
-                    .write(true)
-                    .open(file_name)
-                    .await
-                    .context("failed to open output file")?;
-
-                download_to_file(&client.client, video_version.url.as_str(), &mut file)
+                    download_to_file(
+                        &client.client,
+                        image_versions2_candidate.url.as_str(),
+                        &mut file,
+                    )
                     .await
                     .context("failed to download")?;
-            } else {
-                bail!("unknown `media_type` {}", post_page_item.media_type);
+                }
+
+                MediaType::Video => {
+                    let video_version = post_page_item
+                        .get_best_video_version()
+                        .context("failed to get the best video version")?;
+
+                    let extension =
+                        get_extension_from_url(&video_version.url).context("missing extension")?;
+                    let file_name = format!("{}.{}", post_page_item.code, extension);
+                    let mut file = tokio::fs::OpenOptions::new()
+                        .create_new(true)
+                        .write(true)
+                        .open(file_name)
+                        .await
+                        .context("failed to open output file")?;
+
+                    download_to_file(&client.client, video_version.url.as_str(), &mut file)
+                        .await
+                        .context("failed to download")?;
+                }
+                MediaType::Carousel => {
+                    for (i, item) in post_page_item
+                        .carousel_media
+                        .as_ref()
+                        .context("missing carousel media")?
+                        .iter()
+                        .enumerate()
+                    {
+                        match item.media_type {
+                            MediaType::Photo => {
+                                let image_versions2_candidate = item
+                                    .get_best_image_versions2_candidate()
+                                    .context("failed to select an image_versions2_candidate")?;
+
+                                let extension =
+                                    get_extension_from_url(&image_versions2_candidate.url)
+                                        .context("missing image extension")?;
+                                let file_name =
+                                    format!("{}.{}.{}", post_page_item.code, i + 1, extension);
+                                let mut file = tokio::fs::OpenOptions::new()
+                                    .create_new(true)
+                                    .write(true)
+                                    .open(file_name)
+                                    .await
+                                    .context("failed to open output file")?;
+
+                                download_to_file(
+                                    &client.client,
+                                    image_versions2_candidate.url.as_str(),
+                                    &mut file,
+                                )
+                                .await
+                                .context("failed to download")?;
+                            }
+                            _ => {
+                                bail!("Unsupported media_type `{:?}`", item.media_type);
+                            }
+                        }
+                    }
+                }
             }
         }
     }

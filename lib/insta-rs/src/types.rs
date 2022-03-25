@@ -1,7 +1,16 @@
 /// The [`PostPage`] type
 mod post_page;
 
-pub use self::post_page::PostPage;
+/// The [`AdditionalDataLoaded`] type
+mod additional_data_loaded;
+
+pub use self::{
+    additional_data_loaded::{
+        AdditionalDataLoaded,
+        MediaType,
+    },
+    post_page::PostPage,
+};
 
 /// The response for a login
 #[derive(Debug, serde::Deserialize)]
