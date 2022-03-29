@@ -117,6 +117,14 @@ skip = [
     
     # Blocked on h2 updating tokio-util to v 7
     { name = "tokio-util", version = "0.6.9" },
+    
+    # Blocked on updating to a newer version of songbird
+    { name = "sha-1", version = "0.9.8" },
+    { name = "digest", version = "0.9.0" },
+    { name = "block-buffer", version = "0.9.0" },
+    
+    # Blocked on markup5ever updating phf_codegen
+    { name = "phf_generator", version = "0.8.0" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
