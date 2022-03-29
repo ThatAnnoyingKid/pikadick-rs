@@ -272,7 +272,6 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     .await
                     .context("failed to download")?;
                 }
-
                 MediaType::Video => {
                     let video_version = post_page_item
                         .get_best_video_version()

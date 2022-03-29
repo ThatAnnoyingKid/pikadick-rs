@@ -2397,6 +2397,7 @@ dependencies = [
  "reddit",
  "reddit-tube",
  "regex",
+ "reqwest",
  "rule34",
  "rusqlite",
  "serde",
