@@ -226,8 +226,10 @@ async fn tiktok_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
 struct TikTokEmbedOptions {
     /// Whether embeds should be enabled for this server
     enable: Option<bool>,
-    // /// Whether source messages should be deleted
-    // pub delete_link: Option<bool>,
+
+    /// Whether source messages should be deleted
+    #[pikadick_slash_framework(rename = "delete-link")]
+    delete_link: Option<bool>,
 }
 
 /// Create a slash command

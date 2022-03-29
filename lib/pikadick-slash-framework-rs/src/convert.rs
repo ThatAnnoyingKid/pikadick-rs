@@ -1,3 +1,4 @@
+use crate::ArgumentParam;
 use serenity::model::prelude::application_command::{
     ApplicationCommandInteraction,
     ApplicationCommandInteractionDataOptionValue,
@@ -36,6 +37,11 @@ where
 {
     /// Make arguments from a [`ApplicationCommandInteraction`]
     fn from_options(interaction: &ApplicationCommandInteraction) -> Result<Self, ConvertError>;
+
+    /// Get the argument paramss of this object
+    fn get_argument_params() -> Vec<ArgumentParam> {
+        Vec::new()
+    }
 }
 
 // Allow the user to fill values while developing, or use a command with no arguments
