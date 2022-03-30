@@ -1,8 +1,4 @@
 use crate::{
-    checks::{
-        ADMIN_CHECK,
-        ENABLED_CHECK,
-    },
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
@@ -13,16 +9,12 @@ use crate::{
     },
     ClientDataKey,
     LoadingReaction,
+    TikTokEmbedFlags,
 };
 use anyhow::Context as _;
 use bytes::Bytes;
 use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::Message,
+    model::prelude::*,
     prelude::*,
 };
 use std::sync::Arc;
@@ -155,72 +147,6 @@ impl CacheStatsProvider for TikTokData {
     }
 }
 
-#[command("tiktok-embed")]
-#[description("Enable automatic tiktok embedding for this server")]
-#[usage("<enable/disable>")]
-#[example("enable")]
-#[min_args(1)]
-#[max_args(1)]
-#[checks(Admin, Enabled)]
-async fn tiktok_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let db = client_data.db.clone();
-    drop(data_lock);
-
-    let enable = match args.trimmed().current().expect("missing arg") {
-        "enable" => true,
-        "disable" => false,
-        arg => {
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    format!(
-                        "The argument '{}' is not recognized. Valid: enable, disable",
-                        arg
-                    ),
-                )
-                .await?;
-            return Ok(());
-        }
-    };
-
-    // TODO: Probably can unwrap if i add a check to the command
-    let guild_id = match msg.guild_id {
-        Some(id) => id,
-        None => {
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    "Missing server id. Are you in a server right now?",
-                )
-                .await?;
-            return Ok(());
-        }
-    };
-
-    let old_val = db.set_tiktok_embed_enabled(guild_id, enable).await?;
-    let status_str = if enable { "enabled" } else { "disabled" };
-
-    if enable == old_val {
-        msg.channel_id
-            .say(
-                &ctx.http,
-                format!("TikTok embeds are already {} for this server", status_str),
-            )
-            .await?;
-    } else {
-        msg.channel_id
-            .say(
-                &ctx.http,
-                format!("TikTok embeds are now {} for this server", status_str),
-            )
-            .await?;
-    }
-
-    Ok(())
-}
-
 /// Options for tiktok-embed
 #[derive(Debug, pikadick_slash_framework::FromOptions)]
 struct TikTokEmbedOptions {
@@ -265,22 +191,48 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 }
             };
 
+            let mut set_flags = TikTokEmbedFlags::empty();
+            let mut unset_flags = TikTokEmbedFlags::empty();
+
             if let Some(enable) = args.enable {
-                let old_val = db.set_tiktok_embed_enabled(guild_id, enable).await?;
-                let status_str = if enable { "enabled" } else { "disabled" };
-
-                let content = if enable == old_val {
-                    format!("TikTok embeds are already {} for this server", status_str)
+                if enable {
+                    set_flags.insert(TikTokEmbedFlags::ENABLED);
                 } else {
-                    format!("TikTok embeds are now {} for this server", status_str)
-                };
-
-                interaction
-                    .create_interaction_response(&ctx.http, |res| {
-                        res.interaction_response_data(|res| res.content(content))
-                    })
-                    .await?;
+                    unset_flags.insert(TikTokEmbedFlags::ENABLED);
+                }
             }
+
+            if let Some(enable) = args.delete_link {
+                if enable {
+                    set_flags.insert(TikTokEmbedFlags::DELETE_LINK);
+                } else {
+                    unset_flags.insert(TikTokEmbedFlags::DELETE_LINK);
+                }
+            }
+
+            let (_old_flags, new_flags) = db
+                .set_tiktok_embed_flags(guild_id, set_flags, unset_flags)
+                .await?;
+
+            interaction
+                .create_interaction_response(&ctx.http, |res| {
+                    res.interaction_response_data(|res| {
+                        res.embed(|e| {
+                            e.title("TikTok Embeds")
+                                .field(
+                                    "Enabled?",
+                                    new_flags.contains(TikTokEmbedFlags::ENABLED),
+                                    false,
+                                )
+                                .field(
+                                    "Delete link?",
+                                    new_flags.contains(TikTokEmbedFlags::DELETE_LINK),
+                                    false,
+                                )
+                        })
+                    })
+                })
+                .await?;
 
             Ok(())
         })

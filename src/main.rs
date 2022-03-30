@@ -332,8 +332,7 @@ async fn help(
     iqdb,
     reddit,
     leave,
-    stop,
-    tiktok_embed
+    stop
 )]
 struct General;
 
