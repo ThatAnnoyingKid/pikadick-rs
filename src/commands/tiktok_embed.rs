@@ -21,7 +21,10 @@ use serenity::{
     prelude::*,
 };
 use std::sync::Arc;
-use tracing::info;
+use tracing::{
+    info,
+    warn,
+};
 use url::Url;
 
 /// TikTok Data
@@ -124,11 +127,20 @@ impl TikTokData {
             (video_url, desc)
         };
 
-        let video_data = self.get_video_data_cached(video_url.as_str()).await?;
+        let maybe_video_data = self.get_video_data_cached(video_url.as_str()).await;
 
         msg.channel_id
             .send_message(&ctx.http, |m| {
-                m.add_file((&**video_data.data(), "video.mp4"))
+                let maybe_video_data = maybe_video_data.as_ref().map(|data| data.data());
+
+                match maybe_video_data {
+                    Ok(video_data) => m.add_file((&**video_data, "video.mp4")),
+                    Err(e) => {
+                        // We have the url, lets hope it stays valid
+                        warn!("{:?}", e);
+                        m.content(video_url.as_str())
+                    }
+                }
             })
             .await?;
 
