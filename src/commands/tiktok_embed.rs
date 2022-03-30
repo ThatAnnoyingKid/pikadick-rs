@@ -95,6 +95,7 @@ impl TikTokData {
         msg: &Message,
         url: &Url,
         loading_reaction: &mut Option<LoadingReaction>,
+        delete_link: bool,
     ) -> anyhow::Result<()> {
         let (video_url, _desc) = {
             let post = self.get_post_cached(url.as_str()).await?;
@@ -119,6 +120,12 @@ impl TikTokData {
 
         if let Some(mut loading_reaction) = loading_reaction.take() {
             loading_reaction.send_ok();
+
+            if delete_link {
+                msg.delete(&ctx.http)
+                    .await
+                    .context("failed to delete original message")?;
+            }
         }
 
         Ok(())
