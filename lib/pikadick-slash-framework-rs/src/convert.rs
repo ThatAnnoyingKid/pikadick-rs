@@ -1,4 +1,7 @@
-use crate::ArgumentParam;
+use crate::{
+    ArgumentParam,
+    BuilderError,
+};
 use serenity::model::prelude::application_command::{
     ApplicationCommandInteraction,
     ApplicationCommandInteractionDataOptionValue,
@@ -39,8 +42,8 @@ where
     fn from_options(interaction: &ApplicationCommandInteraction) -> Result<Self, ConvertError>;
 
     /// Get the argument paramss of this object
-    fn get_argument_params() -> Vec<ArgumentParam> {
-        Vec::new()
+    fn get_argument_params() -> Result<Vec<ArgumentParam>, BuilderError> {
+        Ok(Vec::new())
     }
 }
 

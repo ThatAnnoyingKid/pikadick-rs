@@ -1,10 +1,10 @@
 use crate::{
-    ArgumentKind,
     ArgumentParam,
     BoxError,
     BoxFuture,
     BuilderError,
     CheckFn,
+    DataType,
     FromOptions,
 };
 use serenity::{
@@ -99,8 +99,9 @@ impl Command {
                     .name(argument.name())
                     .description(argument.description())
                     .kind(match argument.kind() {
-                        ArgumentKind::Boolean => ApplicationCommandOptionType::Boolean,
-                        ArgumentKind::String => ApplicationCommandOptionType::String,
+                        DataType::Boolean => ApplicationCommandOptionType::Boolean,
+                        DataType::String => ApplicationCommandOptionType::String,
+                        DataType::Integer => ApplicationCommandOptionType::Integer,
                     })
                     .required(argument.required())
             });
@@ -157,6 +158,14 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
     /// Add an argument
     pub fn argument(&mut self, argument: ArgumentParam) -> &mut Self {
         self.arguments.push(argument);
+        self
+    }
+
+    /// Add many arguments
+    pub fn arguments(&mut self, arguments: impl Iterator<Item = ArgumentParam>) -> &mut Self {
+        for argument in arguments {
+            self.argument(argument);
+        }
         self
     }
 
@@ -267,8 +276,9 @@ impl HelpCommand {
                     .name(argument.name())
                     .description(argument.description())
                     .kind(match argument.kind() {
-                        ArgumentKind::Boolean => ApplicationCommandOptionType::Boolean,
-                        ArgumentKind::String => ApplicationCommandOptionType::String,
+                        DataType::Boolean => ApplicationCommandOptionType::Boolean,
+                        DataType::String => ApplicationCommandOptionType::String,
+                        DataType::Integer => ApplicationCommandOptionType::Integer,
                     })
             });
         }

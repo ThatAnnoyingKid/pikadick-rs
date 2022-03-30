@@ -225,26 +225,26 @@ async fn tiktok_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
 #[derive(Debug, pikadick_slash_framework::FromOptions)]
 struct TikTokEmbedOptions {
     /// Whether embeds should be enabled for this server
+    #[pikadick_slash_framework(description = "Whether embeds should be enabled for this server")]
     enable: Option<bool>,
 
     /// Whether source messages should be deleted
-    #[pikadick_slash_framework(rename = "delete-link")]
+    #[pikadick_slash_framework(
+        rename = "delete-link",
+        description = "Whether source messages should be deleted"
+    )]
     delete_link: Option<bool>,
 }
 
 /// Create a slash command
 pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
+    use pikadick_slash_framework::FromOptions;
+
     pikadick_slash_framework::CommandBuilder::new()
         .name("tiktok-embed")
         .description("Configure tiktok embeds for this server")
         .check(crate::checks::admin::create_slash_check)
-        .argument(
-            pikadick_slash_framework::ArgumentParamBuilder::new()
-                .name("enable")
-                .description("Whether embeds should be enabled for this server")
-                .kind(pikadick_slash_framework::ArgumentKind::Boolean)
-                .build()?,
-        )
+        .arguments(TikTokEmbedOptions::get_argument_params()?.into_iter())
         .on_process(|ctx, interaction, args: TikTokEmbedOptions| async move {
             let data_lock = ctx.data.read().await;
             let client_data = data_lock.get::<ClientDataKey>().unwrap();
