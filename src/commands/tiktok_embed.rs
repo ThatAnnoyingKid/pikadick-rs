@@ -11,13 +11,17 @@ use crate::{
     LoadingReaction,
     TikTokEmbedFlags,
 };
-use anyhow::Context as _;
+use anyhow::{
+    ensure,
+    Context as _,
+};
 use bytes::Bytes;
 use serenity::{
     model::prelude::*,
     prelude::*,
 };
 use std::sync::Arc;
+use tracing::info;
 use url::Url;
 
 /// TikTok Data
@@ -73,15 +77,25 @@ impl TikTokData {
             return Ok(video_data);
         }
 
-        let video_data = self
-            .client
-            .client
-            .get(url)
-            .send()
-            .await?
-            .error_for_status()?
-            .bytes()
-            .await?;
+        let video_data = {
+            info!("downloading tiktok video from url `{url}`");
+
+            let request = self
+                .client
+                .client
+                .get(url)
+                .send()
+                .await?
+                .error_for_status()?;
+
+            let content_length = request
+                .content_length()
+                .context("video is missing the content length header")?;
+
+            ensure!(content_length < 8_000_000, "the video is longer than 8 MB");
+
+            request.bytes().await?
+        };
 
         Ok(self
             .video_download_cache
