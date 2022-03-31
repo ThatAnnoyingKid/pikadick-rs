@@ -178,7 +178,7 @@ impl Framework {
 
         // TODO: Consider making parallel
         let mut check_result = Ok(());
-        for check in self.checks.iter() {
+        for check in self.checks.iter().chain(framework_command.checks().iter()) {
             check_result = check_result.and(check(&ctx, &command, framework_command).await);
         }
 

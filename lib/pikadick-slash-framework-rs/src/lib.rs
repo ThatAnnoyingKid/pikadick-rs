@@ -6,7 +6,6 @@ mod framework;
 
 pub use self::{
     argument::{
-        ArgumentKind,
         ArgumentParam,
         ArgumentParamBuilder,
     },
@@ -37,6 +36,10 @@ use std::{
     future::Future,
     pin::Pin,
 };
+
+// Compat alias
+// TODO: Deprecate
+pub type ArgumentKind = DataType;
 
 pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;

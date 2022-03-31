@@ -1,14 +1,7 @@
-use crate::BuilderError;
-
-/// The kind of argument
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum ArgumentKind {
-    /// A boolean
-    Boolean,
-
-    /// A string
-    String,
-}
+use crate::{
+    BuilderError,
+    DataType,
+};
 
 /// An argument.
 ///
@@ -16,7 +9,7 @@ pub enum ArgumentKind {
 #[derive(Debug)]
 pub struct ArgumentParam {
     name: Box<str>,
-    kind: ArgumentKind,
+    kind: DataType,
     description: Box<str>,
     required: bool,
 }
@@ -28,7 +21,7 @@ impl ArgumentParam {
     }
 
     /// Get the argument kind
-    pub fn kind(&self) -> ArgumentKind {
+    pub fn kind(&self) -> DataType {
         self.kind
     }
 
@@ -47,7 +40,7 @@ impl ArgumentParam {
 #[derive(Debug)]
 pub struct ArgumentParamBuilder<'a, 'b> {
     name: Option<&'a str>,
-    kind: Option<ArgumentKind>,
+    kind: Option<DataType>,
     description: Option<&'b str>,
     required: bool,
 }
@@ -70,7 +63,7 @@ impl<'a, 'b> ArgumentParamBuilder<'a, 'b> {
     }
 
     /// Set the kind
-    pub fn kind(&mut self, kind: ArgumentKind) -> &mut Self {
+    pub fn kind(&mut self, kind: DataType) -> &mut Self {
         self.kind = Some(kind);
         self
     }

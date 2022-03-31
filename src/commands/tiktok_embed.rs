@@ -1,8 +1,4 @@
 use crate::{
-    checks::{
-        ADMIN_CHECK,
-        ENABLED_CHECK,
-    },
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
@@ -13,19 +9,22 @@ use crate::{
     },
     ClientDataKey,
     LoadingReaction,
+    TikTokEmbedFlags,
 };
-use anyhow::Context as _;
+use anyhow::{
+    ensure,
+    Context as _,
+};
 use bytes::Bytes;
 use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::Message,
+    model::prelude::*,
     prelude::*,
 };
 use std::sync::Arc;
+use tracing::{
+    info,
+    warn,
+};
 use url::Url;
 
 /// TikTok Data
@@ -81,15 +80,25 @@ impl TikTokData {
             return Ok(video_data);
         }
 
-        let video_data = self
-            .client
-            .client
-            .get(url)
-            .send()
-            .await?
-            .error_for_status()?
-            .bytes()
-            .await?;
+        let video_data = {
+            info!("downloading tiktok video from url `{url}`");
+
+            let request = self
+                .client
+                .client
+                .get(url)
+                .send()
+                .await?
+                .error_for_status()?;
+
+            let content_length = request
+                .content_length()
+                .context("video is missing the content length header")?;
+
+            ensure!(content_length < 8_000_000, "the video is longer than 8 MB");
+
+            request.bytes().await?
+        };
 
         Ok(self
             .video_download_cache
@@ -103,6 +112,7 @@ impl TikTokData {
         msg: &Message,
         url: &Url,
         loading_reaction: &mut Option<LoadingReaction>,
+        delete_link: bool,
     ) -> anyhow::Result<()> {
         let (video_url, _desc) = {
             let post = self.get_post_cached(url.as_str()).await?;
@@ -117,16 +127,31 @@ impl TikTokData {
             (video_url, desc)
         };
 
-        let video_data = self.get_video_data_cached(video_url.as_str()).await?;
+        let maybe_video_data = self.get_video_data_cached(video_url.as_str()).await;
 
         msg.channel_id
             .send_message(&ctx.http, |m| {
-                m.add_file((&**video_data.data(), "video.mp4"))
+                let maybe_video_data = maybe_video_data.as_ref().map(|data| data.data());
+
+                match maybe_video_data {
+                    Ok(video_data) => m.add_file((&**video_data, "video.mp4")),
+                    Err(e) => {
+                        // We have the url, lets hope it stays valid
+                        warn!("{:?}", e);
+                        m.content(video_url.as_str())
+                    }
+                }
             })
             .await?;
 
         if let Some(mut loading_reaction) = loading_reaction.take() {
             loading_reaction.send_ok();
+
+            if delete_link {
+                msg.delete(&ctx.http)
+                    .await
+                    .context("failed to delete original message")?;
+            }
         }
 
         Ok(())
@@ -155,68 +180,95 @@ impl CacheStatsProvider for TikTokData {
     }
 }
 
-#[command("tiktok-embed")]
-#[description("Enable automatic tiktok embedding for this server")]
-#[usage("<enable/disable>")]
-#[example("enable")]
-#[min_args(1)]
-#[max_args(1)]
-#[checks(Admin, Enabled)]
-async fn tiktok_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let db = client_data.db.clone();
-    drop(data_lock);
+/// Options for tiktok-embed
+#[derive(Debug, pikadick_slash_framework::FromOptions)]
+struct TikTokEmbedOptions {
+    /// Whether embeds should be enabled for this server
+    #[pikadick_slash_framework(description = "Whether embeds should be enabled for this server")]
+    enable: Option<bool>,
 
-    let enable = match args.trimmed().current().expect("missing arg") {
-        "enable" => true,
-        "disable" => false,
-        arg => {
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    format!(
-                        "The argument '{}' is not recognized. Valid: enable, disable",
-                        arg
-                    ),
-                )
+    /// Whether source messages should be deleted
+    #[pikadick_slash_framework(
+        rename = "delete-link",
+        description = "Whether source messages should be deleted"
+    )]
+    delete_link: Option<bool>,
+}
+
+/// Create a slash command
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
+    use pikadick_slash_framework::FromOptions;
+
+    pikadick_slash_framework::CommandBuilder::new()
+        .name("tiktok-embed")
+        .description("Configure tiktok embeds for this server")
+        .check(crate::checks::admin::create_slash_check)
+        .arguments(TikTokEmbedOptions::get_argument_params()?.into_iter())
+        .on_process(|ctx, interaction, args: TikTokEmbedOptions| async move {
+            let data_lock = ctx.data.read().await;
+            let client_data = data_lock.get::<ClientDataKey>().unwrap();
+            let db = client_data.db.clone();
+            drop(data_lock);
+
+            let guild_id = match interaction.guild_id {
+                Some(id) => id,
+                None => {
+                    interaction
+                        .create_interaction_response(&ctx.http, |res| {
+                            res.interaction_response_data(|res| {
+                                res.content("Missing server id. Are you in a server right now?")
+                            })
+                        })
+                        .await?;
+                    return Ok(());
+                }
+            };
+
+            let mut set_flags = TikTokEmbedFlags::empty();
+            let mut unset_flags = TikTokEmbedFlags::empty();
+
+            if let Some(enable) = args.enable {
+                if enable {
+                    set_flags.insert(TikTokEmbedFlags::ENABLED);
+                } else {
+                    unset_flags.insert(TikTokEmbedFlags::ENABLED);
+                }
+            }
+
+            if let Some(enable) = args.delete_link {
+                if enable {
+                    set_flags.insert(TikTokEmbedFlags::DELETE_LINK);
+                } else {
+                    unset_flags.insert(TikTokEmbedFlags::DELETE_LINK);
+                }
+            }
+
+            let (_old_flags, new_flags) = db
+                .set_tiktok_embed_flags(guild_id, set_flags, unset_flags)
                 .await?;
-            return Ok(());
-        }
-    };
 
-    // TODO: Probably can unwrap if i add a check to the command
-    let guild_id = match msg.guild_id {
-        Some(id) => id,
-        None => {
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    "Missing server id. Are you in a server right now?",
-                )
+            interaction
+                .create_interaction_response(&ctx.http, |res| {
+                    res.interaction_response_data(|res| {
+                        res.embed(|e| {
+                            e.title("TikTok Embeds")
+                                .field(
+                                    "Enabled?",
+                                    new_flags.contains(TikTokEmbedFlags::ENABLED),
+                                    false,
+                                )
+                                .field(
+                                    "Delete link?",
+                                    new_flags.contains(TikTokEmbedFlags::DELETE_LINK),
+                                    false,
+                                )
+                        })
+                    })
+                })
                 .await?;
-            return Ok(());
-        }
-    };
 
-    let old_val = db.set_tiktok_embed_enabled(guild_id, enable).await?;
-    let status_str = if enable { "enabled" } else { "disabled" };
-
-    if enable == old_val {
-        msg.channel_id
-            .say(
-                &ctx.http,
-                format!("TikTok embeds are already {} for this server", status_str),
-            )
-            .await?;
-    } else {
-        msg.channel_id
-            .say(
-                &ctx.http,
-                format!("TikTok embeds are now {} for this server", status_str),
-            )
-            .await?;
-    }
-
-    Ok(())
+            Ok(())
+        })
+        .build()
+        .context("failed to build command")
 }

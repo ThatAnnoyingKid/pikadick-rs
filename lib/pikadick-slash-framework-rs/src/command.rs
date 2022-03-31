@@ -1,9 +1,10 @@
 use crate::{
-    ArgumentKind,
     ArgumentParam,
     BoxError,
     BoxFuture,
     BuilderError,
+    CheckFn,
+    DataType,
     FromOptions,
 };
 use serenity::{
@@ -53,6 +54,9 @@ pub struct Command {
 
     /// The main "process" func
     on_process: OnProcessFutureFn,
+
+    /// Checks that must pass before this command is run
+    checks: Vec<CheckFn>,
 }
 
 impl Command {
@@ -80,6 +84,11 @@ impl Command {
         (self.on_process)(ctx, interaction).await
     }
 
+    /// Get the inner checks
+    pub fn checks(&self) -> &[CheckFn] {
+        &self.checks
+    }
+
     /// Register this command
     pub fn register(&self, command: &mut CreateApplicationCommand) {
         command.name(self.name()).description(self.description());
@@ -90,8 +99,9 @@ impl Command {
                     .name(argument.name())
                     .description(argument.description())
                     .kind(match argument.kind() {
-                        ArgumentKind::Boolean => ApplicationCommandOptionType::Boolean,
-                        ArgumentKind::String => ApplicationCommandOptionType::String,
+                        DataType::Boolean => ApplicationCommandOptionType::Boolean,
+                        DataType::String => ApplicationCommandOptionType::String,
+                        DataType::Integer => ApplicationCommandOptionType::Integer,
                     })
                     .required(argument.required())
             });
@@ -117,6 +127,7 @@ pub struct CommandBuilder<'a, 'b> {
     arguments: Vec<ArgumentParam>,
 
     on_process: Option<OnProcessFutureFn>,
+    checks: Vec<CheckFn>,
 }
 
 impl<'a, 'b> CommandBuilder<'a, 'b> {
@@ -128,6 +139,7 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
             arguments: Vec::new(),
 
             on_process: None,
+            checks: Vec::new(),
         }
     }
 
@@ -149,6 +161,14 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
         self
     }
 
+    /// Add many arguments
+    pub fn arguments(&mut self, arguments: impl Iterator<Item = ArgumentParam>) -> &mut Self {
+        for argument in arguments {
+            self.argument(argument);
+        }
+        self
+    }
+
     /// The on_process hook
     pub fn on_process<F, A>(&mut self, on_process: OnProcessFutureFnPtr<F, A>) -> &mut Self
     where
@@ -166,6 +186,12 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
         self
     }
 
+    /// Add a check to this specific command
+    pub fn check(&mut self, check: CheckFn) -> &mut Self {
+        self.checks.push(check);
+        self
+    }
+
     /// Build the [`Command`]
     pub fn build(&mut self) -> Result<Command, BuilderError> {
         let name = self.name.take().ok_or(BuilderError::MissingField("name"))?;
@@ -177,6 +203,7 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
             .on_process
             .take()
             .ok_or(BuilderError::MissingField("on_process"))?;
+        let checks = std::mem::take(&mut self.checks);
 
         Ok(Command {
             name: name.into(),
@@ -184,6 +211,7 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
             arguments: std::mem::take(&mut self.arguments).into_boxed_slice(),
 
             on_process,
+            checks,
         })
     }
 }
@@ -248,8 +276,9 @@ impl HelpCommand {
                     .name(argument.name())
                     .description(argument.description())
                     .kind(match argument.kind() {
-                        ArgumentKind::Boolean => ApplicationCommandOptionType::Boolean,
-                        ArgumentKind::String => ApplicationCommandOptionType::String,
+                        DataType::Boolean => ApplicationCommandOptionType::Boolean,
+                        DataType::String => ApplicationCommandOptionType::String,
+                        DataType::Integer => ApplicationCommandOptionType::Integer,
                     })
             });
         }

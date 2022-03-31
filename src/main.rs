@@ -131,7 +131,7 @@ impl EventHandler for Handler {
             .await
             .context("failed to register slash commands")
         {
-            warn!("{:?}", e);
+            error!("{:?}", e);
         }
 
         info!("registered slash commands");
@@ -178,16 +178,15 @@ impl EventHandler for Handler {
                     error!("{:?}", e);
                     false
                 });
-            let tiktok_embed_is_enabled_for_guild = db
+            let tiktok_embed_flags = db
                 .get_tiktok_embed_flags(guild_id)
                 .await
-                .map(|flags| flags.contains(TikTokEmbedFlags::ENABLED))
                 .with_context(|| {
                     format!("failed to get tiktok-embed server data for '{}'", guild_id)
                 })
                 .unwrap_or_else(|e| {
                     error!("{:?}", e);
-                    false
+                    TikTokEmbedFlags::empty()
                 });
 
             // Extract urls
@@ -213,7 +212,7 @@ impl EventHandler for Handler {
                     matches!(url_host, url::Host::Domain("vm.tiktok.com" | "tiktok.com"));
 
                 (reddit_url && reddit_embed_is_enabled_for_guild)
-                    || (tiktok_url && tiktok_embed_is_enabled_for_guild)
+                    || (tiktok_url && tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED))
             });
 
             // Return if we won't try embedding
@@ -241,9 +240,15 @@ impl EventHandler for Handler {
                         }
                     }
                     Some(url::Host::Domain("vm.tiktok.com" | "tiktok.com")) => {
-                        if tiktok_embed_is_enabled_for_guild {
+                        if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
                             if let Err(e) = tiktok_data
-                                .try_embed_url(&ctx, &msg, url, &mut loading_reaction)
+                                .try_embed_url(
+                                    &ctx,
+                                    &msg,
+                                    url,
+                                    &mut loading_reaction,
+                                    tiktok_embed_flags.contains(TikTokEmbedFlags::DELETE_LINK),
+                                )
                                 .await
                                 .context("failed to generate tiktok embed")
                             {
@@ -332,8 +337,7 @@ async fn help(
     iqdb,
     reddit,
     leave,
-    stop,
-    tiktok_embed
+    stop
 )]
 struct General;
 
@@ -588,13 +592,14 @@ fn real_main(
 async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     // Setup slash framework
     let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
-        .check(self::checks::enabled::slash_check)
+        .check(self::checks::enabled::create_slash_check)
         .help_command(create_slash_help_command()?)
         .command(self::commands::nekos::create_slash_command()?)
         .command(self::commands::ping::create_slash_command()?)
         .command(self::commands::r6stats::create_slash_command()?)
         .command(self::commands::r6tracker::create_slash_command()?)
         .command(self::commands::rule34::create_slash_command()?)
+        .command(self::commands::tiktok_embed::create_slash_command()?)
         .build()?;
 
     // Create second prefix that is uppercase so we are case-insensitive
@@ -632,6 +637,7 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     // Build the client
     let config_token = config.token.clone();
     let client = Client::builder(config_token)
+        .intents(GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT)
         .event_handler(Handler)
         .application_id(config.application_id)
         .framework(framework)
