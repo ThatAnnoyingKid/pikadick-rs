@@ -8,7 +8,7 @@ impl std::error::Error for InvalidPlatformCode {}
 
 impl std::fmt::Display for InvalidPlatformCode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "The code {} is not a valid platform", self.0)
+        write!(f, "the code {} is not a valid platform", self.0)
     }
 }
 
