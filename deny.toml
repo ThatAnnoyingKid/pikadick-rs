@@ -85,32 +85,14 @@ skip = [
     # Blocked on serenity-voice-model moving away from enum_primitive
     { name = "num-traits", version = "0.1.43" },
     
-    # Blocked on songbird updating symphonia-core to 0.4.0
-    { name = "arrayvec", version = "0.4.12" },
-    
-    # Blocked on serenity updating tungstenite to 0.16.0
-    { name = "tungstenite", version = "0.13.0" },
-    { name = "webpki-roots", version = "0.21.1" },
-    { name = "async-tungstenite", version = "0.14.0" },
-    
     # Blocked on time getting updated from a lot of crates 
     { name = "time", version = "0.2.27" },  
     
     # Blocked on a lot of crates moving to version 1. Re-evaluate in like a month or two. 12/7/2021.
     { name = "itoa", version = "0.4.8" },
     
-    # Blocked on songbird updating to 5.0.0
-    { name = "dashmap", version = "4.0.2" },
-    
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.8.0" },
-    
-    # Blocked on the ecosystem updating to parking_lot 0.12.x
-    { name = "parking_lot", version = "0.11.2" },
-    { name = "parking_lot_core", version = "0.8.5" },
-    
-    # Blocked on flate2 updating their miniz_oxide  to 0.5.x
-    { name = "miniz_oxide", version = "0.4.4" },
     
     # Blocked on cookie updating to time 0.3
     { name = "time-macros", version = "0.1.1" },
@@ -118,20 +100,15 @@ skip = [
     # Blocked on h2 updating tokio-util to v 7
     { name = "tokio-util", version = "0.6.9" },
     
-    # Blocked on updating to a newer version of songbird
-    { name = "sha-1", version = "0.9.8" },
-    { name = "digest", version = "0.9.0" },
-    { name = "block-buffer", version = "0.9.0" },
-    
     # Blocked on markup5ever updating phf_codegen
     { name = "phf_generator", version = "0.8.0" },
+    
+    # Blocked on updates to tiny-skia
+    { name = "arrayvec", version = "0.5.2" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
-deny = [            
-    # https://github.com/RustSec/advisory-db/issues/305
-    { name = "rental", version = "*" },
-    
+deny = [    
     # This is basically Rust written like C.
     { name = "sled", version = "*" },
     
@@ -183,7 +160,7 @@ allow-git = [
     "https://github.com/adumbidiot/reddit-rs",
     # "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
-    "https://github.com/adumbidiot/songbird",
     "https://github.com/serenity-rs/serenity",
     "https://github.com/vectordotdev/heim",
+    "https://github.com/FelixMcFelix/songbird",
 ]

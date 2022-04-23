@@ -37,4 +37,8 @@ pub enum Error {
     /// An Overwolf Response returned an error.
     #[error("invalid overwolf response")]
     InvalidOverwolfResponse(#[from] InvalidOverwolfResponseError),
+
+    /// The username is empty
+    #[error("the username is empty")]
+    EmptyUsername,
 }

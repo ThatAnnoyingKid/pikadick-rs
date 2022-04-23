@@ -636,14 +636,16 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
 
     // Build the client
     let config_token = config.token.clone();
-    let client = Client::builder(config_token)
-        .intents(GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT)
-        .event_handler(Handler)
-        .application_id(config.application_id)
-        .framework(framework)
-        .register_songbird()
-        .await
-        .context("failed to create client")?;
+    let client = Client::builder(
+        config_token,
+        GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
+    )
+    .event_handler(Handler)
+    .application_id(config.application_id)
+    .framework(framework)
+    .register_songbird()
+    .await
+    .context("failed to create client")?;
 
     {
         client

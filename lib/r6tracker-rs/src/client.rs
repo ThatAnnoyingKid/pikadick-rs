@@ -7,7 +7,7 @@ use crate::{
         OverwolfResponse,
         Platform,
     },
-    R6Result,
+    Error,
 };
 use serde::de::DeserializeOwned;
 use url::Url;
@@ -27,15 +27,18 @@ impl Client {
     }
 
     /// Get a url and return it as an [`ApiResponse`].
-    async fn get_api_response<T: DeserializeOwned>(&self, url: &str) -> R6Result<ApiResponse<T>> {
+    async fn get_api_response<T>(&self, url: &str) -> Result<ApiResponse<T>, Error>
+    where
+        T: DeserializeOwned,
+    {
         Ok(self.client.get(url).send().await?.json().await?)
     }
 
     /// Get a url and return an [`OverwolfResponse`]
-    async fn get_overwolf_response<T: DeserializeOwned>(
-        &self,
-        url: &str,
-    ) -> R6Result<OverwolfResponse<T>> {
+    async fn get_overwolf_response<T>(&self, url: &str) -> Result<OverwolfResponse<T>, Error>
+    where
+        T: DeserializeOwned,
+    {
         Ok(self
             .client
             .get(url)
@@ -51,7 +54,11 @@ impl Client {
         &self,
         name: &str,
         platform: Platform,
-    ) -> R6Result<ApiResponse<UserData>> {
+    ) -> Result<ApiResponse<UserData>, Error> {
+        if name.is_empty() {
+            return Err(Error::EmptyUsername);
+        }
+
         let url = format!(
             "https://r6.tracker.network/api/v1/standard/profile/{}/{}/",
             platform.as_u32(),
@@ -66,7 +73,11 @@ impl Client {
         &self,
         name: &str,
         platform: Platform,
-    ) -> R6Result<ApiResponse<SessionsData>> {
+    ) -> Result<ApiResponse<SessionsData>, Error> {
+        if name.is_empty() {
+            return Err(Error::EmptyUsername);
+        }
+
         let url = format!(
             "https://r6.tracker.network/api/v1/standard/profile/{}/{}/sessions?",
             platform.as_u32(),
@@ -80,7 +91,11 @@ impl Client {
     pub async fn get_overwolf_player(
         &self,
         name: &str,
-    ) -> R6Result<OverwolfResponse<OverwolfPlayer>> {
+    ) -> Result<OverwolfResponse<OverwolfPlayer>, Error> {
+        if name.is_empty() {
+            return Err(Error::EmptyUsername);
+        }
+
         let url = Url::parse_with_params(
             "https://r6.tracker.network/api/v0/overwolf/player",
             &[("name", name)],
@@ -129,14 +144,11 @@ mod test {
     async fn empty_user() {
         let client = Client::new();
 
-        let _profile_err = client.get_profile("", Platform::Pc).await.unwrap_err();
+        let profile_err = client.get_profile("", Platform::Pc).await.unwrap_err();
+        assert!(matches!(profile_err, Error::EmptyUsername));
 
-        let _sessions_err = client
-            .get_sessions("", Platform::Pc)
-            .await
-            .expect("failed to get sessions")
-            .into_result()
-            .unwrap_err();
+        let sessions_err = client.get_sessions("", Platform::Pc).await.unwrap_err();
+        assert!(matches!(sessions_err, Error::EmptyUsername));
     }
 
     #[tokio::test]

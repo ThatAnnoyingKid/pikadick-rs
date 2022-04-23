@@ -188,7 +188,7 @@ mod test {
             .execute()
             .await
             .unwrap_or_else(|e| panic!("failed to search rule34 for `{}`: {}", query, e));
-        assert!(!res.posts.is_empty());
+        assert!(!res.posts.is_empty(), "no posts for `{}`", query);
 
         let first = res.posts.first().expect("missing first entry");
         client
@@ -205,7 +205,6 @@ mod test {
             "gif",
             "corna",
             "sledge",
-            "deep",
             "roadhog",
             "deep_space_waifu",
         ];
