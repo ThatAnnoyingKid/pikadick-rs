@@ -109,9 +109,6 @@ skip = [
     { name = "parking_lot", version = "0.11.2" },
     { name = "parking_lot_core", version = "0.8.5" },
     
-    # Blocked on flate2 updating their miniz_oxide  to 0.5.x
-    { name = "miniz_oxide", version = "0.4.4" },
-    
     # Blocked on cookie updating to time 0.3
     { name = "time-macros", version = "0.1.1" },
     
@@ -128,10 +125,7 @@ skip = [
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
-deny = [            
-    # https://github.com/RustSec/advisory-db/issues/305
-    { name = "rental", version = "*" },
-    
+deny = [    
     # This is basically Rust written like C.
     { name = "sled", version = "*" },
     
