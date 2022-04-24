@@ -3934,7 +3934,6 @@ dependencies = [
  "anyhow",
  "argh",
  "once_cell",
- "regex",
  "reqwest",
  "scraper",
  "serde",

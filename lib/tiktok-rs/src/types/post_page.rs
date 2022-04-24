@@ -1,5 +1,4 @@
 use once_cell::sync::Lazy;
-use regex::Regex;
 use scraper::{
     Html,
     Selector,
@@ -8,11 +7,7 @@ use std::collections::HashMap;
 use url::Url;
 
 static SIGI_PERSISTED_DATA_SCRIPT_SELECTOR: Lazy<Selector> = Lazy::new(|| {
-    Selector::parse("#sigi-persisted-data").expect("invalid SIGI_PERSISTED_DATA_SCRIPT_SELECTOR")
-});
-
-static SIGI_STATE_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"window\['SIGI_STATE'\]=(.*);").expect("failed to compile SIGI_STATE_REGEX")
+    Selector::parse("#SIGI_STATE").expect("invalid SIGI_PERSISTED_DATA_SCRIPT_SELECTOR")
 });
 
 /// An error that may occur while parsing html
@@ -43,13 +38,8 @@ impl PostPage {
             .and_then(|el| el.text().next())
             .ok_or(FromHtmlError::MissingSigiStateElement)?;
 
-        let sigi_state_str = SIGI_STATE_REGEX
-            .captures(sigi_state_script_str)
-            .and_then(|captures| captures.get(1))
-            .ok_or(FromHtmlError::MissingSigiState)?;
-
-        let sigi_state: SigiState = serde_json::from_str(sigi_state_str.as_str())
-            .map_err(FromHtmlError::InvalidSigiState)?;
+        let sigi_state: SigiState =
+            serde_json::from_str(sigi_state_script_str).map_err(FromHtmlError::InvalidSigiState)?;
 
         Ok(Self { sigi_state })
     }
