@@ -50,7 +50,7 @@ impl Client {
         .await?)
     }
 
-    /// Get a tiktock post.
+    /// Get a tiktok post.
     pub async fn get_post(&self, url: &str) -> Result<PostPage, Error> {
         Ok(self
             .get_html(url, |html| PostPage::from_html(&html))
