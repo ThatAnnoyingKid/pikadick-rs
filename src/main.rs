@@ -208,8 +208,10 @@ impl EventHandler for Handler {
                 let reddit_url =
                     matches!(url_host, url::Host::Domain("www.reddit.com" | "reddit.com"));
 
-                let tiktok_url =
-                    matches!(url_host, url::Host::Domain("vm.tiktok.com" | "tiktok.com"));
+                let tiktok_url = matches!(
+                    url_host,
+                    url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")
+                );
 
                 (reddit_url && reddit_embed_is_enabled_for_guild)
                     || (tiktok_url && tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED))
@@ -239,7 +241,7 @@ impl EventHandler for Handler {
                             }
                         }
                     }
-                    Some(url::Host::Domain("vm.tiktok.com" | "tiktok.com")) => {
+                    Some(url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")) => {
                         if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
                             if let Err(e) = tiktok_data
                                 .try_embed_url(
