@@ -51,7 +51,7 @@ tiktok = { path = "lib/tiktok-rs" }
 tiny-skia = { version = "0.6.3", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.18.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 toml = "0.5.9"
-tonic = "0.6.2"
+tonic = "0.7.1"
 tracing = "0.1.34"
 tracing-appender = "0.2.2"
 tracing-log = "0.1.3"
