@@ -105,6 +105,13 @@ skip = [
     
     # Blocked on updates to tiny-skia
     { name = "arrayvec", version = "0.5.2" },
+    
+    # Blocked on cssparser updating phf
+    { name = "phf", version = "0.8.0" },
+    { name = "phf_codegen", version = "0.8.0" },
+    
+    # Blocked on many crates moving to hashbrown 12
+    { name = "hashbrown", version = "0.11.2" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
