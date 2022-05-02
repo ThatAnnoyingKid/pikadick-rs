@@ -18,7 +18,7 @@ reqwest = { version = "0.11.10", features = [ "cookies", "gzip", "json" ], defau
 reqwest_cookie_store = "0.2.0"
 serde = { version = "1.0.136", features = [ "derive" ] }
 serde_json = "1.0.79"
-thiserror = "1.0.30"
+thiserror = "1.0.31"
 url = { version = "2.2.2", features = [ "serde" ] }
 
 # Optional
