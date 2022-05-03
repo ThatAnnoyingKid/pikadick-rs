@@ -276,7 +276,7 @@ mod tests {
             }
         }
     }
-    
+
     #[tokio::test]
     #[ignore]
     async fn reencode_m3u8() {
@@ -288,7 +288,7 @@ mod tests {
             .overwrite(true)
             .spawn()
             .expect("failed to spawn ffmpeg");
-            
+
         while let Some(maybe_event) = stream.next().await {
             match maybe_event {
                 Ok(Event::Progress(event)) => {
