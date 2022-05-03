@@ -139,6 +139,7 @@ members = [
     "lib/pikadick-slash-framework-rs",
     "lib/pikadick-slash-framework-derive-rs",
     "lib/rpi-deploy-rs",
+    "lib/tokio-ffmpeg-cli-rs",
 ]
 
 [package.metadata.deb]
