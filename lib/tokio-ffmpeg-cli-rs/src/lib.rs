@@ -276,4 +276,35 @@ mod tests {
             }
         }
     }
+    
+    #[tokio::test]
+    #[ignore]
+    async fn reencode_m3u8() {
+        let mut stream = Builder::new()
+            .audio_codec("libopus")
+            .video_codec("vp9")
+            .input(SAMPLE_M3U8)
+            .output("reencode_m3u8.webm")
+            .overwrite(true)
+            .spawn()
+            .expect("failed to spawn ffmpeg");
+            
+        while let Some(maybe_event) = stream.next().await {
+            match maybe_event {
+                Ok(Event::Progress(event)) => {
+                    println!("Progress Event: {:#?}", event);
+                }
+                Ok(Event::ExitStatus(exit_status)) => {
+                    println!("FFMpeg exited: {:?}", exit_status);
+                }
+                Ok(Event::Unknown(line)) => {
+                    //  panic!("{:?}", event);
+                    dbg!(line);
+                }
+                Err(e) => {
+                    panic!("Error: {}", e);
+                }
+            }
+        }
+    }
 }
