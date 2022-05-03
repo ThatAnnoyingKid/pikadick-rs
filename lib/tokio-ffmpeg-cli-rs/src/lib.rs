@@ -1,10 +1,8 @@
 /// Events
-pub mod events;
+mod events;
 
-use crate::events::{
-    ProgressEvent,
-    ProgressEventLineBuilder,
-};
+pub use self::events::ProgressEvent;
+use crate::events::ProgressEventLineBuilder;
 use futures::future::FutureExt;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -151,7 +149,7 @@ impl Builder {
     }
 
     /// Build the command
-    pub fn spawn(&mut self) -> Result<impl Stream<Item = Result<Event, Error>>, Error> {
+    pub fn spawn(&mut self) -> Result<impl Stream<Item = Result<Event, Error>> + Unpin, Error> {
         // https://superuser.com/questions/1459810/how-can-i-get-ffmpeg-command-running-status-in-real-time
         // https://stackoverflow.com/questions/43978018/ffmpeg-get-machine-readable-output
         // https://ffmpeg.org/ffmpeg.html
@@ -245,6 +243,7 @@ impl Default for Builder {
 mod tests {
     use super::*;
 
+    // https://ottverse.com/free-hls-m3u8-test-urls/
     const SAMPLE_M3U8: &str =
         "https://devimages.apple.com.edgekey.net/iphone/samples/bipbop/bipbopall.m3u8";
 
