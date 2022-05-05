@@ -3545,7 +3545,7 @@ dependencies = [
 [[package]]
 name = "shift-orcz"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/shift-client-rs#ea4e3afa86793958d7b40d1d484a3c54db081254"
+source = "git+https://github.com/adumbidiot/shift-client-rs#56bf364ccc08a761e76e504b9902a42ac9737744"
 dependencies = [
  "logos",
  "once_cell",
