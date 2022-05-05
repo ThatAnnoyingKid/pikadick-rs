@@ -269,7 +269,6 @@ impl EventHandler for Handler {
             reddit_embed_data.cache.trim();
             reddit_embed_data.video_data_cache.trim();
             tiktok_data.post_page_cache.trim();
-            tiktok_data.video_download_cache.trim();
         }
     }
 

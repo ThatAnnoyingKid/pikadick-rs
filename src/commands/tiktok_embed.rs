@@ -14,7 +14,6 @@ use crate::{
     TikTokEmbedFlags,
 };
 use anyhow::Context as _;
-use bytes::Bytes;
 use serenity::{
     model::prelude::*,
     prelude::*,
@@ -45,14 +44,11 @@ pub struct TikTokData {
     /// A cache of post urls => post pages
     pub post_page_cache: TimedCache<String, tiktok::PostPage>,
 
-    /// A cache of download urls => video data
-    pub video_download_cache: TimedCache<String, Bytes>,
-
     /// The path to tiktok's cache dir
-    pub video_download_cache_path: PathBuf,
+    video_download_cache_path: PathBuf,
 
     /// The request map for making requests for video downloads.
-    pub video_download_request_map: VideoDownloadRequestMap,
+    video_download_request_map: VideoDownloadRequestMap,
 }
 
 impl TikTokData {
@@ -60,6 +56,7 @@ impl TikTokData {
     pub async fn new(cache_dir: &Path) -> anyhow::Result<Self> {
         let video_download_cache_path = cache_dir.join("tiktok");
 
+        // TODO: Expand into proper filecache manager
         tokio::fs::create_dir_all(&video_download_cache_path)
             .await
             .context("failed to create tiktok cache dir")?;
@@ -69,7 +66,6 @@ impl TikTokData {
 
             post_page_cache: TimedCache::new(),
 
-            video_download_cache: TimedCache::new(),
             video_download_cache_path,
             video_download_request_map: Arc::new(RequestMap::new()),
         })
@@ -101,7 +97,7 @@ impl TikTokData {
         id: &str,
         format: &str,
         url: &str,
-    ) -> anyhow::Result<Arc<(String, PathBuf)>> {
+    ) -> anyhow::Result<Arc<PathBuf>> {
         let result = self
             .video_download_request_map
             .get_or_fetch(id.to_string(), || {
@@ -124,7 +120,7 @@ impl TikTokData {
                     {
                         Ok(file) => file,
                         Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                            return Ok(Arc::new((file_name, file_path)));
+                            return Ok(Arc::new(file_path));
                         }
                         Err(e) => {
                             return Err(e)
@@ -133,7 +129,7 @@ impl TikTokData {
                         }
                     };
 
-                    // If we didn't early return up above, it is out job to download.
+                    // If we didn't early return up above, it is our job to download
                     info!(
                         "downloading tiktok video \
                         with with id `{id}` \
@@ -161,7 +157,7 @@ impl TikTokData {
 
                     result.map_err(ArcAnyhowError::new)?;
 
-                    Ok(Arc::new((file_name, file_path)))
+                    Ok(Arc::new(file_path))
                 }
             })
             .await?;
@@ -177,7 +173,7 @@ impl TikTokData {
         loading_reaction: &mut Option<LoadingReaction>,
         delete_link: bool,
     ) -> anyhow::Result<()> {
-        let (video_url, video_id, video_format, _desc) = {
+        let (video_url, video_id, video_format) = {
             let post = self.get_post_cached(url.as_str()).await?;
             let post = post.data();
             let item_module_post = post
@@ -187,9 +183,8 @@ impl TikTokData {
             let video_url = item_module_post.video.download_addr.clone();
             let video_id = item_module_post.video.id.clone();
             let video_format = item_module_post.video.format.clone();
-            let desc = item_module_post.desc.clone();
 
-            (video_url, video_id, video_format, desc)
+            (video_url, video_id, video_format)
         };
 
         let maybe_video_file = self
@@ -229,12 +224,6 @@ impl CacheStatsProvider for TikTokData {
             "tiktok_data",
             "post_page_cache",
             self.post_page_cache.len() as f32,
-        );
-
-        cache_stats_builder.publish_stat(
-            "tiktok_data",
-            "video_download_cache",
-            self.video_download_cache.len() as f32,
         );
     }
 }
