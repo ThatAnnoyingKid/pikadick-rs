@@ -297,7 +297,7 @@ dependencies = [
  "log",
  "pin-project-lite",
  "tokio",
- "tokio-rustls 0.23.3",
+ "tokio-rustls 0.23.4",
  "tungstenite",
  "webpki-roots",
 ]
@@ -530,7 +530,7 @@ checksum = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73"
 dependencies = [
  "libc",
  "num-integer",
- "num-traits 0.2.14",
+ "num-traits 0.2.15",
  "time 0.1.44",
  "winapi",
 ]
@@ -692,7 +692,7 @@ dependencies = [
  "csv",
  "itertools",
  "lazy_static",
- "num-traits 0.2.14",
+ "num-traits 0.2.15",
  "oorandom",
  "plotters",
  "rayon",
@@ -1552,7 +1552,7 @@ dependencies = [
  "hyper",
  "rustls 0.20.4",
  "tokio",
- "tokio-rustls 0.23.3",
+ "tokio-rustls 0.23.4",
 ]
 
 [[package]]
@@ -2017,7 +2017,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fbc387afefefd5e9e39493299f3069e14a140dd34dc19b4c1c1a8fddb6a790"
 dependencies = [
- "num-traits 0.2.14",
+ "num-traits 0.2.15",
 ]
 
 [[package]]
@@ -2027,7 +2027,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "225d3389fb3509a24c93f5c29eb6bde2586b98d9f016636dff58d7c6f7569cd9"
 dependencies = [
  "autocfg",
- "num-traits 0.2.14",
+ "num-traits 0.2.15",
 ]
 
 [[package]]
@@ -2038,7 +2038,7 @@ checksum = "12ac428b1cb17fce6f731001d307d351ec70a6d202fc2e60f7d4c5e42d8f4f07"
 dependencies = [
  "autocfg",
  "num-integer",
- "num-traits 0.2.14",
+ "num-traits 0.2.15",
 ]
 
 [[package]]
@@ -2047,14 +2047,14 @@ version = "0.1.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92e5113e9fd4cc14ded8e499429f396a20f98c772a47cc8622a736e1ec843c31"
 dependencies = [
- "num-traits 0.2.14",
+ "num-traits 0.2.15",
 ]
 
 [[package]]
 name = "num-traits"
-version = "0.2.14"
+version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a64b1ec5cda2586e284722486d802acf1f7dbdc623e2bfc57e65ca1cd099290"
+checksum = "578ede34cf02f8924ab9447f50c28075b4d3e5b269972345e7e0372b38c6cdcd"
 dependencies = [
  "autocfg",
 ]
@@ -2071,9 +2071,9 @@ dependencies = [
 
 [[package]]
 name = "num_threads"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aba1801fb138d8e85e11d0fc70baf4fe1cdfffda7c6cd34a854905df588e5ed0"
+checksum = "2819ce041d2ee131036f4fc9d6ae7ae125a3a40e97ba64d04fe799ad9dabbb44"
 dependencies = [
  "libc",
 ]
@@ -2117,9 +2117,9 @@ dependencies = [
 
 [[package]]
 name = "openssl"
-version = "0.10.39"
+version = "0.10.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28f3916d46d9d813a62d7b7d2724d7b14785ac999fb623d990ee4603f9122742"
+checksum = "fb81a6430ac911acb25fe5ac8f1d2af1b4ea8a4fdfda0f1ee4292af2e2d8eb0e"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -2215,7 +2215,7 @@ version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7940cf2ca942593318d07fcf2596cdca60a85c9e7fab408a5e21a4f9dcd40d87"
 dependencies = [
- "num-traits 0.2.14",
+ "num-traits 0.2.15",
 ]
 
 [[package]]
@@ -2513,7 +2513,7 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a3fd9ec30b9749ce28cd91f255d569591cdf937fe280c312143e3c4bad6f2a"
 dependencies = [
- "num-traits 0.2.14",
+ "num-traits 0.2.15",
  "plotters-backend",
  "plotters-svg",
  "wasm-bindgen",
@@ -2886,7 +2886,7 @@ dependencies = [
 [[package]]
 name = "reddit"
 version = "0.0.1"
-source = "git+https://github.com/adumbidiot/reddit-rs#d4d6f9b2f4460744c215421fa7e1d9a09dacd9b1"
+source = "git+https://github.com/adumbidiot/reddit-rs#c71dfa61e4da481ac13efd3ac197767b3c8a1401"
 dependencies = [
  "reqwest",
  "serde",
@@ -3001,7 +3001,7 @@ dependencies = [
  "serde_urlencoded",
  "tokio",
  "tokio-native-tls",
- "tokio-rustls 0.23.3",
+ "tokio-rustls 0.23.4",
  "tokio-util 0.6.9",
  "url",
  "wasm-bindgen",
@@ -3072,7 +3072,7 @@ checksum = "5ceb88cff5e2414abd59f1470673e1bba0627118dfc13ce33cebf67ea4a8acb0"
 dependencies = [
  "num-complex",
  "num-integer",
- "num-traits 0.2.14",
+ "num-traits 0.2.15",
  "realfft",
 ]
 
@@ -3135,7 +3135,7 @@ checksum = "b1d089e5c57521629a59f5f39bca7434849ff89bd6873b521afe389c1c602543"
 dependencies = [
  "num-complex",
  "num-integer",
- "num-traits 0.2.14",
+ "num-traits 0.2.15",
  "primal-check",
  "strength_reduce",
  "transpose",
@@ -3423,9 +3423,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.80"
+version = "1.0.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f972498cf015f7c0746cac89ebe1d6ef10c293b94175a243a2d9442c163d9944"
+checksum = "9b7ce2b32a1aed03c558dc61a5cd328f15aff2dbc17daad8fb8af04d2100e15c"
 dependencies = [
  "itoa 1.0.1",
  "ryu",
@@ -3547,7 +3547,7 @@ dependencies = [
 [[package]]
 name = "shift-orcz"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/shift-client-rs#ea4e3afa86793958d7b40d1d484a3c54db081254"
+source = "git+https://github.com/adumbidiot/shift-client-rs#56bf364ccc08a761e76e504b9902a42ac9737744"
 dependencies = [
  "logos",
  "once_cell",
@@ -4165,9 +4165,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-rustls"
-version = "0.23.3"
+version = "0.23.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4151fda0cf2798550ad0b34bcfc9b9dcc2a9d2471c895c68f3a8818e54f2389e"
+checksum = "c43ee83903113e03984cb9e5cebe6c04a5116269e900e3ddba8f068a62adda59"
 dependencies = [
  "rustls 0.20.4",
  "tokio",
@@ -4529,7 +4529,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1ee6bfd0a27bf614353809a035cf6880b74239ec6c5e39a7b2860ca16809137"
 dependencies = [
  "num-rational",
- "num-traits 0.2.14",
+ "num-traits 0.2.15",
  "typenum",
 ]
 
