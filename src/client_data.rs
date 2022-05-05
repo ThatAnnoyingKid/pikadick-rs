@@ -19,6 +19,7 @@ use crate::{
     database::Database,
     util::EncoderTask,
 };
+use anyhow::Context;
 use serenity::{
     client::bridge::gateway::ShardManager,
     prelude::*,
@@ -124,7 +125,12 @@ impl ClientData {
     ) -> anyhow::Result<Self> {
         // TODO: Standardize an async init system with allocated data per command somehow. Maybe boxes?
 
-        let deviantart_client = DeviantartClient::new(&db).await?;
+        let deviantart_client = DeviantartClient::new(&db)
+            .await
+            .context("failed to init deviantart client")?;
+        let tiktok_data = TikTokData::new(&config.cache_dir())
+            .await
+            .context("failed to init tiktok data")?;
 
         Ok(ClientData {
             shard_manager,
@@ -144,7 +150,7 @@ impl ClientData {
             xkcd_client: Default::default(),
             tic_tac_toe_data: Default::default(),
             iqdb_client: Default::default(),
-            tiktok_data: Default::default(),
+            tiktok_data,
             encoder_task: EncoderTask::new(),
 
             db,

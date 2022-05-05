@@ -20,7 +20,13 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use std::sync::Arc;
+use std::{
+    path::{
+        Path,
+        PathBuf,
+    },
+    sync::Arc,
+};
 use tracing::{
     info,
     warn,
@@ -38,17 +44,27 @@ pub struct TikTokData {
 
     /// A cache of download urls => video data
     pub video_download_cache: TimedCache<String, Bytes>,
+
+    /// The path to tiktok's cache dir
+    pub video_download_cache_path: PathBuf,
 }
 
 impl TikTokData {
     /// Make a new [`TikTokData`].
-    pub fn new() -> Self {
-        Self {
+    pub async fn new(cache_dir: &Path) -> anyhow::Result<Self> {
+        let video_download_cache_path = cache_dir.join("tiktok");
+
+        tokio::fs::create_dir_all(&video_download_cache_path)
+            .await
+            .context("failed to create tiktok cache dir")?;
+
+        Ok(Self {
             client: tiktok::Client::new(),
 
             post_page_cache: TimedCache::new(),
             video_download_cache: TimedCache::new(),
-        }
+            video_download_cache_path,
+        })
     }
 
     /// Get a post page, using the cache if needed
@@ -155,12 +171,6 @@ impl TikTokData {
         }
 
         Ok(())
-    }
-}
-
-impl Default for TikTokData {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
