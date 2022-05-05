@@ -1,6 +1,19 @@
 use crate::Error;
 use std::collections::HashMap;
 
+const FRAME_KEY: &str = "frame";
+const FPS_KEY: &str = "fps";
+const BITRATE_KEY: &str = "bitrate";
+const TOTAL_SIZE_KEY: &str = "total_size";
+const OUT_TIME_US_KEY: &str = "out_time_us";
+const OUT_TIME_MS_KEY: &str = "out_time_ms";
+const OUT_TIME_KEY: &str = "out_time";
+const DUP_FRAMES_KEY: &str = "dup_frames";
+const DROP_FRAMES_KEY: &str = "drop_frames";
+const SPEED_KEY: &str = "speed";
+const PROGRESS_KEY: &str = "progress";
+
+/// An event about the encoding progress sent by ffmpeg
 #[derive(Debug)]
 pub struct ProgressEvent {
     /// The frame number
@@ -10,10 +23,10 @@ pub struct ProgressEvent {
     pub fps: f64,
 
     /// The bitrate
-    pub bitrate: String,
+    pub bitrate: Box<str>,
 
     /// The progress
-    pub progress: String,
+    pub progress: Box<str>,
 
     /// The total size
     pub total_size: u64,
@@ -25,7 +38,7 @@ pub struct ProgressEvent {
     pub out_time_ms: u64,
 
     /// The out time
-    pub out_time: String,
+    pub out_time: Box<str>,
 
     /// The # of dup frames
     pub dup_frames: u64,
@@ -38,7 +51,7 @@ pub struct ProgressEvent {
     pub speed: Option<f64>,
 
     /// Extra K/Vs
-    pub extra: HashMap<String, String>,
+    pub extra: HashMap<Box<str>, Box<str>>,
 }
 
 impl ProgressEvent {
@@ -47,29 +60,29 @@ impl ProgressEvent {
     pub(crate) fn try_from_optional_parts(
         frame: Option<u64>,
         fps: Option<f64>,
-        bitrate: Option<String>,
+        bitrate: Option<Box<str>>,
         total_size: Option<u64>,
         out_time_us: Option<u64>,
         out_time_ms: Option<u64>,
-        out_time: Option<String>,
+        out_time: Option<Box<str>>,
         dup_frames: Option<u64>,
         drop_frames: Option<u64>,
         speed: Option<Option<f64>>,
-        progress: Option<String>,
-        extra: HashMap<String, String>,
+        progress: Option<Box<str>>,
+        extra: HashMap<Box<str>, Box<str>>,
     ) -> Result<Self, Error> {
         Ok(ProgressEvent {
-            frame: frame.ok_or(Error::MissingKeyValuePair("frame"))?,
-            fps: fps.ok_or(Error::MissingKeyValuePair("fps"))?,
-            bitrate: bitrate.ok_or(Error::MissingKeyValuePair("bitrate"))?,
-            total_size: total_size.ok_or(Error::MissingKeyValuePair("total_size"))?,
-            out_time_us: out_time_us.ok_or(Error::MissingKeyValuePair("out_time_us"))?,
-            out_time_ms: out_time_ms.ok_or(Error::MissingKeyValuePair("out_time_ms"))?,
-            out_time: out_time.ok_or(Error::MissingKeyValuePair("out_time"))?,
-            dup_frames: dup_frames.ok_or(Error::MissingKeyValuePair("dup_frames"))?,
-            drop_frames: drop_frames.ok_or(Error::MissingKeyValuePair("drop_frames"))?,
-            speed: speed.ok_or(Error::MissingKeyValuePair("speed"))?,
-            progress: progress.ok_or(Error::MissingKeyValuePair("progress"))?,
+            frame: frame.ok_or(Error::MissingKeyValuePair(FRAME_KEY))?,
+            fps: fps.ok_or(Error::MissingKeyValuePair(FPS_KEY))?,
+            bitrate: bitrate.ok_or(Error::MissingKeyValuePair(BITRATE_KEY))?,
+            total_size: total_size.ok_or(Error::MissingKeyValuePair(TOTAL_SIZE_KEY))?,
+            out_time_us: out_time_us.ok_or(Error::MissingKeyValuePair(OUT_TIME_US_KEY))?,
+            out_time_ms: out_time_ms.ok_or(Error::MissingKeyValuePair(OUT_TIME_MS_KEY))?,
+            out_time: out_time.ok_or(Error::MissingKeyValuePair(OUT_TIME_KEY))?,
+            dup_frames: dup_frames.ok_or(Error::MissingKeyValuePair(DUP_FRAMES_KEY))?,
+            drop_frames: drop_frames.ok_or(Error::MissingKeyValuePair(DROP_FRAMES_KEY))?,
+            speed: speed.ok_or(Error::MissingKeyValuePair(SPEED_KEY))?,
+            progress: progress.ok_or(Error::MissingKeyValuePair(PROGRESS_KEY))?,
             extra,
         })
     }
@@ -80,16 +93,16 @@ impl ProgressEvent {
 pub(crate) struct ProgressEventLineBuilder {
     maybe_frame: Option<u64>,
     maybe_fps: Option<f64>,
-    maybe_bitrate: Option<String>,
+    maybe_bitrate: Option<Box<str>>,
     maybe_total_size: Option<u64>,
     maybe_out_time_us: Option<u64>,
     maybe_out_time_ms: Option<u64>,
-    maybe_out_time: Option<String>,
+    maybe_out_time: Option<Box<str>>,
     maybe_dup_frames: Option<u64>,
     maybe_drop_frames: Option<u64>,
     maybe_speed: Option<Option<f64>>,
 
-    extra: HashMap<String, String>,
+    extra: HashMap<Box<str>, Box<str>>,
 }
 
 impl ProgressEventLineBuilder {
@@ -117,12 +130,7 @@ impl ProgressEventLineBuilder {
     pub(crate) fn push(&mut self, line: &str) -> Result<Option<ProgressEvent>, Error> {
         let line = line.trim();
 
-        let mut iter = line.split('=');
-        let key = iter.next();
-        let value = iter.next();
-        if iter.next().is_some() {
-            return Err(Error::InvalidKeyValuePair);
-        }
+        let (key, value) = line.split_once('=').ok_or(Error::InvalidKeyValuePair)?;
 
         fn parse_kv_u64(
             key: &'static str,
@@ -157,72 +165,71 @@ impl ProgressEventLineBuilder {
         }
 
         match (key, value) {
-            (Some("frame"), Some(value)) => {
-                parse_kv_u64("frame", value, &mut self.maybe_frame)?;
+            (FRAME_KEY, value) => {
+                parse_kv_u64(FRAME_KEY, value, &mut self.maybe_frame)?;
                 Ok(None)
             }
-            (Some("fps"), Some(value)) => {
-                parse_kv_f64("fps", value, &mut self.maybe_fps)?;
+            (FPS_KEY, value) => {
+                parse_kv_f64(FPS_KEY, value, &mut self.maybe_fps)?;
                 Ok(None)
             }
-            (Some("bitrate"), Some(value)) => {
+            (BITRATE_KEY, value) => {
                 let value = value.trim();
 
                 if self.maybe_bitrate.is_some() {
-                    Err(Error::DuplicateKey("bitrate".into()))
+                    Err(Error::DuplicateKey(BITRATE_KEY.into()))
                 } else {
-                    self.maybe_bitrate = Some(value.to_string());
+                    self.maybe_bitrate = Some(value.into());
                     Ok(None)
                 }
             }
-            (Some("total_size"), Some(value)) => {
-                parse_kv_u64("total_size", value, &mut self.maybe_total_size)?;
+            (TOTAL_SIZE_KEY, value) => {
+                parse_kv_u64(TOTAL_SIZE_KEY, value, &mut self.maybe_total_size)?;
                 Ok(None)
             }
-            (Some("out_time_us"), Some(value)) => {
-                parse_kv_u64("out_time_us", value, &mut self.maybe_out_time_us)?;
+            (OUT_TIME_US_KEY, value) => {
+                parse_kv_u64(OUT_TIME_US_KEY, value, &mut self.maybe_out_time_us)?;
                 Ok(None)
             }
-            (Some("out_time_ms"), Some(value)) => {
-                parse_kv_u64("out_time_ms", value, &mut self.maybe_out_time_ms)?;
+            (OUT_TIME_MS_KEY, value) => {
+                parse_kv_u64(OUT_TIME_MS_KEY, value, &mut self.maybe_out_time_ms)?;
                 Ok(None)
             }
-            (Some("out_time"), Some(out_time)) => {
+            (OUT_TIME_KEY, out_time) => {
                 if self.maybe_out_time.is_some() {
-                    Err(Error::DuplicateKey("out_time".into()))
+                    Err(Error::DuplicateKey(OUT_TIME_KEY.into()))
                 } else {
-                    self.maybe_out_time = Some(out_time.to_string());
+                    self.maybe_out_time = Some(out_time.into());
                     Ok(None)
                 }
             }
-            (Some("dup_frames"), Some(value)) => {
-                parse_kv_u64("dup_frames", value, &mut self.maybe_dup_frames)?;
+            (DUP_FRAMES_KEY, value) => {
+                parse_kv_u64(DUP_FRAMES_KEY, value, &mut self.maybe_dup_frames)?;
                 Ok(None)
             }
-            (Some("drop_frames"), Some(value)) => {
-                parse_kv_u64("drop_frames", value, &mut self.maybe_drop_frames)?;
+            (DROP_FRAMES_KEY, value) => {
+                parse_kv_u64(DROP_FRAMES_KEY, value, &mut self.maybe_drop_frames)?;
                 Ok(None)
             }
-            (Some("speed"), Some(value)) => {
-                let key = "speed";
+            (SPEED_KEY, value) => {
                 let value = value.trim_end_matches('x').trim_end_matches('X').trim();
 
                 if value == "N/A" {
                     self.maybe_speed = Some(None);
                 } else {
                     if self.maybe_speed.is_some() {
-                        return Err(Error::DuplicateKey(key.into()));
+                        return Err(Error::DuplicateKey(SPEED_KEY.into()));
                     }
                     self.maybe_speed = Some(Some(
                         value
                             .parse()
-                            .map_err(|e| Error::InvalidFloatValue(key, e))?,
+                            .map_err(|e| Error::InvalidFloatValue(SPEED_KEY, e))?,
                     ));
                 }
 
                 Ok(None)
             }
-            (Some("progress"), Some(progress)) => {
+            (PROGRESS_KEY, progress) => {
                 let event = ProgressEvent::try_from_optional_parts(
                     self.maybe_frame.take(),
                     self.maybe_fps.take(),
@@ -234,24 +241,19 @@ impl ProgressEventLineBuilder {
                     self.maybe_dup_frames.take(),
                     self.maybe_drop_frames.take(),
                     self.maybe_speed.take(),
-                    Some(progress.to_string()),
+                    Some(progress.into()),
                     std::mem::take(&mut self.extra),
                 )?;
 
                 Ok(Some(event))
             }
-            (Some(key), Some(value)) => {
-                if self
-                    .extra
-                    .insert(key.to_string(), value.to_string())
-                    .is_some()
-                {
+            (key, value) => {
+                if self.extra.insert(key.into(), value.into()).is_some() {
                     Err(Error::DuplicateKey(key.to_string()))
                 } else {
                     Ok(None)
                 }
             }
-            (None, _) | (_, None) => Err(Error::InvalidKeyValuePair),
         }
     }
 }
