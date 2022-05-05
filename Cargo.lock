@@ -2427,6 +2427,8 @@ dependencies = [
  "tiktok",
  "tiny-skia",
  "tokio",
+ "tokio-ffmpeg-cli",
+ "tokio-stream",
  "toml",
  "tonic",
  "tracing",
