@@ -28,12 +28,10 @@ use std::{
 use tracing::{
     error,
     info,
-    warn,
 };
 use url::Url;
 
-type VideoDownloadRequestMap =
-    Arc<RequestMap<String, Result<Arc<(String, PathBuf)>, ArcAnyhowError>>>;
+type VideoDownloadRequestMap = Arc<RequestMap<String, Result<Arc<PathBuf>, ArcAnyhowError>>>;
 
 /// TikTok Data
 #[derive(Debug, Clone)]
@@ -187,21 +185,13 @@ impl TikTokData {
             (video_url, video_id, video_format)
         };
 
-        let maybe_video_file = self
+        let video_path = self
             .get_video_data_cached(video_id.as_str(), video_format.as_str(), video_url.as_str())
-            .await;
+            .await
+            .context("failed to download tiktok video")?;
 
         msg.channel_id
-            .send_message(&ctx.http, |m| {
-                match maybe_video_file.as_deref() {
-                    Ok((_, file_path)) => m.add_file(file_path),
-                    Err(e) => {
-                        // We have the url, lets hope it stays valid
-                        warn!("{:?}", e);
-                        m.content(video_url.as_str())
-                    }
-                }
-            })
+            .send_message(&ctx.http, |m| m.add_file(&*video_path))
             .await?;
 
         if let Some(mut loading_reaction) = loading_reaction.take() {
