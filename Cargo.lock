@@ -4114,6 +4114,7 @@ dependencies = [
 name = "tokio-ffmpeg-cli"
 version = "0.0.0"
 dependencies = [
+ "bitflags",
  "futures",
  "once_cell",
  "regex",

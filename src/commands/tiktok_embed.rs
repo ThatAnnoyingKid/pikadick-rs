@@ -36,6 +36,17 @@ use tracing::{
 };
 use url::Url;
 
+const ENCODER_PREFERENCE_LIST: &[&str] = &[
+    "h264_nvenc",
+    "h264_amf",
+    "h264_qsv",
+    "h264_mf",
+    "h264_v4l2m2m",
+    "h264_vaapi",
+    "h264_omx",
+    "libx264",
+];
+
 type VideoDownloadRequestMap = Arc<RequestMap<String, Result<Arc<PathBuf>, ArcAnyhowError>>>;
 
 /// TikTok Data
@@ -55,6 +66,8 @@ pub struct TikTokData {
 
     /// The request map for making requests for video downloads.
     video_download_request_map: VideoDownloadRequestMap,
+
+    video_encoder: &'static str,
 }
 
 impl TikTokData {
@@ -67,6 +80,34 @@ impl TikTokData {
             .await
             .context("failed to create tiktok cache dir")?;
 
+        // TODO: Consider making this the encoder task's job
+        // This isn't a problem as nothing will repeatedly create tiktok data.
+        let encoders = tokio_ffmpeg_cli::get_encoders()
+            .await
+            .context("failed to get ffmpeg encoders")?;
+
+        let mut best_encoder_index = None;
+        for encoder in encoders
+            .iter()
+            .filter(|encoder| encoder.description.ends_with("(codec h264)"))
+        {
+            info!("found h264 encoder: {:#?}", encoder);
+            if let Some(index) = ENCODER_PREFERENCE_LIST
+                .iter()
+                .position(|name| **name == *encoder.name)
+            {
+                if best_encoder_index.map_or(true, |best_encoder_index| best_encoder_index < index)
+                {
+                    best_encoder_index = Some(index);
+                }
+            }
+        }
+
+        let best_encoder_index = best_encoder_index.context("failed to select an encoder")?;
+        let best_encoder = ENCODER_PREFERENCE_LIST[best_encoder_index];
+
+        info!("selected encoder '{}'", best_encoder);
+
         Ok(Self {
             client: tiktok::Client::new(),
 
@@ -76,6 +117,7 @@ impl TikTokData {
 
             video_download_cache_path,
             video_download_request_map: Arc::new(RequestMap::new()),
+            video_encoder: best_encoder,
         })
     }
 
@@ -113,7 +155,7 @@ impl TikTokData {
 
                 let encoder_task = self.encoder_task.clone();
 
-                let reencoded_file_name = format!("{id}-reencoded.webm");
+                let reencoded_file_name = format!("{id}-reencoded.mp4");
                 let reencoded_file_path = self.video_download_cache_path.join(&reencoded_file_name);
 
                 let file_name = format!("{id}.{format}");
@@ -122,6 +164,8 @@ impl TikTokData {
                 let id = id.to_string();
                 let format = format.to_string();
                 let url = url.to_string();
+
+                let video_encoder = self.video_encoder;
 
                 async move {
                     match tokio::fs::metadata(&reencoded_file_path).await {
@@ -202,8 +246,8 @@ impl TikTokData {
                             .encode()
                             .input(&file_path)
                             .output(&reencoded_file_path)
-                            .audio_codec("libopus")
-                            .video_codec("vp9")
+                            .audio_codec("copy")
+                            .video_codec(video_encoder)
                             .video_bitrate("1M")
                             .try_send()
                             .await
