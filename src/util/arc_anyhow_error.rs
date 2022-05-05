@@ -14,7 +14,7 @@ use std::{
 pub struct ArcAnyhowError(Arc<anyhow::Error>);
 
 impl ArcAnyhowError {
-    /// Make a new [`ShareAnyhowError`]
+    /// Make a new [`ArcAnyhowError`]
     pub fn new(error: anyhow::Error) -> Self {
         Self(Arc::new(error))
     }
