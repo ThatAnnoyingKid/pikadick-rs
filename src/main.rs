@@ -43,7 +43,10 @@ use crate::{
     },
     util::LoadingReaction,
 };
-use anyhow::Context as _;
+use anyhow::{
+    bail,
+    Context as _,
+};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serenity::{
@@ -498,7 +501,7 @@ fn load_config() -> anyhow::Result<Config> {
     }
 
     if error_count != 0 {
-        anyhow::bail!("validation failed with {} errors.", error_count);
+        bail!("validation failed with {} errors.", error_count);
     }
 
     Ok(config)
@@ -516,19 +519,31 @@ fn setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, WorkerGuard
     let config = load_config().context("failed to load config")?;
 
     eprintln!("opening data directory...");
-    if config.data_dir.is_file() {
-        anyhow::bail!("failed to create or open data directory, the path is a file");
-    }
+    let data_dir_metadata = match std::fs::metadata(&config.data_dir) {
+        Ok(metadata) => Some(metadata),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+        Err(e) => {
+            return Err(e).context("failed to get metadata for the data dir");
+        }
+    };
 
-    let missing_data_dir = !config.data_dir.exists();
-    if missing_data_dir {
-        eprintln!("data directory does not exist. creating...");
-        std::fs::create_dir_all(&config.data_dir).context("failed to create data directory")?;
-    } else if config.data_dir.is_dir() {
-        eprintln!("data directory already exists.");
+    let missing_data_dir = data_dir_metadata.is_none();
+    match data_dir_metadata.as_ref() {
+        Some(metadata) => {
+            if metadata.is_dir() {
+                eprintln!("data directory already exists.");
+            } else if metadata.is_file() {
+                bail!("failed to create or open data directory, the path is a file");
+            }
+        }
+        None => {
+            eprintln!("data directory does not exist. creating...");
+            std::fs::create_dir_all(&config.data_dir).context("failed to create data directory")?;
+        }
     }
 
     std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
+    std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
 
     eprintln!("setting up logger...");
     let guard = tokio_rt
