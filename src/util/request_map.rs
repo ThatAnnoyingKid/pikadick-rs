@@ -75,6 +75,11 @@ where
             }
         };
 
+        // Await the future.
+        // It may actually be driven by another task,
+        // but we share the results.
+        // If we are driving the request,
+        // we clean up our entry in the hashmap with the drop guard.
         shared_future.await
     }
 }

@@ -125,10 +125,13 @@ impl ClientData {
     ) -> anyhow::Result<Self> {
         // TODO: Standardize an async init system with allocated data per command somehow. Maybe boxes?
 
+        let cache_dir = config.cache_dir();
+        let encoder_task = EncoderTask::new();
+
         let deviantart_client = DeviantartClient::new(&db)
             .await
             .context("failed to init deviantart client")?;
-        let tiktok_data = TikTokData::new(&config.cache_dir())
+        let tiktok_data = TikTokData::new(&cache_dir, encoder_task.clone())
             .await
             .context("failed to init tiktok data")?;
 
@@ -151,7 +154,7 @@ impl ClientData {
             tic_tac_toe_data: Default::default(),
             iqdb_client: Default::default(),
             tiktok_data,
-            encoder_task: EncoderTask::new(),
+            encoder_task,
 
             db,
 
