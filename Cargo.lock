@@ -2394,6 +2394,7 @@ dependencies = [
  "dashmap",
  "deviantart",
  "fml",
+ "futures",
  "heim",
  "indexmap",
  "insta",
