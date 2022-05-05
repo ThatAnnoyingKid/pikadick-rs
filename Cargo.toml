@@ -15,7 +15,7 @@ bitflags = "1.3.2"
 bytes = "1.1.0"
 chrono = "0.4.19"
 crossbeam = "0.8.1"
-dashmap = "5.2.0"
+dashmap = "5.3.3"
 deviantart = { path = "./lib/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
@@ -40,16 +40,16 @@ regex = "1.5.5"
 reqwest = { version = "0.11.10", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
 rusqlite = { version = "0.27.0", features = [ "bundled", "blob", "trace" ] }
-serde = { version = "1.0.136", features = [ "derive" ] }
+serde = { version = "1.0.137", features = [ "derive" ] }
 serenity = { version = "0.11.1", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
 songbird = "0.2.2"
 systemstat = "0.1.10"
-thiserror = "1.0.30"
+thiserror = "1.0.31"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiktok = { path = "lib/tiktok-rs" }
 tiny-skia = { version = "0.6.3", features = [ "std", "simd", "png-format" ], default-features = false }
-tokio = { version = "1.18.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tokio = { version = "1.18.1", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
 toml = "0.5.9"
 tonic = "0.6.2"
@@ -66,7 +66,7 @@ xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls-tl
 zalgo = { git = "https://github.com/adumbidiot/zalgo-rs" }
 
 # Optional
-openssl = { version = "0.10.38", optional = true, features = [ "vendored" ] }
+openssl = { version = "0.10.40", optional = true, features = [ "vendored" ] }
 tokio-stream = "0.1.8"
 
 [features]
