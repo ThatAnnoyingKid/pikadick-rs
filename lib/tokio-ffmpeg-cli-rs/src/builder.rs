@@ -35,6 +35,9 @@ pub struct Builder {
     /// The video codec
     pub video_codec: Option<String>,
 
+    /// The video bitrate
+    pub video_bitrate: Option<String>,
+
     /// The input
     pub input: Option<OsString>,
 
@@ -52,6 +55,8 @@ impl Builder {
             audio_codec: None,
             video_codec: None,
 
+            video_bitrate: None,
+
             input: None,
             output: None,
 
@@ -68,6 +73,12 @@ impl Builder {
     /// Set the video codec
     pub fn video_codec(&mut self, video_codec: impl Into<String>) -> &mut Self {
         self.video_codec = Some(video_codec.into());
+        self
+    }
+
+    /// Set the video bitrate
+    pub fn video_bitrate(&mut self, video_bitrate: impl Into<String>) -> &mut Self {
+        self.video_bitrate = Some(video_bitrate.into());
         self
     }
 
@@ -97,6 +108,7 @@ impl Builder {
 
         let audio_codec = self.audio_codec.take();
         let video_codec = self.video_codec.take();
+        let video_bitrate = self.video_bitrate.take();
         let input = self.input.take();
         let output = self.output.take();
 
@@ -111,6 +123,10 @@ impl Builder {
 
         if let Some(video_codec) = video_codec.as_deref() {
             command.args(["-codec:v", video_codec]);
+        }
+
+        if let Some(video_bitrate) = video_bitrate.as_deref() {
+            command.args(["-codec:v", video_bitrate]);
         }
 
         command.args(["-progress", "-"]);

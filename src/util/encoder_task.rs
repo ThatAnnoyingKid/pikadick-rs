@@ -177,6 +177,12 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
         self
     }
 
+    /// Set the video bitrate
+    pub fn video_bitrate(&mut self, video_bitrate: impl Into<String>) -> &mut Self {
+        self.builder.video_bitrate(video_bitrate);
+        self
+    }
+
     /// Try to send the message, exiting it it is at capacity
     pub async fn try_send(
         &self,
