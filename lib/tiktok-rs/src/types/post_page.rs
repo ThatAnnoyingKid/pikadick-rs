@@ -125,6 +125,53 @@ pub struct ItemModulePostVideo {
     /// video duration?
     pub duration: u32,
 
+    /// The video ID
+    pub id: String,
+
+    /// The video quality?
+    #[serde(rename = "videoQuality")]
+    pub video_quality: String,
+
+    /// main url?
+    #[serde(rename = "playAddr")]
+    pub play_addr: Url,
+
+    /// Height
+    pub height: u64,
+
+    /// Width
+    pub width: u64,
+
+    /// Video ratio
+    pub ratio: String,
+
+    /// Video format
+    pub format: String,
+
+    /// ?
+    #[serde(rename = "shareCover")]
+    pub share_cover: Vec<serde_json::Value>,
+
+    /// ?
+    #[serde(rename = "originCover")]
+    pub origin_cover: Url,
+
+    /// ?
+    #[serde(rename = "encodedType")]
+    pub encoded_type: String,
+
+    /// ?
+    #[serde(rename = "reflowCover")]
+    pub reflow_cover: Url,
+
+    /// ?
+    #[serde(rename = "dynamicCover")]
+    pub dynamic_cover: Url,
+
+    /// ?
+    #[serde(rename = "encodeUserTag")]
+    pub encode_user_tag: String,
+
     /// Unknown k/vs
     #[serde(flatten)]
     pub unknown: HashMap<String, serde_json::Value>,

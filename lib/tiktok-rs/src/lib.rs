@@ -37,7 +37,17 @@ mod test {
 
         let post = client.get_post(url).await.expect("failed to get post");
 
-        dbg!(&post);
+        // dbg!(&post);
         dbg!(&post.get_video_download_url());
+        dbg!(
+            &post
+                .sigi_state
+                .item_module
+                .posts
+                .values()
+                .next()
+                .expect("missing post")
+                .video
+        );
     }
 }
