@@ -2884,7 +2884,7 @@ dependencies = [
 [[package]]
 name = "reddit"
 version = "0.0.1"
-source = "git+https://github.com/adumbidiot/reddit-rs#d4d6f9b2f4460744c215421fa7e1d9a09dacd9b1"
+source = "git+https://github.com/adumbidiot/reddit-rs#c71dfa61e4da481ac13efd3ac197767b3c8a1401"
 dependencies = [
  "reqwest",
  "serde",
@@ -3421,9 +3421,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.80"
+version = "1.0.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f972498cf015f7c0746cac89ebe1d6ef10c293b94175a243a2d9442c163d9944"
+checksum = "9b7ce2b32a1aed03c558dc61a5cd328f15aff2dbc17daad8fb8af04d2100e15c"
 dependencies = [
  "itoa 1.0.1",
  "ryu",
