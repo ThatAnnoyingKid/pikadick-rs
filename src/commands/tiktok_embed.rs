@@ -4,6 +4,7 @@ use crate::{
         CacheStatsProvider,
     },
     util::{
+        ArcAnyhowError,
         TimedCache,
         TimedCacheEntry,
     },
@@ -16,11 +17,23 @@ use anyhow::{
     Context as _,
 };
 use bytes::Bytes;
+use futures::{
+    future::BoxFuture,
+    FutureExt,
+};
 use serenity::{
     model::prelude::*,
     prelude::*,
 };
 use std::{
+    borrow::Borrow,
+    collections::{
+        hash_map::Entry,
+        HashMap,
+    },
+    fmt::Debug,
+    future::Future,
+    hash::Hash,
     path::{
         Path,
         PathBuf,
@@ -28,10 +41,14 @@ use std::{
     sync::Arc,
 };
 use tracing::{
+    error,
     info,
     warn,
 };
 use url::Url;
+
+type VideoDownloadRequestMap =
+    Arc<RequestMap<String, Result<Arc<(String, PathBuf)>, ArcAnyhowError>>>;
 
 /// TikTok Data
 #[derive(Debug, Clone)]
@@ -47,6 +64,9 @@ pub struct TikTokData {
 
     /// The path to tiktok's cache dir
     pub video_download_cache_path: PathBuf,
+
+    /// The request map for making requests for video downloads.
+    pub video_download_request_map: VideoDownloadRequestMap,
 }
 
 impl TikTokData {
@@ -62,8 +82,10 @@ impl TikTokData {
             client: tiktok::Client::new(),
 
             post_page_cache: TimedCache::new(),
+
             video_download_cache: TimedCache::new(),
             video_download_cache_path,
+            video_download_request_map: Arc::new(RequestMap::new()),
         })
     }
 
@@ -90,35 +112,73 @@ impl TikTokData {
     /// Get video data, using the cache if needed
     pub async fn get_video_data_cached(
         &self,
+        id: &str,
+        format: &str,
         url: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<Bytes>>> {
-        if let Some(video_data) = self.video_download_cache.get_if_fresh(url) {
-            return Ok(video_data);
-        }
+    ) -> anyhow::Result<Arc<(String, PathBuf)>> {
+        let result = self
+            .video_download_request_map
+            .get_or_fetch(id.to_string(), || {
+                let client = self.client.client.clone();
 
-        let video_data = {
-            info!("downloading tiktok video from url `{url}`");
+                let file_name = format!("{id}.{format}");
+                let file_path = self.video_download_cache_path.join(&file_name);
 
-            let request = self
-                .client
-                .client
-                .get(url)
-                .send()
-                .await?
-                .error_for_status()?;
+                let id = id.to_string();
+                let format = format.to_string();
+                let url = url.to_string();
 
-            let content_length = request
-                .content_length()
-                .context("video is missing the content length header")?;
+                async move {
+                    let mut file = match tokio::fs::OpenOptions::new()
+                        .create_new(true)
+                        .write(true)
+                        .open(&file_path)
+                        .await
+                    {
+                        Ok(file) => file,
+                        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                            return Ok(Arc::new((file_name, file_path)));
+                        }
+                        Err(e) => {
+                            return Err(e)
+                                .context("failed to open file")
+                                .map_err(ArcAnyhowError::new);
+                        }
+                    };
 
-            ensure!(content_length < 8_000_000, "the video is longer than 8 MB");
+                    // If we didn't early return up above, it is out job to download.
+                    info!(
+                        "downloading tiktok video \
+                        with with id `{id}` \
+                        from url `{url}` \
+                        with format `{format}`"
+                    );
 
-            request.bytes().await?
-        };
+                    let result = crate::util::download_to_file(&client, &url, &mut file)
+                        .await
+                        .context("failed to download");
 
-        Ok(self
-            .video_download_cache
-            .insert_and_get(url.to_string(), video_data))
+                    // TODO: Consider downloading to temp file or .part file to avoid these errors
+                    if result.is_err() {
+                        if let Err(e) =
+                            tokio::fs::remove_file(&file_path).await.with_context(|| {
+                                format!(
+                                    "failed to remove invalid video file `{}` from cache",
+                                    file_path.display()
+                                )
+                            })
+                        {
+                            error!("{:?}", e);
+                        }
+                    }
+
+                    result.map_err(ArcAnyhowError::new)?;
+
+                    Ok(Arc::new((file_name, file_path)))
+                }
+            })
+            .await?;
+        Ok(result)
     }
 
     /// Try embedding a url
@@ -130,7 +190,7 @@ impl TikTokData {
         loading_reaction: &mut Option<LoadingReaction>,
         delete_link: bool,
     ) -> anyhow::Result<()> {
-        let (video_url, _desc) = {
+        let (video_url, video_id, video_format, _desc) = {
             let post = self.get_post_cached(url.as_str()).await?;
             let post = post.data();
             let item_module_post = post
@@ -138,19 +198,21 @@ impl TikTokData {
                 .context("missing item module post")?;
 
             let video_url = item_module_post.video.download_addr.clone();
+            let video_id = item_module_post.video.id.clone();
+            let video_format = item_module_post.video.format.clone();
             let desc = item_module_post.desc.clone();
 
-            (video_url, desc)
+            (video_url, video_id, video_format, desc)
         };
 
-        let maybe_video_data = self.get_video_data_cached(video_url.as_str()).await;
+        let maybe_video_file = self
+            .get_video_data_cached(video_id.as_str(), video_format.as_str(), video_url.as_str())
+            .await;
 
         msg.channel_id
             .send_message(&ctx.http, |m| {
-                let maybe_video_data = maybe_video_data.as_ref().map(|data| data.data());
-
-                match maybe_video_data {
-                    Ok(video_data) => m.add_file((&**video_data, "video.mp4")),
+                match maybe_video_file.as_deref() {
+                    Ok((_, file_path)) => m.add_file(file_path),
                     Err(e) => {
                         // We have the url, lets hope it stays valid
                         warn!("{:?}", e);
@@ -281,4 +343,91 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
         })
         .build()
         .context("failed to build command")
+}
+
+/// A type to prevent two async requests from racing the same resource.
+#[derive(Debug)]
+pub struct RequestMap<K, V> {
+    map: parking_lot::Mutex<HashMap<K, futures::future::Shared<BoxFuture<'static, V>>>>,
+}
+
+impl<K, V> RequestMap<K, V> {
+    /// Make a new [`RequestMap`]
+    fn new() -> Self {
+        Self {
+            map: parking_lot::Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl<K, V> RequestMap<K, V>
+where
+    K: Eq + Hash + Clone + Debug,
+    V: Clone,
+{
+    /// Lock the key if it is missing, or run a future to fetch the resource
+    async fn get_or_fetch<FN, F>(&self, key: K, fetch_future_func: FN) -> V
+    where
+        FN: FnOnce() -> F,
+        F: Future<Output = V> + Send + 'static,
+    {
+        let (_maybe_guard, shared_future) = {
+            // Lock the map
+            let mut map = self.map.lock();
+
+            // Get the entry
+            match map.entry(key.clone()) {
+                Entry::Occupied(entry) => {
+                    // A request is already in progress.
+                    // Grab the response future and await it.
+                    // Don't return a drop guard; only the task that started the request is allowed to clean it up.
+                    (None, entry.get().clone())
+                }
+                Entry::Vacant(entry) => {
+                    // A request is not in progress.
+                    // First, make the future.
+                    let fetch_future = fetch_future_func();
+
+                    // Then, make that future sharable.
+                    let shared_future = fetch_future.boxed().shared();
+
+                    // Then, store a copy in the hashmap for others intrested in this value.
+                    entry.insert(shared_future.clone());
+
+                    // Then, register a drop guard since we own this request,
+                    // and are therefore responsible for cleaning it up.
+                    let drop_guard = RequestMapDropGuard { key, map: self };
+
+                    // Finally, return the future so we can await it in the next step.
+                    (Some(drop_guard), shared_future)
+                }
+            }
+        };
+
+        shared_future.await
+    }
+}
+
+/// This will remove an entry from the request map when it gets dropped
+struct RequestMapDropGuard<'a, K, V>
+where
+    K: Eq + Hash + Debug,
+{
+    key: K,
+    map: &'a RequestMap<K, V>,
+}
+
+impl<K, V> Drop for RequestMapDropGuard<'_, K, V>
+where
+    K: Eq + Hash + Debug,
+{
+    fn drop(&mut self) {
+        if self.map.map.lock().remove(&self.key).is_none() {
+            // Normally, a panic would be good,
+            // as somebody cleaned up something they didn't own.
+            // However, this is a destructor, and a panic here could easily abort.
+            // Instead, we will log an error in the console.
+            error!("key `{:?}` was unexpectedly cleaned up", self.key);
+        }
+    }
 }
