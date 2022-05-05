@@ -1,5 +1,8 @@
 use anyhow::Context;
-use std::sync::Arc;
+use std::{
+    ffi::OsString,
+    sync::Arc,
+};
 use tokio::sync::oneshot;
 use tokio_stream::{
     wrappers::ReceiverStream,
@@ -8,7 +11,7 @@ use tokio_stream::{
 };
 
 /// A message for the encoder task
-enum EncoderTaskMessage {
+enum Message {
     /// Request an encode
     Encode {
         /// The options for the encode
@@ -37,7 +40,7 @@ enum EncoderTaskMessage {
 #[derive(Debug, Clone)]
 pub struct EncoderTask {
     handle: Arc<parking_lot::Mutex<Option<tokio::task::JoinHandle<()>>>>,
-    tx: tokio::sync::mpsc::Sender<EncoderTaskMessage>,
+    tx: tokio::sync::mpsc::Sender<Message>,
 }
 
 impl EncoderTask {
@@ -62,7 +65,7 @@ impl EncoderTask {
         let (tx, rx) = oneshot::channel();
 
         self.tx
-            .send(EncoderTaskMessage::Close { tx })
+            .send(Message::Close { tx })
             .await
             .ok()
             .context("task is gone")?;
@@ -91,16 +94,16 @@ impl EncoderTask {
 }
 
 /// Impl for the encoder task
-async fn encoder_task_impl(mut rx: tokio::sync::mpsc::Receiver<EncoderTaskMessage>) {
+async fn encoder_task_impl(mut rx: tokio::sync::mpsc::Receiver<Message>) {
     while let Some(msg) = rx.recv().await {
         match msg {
-            EncoderTaskMessage::Close { tx } => {
+            Message::Close { tx } => {
                 rx.close();
 
                 // We don't care if the user doesn't care about the result.
                 let _ = tx.send(()).is_ok();
             }
-            EncoderTaskMessage::Encode { mut builder, tx } => {
+            Message::Encode { mut builder, tx } => {
                 let maybe_stream = builder.spawn().context("failed to spawn FFMpeg");
 
                 match maybe_stream {
@@ -150,6 +153,30 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
         }
     }
 
+    /// Set the file input
+    pub fn input(&mut self, input: impl Into<OsString>) -> &mut Self {
+        self.builder.input(input);
+        self
+    }
+
+    /// Set the file output
+    pub fn output(&mut self, output: impl Into<OsString>) -> &mut Self {
+        self.builder.output(output);
+        self
+    }
+
+    /// Set the audio codec
+    pub fn audio_codec(&mut self, audio_codec: impl Into<String>) -> &mut Self {
+        self.builder.audio_codec(audio_codec);
+        self
+    }
+
+    /// Set the video codec
+    pub fn video_codec(&mut self, video_codec: impl Into<String>) -> &mut Self {
+        self.builder.video_codec(video_codec);
+        self
+    }
+
     /// Try to send the message, exiting it it is at capacity
     pub async fn try_send(
         &self,
@@ -158,7 +185,7 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
         let (tx, rx) = oneshot::channel();
         self.task
             .tx
-            .try_send(EncoderTaskMessage::Encode {
+            .try_send(Message::Encode {
                 builder: self.builder.clone(),
                 tx,
             })
