@@ -27,6 +27,7 @@ static FILE_EXISTS_REGEX: Lazy<Regex> = Lazy::new(|| {
 });
 
 /// A builder for an ffmpeg command
+#[derive(Debug, Clone)]
 pub struct Builder {
     /// The audio codec
     pub audio_codec: Option<String>,
