@@ -107,12 +107,15 @@ impl Builder {
         // https://ffmpeg.org/ffmpeg.html
 
         let audio_codec = self.audio_codec.take();
+
         let video_codec = self.video_codec.take();
         let video_bitrate = self.video_bitrate.take();
+
         let input = self.input.take();
         let output = self.output.take();
 
         let mut command = tokio::process::Command::new("ffmpeg");
+        command.arg("-hide_banner");
 
         let input = input.ok_or(Error::MissingInput)?;
         command.args(["-i".as_ref(), input.as_os_str()]);

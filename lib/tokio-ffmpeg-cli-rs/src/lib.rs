@@ -4,8 +4,15 @@ mod progress_event;
 /// The command builder
 mod builder;
 
+/// Encoder info
+mod encoder;
+
 pub use self::{
     builder::Builder,
+    encoder::{
+        Encoder,
+        FromLineError as EncoderFromLineError,
+    },
     progress_event::{
         LineBuilderError,
         ProgressEvent,
@@ -39,6 +46,18 @@ pub enum Error {
     /// Failed to construct a progress event
     #[error("invalid progress event")]
     InvalidProgressEvent(#[from] crate::progress_event::LineBuilderError),
+
+    /// An exit status was invalid
+    #[error("invalid exit status '{0}'")]
+    InvalidExitStatus(ExitStatus),
+
+    /// Failed to convert bytes to a str
+    #[error(transparent)]
+    InvalidUtf8Str(std::str::Utf8Error),
+
+    /// Invalid encoder
+    #[error("failed to parse encoder line")]
+    InvalidEncoderLine(#[from] EncoderFromLineError),
 }
 
 /// An Event
@@ -52,6 +71,29 @@ pub enum Event {
 
     /// An unknown line
     Unknown(String),
+}
+
+/// Get encoders that this ffmpeg supports
+pub async fn get_encoders() -> Result<Vec<Encoder>, Error> {
+    let output = tokio::process::Command::new("ffmpeg")
+        .arg("-hide_banner")
+        .arg("-encoders")
+        .output()
+        .await
+        .map_err(Error::Io)?;
+
+    if !output.status.success() {
+        return Err(Error::InvalidExitStatus(output.status));
+    }
+
+    let stdout_str = std::str::from_utf8(&output.stdout).map_err(Error::InvalidUtf8Str)?;
+    Ok(stdout_str
+        .lines()
+        .map(|line| line.trim())
+        .skip_while(|line| *line != "------")
+        .skip(1)
+        .map(Encoder::from_line)
+        .collect::<Result<_, _>>()?)
 }
 
 #[cfg(test)]
@@ -122,5 +164,12 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[tokio::test]
+    async fn ffmpeg_get_encoders() {
+        let encoders = get_encoders().await.expect("failed to get encoders");
+
+        dbg!(encoders);
     }
 }
