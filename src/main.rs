@@ -693,7 +693,15 @@ async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<(
 
     info!("logging in...");
     client.start().await.context("failed to run client")?;
+    let client_data = {
+        let mut data = client.data.write().await;
+        data.remove::<ClientDataKey>().expect("missing client data")
+    };
     drop(client);
+
+    info!("running shutdown routine for client data");
+    client_data.shutdown().await;
+    drop(client_data);
 
     info!("closing db...");
     db.close().await.context("failed to close db")?;

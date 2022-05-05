@@ -17,6 +17,7 @@ use crate::{
     },
     config::Config,
     database::Database,
+    util::EncoderTask,
 };
 use serenity::{
     client::bridge::gateway::ShardManager,
@@ -27,6 +28,7 @@ use std::{
     fmt::Debug,
     sync::Arc,
 };
+use tracing::error;
 
 /// A tool to build cache stats
 #[derive(Debug)]
@@ -103,6 +105,8 @@ pub struct ClientData {
     pub iqdb_client: IqdbClient,
     /// TikTokData
     pub tiktok_data: TikTokData,
+    /// Encoder Task
+    pub encoder_task: EncoderTask,
 
     /// The database
     pub db: Database,
@@ -141,6 +145,7 @@ impl ClientData {
             tic_tac_toe_data: Default::default(),
             iqdb_client: Default::default(),
             tiktok_data: Default::default(),
+            encoder_task: EncoderTask::new(),
 
             db,
 
@@ -172,5 +177,15 @@ impl ClientData {
         }
 
         stat_builder.into_inner()
+    }
+
+    /// Shutdown anything that needs to be shut down.
+    ///
+    /// Errors are logged to the console,
+    /// but not returned to the user as it is assumed that they don't matter in the middle of a shutdown.
+    pub async fn shutdown(&self) {
+        if let Err(e) = self.encoder_task.shutdown().await {
+            error!("{:?}", e)
+        }
     }
 }

@@ -53,7 +53,7 @@ pub struct EncoderTask {
 
 impl EncoderTask {
     /// Make a new encoder task
-    pub fn new(&self) -> Self {
+    pub fn new() -> Self {
         let (tx, rx) = tokio::sync::mpsc::channel(1);
         let handle = tokio::spawn(encoder_task_impl(rx));
 
@@ -135,6 +135,12 @@ async fn encoder_task_impl(mut rx: tokio::sync::mpsc::Receiver<EncoderTaskMessag
                 }
             }
         }
+    }
+}
+
+impl Default for EncoderTask {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
