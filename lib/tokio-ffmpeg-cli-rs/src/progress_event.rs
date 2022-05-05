@@ -1,4 +1,3 @@
-use crate::Error;
 use std::collections::HashMap;
 
 const FRAME_KEY: &str = "frame";
@@ -12,6 +11,37 @@ const DUP_FRAMES_KEY: &str = "dup_frames";
 const DROP_FRAMES_KEY: &str = "drop_frames";
 const SPEED_KEY: &str = "speed";
 const PROGRESS_KEY: &str = "progress";
+
+/// An error that occurs while building a [`ProgressEvent`]
+#[derive(Debug, thiserror::Error)]
+pub enum LineBuilderError {
+    /// The `key=value` pair is invalid
+    #[error("invalid key value pair")]
+    InvalidKeyValuePair,
+
+    /// Invalid integer value for a key
+    #[error("invalid integer value for key '{0}'")]
+    InvalidIntegerValue(&'static str, #[source] std::num::ParseIntError),
+
+    /// Invalid float value for a key
+    #[error("invalid float value for key '{0}'")]
+    InvalidFloatValue(&'static str, #[source] std::num::ParseFloatError),
+
+    /// Got a duplicate key
+    #[error("duplicate key '{key}'")]
+    DuplicateKey {
+        /// The duplicate key
+        key: Box<str>,
+        /// The new duplicate value
+        new_value: Box<str>,
+        /// The old value
+        old_value: Box<str>,
+    },
+
+    /// Missing a key=value pair
+    #[error("missing key value pair for key '{0}'")]
+    MissingKeyValuePair(&'static str),
+}
 
 /// An event about the encoding progress sent by ffmpeg
 #[derive(Debug)]
@@ -70,19 +100,22 @@ impl ProgressEvent {
         speed: Option<Option<f64>>,
         progress: Option<Box<str>>,
         extra: HashMap<Box<str>, Box<str>>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, LineBuilderError> {
         Ok(ProgressEvent {
-            frame: frame.ok_or(Error::MissingKeyValuePair(FRAME_KEY))?,
-            fps: fps.ok_or(Error::MissingKeyValuePair(FPS_KEY))?,
-            bitrate: bitrate.ok_or(Error::MissingKeyValuePair(BITRATE_KEY))?,
-            total_size: total_size.ok_or(Error::MissingKeyValuePair(TOTAL_SIZE_KEY))?,
-            out_time_us: out_time_us.ok_or(Error::MissingKeyValuePair(OUT_TIME_US_KEY))?,
-            out_time_ms: out_time_ms.ok_or(Error::MissingKeyValuePair(OUT_TIME_MS_KEY))?,
-            out_time: out_time.ok_or(Error::MissingKeyValuePair(OUT_TIME_KEY))?,
-            dup_frames: dup_frames.ok_or(Error::MissingKeyValuePair(DUP_FRAMES_KEY))?,
-            drop_frames: drop_frames.ok_or(Error::MissingKeyValuePair(DROP_FRAMES_KEY))?,
-            speed: speed.ok_or(Error::MissingKeyValuePair(SPEED_KEY))?,
-            progress: progress.ok_or(Error::MissingKeyValuePair(PROGRESS_KEY))?,
+            frame: frame.ok_or(LineBuilderError::MissingKeyValuePair(FRAME_KEY))?,
+            fps: fps.ok_or(LineBuilderError::MissingKeyValuePair(FPS_KEY))?,
+            bitrate: bitrate.ok_or(LineBuilderError::MissingKeyValuePair(BITRATE_KEY))?,
+            total_size: total_size.ok_or(LineBuilderError::MissingKeyValuePair(TOTAL_SIZE_KEY))?,
+            out_time_us: out_time_us
+                .ok_or(LineBuilderError::MissingKeyValuePair(OUT_TIME_US_KEY))?,
+            out_time_ms: out_time_ms
+                .ok_or(LineBuilderError::MissingKeyValuePair(OUT_TIME_MS_KEY))?,
+            out_time: out_time.ok_or(LineBuilderError::MissingKeyValuePair(OUT_TIME_KEY))?,
+            dup_frames: dup_frames.ok_or(LineBuilderError::MissingKeyValuePair(DUP_FRAMES_KEY))?,
+            drop_frames: drop_frames
+                .ok_or(LineBuilderError::MissingKeyValuePair(DROP_FRAMES_KEY))?,
+            speed: speed.ok_or(LineBuilderError::MissingKeyValuePair(SPEED_KEY))?,
+            progress: progress.ok_or(LineBuilderError::MissingKeyValuePair(PROGRESS_KEY))?,
             extra,
         })
     }
@@ -127,23 +160,29 @@ impl ProgressEventLineBuilder {
     /// Push a line to this builder.
     ///
     /// Returns `Some` if the new line would cause the builder to complete a [`ProgressEvent`].
-    pub(crate) fn push(&mut self, line: &str) -> Result<Option<ProgressEvent>, Error> {
+    pub(crate) fn push(&mut self, line: &str) -> Result<Option<ProgressEvent>, LineBuilderError> {
         let line = line.trim();
 
-        let (key, value) = line.split_once('=').ok_or(Error::InvalidKeyValuePair)?;
+        let (key, value) = line
+            .split_once('=')
+            .ok_or(LineBuilderError::InvalidKeyValuePair)?;
 
         fn parse_kv_u64(
             key: &'static str,
             value: &str,
             store: &mut Option<u64>,
-        ) -> Result<(), Error> {
-            if store.is_some() {
-                return Err(Error::DuplicateKey(key.into()));
+        ) -> Result<(), LineBuilderError> {
+            if let Some(store) = store {
+                return Err(LineBuilderError::DuplicateKey {
+                    key: key.into(),
+                    new_value: value.into(),
+                    old_value: store.to_string().into(),
+                });
             }
             *store = Some(
                 value
                     .parse()
-                    .map_err(|e| Error::InvalidIntegerValue(key, e))?,
+                    .map_err(|e| LineBuilderError::InvalidIntegerValue(key, e))?,
             );
             Ok(())
         }
@@ -152,84 +191,101 @@ impl ProgressEventLineBuilder {
             key: &'static str,
             value: &str,
             store: &mut Option<f64>,
-        ) -> Result<(), Error> {
-            if store.is_some() {
-                return Err(Error::DuplicateKey(key.into()));
+        ) -> Result<(), LineBuilderError> {
+            if let Some(store) = store {
+                return Err(LineBuilderError::DuplicateKey {
+                    key: key.into(),
+                    old_value: store.to_string().into(),
+                    new_value: value.into(),
+                });
             }
             *store = Some(
                 value
                     .parse()
-                    .map_err(|e| Error::InvalidFloatValue(key, e))?,
+                    .map_err(|e| LineBuilderError::InvalidFloatValue(key, e))?,
             );
             Ok(())
         }
 
-        match (key, value) {
-            (FRAME_KEY, value) => {
+        match key {
+            FRAME_KEY => {
                 parse_kv_u64(FRAME_KEY, value, &mut self.maybe_frame)?;
                 Ok(None)
             }
-            (FPS_KEY, value) => {
+            FPS_KEY => {
                 parse_kv_f64(FPS_KEY, value, &mut self.maybe_fps)?;
                 Ok(None)
             }
-            (BITRATE_KEY, value) => {
+            BITRATE_KEY => {
                 let value = value.trim();
 
-                if self.maybe_bitrate.is_some() {
-                    Err(Error::DuplicateKey(BITRATE_KEY.into()))
+                if let Some(old_value) = self.maybe_bitrate.take() {
+                    Err(LineBuilderError::DuplicateKey {
+                        key: BITRATE_KEY.into(),
+                        old_value,
+                        new_value: value.into(),
+                    })
                 } else {
                     self.maybe_bitrate = Some(value.into());
                     Ok(None)
                 }
             }
-            (TOTAL_SIZE_KEY, value) => {
+            TOTAL_SIZE_KEY => {
                 parse_kv_u64(TOTAL_SIZE_KEY, value, &mut self.maybe_total_size)?;
                 Ok(None)
             }
-            (OUT_TIME_US_KEY, value) => {
+            OUT_TIME_US_KEY => {
                 parse_kv_u64(OUT_TIME_US_KEY, value, &mut self.maybe_out_time_us)?;
                 Ok(None)
             }
-            (OUT_TIME_MS_KEY, value) => {
+            OUT_TIME_MS_KEY => {
                 parse_kv_u64(OUT_TIME_MS_KEY, value, &mut self.maybe_out_time_ms)?;
                 Ok(None)
             }
-            (OUT_TIME_KEY, out_time) => {
-                if self.maybe_out_time.is_some() {
-                    Err(Error::DuplicateKey(OUT_TIME_KEY.into()))
+            OUT_TIME_KEY => {
+                if let Some(old_value) = self.maybe_out_time.take() {
+                    Err(LineBuilderError::DuplicateKey {
+                        key: OUT_TIME_KEY.into(),
+                        old_value,
+                        new_value: value.into(),
+                    })
                 } else {
-                    self.maybe_out_time = Some(out_time.into());
+                    self.maybe_out_time = Some(value.into());
                     Ok(None)
                 }
             }
-            (DUP_FRAMES_KEY, value) => {
+            DUP_FRAMES_KEY => {
                 parse_kv_u64(DUP_FRAMES_KEY, value, &mut self.maybe_dup_frames)?;
                 Ok(None)
             }
-            (DROP_FRAMES_KEY, value) => {
+            DROP_FRAMES_KEY => {
                 parse_kv_u64(DROP_FRAMES_KEY, value, &mut self.maybe_drop_frames)?;
                 Ok(None)
             }
-            (SPEED_KEY, value) => {
+            SPEED_KEY => {
                 let value = value.trim_end_matches('x').trim_end_matches('X').trim();
 
                 if value == "N/A" {
                     self.maybe_speed = Some(None);
                 } else {
-                    if self.maybe_speed.is_some() {
-                        return Err(Error::DuplicateKey(SPEED_KEY.into()));
+                    if let Some(maybe_speed) = self.maybe_speed {
+                        return Err(LineBuilderError::DuplicateKey {
+                            key: SPEED_KEY.into(),
+                            old_value: maybe_speed
+                                .map(|v| Box::<str>::from(v.to_string()))
+                                .unwrap_or_else(|| "N/A".into()),
+                            new_value: value.into(),
+                        });
                     }
-                    self.maybe_speed = Some(Some(
-                        value
-                            .parse()
-                            .map_err(|e| Error::InvalidFloatValue(SPEED_KEY, e))?,
-                    ));
+                    self.maybe_speed =
+                        Some(Some(value.parse().map_err(|e| {
+                            LineBuilderError::InvalidFloatValue(SPEED_KEY, e)
+                        })?));
                 }
 
                 Ok(None)
             }
-            (PROGRESS_KEY, progress) => {
+            PROGRESS_KEY => {
                 let event = ProgressEvent::try_from_optional_parts(
                     self.maybe_frame.take(),
                     self.maybe_fps.take(),
@@ -241,15 +297,19 @@ impl ProgressEventLineBuilder {
                     self.maybe_dup_frames.take(),
                     self.maybe_drop_frames.take(),
                     self.maybe_speed.take(),
-                    Some(progress.into()),
+                    Some(value.into()),
                     std::mem::take(&mut self.extra),
                 )?;
 
                 Ok(Some(event))
             }
-            (key, value) => {
-                if self.extra.insert(key.into(), value.into()).is_some() {
-                    Err(Error::DuplicateKey(key.to_string()))
+            key => {
+                if let Some(old_value) = self.extra.insert(key.into(), value.into()) {
+                    Err(LineBuilderError::DuplicateKey {
+                        key: key.into(),
+                        old_value,
+                        new_value: value.into(),
+                    })
                 } else {
                     Ok(None)
                 }
