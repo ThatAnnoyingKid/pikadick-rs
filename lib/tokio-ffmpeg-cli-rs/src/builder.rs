@@ -126,7 +126,7 @@ impl Builder {
         }
 
         if let Some(video_bitrate) = video_bitrate.as_deref() {
-            command.args(["-codec:v", video_bitrate]);
+            command.args(["-b:v", video_bitrate]);
         }
 
         command.args(["-progress", "-"]);
