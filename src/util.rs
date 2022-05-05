@@ -1,12 +1,14 @@
 mod arc_anyhow_error;
 mod ascii_table;
 mod loading_reaction;
+mod request_map;
 mod timed_cache;
 
 pub use self::{
     arc_anyhow_error::ArcAnyhowError,
     ascii_table::AsciiTable,
     loading_reaction::LoadingReaction,
+    request_map::RequestMap,
     timed_cache::{
         TimedCache,
         TimedCacheEntry,
