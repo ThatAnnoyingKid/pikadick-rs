@@ -58,8 +58,10 @@ pub struct ProgressEvent {
     /// The progress
     pub progress: Box<str>,
 
-    /// The total size
-    pub total_size: u64,
+    /// The total size.
+    ///
+    /// None means either it was not present, or it was N/A
+    pub total_size: Option<u64>,
 
     /// The out time in us
     pub out_time_us: u64,
@@ -77,7 +79,8 @@ pub struct ProgressEvent {
     pub drop_frames: u64,
 
     /// The speed.
-    /// None means N/A.
+    ///
+    /// None means it was N/A.
     pub speed: Option<f64>,
 
     /// Extra K/Vs
@@ -91,7 +94,7 @@ impl ProgressEvent {
         frame: Option<u64>,
         fps: Option<f64>,
         bitrate: Option<Box<str>>,
-        total_size: Option<u64>,
+        total_size: Option<Option<u64>>,
         out_time_us: Option<u64>,
         out_time_ms: Option<u64>,
         out_time: Option<Box<str>>,
@@ -127,7 +130,7 @@ pub(crate) struct ProgressEventLineBuilder {
     maybe_frame: Option<u64>,
     maybe_fps: Option<f64>,
     maybe_bitrate: Option<Box<str>>,
-    maybe_total_size: Option<u64>,
+    maybe_total_size: Option<Option<u64>>,
     maybe_out_time_us: Option<u64>,
     maybe_out_time_ms: Option<u64>,
     maybe_out_time: Option<Box<str>>,
@@ -231,7 +234,24 @@ impl ProgressEventLineBuilder {
                 }
             }
             TOTAL_SIZE_KEY => {
-                parse_kv_u64(TOTAL_SIZE_KEY, value, &mut self.maybe_total_size)?;
+                if value == "N/A" {
+                    self.maybe_total_size = Some(None);
+                } else {
+                    if let Some(maybe_total_size) = self.maybe_total_size {
+                        return Err(LineBuilderError::DuplicateKey {
+                            key: TOTAL_SIZE_KEY.into(),
+                            old_value: maybe_total_size
+                                .map(|v| Box::<str>::from(v.to_string()))
+                                .unwrap_or_else(|| "N/A".into()),
+                            new_value: value.into(),
+                        });
+                    }
+                    self.maybe_total_size =
+                        Some(Some(value.parse().map_err(|e| {
+                            LineBuilderError::InvalidIntegerValue(TOTAL_SIZE_KEY, e)
+                        })?));
+                }
+
                 Ok(None)
             }
             OUT_TIME_US_KEY => {
