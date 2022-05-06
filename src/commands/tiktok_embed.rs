@@ -33,7 +33,6 @@ use tokio_stream::StreamExt;
 use tracing::{
     error,
     info,
-    warn,
 };
 use url::Url;
 
@@ -82,11 +81,10 @@ impl TikTokData {
             .await
             .context("failed to create tiktok cache dir")?;
 
-        // TODO: Consider making this the encoder task's job
-        // This isn't a problem as nothing will repeatedly create tiktok data.
-        let mut encoders = tokio_ffmpeg_cli::get_encoders()
+        let mut encoders = encoder_task
+            .get_encoders(true)
             .await
-            .context("failed to get ffmpeg encoders")?;
+            .context("failed to get encoders")?;
 
         // Keep only h264 encoders
         encoders.retain(|encoder| encoder.description.ends_with("(codec h264)"));
@@ -94,42 +92,6 @@ impl TikTokData {
 
         let mut best_encoder_index = None;
         for encoder in encoders {
-            let encoder_is_valid = {
-                let mut is_valid = false;
-                let mut stream = encoder_task
-                    .encode()
-                    .input("nullsrc")
-                    .input_format("lavfi")
-                    .output("-")
-                    .output_format("null")
-                    .video_codec(&*encoder.name)
-                    .video_frames(1_u64)
-                    .try_send()
-                    .await?;
-
-                while let Some(msg) = stream.next().await {
-                    match msg.context("error while detecting encoder support") {
-                        Ok(tokio_ffmpeg_cli::Event::ExitStatus(status)) => {
-                            is_valid = status.success();
-                        }
-                        Ok(
-                            tokio_ffmpeg_cli::Event::Progress(_)
-                            | tokio_ffmpeg_cli::Event::Unknown(_),
-                        ) => {}
-                        Err(e) => {
-                            warn!("{:?}", e);
-                        }
-                    }
-                }
-
-                is_valid
-            };
-
-            if !encoder_is_valid {
-                info!("skipping '{}' as it is invalid", encoder.name);
-                continue;
-            }
-
             if let Some(index) = ENCODER_PREFERENCE_LIST
                 .iter()
                 .position(|name| **name == *encoder.name)

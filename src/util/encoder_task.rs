@@ -9,9 +9,21 @@ use tokio_stream::{
     Stream,
     StreamExt,
 };
+use tracing::info;
 
 /// A message for the encoder task
 enum Message {
+    /// Get encoders available to the application
+    GetEncoders {
+        /// Whether to validate the encoder.
+        ///
+        /// If this is false, false positives will show up in the output.
+        validate: bool,
+
+        /// The response
+        tx: oneshot::Sender<anyhow::Result<Vec<tokio_ffmpeg_cli::Encoder>>>,
+    },
+
     /// Request an encode
     Encode {
         /// The options for the encode
@@ -26,7 +38,7 @@ enum Message {
         >,
     },
 
-    /// request a shutdown.
+    /// Request a shutdown.
     ///
     /// the task will drain the channel until it is empty after recieving this.
     /// the task will still accept new messages until it processes this one.
@@ -53,6 +65,20 @@ impl EncoderTask {
             handle: Arc::new(parking_lot::Mutex::new(Some(handle))),
             tx,
         }
+    }
+
+    /// Get encoders
+    pub async fn get_encoders(
+        &self,
+        validate: bool,
+    ) -> anyhow::Result<Vec<tokio_ffmpeg_cli::Encoder>> {
+        let (tx, rx) = oneshot::channel();
+        self.tx
+            .try_send(Message::GetEncoders { validate, tx })
+            .ok()
+            .context("failed to send message")?;
+
+        rx.await.context("task crashed")?
     }
 
     /// Create a builder for an encode request
@@ -125,6 +151,58 @@ async fn encoder_task_impl(mut rx: tokio::sync::mpsc::Receiver<Message>) {
                         let _ = tx.send(Err(e)).is_ok();
                     }
                 }
+            }
+            Message::GetEncoders { validate, tx } => {
+                let result = async {
+                    // Get all encoders
+                    let raw_encoders = tokio_ffmpeg_cli::get_encoders()
+                        .await
+                        .context("failed to get ffmpeg encoders")?;
+
+                    if validate {
+                        // If we are validating, allocate a new buffer and move valid entries to it was we validate it.
+                        let mut encoders = Vec::with_capacity(raw_encoders.len());
+
+                        // TODO: We only support sanity checks for video output, so the output will only be video
+                        // In the future, we should edit the sanity check based on encoder type
+                        // TODO: We filter out anything that isn't 264 as thats all we need right now.
+                        // In the future, we should expose an api to configure this filter.
+                        // TODO: Maybe this should be run in parallel.
+                        for encoder in raw_encoders
+                            .into_iter()
+                            .filter(|encoder| encoder.is_video())
+                            .filter(|encoder| encoder.name.contains("264"))
+                        {
+                            // Run a basic transcoding sanity check
+                            let status = tokio_ffmpeg_cli::Builder::new()
+                                .input("nullsrc")
+                                .input_format("lavfi")
+                                .output("-")
+                                .output_format("null")
+                                .video_codec(&*encoder.name)
+                                .video_frames(1_u64)
+                                .ffmpeg_status()
+                                .await?;
+
+                            // If it passed, add it to the output
+                            if status.success() {
+                                encoders.push(encoder);
+                            } else {
+                                info!("skipping '{}' as it failed a sanity check", encoder.name);
+                            }
+                        }
+
+                        Ok(encoders)
+                    } else {
+                        // If we are not validating, just return
+                        Ok(raw_encoders)
+                    }
+                }
+                .await;
+
+                // Don't care if the user hung up,
+                // but it is a bit sad they asked for expensive data they didn't want
+                let _ = tx.send(result).is_ok();
             }
         }
     }
