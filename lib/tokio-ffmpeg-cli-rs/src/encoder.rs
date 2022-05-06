@@ -141,4 +141,9 @@ impl Encoder {
             description: description.into(),
         })
     }
+
+    /// Returns `true` if this is a video encoder
+    pub fn is_video(&self) -> bool {
+        self.capabilities.contains(Capabilities::VIDEO)
+    }
 }
