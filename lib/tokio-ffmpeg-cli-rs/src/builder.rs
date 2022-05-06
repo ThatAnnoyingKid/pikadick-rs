@@ -44,6 +44,12 @@ pub struct Builder {
     /// The output
     pub output: Option<OsString>,
 
+    /// The input format
+    pub input_format: Option<String>,
+
+    /// The output format
+    pub output_format: Option<String>,
+
     /// Whether to overwrite the destination
     pub overwrite: bool,
 }
@@ -59,6 +65,9 @@ impl Builder {
 
             input: None,
             output: None,
+
+            input_format: None,
+            output_format: None,
 
             overwrite: false,
         }
@@ -94,6 +103,18 @@ impl Builder {
         self
     }
 
+    /// Set the input format
+    pub fn input_format(&mut self, input_format: impl Into<String>) -> &mut Self {
+        self.input_format = Some(input_format.into());
+        self
+    }
+
+    /// Set the output format
+    pub fn output_format(&mut self, output_format: impl Into<String>) -> &mut Self {
+        self.output_format = Some(output_format.into());
+        self
+    }
+
     /// Set whether the output should be overwritten
     pub fn overwrite(&mut self, overwrite: bool) -> &mut Self {
         self.overwrite = overwrite;
@@ -114,8 +135,15 @@ impl Builder {
         let input = self.input.take();
         let output = self.output.take();
 
+        let input_format = self.input_format.take();
+        let output_format = self.output_format.take();
+
         let mut command = tokio::process::Command::new("ffmpeg");
         command.arg("-hide_banner");
+
+        if let Some(input_format) = input_format.as_deref() {
+            command.args(["-f", input_format]);
+        }
 
         let input = input.ok_or(Error::MissingInput)?;
         command.args(["-i".as_ref(), input.as_os_str()]);
@@ -134,6 +162,10 @@ impl Builder {
 
         command.args(["-progress", "-"]);
         command.arg(if self.overwrite { "-y" } else { "-n" });
+
+        if let Some(output_format) = output_format.as_deref() {
+            command.args(["-f", output_format]);
+        }
 
         let output = output.ok_or(Error::MissingOutput)?;
         command.arg(output.as_os_str());
