@@ -183,6 +183,24 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
         self
     }
 
+    /// Set the input format
+    pub fn input_format(&mut self, input_format: impl Into<String>) -> &mut Self {
+        self.builder.input_format(input_format);
+        self
+    }
+
+    /// Set the output format
+    pub fn output_format(&mut self, output_format: impl Into<String>) -> &mut Self {
+        self.builder.output_format(output_format);
+        self
+    }
+
+    /// Set the # of video frames from the input
+    pub fn video_frames(&mut self, video_frames: impl Into<u64>) -> &mut Self {
+        self.builder.video_frames(video_frames);
+        self
+    }
+
     /// Try to send the message, exiting it it is at capacity
     pub async fn try_send(
         &self,
