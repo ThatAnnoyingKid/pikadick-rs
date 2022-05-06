@@ -133,7 +133,7 @@ impl Builder {
     }
 
     /// Build the command
-    pub fn spawn(&mut self) -> Result<impl Stream<Item = Result<Event, Error>> + Unpin, Error> {
+    fn build_command(&mut self) -> Result<tokio::process::Command, Error> {
         // https://superuser.com/questions/1459810/how-can-i-get-ffmpeg-command-running-status-in-real-time
         // https://stackoverflow.com/questions/43978018/ffmpeg-get-machine-readable-output
         // https://ffmpeg.org/ffmpeg.html
@@ -196,6 +196,27 @@ impl Builder {
             .stdout(Stdio::piped())
             .stdin(Stdio::null())
             .stderr(Stdio::piped());
+
+        Ok(command)
+    }
+
+    /// Run the command and wait for it to finish.
+    ///
+    /// This will not provide progress info or stdout/stdin, but is far simpler to drive.
+    pub async fn ffmpeg_status(&mut self) -> Result<std::process::ExitStatus, Error> {
+        self.build_command()?.status().await.map_err(Error::Io)
+    }
+
+    /// Run the command and wait for it to finish.
+    ///
+    /// This will not provide progress info, but is far simpler to drive.
+    pub async fn ffmpeg_output(&mut self) -> Result<std::process::Output, Error> {
+        self.build_command()?.output().await.map_err(Error::Io)
+    }
+
+    /// Spawn the stream
+    pub fn spawn(&mut self) -> Result<impl Stream<Item = Result<Event, Error>> + Unpin, Error> {
+        let mut command = self.build_command()?;
 
         let mut child = command.spawn().map_err(Error::ProcessSpawn)?;
 
