@@ -12,6 +12,8 @@ const DROP_FRAMES_KEY: &str = "drop_frames";
 const SPEED_KEY: &str = "speed";
 const PROGRESS_KEY: &str = "progress";
 
+const N_A: &str = "N/A";
+
 /// An error that occurs while building a [`ProgressEvent`]
 #[derive(Debug, thiserror::Error)]
 pub enum LineBuilderError {
@@ -20,8 +22,13 @@ pub enum LineBuilderError {
     InvalidKeyValuePair,
 
     /// Invalid integer value for a key
-    #[error("invalid integer value for key '{0}'")]
-    InvalidIntegerValue(&'static str, #[source] std::num::ParseIntError),
+    #[error("invalid integer value for key '{key}' with value '{value}'")]
+    InvalidIntegerValue {
+        key: &'static str,
+        value: Box<str>,
+        #[source]
+        error: std::num::ParseIntError,
+    },
 
     /// Invalid float value for a key
     #[error("invalid float value for key '{0}'")]
@@ -64,10 +71,10 @@ pub struct ProgressEvent {
     pub total_size: Option<u64>,
 
     /// The out time in us
-    pub out_time_us: u64,
+    pub out_time_us: i64,
 
     /// The out time in ms
-    pub out_time_ms: u64,
+    pub out_time_ms: i64,
 
     /// The out time
     pub out_time: Box<str>,
@@ -95,8 +102,8 @@ impl ProgressEvent {
         fps: Option<f64>,
         bitrate: Option<Box<str>>,
         total_size: Option<Option<u64>>,
-        out_time_us: Option<u64>,
-        out_time_ms: Option<u64>,
+        out_time_us: Option<i64>,
+        out_time_ms: Option<i64>,
         out_time: Option<Box<str>>,
         dup_frames: Option<u64>,
         drop_frames: Option<u64>,
@@ -131,8 +138,8 @@ pub(crate) struct ProgressEventLineBuilder {
     maybe_fps: Option<f64>,
     maybe_bitrate: Option<Box<str>>,
     maybe_total_size: Option<Option<u64>>,
-    maybe_out_time_us: Option<u64>,
-    maybe_out_time_ms: Option<u64>,
+    maybe_out_time_us: Option<i64>,
+    maybe_out_time_ms: Option<i64>,
     maybe_out_time: Option<Box<str>>,
     maybe_dup_frames: Option<u64>,
     maybe_drop_frames: Option<u64>,
@@ -182,11 +189,41 @@ impl ProgressEventLineBuilder {
                     old_value: store.to_string().into(),
                 });
             }
-            *store = Some(
-                value
-                    .parse()
-                    .map_err(|e| LineBuilderError::InvalidIntegerValue(key, e))?,
-            );
+            *store =
+                Some(
+                    value
+                        .parse()
+                        .map_err(|error| LineBuilderError::InvalidIntegerValue {
+                            key,
+                            value: value.into(),
+                            error,
+                        })?,
+                );
+            Ok(())
+        }
+
+        fn parse_kv_i64(
+            key: &'static str,
+            value: &str,
+            store: &mut Option<i64>,
+        ) -> Result<(), LineBuilderError> {
+            if let Some(store) = store {
+                return Err(LineBuilderError::DuplicateKey {
+                    key: key.into(),
+                    new_value: value.into(),
+                    old_value: store.to_string().into(),
+                });
+            }
+            *store =
+                Some(
+                    value
+                        .parse()
+                        .map_err(|error| LineBuilderError::InvalidIntegerValue {
+                            key,
+                            value: value.into(),
+                            error,
+                        })?,
+                );
             Ok(())
         }
 
@@ -234,7 +271,7 @@ impl ProgressEventLineBuilder {
                 }
             }
             TOTAL_SIZE_KEY => {
-                if value == "N/A" {
+                if value == N_A {
                     self.maybe_total_size = Some(None);
                 } else {
                     if let Some(maybe_total_size) = self.maybe_total_size {
@@ -242,24 +279,27 @@ impl ProgressEventLineBuilder {
                             key: TOTAL_SIZE_KEY.into(),
                             old_value: maybe_total_size
                                 .map(|v| Box::<str>::from(v.to_string()))
-                                .unwrap_or_else(|| "N/A".into()),
+                                .unwrap_or_else(|| N_A.into()),
                             new_value: value.into(),
                         });
                     }
-                    self.maybe_total_size =
-                        Some(Some(value.parse().map_err(|e| {
-                            LineBuilderError::InvalidIntegerValue(TOTAL_SIZE_KEY, e)
-                        })?));
+                    self.maybe_total_size = Some(Some(value.parse().map_err(|error| {
+                        LineBuilderError::InvalidIntegerValue {
+                            key: TOTAL_SIZE_KEY,
+                            value: value.into(),
+                            error,
+                        }
+                    })?));
                 }
 
                 Ok(None)
             }
             OUT_TIME_US_KEY => {
-                parse_kv_u64(OUT_TIME_US_KEY, value, &mut self.maybe_out_time_us)?;
+                parse_kv_i64(OUT_TIME_US_KEY, value, &mut self.maybe_out_time_us)?;
                 Ok(None)
             }
             OUT_TIME_MS_KEY => {
-                parse_kv_u64(OUT_TIME_MS_KEY, value, &mut self.maybe_out_time_ms)?;
+                parse_kv_i64(OUT_TIME_MS_KEY, value, &mut self.maybe_out_time_ms)?;
                 Ok(None)
             }
             OUT_TIME_KEY => {
@@ -285,7 +325,7 @@ impl ProgressEventLineBuilder {
             SPEED_KEY => {
                 let value = value.trim_end_matches('x').trim_end_matches('X').trim();
 
-                if value == "N/A" {
+                if value == N_A {
                     self.maybe_speed = Some(None);
                 } else {
                     if let Some(maybe_speed) = self.maybe_speed {
@@ -293,7 +333,7 @@ impl ProgressEventLineBuilder {
                             key: SPEED_KEY.into(),
                             old_value: maybe_speed
                                 .map(|v| Box::<str>::from(v.to_string()))
-                                .unwrap_or_else(|| "N/A".into()),
+                                .unwrap_or_else(|| N_A.into()),
                             new_value: value.into(),
                         });
                     }
