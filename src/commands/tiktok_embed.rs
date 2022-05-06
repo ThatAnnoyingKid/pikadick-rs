@@ -56,6 +56,8 @@ type VideoDownloadRequestMap = Arc<RequestMap<String, Result<Arc<PathBuf>, ArcAn
 /// target_duration is in seconds.
 /// the bitrate is in kilobits
 fn calc_target_bitrate(target_size: u64, duration: u64) -> u64 {
+    // https://stackoverflow.com/questions/29082422/ffmpeg-video-compression-specific-file-size
+
     target_size / duration
 }
 
@@ -254,8 +256,12 @@ impl TikTokData {
                     if metadata.len() > 8_000_000 {
                         // We target 7 MB to give ourselves some lee-way.
                         let target_bitrate = calc_target_bitrate(7_000 * 8, video_duration);
-                        
-                        info!("reencoding tiktok video `{}` @ video bitrate {}", file_path.display(), target_bitrate);
+
+                        info!(
+                            "reencoding tiktok video `{}` @ video bitrate {}",
+                            file_path.display(),
+                            target_bitrate
+                        );
                         let mut stream = encoder_task
                             .encode()
                             .input(&file_path)
