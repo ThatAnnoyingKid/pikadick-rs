@@ -50,6 +50,9 @@ pub struct Builder {
     /// The output format
     pub output_format: Option<String>,
 
+    /// The # of video frames to read from the input
+    pub video_frames: Option<u64>,
+
     /// Whether to overwrite the destination
     pub overwrite: bool,
 }
@@ -68,6 +71,8 @@ impl Builder {
 
             input_format: None,
             output_format: None,
+
+            video_frames: None,
 
             overwrite: false,
         }
@@ -115,6 +120,12 @@ impl Builder {
         self
     }
 
+    /// The # of video frames to accept from the input
+    pub fn video_frames(&mut self, video_frames: impl Into<u64>) -> &mut Self {
+        self.video_frames = Some(video_frames.into());
+        self
+    }
+
     /// Set whether the output should be overwritten
     pub fn overwrite(&mut self, overwrite: bool) -> &mut Self {
         self.overwrite = overwrite;
@@ -138,8 +149,13 @@ impl Builder {
         let input_format = self.input_format.take();
         let output_format = self.output_format.take();
 
+        let video_frames = self.video_frames.take();
+
+        let overwrite = std::mem::take(&mut self.overwrite);
+
         let mut command = tokio::process::Command::new("ffmpeg");
         command.arg("-hide_banner");
+        command.arg("-nostdin");
 
         if let Some(input_format) = input_format.as_deref() {
             command.args(["-f", input_format]);
@@ -147,6 +163,11 @@ impl Builder {
 
         let input = input.ok_or(Error::MissingInput)?;
         command.args(["-i".as_ref(), input.as_os_str()]);
+
+        if let Some(video_frames) = video_frames {
+            // TODO: Consider adding itoa
+            command.args(["-frames:v", &video_frames.to_string()]);
+        }
 
         if let Some(audio_codec) = audio_codec.as_deref() {
             command.args(["-codec:a", audio_codec]);
@@ -161,7 +182,7 @@ impl Builder {
         }
 
         command.args(["-progress", "-"]);
-        command.arg(if self.overwrite { "-y" } else { "-n" });
+        command.arg(if overwrite { "-y" } else { "-n" });
 
         if let Some(output_format) = output_format.as_deref() {
             command.args(["-f", output_format]);
