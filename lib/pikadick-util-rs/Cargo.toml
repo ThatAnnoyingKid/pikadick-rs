@@ -1,0 +1,17 @@
+[package]
+name = "pikadick-util"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { version = "1.0.57", optional = true }
+reqwest = { version = "0.11.10", default-features = false, optional = true }
+tokio = { version = "1.18.1", default-features = false, optional = true }
+
+[features]
+download_to_file = [
+    "anyhow",
+    "reqwest",
+    "tokio",
+    "tokio/fs",
+]

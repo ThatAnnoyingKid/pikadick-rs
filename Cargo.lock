@@ -2408,6 +2408,7 @@ dependencies = [
  "opentelemetry-otlp",
  "parking_lot 0.12.0",
  "pikadick-slash-framework",
+ "pikadick-util",
  "quizizz",
  "r6stats",
  "r6tracker",
@@ -2462,6 +2463,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "pikadick-util"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "reqwest",
+ "tokio",
 ]
 
 [[package]]
