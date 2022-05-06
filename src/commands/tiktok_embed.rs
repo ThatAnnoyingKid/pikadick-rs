@@ -50,6 +50,15 @@ const ENCODER_PREFERENCE_LIST: &[&str] = &[
 
 type VideoDownloadRequestMap = Arc<RequestMap<String, Result<Arc<PathBuf>, ArcAnyhowError>>>;
 
+/// Calculate the target bitrate.
+///
+/// target_size is in kilobits.
+/// target_duration is in seconds.
+/// the bitrate is in kilobits
+fn calc_target_bitrate(target_size: u64, duration: u64) -> u64 {
+    target_size / duration
+}
+
 /// TikTok Data
 #[derive(Debug, Clone)]
 pub struct TikTokData {
@@ -147,6 +156,7 @@ impl TikTokData {
         id: &str,
         format: &str,
         url: &str,
+        video_duration: u64,
     ) -> anyhow::Result<Arc<PathBuf>> {
         let result = self
             .video_download_request_map
@@ -242,13 +252,17 @@ impl TikTokData {
 
                     // If the file is greater than 8mb, we need to reencode it
                     if metadata.len() > 8_000_000 {
+                        // We target 7 MB to give ourselves some lee-way.
+                        let target_bitrate = calc_target_bitrate(7_000 * 8, video_duration);
+                        
+                        info!("reencoding tiktok video `{}` @ video bitrate {}", file_path.display(), target_bitrate);
                         let mut stream = encoder_task
                             .encode()
                             .input(&file_path)
                             .output(&reencoded_file_path)
                             .audio_codec("copy")
                             .video_codec(video_encoder)
-                            .video_bitrate("1M")
+                            .video_bitrate(format!("{}K", target_bitrate))
                             .try_send()
                             .await
                             .context("failed to start reencoding")
@@ -325,7 +339,7 @@ impl TikTokData {
         loading_reaction: &mut Option<LoadingReaction>,
         delete_link: bool,
     ) -> anyhow::Result<()> {
-        let (video_url, video_id, video_format) = {
+        let (video_url, video_id, video_format, video_duration) = {
             let post = self.get_post_cached(url.as_str()).await?;
             let post = post.data();
             let item_module_post = post
@@ -335,12 +349,18 @@ impl TikTokData {
             let video_url = item_module_post.video.download_addr.clone();
             let video_id = item_module_post.video.id.clone();
             let video_format = item_module_post.video.format.clone();
+            let video_duration = item_module_post.video.duration;
 
-            (video_url, video_id, video_format)
+            (video_url, video_id, video_format, video_duration)
         };
 
         let video_path = self
-            .get_video_data_cached(video_id.as_str(), video_format.as_str(), video_url.as_str())
+            .get_video_data_cached(
+                video_id.as_str(),
+                video_format.as_str(),
+                video_url.as_str(),
+                video_duration,
+            )
             .await
             .context("failed to download tiktok video")?;
 
