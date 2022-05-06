@@ -122,8 +122,8 @@ pub struct ItemModulePostVideo {
     #[serde(rename = "downloadAddr")]
     pub download_addr: Url,
 
-    /// video duration?
-    pub duration: u32,
+    /// video duration, in seconds
+    pub duration: u64,
 
     /// The video ID
     pub id: String,
