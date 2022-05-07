@@ -1,5 +1,6 @@
 mod arc_anyhow_error;
 mod ascii_table;
+mod drop_remove_file;
 mod encoder_task;
 mod loading_reaction;
 mod request_map;
@@ -16,6 +17,7 @@ pub use self::{
         TimedCacheEntry,
     },
 };
+pub use drop_remove_file::DropRemoveFile;
 pub use pikadick_util::download_to_file;
 use std::{
     ffi::{
