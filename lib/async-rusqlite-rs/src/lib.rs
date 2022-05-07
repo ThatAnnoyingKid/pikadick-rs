@@ -41,4 +41,40 @@ pub enum Error {
     /// Setup failed to run
     #[error("init func failed")]
     SetupFunc(#[source] BoxedError),
+
+    /// A db access panicked
+    #[error("db access panicked")]
+    AccessPanicked(SyncWrapper<Box<dyn std::any::Any + Send>>),
+}
+
+/// Copied from tokio
+pub struct SyncWrapper<T> {
+    value: T,
+}
+
+// safety: The SyncWrapper being send allows you to send the inner value across
+// thread boundaries.
+unsafe impl<T: Send> Send for SyncWrapper<T> {}
+
+// safety: An immutable reference to a SyncWrapper is useless, so moving such an
+// immutable reference across threads is safe.
+unsafe impl<T> Sync for SyncWrapper<T> {}
+
+impl<T> std::fmt::Debug for SyncWrapper<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO: Add debug bound to impl?
+        f.debug_struct("SyncWrapper").finish()
+    }
+}
+
+impl<T> SyncWrapper<T> {
+    /// Make a new [`SyncWrapper`] around a type T
+    pub(crate) fn new(value: T) -> Self {
+        Self { value }
+    }
+
+    /// Get the inner value
+    pub fn into_inner(self) -> T {
+        self.value
+    }
 }

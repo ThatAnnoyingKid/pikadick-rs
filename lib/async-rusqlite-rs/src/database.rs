@@ -2,9 +2,11 @@ use crate::{
     BoxedError,
     DbThreadJoinHandle,
     Error,
+    SyncWrapper,
 };
 use rusqlite::Connection;
 use std::{
+    panic::AssertUnwindSafe,
     path::{
         Path,
         PathBuf,
@@ -93,6 +95,8 @@ impl Database {
                     }
                     Message::Close { closed } => {
                         rx.close();
+
+                        // We don't care if a send failed.
                         let _ = closed.send(()).is_ok();
                     }
                 }
@@ -116,13 +120,16 @@ impl Database {
         self.sender
             .send(Message::Access {
                 func: Box::new(move |db| {
-                    let _ = tx.send(func(db)).is_ok();
+                    let result = std::panic::catch_unwind(AssertUnwindSafe(|| func(db)));
+                    let _ = tx.send(result).is_ok();
                 }),
             })
             .await
             .map_err(|_| Error::SendMessage)?;
 
-        rx.await.map_err(Error::MissingResponse)
+        rx.await
+            .map_err(Error::MissingResponse)?
+            .map_err(|e| Error::AccessPanicked(SyncWrapper::new(e)))
     }
 
     /// Close the db.
