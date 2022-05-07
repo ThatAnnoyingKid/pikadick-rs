@@ -15,7 +15,10 @@ use std::{
 };
 
 /// Push an extension to a [`PathBuf`].
-pub fn push_extension<S: AsRef<OsStr>>(path: &mut PathBuf, extension: S) {
+pub fn push_extension<S>(path: &mut PathBuf, extension: S)
+where
+    S: AsRef<OsStr>,
+{
     let extension = extension.as_ref();
 
     // Bail out early if there is no extension, simply setting one.
