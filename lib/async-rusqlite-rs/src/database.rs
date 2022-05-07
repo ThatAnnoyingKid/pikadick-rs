@@ -39,7 +39,7 @@ impl std::fmt::Debug for Message {
 pub struct Database {
     sender: tokio::sync::mpsc::Sender<Message>,
 
-    handle: Arc<parking_lot::Mutex<Option<DbThreadJoinHandle>>>,
+    handle: Arc<std::sync::Mutex<Option<DbThreadJoinHandle>>>,
 }
 
 impl std::fmt::Debug for Database {
@@ -105,7 +105,7 @@ impl Database {
             // Try close db
             db.close()
         });
-        let handle = Arc::new(parking_lot::Mutex::new(Some(handle)));
+        let handle = Arc::new(std::sync::Mutex::new(Some(handle)));
 
         Ok(Self { sender, handle })
     }
@@ -156,6 +156,7 @@ impl Database {
         let result = tokio::task::spawn_blocking(move || {
             handle
                 .lock()
+                .unwrap_or_else(|e| e.into_inner())
                 .take()
                 .ok_or(Error::AlreadyJoined)?
                 .join()

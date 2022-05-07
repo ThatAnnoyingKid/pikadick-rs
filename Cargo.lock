@@ -242,7 +242,6 @@ dependencies = [
 name = "async-rusqlite"
 version = "0.0.0"
 dependencies = [
- "parking_lot 0.12.0",
  "rusqlite",
  "thiserror",
  "tokio",
