@@ -9,6 +9,10 @@ mod timed_cache;
 pub use self::{
     arc_anyhow_error::ArcAnyhowError,
     ascii_table::AsciiTable,
+    drop_remove_file::{
+        DropRemoveFile,
+        DropRemovePath,
+    },
     encoder_task::EncoderTask,
     loading_reaction::LoadingReaction,
     request_map::RequestMap,
@@ -17,7 +21,6 @@ pub use self::{
         TimedCacheEntry,
     },
 };
-pub use drop_remove_file::DropRemoveFile;
 pub use pikadick_util::download_to_file;
 use std::{
     ffi::{

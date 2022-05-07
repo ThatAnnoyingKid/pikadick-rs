@@ -18,11 +18,8 @@ pub struct DropRemoveFile {
     /// The file
     file: File,
 
-    /// The path
-    path: PathBuf,
-
-    /// Whether dropping this should remove the file.
-    should_remove: bool,
+    /// The path that will remove the file on drop
+    path: DropRemovePath,
 }
 
 impl DropRemoveFile {
@@ -30,13 +27,15 @@ impl DropRemoveFile {
     fn new(path: PathBuf, file: File) -> Self {
         Self {
             file,
-            path,
-            should_remove: true,
+            path: DropRemovePath::new(path),
         }
     }
 
     /// Create a file
-    pub async fn create<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
+    pub async fn create<P>(path: P) -> std::io::Result<Self>
+    where
+        P: AsRef<Path>,
+    {
         let path = path.as_ref();
         let file = File::create(&path).await?;
         Ok(Self::new(path.into(), file))
@@ -44,20 +43,25 @@ impl DropRemoveFile {
 
     /// Persist this file
     pub fn persist(&mut self) {
-        self.should_remove = false;
+        self.path.persist();
     }
 
     /// Close this file, dropping it if needed.
-    pub async fn close(self) -> Result<(), (Self, std::io::Error)> {
-        let wrapper = ManuallyDrop::new(self);
-
-        if wrapper.should_remove {
-            tokio::fs::remove_file(&wrapper.path)
-                .await
-                .map_err(|e| (ManuallyDrop::into_inner(wrapper), e))?;
-        }
-
-        Ok(())
+    ///
+    /// # Return
+    /// Returns an error if the file could not be removed.
+    /// Returns Ok(true) if the file was removed
+    /// Returns Ok(false) if the file was not removed
+    pub async fn close(self) -> Result<bool, (Self, std::io::Error)> {
+        self.path.try_drop().await.map_err(|(path, error)| {
+            (
+                Self {
+                    file: self.file,
+                    path,
+                },
+                error,
+            )
+        })
     }
 }
 
@@ -75,15 +79,77 @@ impl DerefMut for DropRemoveFile {
     }
 }
 
-impl Drop for DropRemoveFile {
+/// Remove a file at a path on drop
+#[derive(Debug)]
+pub struct DropRemovePath {
+    /// The path
+    path: PathBuf,
+
+    /// Whether dropping this should remove the file.
+    should_remove: bool,
+}
+
+impl DropRemovePath {
+    /// Make a new [`DropRemovePath`]
+    pub fn new<P>(path: P) -> Self
+    where
+        P: AsRef<Path>,
+    {
+        Self {
+            path: path.as_ref().into(),
+            should_remove: true,
+        }
+    }
+
+    /// Persist this file path
+    pub fn persist(&mut self) {
+        self.should_remove = false;
+    }
+
+    /// Try to drop this file path, removing it if needed.
+    ///
+    /// # Return
+    /// Returns an error if the file could not be removed.
+    /// Returns Ok(true) if the file was removed
+    /// Returns Ok(false) if the file was not removed
+    pub async fn try_drop(self) -> Result<bool, (Self, std::io::Error)> {
+        let wrapper = ManuallyDrop::new(self);
+        let should_remove = wrapper.should_remove;
+
+        if should_remove {
+            tokio::fs::remove_file(&wrapper.path)
+                .await
+                .map_err(|e| (ManuallyDrop::into_inner(wrapper), e))?;
+        }
+
+        Ok(should_remove)
+    }
+}
+
+impl AsRef<Path> for DropRemovePath {
+    fn as_ref(&self) -> &Path {
+        self.path.as_ref()
+    }
+}
+
+impl Deref for DropRemovePath {
+    type Target = Path;
+
+    fn deref(&self) -> &Self::Target {
+        &self.path
+    }
+}
+
+impl Drop for DropRemovePath {
     fn drop(&mut self) {
-        let should_delete = self.should_remove;
+        let should_remove = self.should_remove;
         let path = std::mem::take(&mut self.path);
 
+        // Try to remove the path.
         tokio::spawn(async move {
-            if should_delete {
+            if should_remove {
                 if let Err(e) = tokio::fs::remove_file(path).await {
-                    warn!("failed to delete file: {}", e);
+                    warn!("failed to delete file '{}'", e);
                 }
             }
         });
