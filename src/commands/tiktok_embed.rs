@@ -5,6 +5,8 @@ use crate::{
     },
     util::{
         ArcAnyhowError,
+        DropRemoveFile,
+        DropRemovePath,
         EncoderTask,
         RequestMap,
         TimedCache,
@@ -15,7 +17,7 @@ use crate::{
     TikTokEmbedFlags,
 };
 use anyhow::{
-    anyhow,
+    ensure,
     Context as _,
 };
 use serenity::{
@@ -33,10 +35,10 @@ use tokio_stream::StreamExt;
 use tracing::{
     error,
     info,
-    warn,
 };
 use url::Url;
 
+const FILE_SIZE_LIMIT: u64 = 8_000_000;
 const ENCODER_PREFERENCE_LIST: &[&str] = &[
     "h264_nvenc",
     "h264_amf",
@@ -161,8 +163,7 @@ impl TikTokData {
         url: &str,
         video_duration: u64,
     ) -> anyhow::Result<Arc<PathBuf>> {
-        let result = self
-            .video_download_request_map
+        self.video_download_request_map
             .get_or_fetch(id.to_string(), || {
                 let client = self.client.client.clone();
 
@@ -192,21 +193,22 @@ impl TikTokData {
                         }
                         Err(e) => {
                             return Err(e)
-                                .context("failed to open re-encoded file")
+                                .context("failed to get metadata of re-encoded file")
                                 .map_err(ArcAnyhowError::new);
                         }
                     };
 
-                    // Open the raw file.
-                    // Download it if needed and get its metadata.
-                    let metadata = match tokio::fs::OpenOptions::new()
-                        .create_new(true)
-                        .write(true)
-                        .open(&file_path)
-                        .await
-                    {
-                        Ok(mut file) => {
-                            // The file did not exist, download it.
+                    // Get the metadata of the raw file.
+                    // Download it if needed.
+                    let metadata = match tokio::fs::metadata(&file_path).await {
+                        Ok(metadata) => {
+                            // The reencoded file is present.
+                            // Return the metadata to validate its size.
+                            metadata
+                        }
+                        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                            // File not present. Download it.
+
                             info!(
                                 "downloading tiktok video \
                                 with with id `{id}` \
@@ -214,133 +216,109 @@ impl TikTokData {
                                 with format `{format}`"
                             );
 
-                            // TODO: Download to tmp file
-                            let result = crate::util::download_to_file(&client, &url, &mut file)
-                                .await
-                                .context("failed to download");
-
-                            // TODO: Consider downloading to temp file or .part file to avoid these errors
-                            if result.is_err() {
-                                if let Err(e) =
-                                    tokio::fs::remove_file(&file_path).await.with_context(|| {
-                                        format!(
-                                            "failed to remove invalid video file `{}` from cache",
-                                            file_path.display()
-                                        )
-                                    })
-                                {
-                                    error!("{:?}", e);
-                                }
+                            let result = async {
+                                let file_path_tmp =
+                                    crate::util::with_push_extension(&file_path, "tmp");
+                                let mut file = DropRemoveFile::create(&file_path_tmp)
+                                    .await
+                                    .context("failed to open file")?;
+                                crate::util::download_to_file(&client, &url, &mut file)
+                                    .await
+                                    .context("failed to download")?;
+                                tokio::fs::rename(&file_path_tmp, &file_path)
+                                    .await
+                                    .context("failed to rename file")?;
+                                file.persist();
+                                file.metadata().await.context("failed to get file metadata")
                             }
+                            .await;
 
-                            result.map_err(ArcAnyhowError::new)?;
-
-                            file.metadata()
-                                .await
-                                .context("failed to get raw file metadata")
-                                .map_err(ArcAnyhowError::new)?
-                        }
-                        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                            // We found the original file.
-                            // Get its metadata and see if we need to transcode it in th enext step.
-                            tokio::fs::metadata(&file_path)
-                                .await
-                                .context("failed to get raw file metadata")
-                                .map_err(ArcAnyhowError::new)?
+                            result.map_err(ArcAnyhowError::new)?
                         }
                         Err(e) => {
                             return Err(e)
-                                .context("failed to open file")
+                                .context("failed to get metadata of file")
                                 .map_err(ArcAnyhowError::new);
                         }
                     };
 
                     // If the file is greater than 8mb, we need to reencode it
-                    if metadata.len() > 8_000_000 {
-                        // We target 7 MB to give ourselves some lee-way.
-                        // This merely sets the target bit-rate, and we don't take into account audio size.
-                        let target_bitrate = calc_target_bitrate(7_000 * 8, video_duration);
-                        let reencoded_file_path_tmp =
-                            crate::util::with_push_extension(&reencoded_file_path, "tmp");
+                    if metadata.len() > FILE_SIZE_LIMIT {
+                        let result = async {
+                            // We target 7 MB to give ourselves some lee-way.
+                            // This merely sets the target bit-rate, and we don't take into account audio size.
+                            let target_bitrate = calc_target_bitrate(7_000 * 8, video_duration);
+                            let mut reencoded_file_path_tmp = DropRemovePath::new(
+                                crate::util::with_push_extension(&reencoded_file_path, "tmp"),
+                            );
 
-                        info!(
-                            "re-encoding tiktok video `{}` to `{}`\
-                            @ video bitrate {}",
-                            file_path.display(),
-                            reencoded_file_path_tmp.display(),
-                            target_bitrate
-                        );
-                        let mut stream = encoder_task
-                            .encode()
-                            .input(&file_path)
-                            .output(&reencoded_file_path_tmp)
-                            .audio_codec("copy")
-                            .video_codec(video_encoder)
-                            .video_bitrate(format!("{}K", target_bitrate))
-                            .output_format("mp4")
-                            .try_send()
-                            .await
-                            .context("failed to start re-encoding")
-                            .map_err(ArcAnyhowError::new)?;
-
-                        let mut maybe_exit_status = None;
-                        while let Some(msg) = stream.next().await {
-                            match msg.context("ffmpeg stream error") {
-                                Ok(tokio_ffmpeg_cli::Event::ExitStatus(exit_status)) => {
-                                    maybe_exit_status = Some(exit_status);
-                                }
-                                Ok(tokio_ffmpeg_cli::Event::Progress(_progress)) => {
-                                    // For now, we don't care about progress as there is no way to report it to the user on discord.
-                                }
-                                Ok(tokio_ffmpeg_cli::Event::Unknown(_)) => {
-                                    // We don't care about unkown lines
-                                }
-                                Err(e) => {
-                                    error!("{:?}", e);
-                                }
-                            }
-                        }
-
-                        let exit_status =
-                            maybe_exit_status.context("stream did not report an exit status");
-
-                        let maybe_error = match exit_status {
-                            Ok(exit_status) if exit_status.success() => {
-                                // The exit status is successful.
-                                // Rename the tmp file to be the actual name.
-                                let result = tokio::fs::rename(
-                                    &reencoded_file_path_tmp,
-                                    &reencoded_file_path,
-                                )
+                            info!(
+                                "re-encoding tiktok video `{}` to `{}`\
+                                @ video bitrate {}",
+                                file_path.display(),
+                                reencoded_file_path_tmp.display(),
+                                target_bitrate
+                            );
+                            let mut stream = encoder_task
+                                .encode()
+                                .input(&file_path)
+                                .output(&*reencoded_file_path_tmp)
+                                .audio_codec("copy")
+                                .video_codec(video_encoder)
+                                .video_bitrate(format!("{}K", target_bitrate))
+                                .output_format("mp4")
+                                .try_send()
                                 .await
-                                .context("failed to rename temp file");
-                                result.err()
-                            }
-                            Ok(exit_status) => {
-                                // Bad exit status
-                                Some(anyhow!("bad exit status {}", exit_status))
-                            }
-                            Err(error) => {
-                                // Stream did not report an exit status.
-                                Some(error)
-                            }
-                        };
+                                .context("failed to start re-encoding")?;
 
-                        if let Some(error) = maybe_error {
-                            // Remove the file.
-                            if let Err(e) = tokio::fs::remove_file(&reencoded_file_path_tmp)
+                            let mut maybe_exit_status = None;
+                            while let Some(msg) = stream.next().await {
+                                match msg.context("ffmpeg stream error") {
+                                    Ok(tokio_ffmpeg_cli::Event::ExitStatus(exit_status)) => {
+                                        maybe_exit_status = Some(exit_status);
+                                    }
+                                    Ok(tokio_ffmpeg_cli::Event::Progress(_progress)) => {
+                                        // For now, we don't care about progress as there is no way to report it to the user on discord.
+                                    }
+                                    Ok(tokio_ffmpeg_cli::Event::Unknown(_)) => {
+                                        // We don't care about unkown lines
+                                    }
+                                    Err(e) => {
+                                        error!("{:?}", e);
+                                    }
+                                }
+                            }
+
+                            let exit_status = maybe_exit_status
+                                .context("stream did not report an exit status")?;
+
+                            // Validate exit status
+                            ensure!(exit_status.success(), "invalid exit status");
+
+                            // Validate file size
+                            let metadata = tokio::fs::metadata(&reencoded_file_path_tmp)
                                 .await
-                                .with_context(|| {
-                                    format!(
-                                        "failed to remove invalid video temp file `{}` from cache",
-                                        reencoded_file_path_tmp.display()
-                                    )
-                                })
-                            {
-                                warn!("{:?}", e);
-                            };
-                            return Err(error).map_err(ArcAnyhowError::new);
+                                .context("failed to get metadata of encoded file")?;
+
+                            ensure!(
+                                metadata.len() < FILE_SIZE_LIMIT,
+                                "re-encoded file is larger than {}",
+                                FILE_SIZE_LIMIT
+                            );
+
+                            // Rename the tmp file to be the actual name.
+                            tokio::fs::rename(&*reencoded_file_path_tmp, &reencoded_file_path)
+                                .await
+                                .context("failed to rename temp file")?;
+
+                            // "Persist" the tmp file, as in don't try to remove it
+                            reencoded_file_path_tmp.persist();
+
+                            Ok(())
                         }
+                        .await;
+
+                        result.map_err(ArcAnyhowError::new)?;
 
                         Ok(Arc::new(reencoded_file_path))
                     } else {
@@ -348,8 +326,8 @@ impl TikTokData {
                     }
                 }
             })
-            .await?;
-        Ok(result)
+            .await
+            .map_err(From::from)
     }
 
     /// Try embedding a url
