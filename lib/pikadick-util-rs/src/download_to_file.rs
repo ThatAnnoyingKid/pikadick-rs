@@ -16,7 +16,7 @@ pub async fn download_to_file(
         .get(url)
         .send()
         .await
-        .context("failed to send request")?
+        .context("failed to get headers")?
         .error_for_status()
         .context("invalid http status")?;
 
@@ -44,7 +44,7 @@ pub async fn download_to_file(
     if let Some(content_length) = content_length {
         ensure!(
             content_length == actual_length,
-            "content-length mismatch, {} != {}",
+            "content-length mismatch, {} (content length) != {} (actual length)",
             content_length,
             actual_length
         );
