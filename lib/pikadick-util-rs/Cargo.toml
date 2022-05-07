@@ -16,3 +16,6 @@ download_to_file = [
     "tokio",
     "tokio/fs",
 ]
+arc_anyhow_error = [
+    "anyhow",
+]

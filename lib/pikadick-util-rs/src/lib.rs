@@ -3,6 +3,11 @@ mod download_to_file;
 #[cfg(feature = "download_to_file")]
 pub use self::download_to_file::download_to_file;
 
+#[cfg(feature = "arc_anyhow_error")]
+mod arc_anyhow_error;
+#[cfg(feature = "arc_anyhow_error")]
+pub use self::arc_anyhow_error::ArcAnyhowError;
+
 use std::{
     ffi::{
         OsStr,

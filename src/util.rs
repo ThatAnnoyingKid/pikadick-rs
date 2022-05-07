@@ -1,4 +1,3 @@
-mod arc_anyhow_error;
 mod ascii_table;
 mod drop_remove_file;
 mod encoder_task;
@@ -7,7 +6,6 @@ mod request_map;
 mod timed_cache;
 
 pub use self::{
-    arc_anyhow_error::ArcAnyhowError,
     ascii_table::AsciiTable,
     drop_remove_file::{
         DropRemoveFile,
@@ -24,4 +22,5 @@ pub use self::{
 pub use pikadick_util::{
     download_to_file,
     with_push_extension,
+    ArcAnyhowError,
 };
