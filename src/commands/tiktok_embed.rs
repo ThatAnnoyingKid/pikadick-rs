@@ -33,6 +33,7 @@ use tokio_stream::StreamExt;
 use tracing::{
     error,
     info,
+    warn,
 };
 use url::Url;
 
@@ -191,24 +192,61 @@ impl TikTokData {
                         }
                         Err(e) => {
                             return Err(e)
-                                .context("failed to open reencoded file")
+                                .context("failed to open re-encoded file")
                                 .map_err(ArcAnyhowError::new);
                         }
                     };
 
-                    // Open a file.
-                    let mut file = match tokio::fs::OpenOptions::new()
+                    // Open the raw file.
+                    // Download it if needed and get its metadata.
+                    let metadata = match tokio::fs::OpenOptions::new()
                         .create_new(true)
                         .write(true)
                         .open(&file_path)
                         .await
                     {
-                        Ok(file) => file,
+                        Ok(mut file) => {
+                            // The file did not exist, download it.
+                            info!(
+                                "downloading tiktok video \
+                                with with id `{id}` \
+                                from url `{url}` \
+                                with format `{format}`"
+                            );
+
+                            // TODO: Download to tmp file
+                            let result = crate::util::download_to_file(&client, &url, &mut file)
+                                .await
+                                .context("failed to download");
+
+                            // TODO: Consider downloading to temp file or .part file to avoid these errors
+                            if result.is_err() {
+                                if let Err(e) =
+                                    tokio::fs::remove_file(&file_path).await.with_context(|| {
+                                        format!(
+                                            "failed to remove invalid video file `{}` from cache",
+                                            file_path.display()
+                                        )
+                                    })
+                                {
+                                    error!("{:?}", e);
+                                }
+                            }
+
+                            result.map_err(ArcAnyhowError::new)?;
+
+                            file.metadata()
+                                .await
+                                .context("failed to get raw file metadata")
+                                .map_err(ArcAnyhowError::new)?
+                        }
                         Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                            // We found the original file. Use it.
-                            // TODO: Conditional transcode.
-                            // This might be greater than 8mb if a reencode process crashed or exited early.
-                            return Ok(Arc::new(file_path));
+                            // We found the original file.
+                            // Get its metadata and see if we need to transcode it in th enext step.
+                            tokio::fs::metadata(&file_path)
+                                .await
+                                .context("failed to get raw file metadata")
+                                .map_err(ArcAnyhowError::new)?
                         }
                         Err(e) => {
                             return Err(e)
@@ -217,61 +255,32 @@ impl TikTokData {
                         }
                     };
 
-                    // If we didn't early return up above, it is our job to download
-                    info!(
-                        "downloading tiktok video \
-                        with with id `{id}` \
-                        from url `{url}` \
-                        with format `{format}`"
-                    );
-
-                    let result = crate::util::download_to_file(&client, &url, &mut file)
-                        .await
-                        .context("failed to download");
-
-                    // TODO: Consider downloading to temp file or .part file to avoid these errors
-                    if result.is_err() {
-                        if let Err(e) =
-                            tokio::fs::remove_file(&file_path).await.with_context(|| {
-                                format!(
-                                    "failed to remove invalid video file `{}` from cache",
-                                    file_path.display()
-                                )
-                            })
-                        {
-                            error!("{:?}", e);
-                        }
-                    }
-
-                    result.map_err(ArcAnyhowError::new)?;
-
-                    // Conditionally reencode
-                    let metadata = file
-                        .metadata()
-                        .await
-                        .context("failed to get file metadata")
-                        .map_err(ArcAnyhowError::new)?;
-
                     // If the file is greater than 8mb, we need to reencode it
                     if metadata.len() > 8_000_000 {
                         // We target 7 MB to give ourselves some lee-way.
+                        // This merely sets the target bit-rate, and we don't take into account audio size.
                         let target_bitrate = calc_target_bitrate(7_000 * 8, video_duration);
+                        let reencoded_file_path_tmp =
+                            crate::util::with_push_extension(&reencoded_file_path, "tmp");
 
                         info!(
-                            "reencoding tiktok video `{}` @ video bitrate {}",
+                            "re-encoding tiktok video `{}` to `{}`\
+                            @ video bitrate {}",
                             file_path.display(),
+                            reencoded_file_path_tmp.display(),
                             target_bitrate
                         );
                         let mut stream = encoder_task
                             .encode()
                             .input(&file_path)
-                            .output(&reencoded_file_path)
+                            .output(&reencoded_file_path_tmp)
                             .audio_codec("copy")
                             .video_codec(video_encoder)
                             .video_bitrate(format!("{}K", target_bitrate))
+                            .output_format("mp4")
                             .try_send()
                             .await
-                            .context("failed to start reencoding")
+                            .context("failed to start re-encoding")
                             .map_err(ArcAnyhowError::new)?;
 
                         let mut maybe_exit_status = None;
@@ -297,8 +306,15 @@ impl TikTokData {
 
                         let maybe_error = match exit_status {
                             Ok(exit_status) if exit_status.success() => {
-                                // The exit status is successful, pass through
-                                None
+                                // The exit status is successful.
+                                // Rename the tmp file to be the actual name.
+                                let result = tokio::fs::rename(
+                                    &reencoded_file_path_tmp,
+                                    &reencoded_file_path,
+                                )
+                                .await
+                                .context("failed to rename temp file");
+                                result.err()
                             }
                             Ok(exit_status) => {
                                 // Bad exit status
@@ -312,16 +328,16 @@ impl TikTokData {
 
                         if let Some(error) = maybe_error {
                             // Remove the file.
-                            if let Err(e) = tokio::fs::remove_file(&reencoded_file_path)
+                            if let Err(e) = tokio::fs::remove_file(&reencoded_file_path_tmp)
                                 .await
                                 .with_context(|| {
                                     format!(
-                                        "failed to remove invalid video file `{}` from cache",
-                                        reencoded_file_path.display()
+                                        "failed to remove invalid video temp file `{}` from cache",
+                                        reencoded_file_path_tmp.display()
                                     )
                                 })
                             {
-                                error!("{:?}", e);
+                                warn!("{:?}", e);
                             };
                             return Err(error).map_err(ArcAnyhowError::new);
                         }

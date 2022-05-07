@@ -22,7 +22,10 @@ use std::{
         OsStr,
         OsString,
     },
-    path::PathBuf,
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
 /// Push an extension to a [`PathBuf`].
@@ -45,4 +48,27 @@ pub fn push_extension<S: AsRef<OsStr>>(path: &mut PathBuf, extension: S) {
     path_string.push(".");
     path_string.push(extension);
     std::mem::swap(path, &mut path_string.into());
+}
+
+/// Push an extension to a [`Path`], returning a new [`PathBuf`].
+pub fn with_push_extension<P, S>(path: P, extension: S) -> PathBuf
+where
+    P: AsRef<Path>,
+    S: AsRef<OsStr>,
+{
+    let path = path.as_ref();
+    let extension = extension.as_ref();
+
+    // Bail out early if there is no extension, simply setting one.
+    if path.extension().is_none() {
+        return path.with_extension(extension);
+    }
+
+    // Change the path into an OsString so we can push arbitrary bytes to it,
+    // then change it into a PathBuf so we can return it.
+    let mut path_string = OsString::from(path);
+    path_string.reserve(extension.len() + 1);
+    path_string.push(".");
+    path_string.push(extension);
+    PathBuf::from(path_string)
 }
