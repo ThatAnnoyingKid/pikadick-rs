@@ -65,7 +65,7 @@ xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls-tl
 zalgo = { git = "https://github.com/adumbidiot/zalgo-rs" }
 
 # Optional
-openssl = { version = "0.10.38", optional = true, features = [ "vendored" ] }
+openssl = { version = "0.10.40", optional = true, features = [ "vendored" ] }
 
 [features]
 # Note: This is needed for cross comp
