@@ -18,7 +18,8 @@ crossbeam = "0.8.1"
 dashmap = "5.3.3"
 deviantart = { path = "./lib/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
-fslock = "0.2.1"
+# fslock = "0.2.1"
+fslock = { git = "https://github.com/adumbidiot/fslock", branch = "send" }
 futures = { version = "0.3.21", features = [ "std" ], default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
 indexmap = "1.8.1"
@@ -90,9 +91,6 @@ servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca146
 # songbird requires serenity:next
 serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next" }
 songbird = { git = "https://github.com/FelixMcFelix/songbird", branch = "symphonia"}
-
-# Fixes needed for library
-fslock = { git = "https://github.com/adumbidiot/fslock", branch = "send" }
 
 # To make image drawing times sane
 [profile.dev.package.tiny-skia]
