@@ -134,7 +134,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
                 rand::distributions::Alphanumeric.append_string(
                     &mut rand::thread_rng(),
                     &mut file_stem_extension,
-                    6,
+                    10,
                 );
                 file_stem_extension.push_str("-tmp");
                 file_stem.push_str(&file_stem_extension);
@@ -146,11 +146,12 @@ fn real_main(options: Options) -> anyhow::Result<()> {
                 file_stem
             };
 
+            // TODO: Don't assume /tmp is the temp dir
             let remote_package_file_path = format!("/tmp/{}", file_name);
             let mut remote_package_file = sftp.open_mode(
                 remote_package_file_path.as_ref(),
                 ssh2::OpenFlags::WRITE | ssh2::OpenFlags::TRUNCATE,
-                0o600,
+                0o600, // Prevent users from tampering with the file.
                 ssh2::OpenType::File,
             )?;
 
