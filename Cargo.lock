@@ -2391,7 +2391,6 @@ dependencies = [
  "dashmap",
  "deviantart",
  "fml",
- "fslock",
  "futures",
  "heim",
  "indexmap",
@@ -2468,6 +2467,7 @@ name = "pikadick-util"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "fslock",
  "reqwest",
  "tokio",
 ]
