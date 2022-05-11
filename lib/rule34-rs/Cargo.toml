@@ -20,7 +20,7 @@ serde = { version = "1.0.136", features = [ "derive" ] }
 thiserror = "1.0.30"
 tokio = "1.18.0"
 url = { version = "2.2.2", features = [ "serde" ] }
-serde_json = "1.0.79"
+serde_json = "1.0.81"
 
 # Optional
 argh = { version = "0.1.7", optional = true }
