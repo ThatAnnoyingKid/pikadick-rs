@@ -2,9 +2,11 @@ use crate::{
     BoxedError,
     DbThreadJoinHandle,
     Error,
+    SyncWrapper,
 };
 use rusqlite::Connection;
 use std::{
+    panic::AssertUnwindSafe,
     path::{
         Path,
         PathBuf,
@@ -37,7 +39,7 @@ impl std::fmt::Debug for Message {
 pub struct Database {
     sender: tokio::sync::mpsc::Sender<Message>,
 
-    handle: Arc<parking_lot::Mutex<Option<DbThreadJoinHandle>>>,
+    handle: Arc<std::sync::Mutex<Option<DbThreadJoinHandle>>>,
 }
 
 impl std::fmt::Debug for Database {
@@ -93,6 +95,8 @@ impl Database {
                     }
                     Message::Close { closed } => {
                         rx.close();
+
+                        // We don't care if a send failed.
                         let _ = closed.send(()).is_ok();
                     }
                 }
@@ -101,7 +105,7 @@ impl Database {
             // Try close db
             db.close()
         });
-        let handle = Arc::new(parking_lot::Mutex::new(Some(handle)));
+        let handle = Arc::new(std::sync::Mutex::new(Some(handle)));
 
         Ok(Self { sender, handle })
     }
@@ -116,13 +120,16 @@ impl Database {
         self.sender
             .send(Message::Access {
                 func: Box::new(move |db| {
-                    let _ = tx.send(func(db)).is_ok();
+                    let result = std::panic::catch_unwind(AssertUnwindSafe(|| func(db)));
+                    let _ = tx.send(result).is_ok();
                 }),
             })
             .await
             .map_err(|_| Error::SendMessage)?;
 
-        rx.await.map_err(Error::MissingResponse)
+        rx.await
+            .map_err(Error::MissingResponse)?
+            .map_err(|e| Error::AccessPanicked(SyncWrapper::new(e)))
     }
 
     /// Close the db.
@@ -149,6 +156,7 @@ impl Database {
         let result = tokio::task::spawn_blocking(move || {
             handle
                 .lock()
+                .unwrap_or_else(|e| e.into_inner())
                 .take()
                 .ok_or(Error::AlreadyJoined)?
                 .join()

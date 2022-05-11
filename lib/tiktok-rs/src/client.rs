@@ -4,7 +4,7 @@ use crate::{
 };
 use scraper::Html;
 
-const USER_AGENT_STR: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.86 Safari/537.36";
+const USER_AGENT_STR: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5047.0 Safari/537.36";
 
 /// A tiktok client
 #[derive(Debug, Clone)]

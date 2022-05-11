@@ -15,9 +15,10 @@ bitflags = "1.3.2"
 bytes = "1.1.0"
 chrono = "0.4.19"
 crossbeam = "0.8.1"
-dashmap = "5.2.0"
+dashmap = "5.3.3"
 deviantart = { path = "./lib/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
+futures = { version = "0.3.21", features = [ "std" ], default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
 indexmap = "1.8.1"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
@@ -30,6 +31,7 @@ opentelemetry = { version = "0.17.0", features = [ "rt-tokio" ] }
 opentelemetry-otlp = { version = "0.10.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.12.0"
 pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
+pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "download_to_file", "arc_anyhow_error", "async_lock_file" ] }
 quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "rustls-tls" ] }
 r6stats = { path = "./lib/r6stats-rs", default-features = false, features = [ "rustls-tls" ] }
 r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = [ "rustls-tls" ] }
@@ -40,16 +42,18 @@ regex = "1.5.5"
 reqwest = { version = "0.11.10", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
 rusqlite = { version = "0.27.0", features = [ "bundled", "blob", "trace" ] }
-serde = { version = "1.0.136", features = [ "derive" ] }
+serde = { version = "1.0.137", features = [ "derive" ] }
 serenity = { version = "0.11.1", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
 songbird = "0.2.2"
 systemstat = "0.1.10"
-thiserror = "1.0.30"
+thiserror = "1.0.31"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiktok = { path = "lib/tiktok-rs" }
 tiny-skia = { version = "0.6.3", features = [ "std", "simd", "png-format" ], default-features = false }
-tokio = { version = "1.18.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tokio = { version = "1.18.2", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
+tokio-stream = "0.1.8"
 toml = "0.5.9"
 tonic = "0.6.2"
 tracing = "0.1.34"
@@ -140,6 +144,7 @@ members = [
     "lib/pikadick-slash-framework-derive-rs",
     "lib/rpi-deploy-rs",
     "lib/tokio-ffmpeg-cli-rs",
+    "lib/pikadick-util-rs",
 ]
 
 [package.metadata.deb]

@@ -117,6 +117,11 @@ impl Config {
         self.data_dir.join("logs")
     }
 
+    /// The cache dir
+    pub fn cache_dir(&self) -> PathBuf {
+        self.data_dir.join("cache")
+    }
+
     /// Load a config from a path
     pub fn load_from_path(path: &Path) -> anyhow::Result<Self> {
         std::fs::read(path)

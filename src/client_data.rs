@@ -17,7 +17,9 @@ use crate::{
     },
     config::Config,
     database::Database,
+    util::EncoderTask,
 };
+use anyhow::Context;
 use serenity::{
     client::bridge::gateway::ShardManager,
     prelude::*,
@@ -27,6 +29,7 @@ use std::{
     fmt::Debug,
     sync::Arc,
 };
+use tracing::error;
 
 /// A tool to build cache stats
 #[derive(Debug)]
@@ -103,6 +106,8 @@ pub struct ClientData {
     pub iqdb_client: IqdbClient,
     /// TikTokData
     pub tiktok_data: TikTokData,
+    /// Encoder Task
+    pub encoder_task: EncoderTask,
 
     /// The database
     pub db: Database,
@@ -120,7 +125,15 @@ impl ClientData {
     ) -> anyhow::Result<Self> {
         // TODO: Standardize an async init system with allocated data per command somehow. Maybe boxes?
 
-        let deviantart_client = DeviantartClient::new(&db).await?;
+        let cache_dir = config.cache_dir();
+        let encoder_task = EncoderTask::new();
+
+        let deviantart_client = DeviantartClient::new(&db)
+            .await
+            .context("failed to init deviantart client")?;
+        let tiktok_data = TikTokData::new(&cache_dir, encoder_task.clone())
+            .await
+            .context("failed to init tiktok data")?;
 
         Ok(ClientData {
             shard_manager,
@@ -140,7 +153,8 @@ impl ClientData {
             xkcd_client: Default::default(),
             tic_tac_toe_data: Default::default(),
             iqdb_client: Default::default(),
-            tiktok_data: Default::default(),
+            tiktok_data,
+            encoder_task,
 
             db,
 
@@ -172,5 +186,15 @@ impl ClientData {
         }
 
         stat_builder.into_inner()
+    }
+
+    /// Shutdown anything that needs to be shut down.
+    ///
+    /// Errors are logged to the console,
+    /// but not returned to the user as it is assumed that they don't matter in the middle of a shutdown.
+    pub async fn shutdown(&self) {
+        if let Err(e) = self.encoder_task.shutdown().await {
+            error!("{:?}", e)
+        }
     }
 }
