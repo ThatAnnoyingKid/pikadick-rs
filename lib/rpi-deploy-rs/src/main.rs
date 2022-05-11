@@ -147,7 +147,12 @@ fn real_main(options: Options) -> anyhow::Result<()> {
             };
 
             let remote_package_file_path = format!("/tmp/{}", file_name);
-            let mut remote_package_file = sftp.create(remote_package_file_path.as_ref())?;
+            let mut remote_package_file = sftp.open_mode(
+                remote_package_file_path.as_ref(),
+                ssh2::OpenFlags::WRITE | ssh2::OpenFlags::TRUNCATE,
+                0o600,
+                ssh2::OpenType::File,
+            )?;
 
             // Perform copy
             let metadata_len = local_package_file_metadata.len();
@@ -161,7 +166,9 @@ fn real_main(options: Options) -> anyhow::Result<()> {
             progress_bar.finish();
             ensure!(
                 metadata_len == bytes_copied,
-                "file length changed during transfer"
+                "file length changed during transfer, (expected) {} != (actual) {}",
+                metadata_len,
+                bytes_copied
             );
             remote_package_file.flush()?;
             remote_package_file.fsync()?;
