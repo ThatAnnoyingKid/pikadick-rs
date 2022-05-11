@@ -41,10 +41,14 @@ use crate::{
         model::TikTokEmbedFlags,
         Database,
     },
-    util::LoadingReaction,
+    util::{
+        AsyncLockFile,
+        LoadingReaction,
+    },
 };
 use anyhow::{
     bail,
+    ensure,
     Context as _,
 };
 use once_cell::sync::Lazy;
@@ -507,7 +511,13 @@ fn load_config() -> anyhow::Result<Config> {
 }
 
 /// Pre-main setup
-fn setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, WorkerGuard)> {
+fn setup() -> anyhow::Result<(
+    tokio::runtime::Runtime,
+    Config,
+    bool,
+    AsyncLockFile,
+    WorkerGuard,
+)> {
     eprintln!("starting tokio runtime...");
     let tokio_rt = RuntimeBuilder::new_multi_thread()
         .enable_all()
@@ -541,16 +551,25 @@ fn setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, WorkerGuard
         }
     }
 
+    eprintln!("creating lockfile...");
+    let lockfile_path = config.data_dir.join("pikadick.lock");
+    let lockfile =
+        AsyncLockFile::open_blocking(&lockfile_path).context("failed to open lockfile")?;
+    let lockfile_locked = lockfile
+        .try_lock_with_pid_blocking()
+        .context("failed to try to lock the lockfile")?;
+    ensure!(lockfile_locked, "another process has locked the lockfile");
+
     std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
     std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
 
     eprintln!("setting up logger...");
-    let guard = tokio_rt
+    let worker_guard = tokio_rt
         .block_on(async { crate::logger::setup(&config) })
         .context("failed to initialize logger")?;
 
     eprintln!();
-    Ok((tokio_rt, config, missing_data_dir, guard))
+    Ok((tokio_rt, config, missing_data_dir, lockfile, worker_guard))
 }
 
 /// The main entry.
@@ -560,7 +579,7 @@ fn setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, WorkerGuard
 /// This also calls setup operations like loading config and setting up the tokio runtime,
 /// logging errors to the stderr instead of the loggers, which are not initialized yet.
 fn main() {
-    let (tokio_rt, config, missing_data_dir, worker_guard) = match setup() {
+    let (tokio_rt, config, missing_data_dir, lockfile, worker_guard) = match setup() {
         Ok(data) => data,
         Err(e) => {
             eprintln!("{:?}", e);
@@ -570,7 +589,7 @@ fn main() {
         }
     };
 
-    let exit_code = match real_main(tokio_rt, config, missing_data_dir, worker_guard) {
+    let exit_code = match real_main(tokio_rt, config, missing_data_dir, lockfile, worker_guard) {
         Ok(()) => 0,
         Err(e) => {
             error!("{:?}", e);
@@ -586,6 +605,7 @@ fn real_main(
     tokio_rt: tokio::runtime::Runtime,
     config: Config,
     missing_data_dir: bool,
+    lockfile: AsyncLockFile,
     _worker_guard: WorkerGuard,
 ) -> anyhow::Result<()> {
     // We spawn this is a seperate thread/task as the main thread does not have enough stack space
@@ -599,6 +619,11 @@ fn real_main(
     );
     tokio_rt.shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
     info!("shutdown tokio runtime in {:?}", shutdown_start.elapsed());
+
+    info!("unlocking lockfile...");
+    lockfile
+        .unlock_blocking()
+        .context("failed to unlock lockfile")?;
 
     info!("successful shutdown");
     ret?

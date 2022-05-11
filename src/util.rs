@@ -43,17 +43,25 @@ pub struct AsyncLockFile {
 
 impl AsyncLockFile {
     /// Open a file for locking
-    pub async fn open<P>(path: &P) -> anyhow::Result<Self>
+    pub async fn open<P>(path: P) -> anyhow::Result<Self>
+    where
+        P: IntoOsString,
+    {
+        let path = path.into_os_string()?;
+        tokio::task::spawn_blocking(move || Self::open_blocking(&path))
+            .await
+            .context("failed to join task")?
+    }
+
+    /// Open a file for locking in a blocking manner
+    pub fn open_blocking<P>(path: &P) -> anyhow::Result<Self>
     where
         P: ToOsStr + ?Sized,
     {
-        let path = path.to_os_str()?.into_os_string()?;
-        Ok(tokio::task::spawn_blocking(move || LockFile::open(&path))
-            .await
-            .context("failed to join task")?
-            .map(|file| Self {
-                file: Arc::new(tokio::sync::Mutex::new(file)),
-            })?)
+        let file = LockFile::open(path)?;
+        Ok(Self {
+            file: Arc::new(tokio::sync::Mutex::new(file)),
+        })
     }
 
     /// Lock the file
@@ -90,6 +98,11 @@ impl AsyncLockFile {
         )
     }
 
+    /// Try to lock a file with a pid, returning `true` if successful in a blocking manner.
+    pub fn try_lock_with_pid_blocking(&self) -> anyhow::Result<bool> {
+        Ok(self.file.blocking_lock().try_lock_with_pid()?)
+    }
+
     /// Returns `true` if this owns the lock
     pub async fn owns_lock(&self) -> anyhow::Result<bool> {
         let file = self.file.clone().lock_owned().await;
@@ -104,5 +117,10 @@ impl AsyncLockFile {
         Ok(tokio::task::spawn_blocking(move || file.unlock())
             .await
             .context("failed to join task")??)
+    }
+
+    /// Unlock the file in a blocking manner
+    pub fn unlock_blocking(&self) -> anyhow::Result<()> {
+        Ok(self.file.blocking_lock().unlock()?)
     }
 }
