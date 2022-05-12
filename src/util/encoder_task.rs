@@ -279,6 +279,12 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
         self
     }
 
+    /// Set the video profile
+    pub fn video_profile(&mut self, video_profile: impl Into<String>) -> &mut Self {
+        self.builder.video_profile(video_profile);
+        self
+    }
+
     /// Try to send the message, exiting it it is at capacity
     pub async fn try_send(
         &self,

@@ -266,6 +266,7 @@ impl TikTokData {
                                 .audio_codec("copy")
                                 .video_codec(video_encoder)
                                 .video_bitrate(format!("{}K", target_bitrate))
+                                .video_profile("main")
                                 .output_format("mp4")
                                 .try_send()
                                 .await
