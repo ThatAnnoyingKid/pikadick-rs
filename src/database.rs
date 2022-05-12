@@ -85,7 +85,10 @@ impl Database {
         {
             error!("{}", e);
         }
-        self.db.close().await.context("failed to send close request to db")?;
+        self.db
+            .close()
+            .await
+            .context("failed to send close request to db")?;
         self.db.join().await?;
 
         Ok(())

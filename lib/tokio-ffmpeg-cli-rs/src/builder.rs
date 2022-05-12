@@ -53,6 +53,9 @@ pub struct Builder {
     /// The # of video frames to read from the input
     pub video_frames: Option<u64>,
 
+    /// The video profile
+    pub video_profile: Option<String>,
+
     /// Whether to overwrite the destination
     pub overwrite: bool,
 }
@@ -73,6 +76,8 @@ impl Builder {
             output_format: None,
 
             video_frames: None,
+
+            video_profile: None,
 
             overwrite: false,
         }
@@ -126,6 +131,12 @@ impl Builder {
         self
     }
 
+    /// The profile of the video
+    pub fn video_profile(&mut self, video_profile: impl Into<String>) -> &mut Self {
+        self.video_profile = Some(video_profile.into());
+        self
+    }
+
     /// Set whether the output should be overwritten
     pub fn overwrite(&mut self, overwrite: bool) -> &mut Self {
         self.overwrite = overwrite;
@@ -150,6 +161,8 @@ impl Builder {
         let output_format = self.output_format.take();
 
         let video_frames = self.video_frames.take();
+
+        let video_profile = self.video_profile.take();
 
         let overwrite = std::mem::take(&mut self.overwrite);
 
@@ -179,6 +192,10 @@ impl Builder {
 
         if let Some(video_bitrate) = video_bitrate.as_deref() {
             command.args(["-b:v", video_bitrate]);
+        }
+
+        if let Some(video_profile) = video_profile.as_deref() {
+            command.args(["-profile:v", video_profile]);
         }
 
         command.args(["-progress", "-"]);
