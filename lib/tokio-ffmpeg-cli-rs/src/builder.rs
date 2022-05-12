@@ -56,6 +56,9 @@ pub struct Builder {
     /// The video profile
     pub video_profile: Option<String>,
 
+    /// The preset
+    pub preset: Option<String>,
+
     /// Whether to overwrite the destination
     pub overwrite: bool,
 }
@@ -78,6 +81,8 @@ impl Builder {
             video_frames: None,
 
             video_profile: None,
+
+            preset: None,
 
             overwrite: false,
         }
@@ -137,6 +142,12 @@ impl Builder {
         self
     }
 
+    /// The preset
+    pub fn preset(&mut self, preset: impl Into<String>) -> &mut Self {
+        self.preset = Some(preset.into());
+        self
+    }
+
     /// Set whether the output should be overwritten
     pub fn overwrite(&mut self, overwrite: bool) -> &mut Self {
         self.overwrite = overwrite;
@@ -163,6 +174,8 @@ impl Builder {
         let video_frames = self.video_frames.take();
 
         let video_profile = self.video_profile.take();
+
+        let preset = self.preset.take();
 
         let overwrite = std::mem::take(&mut self.overwrite);
 
@@ -196,6 +209,10 @@ impl Builder {
 
         if let Some(video_profile) = video_profile.as_deref() {
             command.args(["-profile:v", video_profile]);
+        }
+
+        if let Some(preset) = preset.as_deref() {
+            command.args(["-preset", preset]);
         }
 
         command.args(["-progress", "-"]);

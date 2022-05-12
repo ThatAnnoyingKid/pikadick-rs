@@ -285,6 +285,12 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
         self
     }
 
+    /// Set the preset
+    pub fn preset(&mut self, preset: impl Into<String>) -> &mut Self {
+        self.builder.preset(preset);
+        self
+    }
+
     /// Try to send the message, exiting it it is at capacity
     pub async fn try_send(
         &self,

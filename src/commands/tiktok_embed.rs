@@ -33,7 +33,6 @@ use std::{
 };
 use tokio_stream::StreamExt;
 use tracing::{
-    error,
     info,
     warn,
 };
@@ -269,6 +268,7 @@ impl TikTokData {
                                 .video_bitrate(format!("{}K", target_bitrate))
                                 .video_profile("main")
                                 .output_format("mp4")
+                                .preset("slow")
                                 .try_send()
                                 .await
                                 .context("failed to start re-encoding")?;
@@ -282,7 +282,7 @@ impl TikTokData {
                                     Ok(tokio_ffmpeg_cli::Event::Progress(_progress)) => {
                                         // For now, we don't care about progress as there is no way to report it to the user on discord.
                                     }
-                                    Ok(tokio_ffmpeg_cli::Event::Unknown(line)) => {
+                                    Ok(tokio_ffmpeg_cli::Event::Unknown(_line)) => {
                                         // warn!("unknown ffmpeg line: `{}`", line);
                                         // We don't care about unkown lines
                                     }
