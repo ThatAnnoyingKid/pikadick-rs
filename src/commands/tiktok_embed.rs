@@ -305,7 +305,7 @@ impl TikTokData {
                             let metadata_len = metadata.len();
                             ensure!(
                                 metadata_len < FILE_SIZE_LIMIT,
-                                "re-encoded file is size ({}) larger than the limit {}",
+                                "re-encoded file size ({}) is larger than the limit {}",
                                 metadata_len,
                                 FILE_SIZE_LIMIT
                             );
