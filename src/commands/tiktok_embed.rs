@@ -253,7 +253,7 @@ impl TikTokData {
                             );
 
                             info!(
-                                "re-encoding tiktok video `{}` to `{}`\
+                                "re-encoding tiktok video `{}` to `{}` \
                                 @ video bitrate {}",
                                 file_path.display(),
                                 reencoded_file_path_tmp.display(),
