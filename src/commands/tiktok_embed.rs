@@ -35,6 +35,7 @@ use tokio_stream::StreamExt;
 use tracing::{
     error,
     info,
+    warn,
 };
 use url::Url;
 
@@ -281,11 +282,12 @@ impl TikTokData {
                                     Ok(tokio_ffmpeg_cli::Event::Progress(_progress)) => {
                                         // For now, we don't care about progress as there is no way to report it to the user on discord.
                                     }
-                                    Ok(tokio_ffmpeg_cli::Event::Unknown(_)) => {
+                                    Ok(tokio_ffmpeg_cli::Event::Unknown(line)) => {
+                                        // warn!("unknown ffmpeg line: `{}`", line);
                                         // We don't care about unkown lines
                                     }
                                     Err(e) => {
-                                        error!("{:?}", e);
+                                        warn!("{:?}", e);
                                     }
                                 }
                             }
