@@ -17,7 +17,10 @@ use std::{
     path::Path,
     sync::Arc,
 };
-use tracing::warn;
+use tracing::{
+    error,
+    warn,
+};
 
 // Setup
 const SETUP_TABLES_SQL: &str = include_str!("../sql/setup_tables.sql");
@@ -70,7 +73,19 @@ impl Database {
 
     /// Close the db
     pub async fn close(&self) -> anyhow::Result<()> {
-        self.db.close().await?;
+        if let Err(e) = self
+            .db
+            .access_db(|db| {
+                db.execute("PRAGMA OPTIMIZE;", [])?;
+                db.execute("VACUUM;", [])
+            })
+            .await
+            .context("failed to access db")
+            .and_then(|v| v.context("failed to execute shutdown commands"))
+        {
+            error!("{}", e);
+        }
+        self.db.close().await.context("failed to send close request to db")?;
         self.db.join().await?;
 
         Ok(())
