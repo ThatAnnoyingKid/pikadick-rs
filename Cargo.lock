@@ -898,7 +898,7 @@ dependencies = [
  "cookie_store",
  "directories-next",
  "itoa 1.0.1",
- "lazy_static",
+ "once_cell",
  "regex",
  "reqwest",
  "serde",

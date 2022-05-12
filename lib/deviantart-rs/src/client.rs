@@ -9,6 +9,7 @@ use crate::{
     ScrapedWebPageInfo,
     SearchResults,
 };
+use once_cell::sync::Lazy;
 use regex::Regex;
 use reqwest::header::{
     HeaderMap,
@@ -21,7 +22,7 @@ use tokio::io::{
 };
 use url::Url;
 
-const USER_AGENT_STR: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4514.0 Safari/537.36";
+const USER_AGENT_STR: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36";
 
 /// A DeviantArt Client
 #[derive(Debug, Clone)]
@@ -139,9 +140,10 @@ impl Client {
 
     /// Scrape a webpage for info
     pub async fn scrape_webpage(&self, url: &str) -> Result<ScrapedWebPageInfo, Error> {
-        lazy_static::lazy_static! {
-            static ref REGEX: Regex = Regex::new(r#"window\.__INITIAL_STATE__ = JSON\.parse\("(.*)"\);"#).expect("invalid `scrape_deviation` regex");
-        }
+        static REGEX: Lazy<Regex> = Lazy::new(|| {
+            Regex::new(r#"window\.__INITIAL_STATE__ = JSON\.parse\("(.*)"\);"#)
+                .expect("invalid `scrape_deviation` regex")
+        });
 
         let text = self
             .client
@@ -169,9 +171,9 @@ impl Client {
 
     /// Scrape a sta.sh link for info
     pub async fn scrape_stash_info(&self, url: &str) -> Result<ScrapedStashInfo, Error> {
-        lazy_static::lazy_static! {
-            static ref REGEX: Regex = Regex::new(r#"deviantART.pageData=(.*);"#).expect("invalid `scrape_deviation` regex");
-        }
+        static REGEX: Lazy<Regex> = Lazy::new(|| {
+            Regex::new(r#"deviantART.pageData=(.*);"#).expect("invalid `scrape_deviation` regex")
+        });
 
         let text = self
             .client
