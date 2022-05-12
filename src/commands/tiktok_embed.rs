@@ -299,10 +299,11 @@ impl TikTokData {
                             let metadata = tokio::fs::metadata(&reencoded_file_path_tmp)
                                 .await
                                 .context("failed to get metadata of encoded file")?;
-
+                            let metadata_len = metadata.len();
                             ensure!(
-                                metadata.len() < FILE_SIZE_LIMIT,
-                                "re-encoded file is larger than {}",
+                                metadata_len < FILE_SIZE_LIMIT,
+                                "re-encoded file is size ({}) larger than the limit {}",
+                                metadata_len,
                                 FILE_SIZE_LIMIT
                             );
 
