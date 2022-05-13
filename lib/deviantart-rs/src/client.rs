@@ -239,7 +239,6 @@ impl Default for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio::fs::File;
 
     #[derive(serde::Deserialize)]
     struct Config {
@@ -259,7 +258,7 @@ mod tests {
         let client = Client::new();
         let results = client.search("sun", 1).await.expect("failed to search");
         // dbg!(&results);
-        let first = &results.deviations[0];
+        let _first = &results.deviations[0];
         // dbg!(first);
 
         // This function is discouraged and will likely be replaced in the future.
