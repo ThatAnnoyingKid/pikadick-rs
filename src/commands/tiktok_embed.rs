@@ -33,8 +33,8 @@ use std::{
 };
 use tokio_stream::StreamExt;
 use tracing::{
-    error,
     info,
+    warn,
 };
 use url::Url;
 
@@ -253,7 +253,7 @@ impl TikTokData {
                             );
 
                             info!(
-                                "re-encoding tiktok video `{}` to `{}`\
+                                "re-encoding tiktok video `{}` to `{}` \
                                 @ video bitrate {}",
                                 file_path.display(),
                                 reencoded_file_path_tmp.display(),
@@ -266,7 +266,9 @@ impl TikTokData {
                                 .audio_codec("copy")
                                 .video_codec(video_encoder)
                                 .video_bitrate(format!("{}K", target_bitrate))
+                                .video_profile("main")
                                 .output_format("mp4")
+                                .preset("slow")
                                 .try_send()
                                 .await
                                 .context("failed to start re-encoding")?;
@@ -280,11 +282,12 @@ impl TikTokData {
                                     Ok(tokio_ffmpeg_cli::Event::Progress(_progress)) => {
                                         // For now, we don't care about progress as there is no way to report it to the user on discord.
                                     }
-                                    Ok(tokio_ffmpeg_cli::Event::Unknown(_)) => {
+                                    Ok(tokio_ffmpeg_cli::Event::Unknown(_line)) => {
+                                        // warn!("unknown ffmpeg line: `{}`", line);
                                         // We don't care about unkown lines
                                     }
                                     Err(e) => {
-                                        error!("{:?}", e);
+                                        warn!("{:?}", e);
                                     }
                                 }
                             }
@@ -299,10 +302,11 @@ impl TikTokData {
                             let metadata = tokio::fs::metadata(&reencoded_file_path_tmp)
                                 .await
                                 .context("failed to get metadata of encoded file")?;
-
+                            let metadata_len = metadata.len();
                             ensure!(
-                                metadata.len() < FILE_SIZE_LIMIT,
-                                "re-encoded file is larger than {}",
+                                metadata_len < FILE_SIZE_LIMIT,
+                                "re-encoded file size ({}) is larger than the limit {}",
+                                metadata_len,
                                 FILE_SIZE_LIMIT
                             );
 

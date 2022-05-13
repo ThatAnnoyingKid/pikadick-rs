@@ -66,7 +66,9 @@ impl Client {
         }
     }
 
-    /// Sign in to get access to more results from apis. This will also clean the cookie jar.
+    /// Sign in to get access to more results from apis.
+    ///
+    /// This will also clean the cookie jar.
     pub async fn signin(&self, username: &str, password: &str) -> Result<(), Error> {
         self.cookie_store.clean();
 
@@ -172,7 +174,7 @@ impl Client {
     /// Scrape a sta.sh link for info
     pub async fn scrape_stash_info(&self, url: &str) -> Result<ScrapedStashInfo, Error> {
         static REGEX: Lazy<Regex> = Lazy::new(|| {
-            Regex::new(r#"deviantART.pageData=(.*);"#).expect("invalid `scrape_deviation` regex")
+            Regex::new(r#"deviantART.pageData=(.*);"#).expect("invalid `scrape_stash_info` regex")
         });
 
         let text = self
@@ -237,7 +239,6 @@ impl Default for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio::fs::File;
 
     #[derive(serde::Deserialize)]
     struct Config {
@@ -257,13 +258,18 @@ mod tests {
         let client = Client::new();
         let results = client.search("sun", 1).await.expect("failed to search");
         // dbg!(&results);
-        let first = &results.deviations[0];
+        let _first = &results.deviations[0];
         // dbg!(first);
+
+        // This function is discouraged and will likely be replaced in the future.
+        // Since it fails CI spuriously a lot, we will not test it.
+        /*
         let image = File::create("test.jpg").await.expect("failed to save file");
         client
             .download_deviation(first, image)
             .await
             .expect("failed to download deviation");
+        */
     }
 
     #[tokio::test]

@@ -11,9 +11,9 @@ use serenity::{
         CommandOptions,
         Reason,
     },
-    model::prelude::{
-        application_command::*,
-        *,
+    model::{
+        application::interaction::application_command::ApplicationCommandInteraction,
+        prelude::*,
     },
 };
 use tracing::{

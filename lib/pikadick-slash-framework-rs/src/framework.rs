@@ -7,13 +7,15 @@ use crate::{
 };
 use serenity::{
     client::Context,
-    model::prelude::{
-        application_command::{
-            ApplicationCommand,
-            ApplicationCommandInteraction,
+    model::{
+        application::{
+            command::Command as ApplicationCommand,
+            interaction::{
+                application_command::ApplicationCommandInteraction,
+                Interaction,
+            },
         },
-        GuildId,
-        Interaction,
+        prelude::GuildId,
     },
 };
 use std::{

@@ -15,9 +15,9 @@ use serenity::{
         CommandOptions,
         Reason,
     },
-    model::prelude::{
-        application_command::ApplicationCommandInteraction,
-        *,
+    model::{
+        application::interaction::application_command::ApplicationCommandInteraction,
+        prelude::*,
     },
 };
 use std::{

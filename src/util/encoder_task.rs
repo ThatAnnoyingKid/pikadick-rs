@@ -27,7 +27,7 @@ enum Message {
     /// Request an encode
     Encode {
         /// The options for the encode
-        builder: tokio_ffmpeg_cli::Builder,
+        builder: Box<tokio_ffmpeg_cli::Builder>,
         /// The notification for when the task is processed, as well as a handle to the download event stream
         tx: oneshot::Sender<
             anyhow::Result<
@@ -217,7 +217,7 @@ impl Default for EncoderTask {
 /// A builder for encoding messages
 #[derive(Debug)]
 pub struct EncoderTaskEncodeBuilder<'a> {
-    builder: tokio_ffmpeg_cli::Builder,
+    builder: Box<tokio_ffmpeg_cli::Builder>,
 
     task: &'a EncoderTask,
 }
@@ -226,7 +226,7 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
     /// Make a new [`EncoderTaskEncodeBuilder`]
     pub fn new(task: &'a EncoderTask) -> Self {
         Self {
-            builder: tokio_ffmpeg_cli::Builder::new(),
+            builder: Box::new(tokio_ffmpeg_cli::Builder::new()),
             task,
         }
     }
@@ -276,6 +276,18 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
     /// Set the # of video frames from the input
     pub fn video_frames(&mut self, video_frames: impl Into<u64>) -> &mut Self {
         self.builder.video_frames(video_frames);
+        self
+    }
+
+    /// Set the video profile
+    pub fn video_profile(&mut self, video_profile: impl Into<String>) -> &mut Self {
+        self.builder.video_profile(video_profile);
+        self
+    }
+
+    /// Set the preset
+    pub fn preset(&mut self, preset: impl Into<String>) -> &mut Self {
+        self.builder.preset(preset);
         self
     }
 
