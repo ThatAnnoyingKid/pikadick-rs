@@ -268,7 +268,6 @@ impl TikTokData {
                                 .video_bitrate(format!("{}K", target_bitrate))
                                 .video_profile("main")
                                 .output_format("mp4")
-                                .preset("slow")
                                 .try_send()
                                 .await
                                 .context("failed to start re-encoding")?;
