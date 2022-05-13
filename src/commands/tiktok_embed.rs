@@ -38,7 +38,8 @@ use tracing::{
 };
 use url::Url;
 
-const FILE_SIZE_LIMIT: u64 = 8_000_000;
+const FILE_SIZE_LIMIT_BYTES: u64 = 8 * 1024 * 1024;
+const TARGET_FILE_SIZE_BYTES: u64 = 7 * 1024 * 1024;
 const ENCODER_PREFERENCE_LIST: &[&str] = &[
     "h264_nvenc",
     "h264_amf",
@@ -243,11 +244,14 @@ impl TikTokData {
                     };
 
                     // If the file is greater than 8mb, we need to reencode it
-                    if metadata.len() > FILE_SIZE_LIMIT {
+                    if metadata.len() > FILE_SIZE_LIMIT_BYTES {
                         let result = async {
                             // We target 7 MB to give ourselves some lee-way.
                             // This merely sets the target bit-rate, and we don't take into account audio size.
-                            let target_bitrate = calc_target_bitrate(7_000 * 8, video_duration);
+                            let target_bitrate = calc_target_bitrate(
+                                (TARGET_FILE_SIZE_BYTES / 1024) * 8,
+                                video_duration,
+                            );
                             let mut reencoded_file_path_tmp = DropRemovePath::new(
                                 crate::util::with_push_extension(&reencoded_file_path, "tmp"),
                             );
@@ -266,7 +270,6 @@ impl TikTokData {
                                 .audio_codec("copy")
                                 .video_codec(video_encoder)
                                 .video_bitrate(format!("{}K", target_bitrate))
-                                .video_profile("main")
                                 .output_format("mp4")
                                 .try_send()
                                 .await
@@ -303,10 +306,10 @@ impl TikTokData {
                                 .context("failed to get metadata of encoded file")?;
                             let metadata_len = metadata.len();
                             ensure!(
-                                metadata_len < FILE_SIZE_LIMIT,
+                                metadata_len < FILE_SIZE_LIMIT_BYTES,
                                 "re-encoded file size ({}) is larger than the limit {}",
                                 metadata_len,
-                                FILE_SIZE_LIMIT
+                                FILE_SIZE_LIMIT_BYTES
                             );
 
                             // Rename the tmp file to be the actual name.
