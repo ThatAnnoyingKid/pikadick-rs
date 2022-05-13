@@ -4,7 +4,7 @@ use crate::{
 };
 use serenity::{
     client::Context,
-    model::prelude::application_command::ApplicationCommandInteraction,
+    model::application::interaction::application_command::ApplicationCommandInteraction,
 };
 
 pub type CheckFn = for<'a> fn(

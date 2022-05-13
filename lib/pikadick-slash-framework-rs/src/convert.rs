@@ -2,9 +2,9 @@ use crate::{
     ArgumentParam,
     BuilderError,
 };
-use serenity::model::prelude::application_command::{
+use serenity::model::application::interaction::application_command::{
     ApplicationCommandInteraction,
-    ApplicationCommandInteractionDataOptionValue,
+    CommandDataOptionValue,
 };
 
 /// Error while converting from an interaction
@@ -77,16 +77,14 @@ impl DataType {
         }
     }
 
-    /// Get the type of a [`ApplicationCommandInteractionDataOptionValue`].
+    /// Get the type of a [`CommandDataOptionValue`].
     ///
     /// This returns an option as [`DataType`] does not encode the concept of an unknown data type.
-    pub fn from_data_option_value(
-        v: &ApplicationCommandInteractionDataOptionValue,
-    ) -> Option<Self> {
+    pub fn from_data_option_value(v: &CommandDataOptionValue) -> Option<Self> {
         match v {
-            ApplicationCommandInteractionDataOptionValue::String(_) => Some(DataType::String),
-            ApplicationCommandInteractionDataOptionValue::Integer(_) => Some(DataType::Integer),
-            ApplicationCommandInteractionDataOptionValue::Boolean(_) => Some(DataType::Boolean),
+            CommandDataOptionValue::String(_) => Some(DataType::String),
+            CommandDataOptionValue::Integer(_) => Some(DataType::Integer),
+            CommandDataOptionValue::Boolean(_) => Some(DataType::Boolean),
             _ => None,
         }
     }
@@ -103,7 +101,7 @@ pub trait FromOptionValue: Sized {
     /// Parse from an option value
     fn from_option_value(
         name: &'static str,
-        option: Option<&ApplicationCommandInteractionDataOptionValue>,
+        option: Option<&CommandDataOptionValue>,
     ) -> Result<Self, ConvertError>;
 
     /// The expected data type
@@ -121,7 +119,7 @@ pub trait FromOptionValue: Sized {
 impl FromOptionValue for bool {
     fn from_option_value(
         name: &'static str,
-        option: Option<&ApplicationCommandInteractionDataOptionValue>,
+        option: Option<&CommandDataOptionValue>,
     ) -> Result<Self, ConvertError> {
         let expected = Self::get_expected_data_type();
 
@@ -133,7 +131,7 @@ impl FromOptionValue for bool {
         };
 
         match option {
-            ApplicationCommandInteractionDataOptionValue::Boolean(b) => Ok(*b),
+            CommandDataOptionValue::Boolean(b) => Ok(*b),
             t => Err(ConvertError::UnexpectedType {
                 name,
                 expected,
@@ -150,7 +148,7 @@ impl FromOptionValue for bool {
 impl FromOptionValue for String {
     fn from_option_value(
         name: &'static str,
-        option: Option<&ApplicationCommandInteractionDataOptionValue>,
+        option: Option<&CommandDataOptionValue>,
     ) -> Result<Self, ConvertError> {
         let expected = Self::get_expected_data_type();
 
@@ -162,7 +160,7 @@ impl FromOptionValue for String {
         };
 
         match option {
-            ApplicationCommandInteractionDataOptionValue::String(s) => Ok(s.clone()),
+            CommandDataOptionValue::String(s) => Ok(s.clone()),
             t => Err(ConvertError::UnexpectedType {
                 name,
                 expected,
@@ -182,7 +180,7 @@ where
 {
     fn from_option_value(
         name: &'static str,
-        option: Option<&ApplicationCommandInteractionDataOptionValue>,
+        option: Option<&CommandDataOptionValue>,
     ) -> Result<Self, ConvertError> {
         if option.is_none() {
             return Ok(None);

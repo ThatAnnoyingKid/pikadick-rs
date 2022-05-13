@@ -10,9 +10,9 @@ use crate::{
 use serenity::{
     builder::CreateApplicationCommand,
     client::Context,
-    model::prelude::application_command::{
-        ApplicationCommandInteraction,
-        ApplicationCommandOptionType,
+    model::application::{
+        command::CommandOptionType,
+        interaction::application_command::ApplicationCommandInteraction,
     },
 };
 use std::{
@@ -99,9 +99,9 @@ impl Command {
                     .name(argument.name())
                     .description(argument.description())
                     .kind(match argument.kind() {
-                        DataType::Boolean => ApplicationCommandOptionType::Boolean,
-                        DataType::String => ApplicationCommandOptionType::String,
-                        DataType::Integer => ApplicationCommandOptionType::Integer,
+                        DataType::Boolean => CommandOptionType::Boolean,
+                        DataType::String => CommandOptionType::String,
+                        DataType::Integer => CommandOptionType::Integer,
                     })
                     .required(argument.required())
             });
@@ -276,9 +276,9 @@ impl HelpCommand {
                     .name(argument.name())
                     .description(argument.description())
                     .kind(match argument.kind() {
-                        DataType::Boolean => ApplicationCommandOptionType::Boolean,
-                        DataType::String => ApplicationCommandOptionType::String,
-                        DataType::Integer => ApplicationCommandOptionType::Integer,
+                        DataType::Boolean => CommandOptionType::Boolean,
+                        DataType::String => CommandOptionType::String,
+                        DataType::Integer => CommandOptionType::Integer,
                     })
             });
         }

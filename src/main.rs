@@ -70,7 +70,10 @@ use serenity::{
         StandardFramework,
     },
     futures::future::BoxFuture,
-    model::prelude::*,
+    model::{
+        application::interaction::Interaction,
+        prelude::*,
+    },
     prelude::*,
     FutureExt,
 };
