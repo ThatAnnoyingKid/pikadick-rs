@@ -246,10 +246,10 @@ impl TikTokData {
                     // If the file is greater than 8mb, we need to reencode it
                     if metadata.len() > FILE_SIZE_LIMIT_BYTES {
                         let result = async {
-                            // We target 7 MB to give ourselves some lee-way.
+                            // We target half of the maximum size to give ourselves some lee-way.
                             // This merely sets the target bit-rate, and we don't take into account audio size.
                             let target_bitrate = calc_target_bitrate(
-                                (TARGET_FILE_SIZE_BYTES / 1024) * 8,
+                                (TARGET_FILE_SIZE_BYTES / 1024) * 8 / 2,
                                 video_duration,
                             );
                             let mut reencoded_file_path_tmp = DropRemovePath::new(
