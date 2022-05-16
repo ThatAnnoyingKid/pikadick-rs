@@ -19,32 +19,57 @@ use tracing_subscriber::{
 ///
 /// Must be called from a tokio runtime.
 pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
-    let file_writer = tracing_appender::rolling::hourly(&config.log_file_dir(), "log.txt");
+    let file_writer = tracing_appender::rolling::hourly(config.log_file_dir(), "log.txt");
     let (nonblocking_file_writer, guard) = tracing_appender::non_blocking(file_writer);
 
-    // Only enable pikadick since serenity likes puking in the logs during connection failures
-    // serenity's framework section seems ok as well
-    let env_filter = EnvFilter::default()
-        .add_directive(
-            "pikadick=info"
-                .parse()
-                .context("failed to parse logging directive")?,
-        )
-        .add_directive(
-            "serenity::framework::standard=info"
-                .parse()
-                .context("failed to parse logging directive")?,
-        );
+    let mut env_filter = EnvFilter::default();
+    let maybe_logging_directives = config.log.as_ref().and_then(|log| {
+        if log.directives.is_empty() {
+            None
+        } else {
+            Some(log.directives.as_slice())
+        }
+    });
+    match maybe_logging_directives {
+        Some(directives) => {
+            // If the user provides logging directives, use them
+            for directive in directives.iter() {
+                env_filter = env_filter.add_directive(
+                    directive
+                        .parse()
+                        .context("failed to parse logging directive")?,
+                );
+            }
+        }
+        None => {
+            // If logging directives not given, choose some defaults.
+            //
+            // Only enable pikadick since serenity likes puking in the logs during connection failures
+            // serenity's framework section seems ok as well
+            env_filter = env_filter
+                .add_directive(
+                    "pikadick=info"
+                        .parse()
+                        .context("failed to parse logging directive")?,
+                )
+                .add_directive(
+                    "serenity::framework::standard=info"
+                        .parse()
+                        .context("failed to parse logging directive")?,
+                );
+        }
+    }
+
     let stderr_formatting_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
     let file_formatting_layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
         .with_writer(nonblocking_file_writer);
 
     let opentelemetry_layer = if let Some(config) = config.log.as_ref() {
-        opentelemetry::global::set_error_handler(|e| {
+        opentelemetry::global::set_error_handler(|error| {
             // Print to stderr.
             // There was an error logging something, so we avoid using the logging system.
-            eprintln!("opentelemetry error: {:?}", anyhow::anyhow!(e));
+            eprintln!("opentelemetry error: {:?}", anyhow::Error::from(error));
         })
         .context("failed to set opentelemetry error handler")?;
 

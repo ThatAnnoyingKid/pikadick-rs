@@ -84,6 +84,9 @@ pub struct DeviantArtConfig {
 /// Log Config
 #[derive(Deserialize, Debug)]
 pub struct LogConfig {
+    /// The logging directives.
+    pub directives: Vec<String>,
+
     /// The OTLP endpoint
     pub endpoint: Option<String>,
 
