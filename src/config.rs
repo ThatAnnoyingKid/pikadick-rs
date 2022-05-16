@@ -90,6 +90,7 @@ pub struct LogConfig {
     pub directives: Vec<String>,
 
     /// Whether to use open telemetry
+    #[serde(default)]
     pub use_opentelemetry: bool,
 
     /// The OTLP endpoint
