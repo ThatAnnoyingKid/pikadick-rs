@@ -1,0 +1,9 @@
+[Unit]
+Description=The pikadick discord bot
+
+[Service]
+ExecStart=/usr/bin/pikadick --config /etc/pikadick/config.toml
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

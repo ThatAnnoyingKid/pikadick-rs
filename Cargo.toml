@@ -9,6 +9,7 @@ authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 
 [dependencies]
 anyhow = "1.0.57"
+argh = "0.1.7"
 async-rusqlite = { path = "./lib/async-rusqlite-rs", features = [ "bundled" ] }
 bincode = "1.3.3"
 bitflags = "1.3.2"
@@ -115,11 +116,13 @@ opt-level = 3
 lto = "fat"
 codegen-units = 1
 opt-level = 3
+strip = "symbols"
 
 [profile.bench]
 lto = "fat"
 codegen-units = 1
 opt-level = 3
+strip = "symbols"
 
 [workspace]
 members = [ 
@@ -149,6 +152,20 @@ members = [
 ]
 
 [package.metadata.deb]
+name = "pikadick"
+depends = ""
+assets = [
+    [ "target/release/pikadick", "usr/bin/", "700" ],
+    [ "deb-config.toml", "etc/pikadick/config.toml", "600" ],
+]
+conf-files = [
+    "etc/pikadick/config.toml",
+]
+maintainer-scripts = "debian/"
+
+[package.metadata.deb.systemd-units]
+enable = true
+start = true
 
 [package.metadata.rpi-deploy]
 targets = [ "armv7-unknown-linux-gnueabihf" ]

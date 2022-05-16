@@ -2382,6 +2382,7 @@ name = "pikadick"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "argh",
  "async-rusqlite",
  "bincode",
  "bitflags",
