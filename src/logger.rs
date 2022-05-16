@@ -23,41 +23,13 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
     let (nonblocking_file_writer, guard) = tracing_appender::non_blocking(file_writer);
 
     let mut env_filter = EnvFilter::default();
-    let maybe_logging_directives = config.log.as_ref().and_then(|log| {
-        if log.directives.is_empty() {
-            None
-        } else {
-            Some(log.directives.as_slice())
-        }
-    });
-    match maybe_logging_directives {
-        Some(directives) => {
-            // If the user provides logging directives, use them
-            for directive in directives.iter() {
-                env_filter = env_filter.add_directive(
-                    directive
-                        .parse()
-                        .context("failed to parse logging directive")?,
-                );
-            }
-        }
-        None => {
-            // If logging directives not given, choose some defaults.
-            //
-            // Only enable pikadick since serenity likes puking in the logs during connection failures
-            // serenity's framework section seems ok as well
-            env_filter = env_filter
-                .add_directive(
-                    "pikadick=info"
-                        .parse()
-                        .context("failed to parse logging directive")?,
-                )
-                .add_directive(
-                    "serenity::framework::standard=info"
-                        .parse()
-                        .context("failed to parse logging directive")?,
-                );
-        }
+    // If the user provides logging directives, use them
+    for directive in config.log.directives.iter() {
+        env_filter = env_filter.add_directive(
+            directive
+                .parse()
+                .context("failed to parse logging directive")?,
+        );
     }
 
     let stderr_formatting_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
@@ -65,7 +37,7 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
         .with_ansi(false)
         .with_writer(nonblocking_file_writer);
 
-    let opentelemetry_layer = if let Some(config) = config.log.as_ref() {
+    let opentelemetry_layer = if config.log.use_opentelemetry {
         opentelemetry::global::set_error_handler(|error| {
             // Print to stderr.
             // There was an error logging something, so we avoid using the logging system.
@@ -73,8 +45,8 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
         })
         .context("failed to set opentelemetry error handler")?;
 
-        let mut map = MetadataMap::with_capacity(config.headers.len());
-        for (k, v) in config.headers.iter() {
+        let mut map = MetadataMap::with_capacity(config.log.headers.len());
+        for (k, v) in config.log.headers.iter() {
             let k = MetadataKey::from_bytes(k.as_bytes()).context("invalid header name")?;
             map.insert(k, v.parse().context("invalid header value")?);
         }
@@ -85,7 +57,7 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
                 .with_metadata(map)
                 .with_tls_config(Default::default());
 
-            if let Some(endpoint) = config.endpoint.as_ref() {
+            if let Some(endpoint) = config.log.endpoint.as_ref() {
                 exporter = exporter.with_endpoint(endpoint);
             }
 
