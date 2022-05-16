@@ -104,17 +104,25 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                             e.title(&data.username).image(data.avatar_url_256.as_str());
 
                             if let Some(kd) = data.kd() {
-                                e.field("Overall Kill / Death", kd, true);
+                                e.field(
+                                    "Overall Kill / Death",
+                                    ryu::Buffer::new().format(kd),
+                                    true,
+                                );
                             }
 
                             if let Some(wl) = data.wl() {
-                                e.field("Overall Win / Loss", wl, true);
+                                e.field("Overall Win / Loss", ryu::Buffer::new().format(wl), true);
                             }
 
                             if let Some(stats) = data.seasonal_stats.as_ref() {
-                                e.field("MMR", stats.mmr, true);
-                                e.field("Max MMR", stats.max_mmr, true);
-                                e.field("Mean Skill", stats.skill_mean, true);
+                                e.field("MMR", ryu::Buffer::new().format(stats.mmr), true);
+                                e.field("Max MMR", ryu::Buffer::new().format(stats.max_mmr), true);
+                                e.field(
+                                    "Mean Skill",
+                                    ryu::Buffer::new().format(stats.skill_mean),
+                                    true,
+                                );
                             }
 
                             e
