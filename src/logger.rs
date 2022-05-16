@@ -37,7 +37,9 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
         .with_ansi(false)
         .with_writer(nonblocking_file_writer);
 
-    let opentelemetry_layer = if config.log.use_opentelemetry {
+    let opentelemetry_layer = if config.log.opentelemetry {
+        eprintln!("setting up opentelemetry...");
+        
         opentelemetry::global::set_error_handler(|error| {
             // Print to stderr.
             // There was an error logging something, so we avoid using the logging system.

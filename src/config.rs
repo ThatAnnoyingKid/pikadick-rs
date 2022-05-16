@@ -89,9 +89,9 @@ pub struct LogConfig {
     #[serde(default = "LogConfig::default_directives")]
     pub directives: Vec<String>,
 
-    /// Whether to use open telemetry
-    #[serde(default)]
-    pub use_opentelemetry: bool,
+    /// Whether to use opentelemetry
+    #[serde(default, rename = "opentelemetry")]
+    pub opentelemetry: bool,
 
     /// The OTLP endpoint
     pub endpoint: Option<String>,
@@ -118,7 +118,7 @@ impl Default for LogConfig {
         Self {
             directives: Self::default_directives(),
 
-            use_opentelemetry: false,
+            opentelemetry: false,
             endpoint: None,
             headers: HashMap::new(),
         }
