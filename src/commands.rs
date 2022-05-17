@@ -97,7 +97,7 @@ pub fn create_slash_help_command() -> anyhow::Result<pikadick_slash_framework::H
                                                     arguments.push_str(": ");
                                                     arguments.push_str(argument.description());
                                                 }
-                                                embed.field("Arguments", arguments, false);
+                                                embed.field("Arguments", &arguments, false);
                                             }
                                         }
                                         None => {

@@ -96,16 +96,27 @@ async fn fml(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         msg.channel_id
             .send_message(&ctx.http, |m| {
                 m.embed(|e| {
+                    let mut votes_up_buf = itoa::Buffer::new();
+                    let mut votes_down_buf = itoa::Buffer::new();
+
                     e.title("FML Story");
                     e.description(entry.content_hidden);
-                    e.field("I agree, your life sucks", entry.metrics.votes_up, true);
-                    e.field("You deserved it", entry.metrics.votes_down, true);
+                    e.field(
+                        "I agree, your life sucks",
+                        votes_up_buf.format(entry.metrics.votes_up),
+                        true,
+                    );
+                    e.field(
+                        "You deserved it",
+                        votes_down_buf.format(entry.metrics.votes_down),
+                        true,
+                    );
 
                     e.field("\u{200B}", "\u{200B}", false);
 
                     e.field(
                         "Reactions",
-                        format!(
+                        &format!(
                             "😐 {}\n\n😃 {}\n\n😲 {}\n\n😂 {}",
                             entry.metrics.smiley_amusing,
                             entry.metrics.smiley_funny,

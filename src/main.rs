@@ -22,6 +22,7 @@
 //! # Pikadick
 
 pub mod checks;
+pub mod cli_options;
 pub mod client_data;
 pub mod commands;
 pub mod config;
@@ -30,6 +31,7 @@ pub mod logger;
 pub mod util;
 
 use crate::{
+    cli_options::CliOptions,
     client_data::ClientData,
     commands::*,
     config::{
@@ -484,12 +486,10 @@ async fn process_dispatch_error_future<'fut>(
 ///
 /// This prints to the stderr directly.
 /// It is intended to be called BEFORE the loggers are set up.
-fn load_config() -> anyhow::Result<Config> {
-    let config_path: &Path = "./config.toml".as_ref();
-
-    eprintln!("loading `{}`...", config_path.display());
-    let mut config = Config::load_from_path(config_path)
-        .with_context(|| format!("failed to load `{}`", config_path.display()))?;
+fn load_config(path: &Path) -> anyhow::Result<Config> {
+    eprintln!("loading `{}`...", path.display());
+    let mut config = Config::load_from_path(path)
+        .with_context(|| format!("failed to load `{}`", path.display()))?;
 
     eprintln!("validating config...");
     let errors = config.validate();
@@ -514,7 +514,9 @@ fn load_config() -> anyhow::Result<Config> {
 }
 
 /// Pre-main setup
-fn setup() -> anyhow::Result<(
+fn setup(
+    cli_options: CliOptions,
+) -> anyhow::Result<(
     tokio::runtime::Runtime,
     Config,
     bool,
@@ -528,7 +530,7 @@ fn setup() -> anyhow::Result<(
         .build()
         .context("failed to start tokio runtime")?;
 
-    let config = load_config().context("failed to load config")?;
+    let config = load_config(&cli_options.config).context("failed to load config")?;
 
     eprintln!("opening data directory...");
     let data_dir_metadata = match std::fs::metadata(&config.data_dir) {
@@ -582,7 +584,8 @@ fn setup() -> anyhow::Result<(
 /// This also calls setup operations like loading config and setting up the tokio runtime,
 /// logging errors to the stderr instead of the loggers, which are not initialized yet.
 fn main() {
-    let (tokio_rt, config, missing_data_dir, lockfile, worker_guard) = match setup() {
+    let cli_options = argh::from_env();
+    let (tokio_rt, config, missing_data_dir, lockfile, worker_guard) = match setup(cli_options) {
         Ok(data) => data,
         Err(e) => {
             eprintln!("{:?}", e);

@@ -49,7 +49,8 @@ pub struct Config {
     pub deviantart: DeviantArtConfig,
 
     /// The log config
-    pub log: Option<LogConfig>,
+    #[serde(default)]
+    pub log: LogConfig,
 
     /// Unknown extra data
     #[serde(flatten)]
@@ -84,16 +85,44 @@ pub struct DeviantArtConfig {
 /// Log Config
 #[derive(Deserialize, Debug)]
 pub struct LogConfig {
+    /// The logging directives.
+    #[serde(default = "LogConfig::default_directives")]
+    pub directives: Vec<String>,
+
+    /// Whether to use opentelemetry
+    #[serde(default, rename = "opentelemetry")]
+    pub opentelemetry: bool,
+
     /// The OTLP endpoint
     pub endpoint: Option<String>,
 
     /// Headers
     #[serde(default)]
     pub headers: HashMap<String, String>,
+}
 
-    /// Unknown extra data
-    #[serde(flatten)]
-    pub extra: HashMap<String, toml::Value>,
+impl LogConfig {
+    /// If logging directives not given, choose some defaults.
+    fn default_directives() -> Vec<String> {
+        // Only enable pikadick since serenity likes puking in the logs during connection failures
+        // serenity's framework section seems ok as well
+        vec![
+            "pikadick=info".to_string(),
+            "serenity::framework::standard=info".to_string(),
+        ]
+    }
+}
+
+impl Default for LogConfig {
+    fn default() -> Self {
+        Self {
+            directives: Self::default_directives(),
+
+            opentelemetry: false,
+            endpoint: None,
+            headers: HashMap::new(),
+        }
+    }
 }
 
 impl Config {

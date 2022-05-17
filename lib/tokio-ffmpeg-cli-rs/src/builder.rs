@@ -19,6 +19,7 @@ use tokio_stream::{
     Stream,
     StreamExt,
 };
+use tracing::trace;
 
 /// Example: "File 'test.mp4' already exists. Exiting."
 static FILE_EXISTS_REGEX: Lazy<Regex> = Lazy::new(|| {
@@ -251,6 +252,8 @@ impl Builder {
     /// Spawn the stream
     pub fn spawn(&mut self) -> Result<impl Stream<Item = Result<Event, Error>> + Unpin, Error> {
         let mut command = self.build_command()?;
+
+        trace!("built ffmpeg command for spawning: {:?}", command);
 
         let mut child = command.spawn().map_err(Error::ProcessSpawn)?;
 

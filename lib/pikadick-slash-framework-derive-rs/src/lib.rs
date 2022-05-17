@@ -29,7 +29,7 @@ pub fn derive_from_options(input: proc_macro::TokenStream) -> proc_macro::TokenS
             let expanded = quote! {
                 impl ::pikadick_slash_framework::FromOptions for #name {
                     fn from_options(
-                        interaction: &::serenity::model::prelude::application_command::ApplicationCommandInteraction
+                        interaction: &::serenity::model::application::interaction::application_command::ApplicationCommandInteraction
                     ) -> ::std::result::Result<Self, ::pikadick_slash_framework::ConvertError> {
                         #from_options_impl
                     }

@@ -472,12 +472,12 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                             e.title("TikTok Embeds")
                                 .field(
                                     "Enabled?",
-                                    new_flags.contains(TikTokEmbedFlags::ENABLED),
+                                    bool_to_str(new_flags.contains(TikTokEmbedFlags::ENABLED)),
                                     false,
                                 )
                                 .field(
                                     "Delete link?",
-                                    new_flags.contains(TikTokEmbedFlags::DELETE_LINK),
+                                    bool_to_str(new_flags.contains(TikTokEmbedFlags::DELETE_LINK)),
                                     false,
                                 )
                         })
@@ -489,4 +489,13 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
         })
         .build()
         .context("failed to build command")
+}
+
+/// Convert a bool to a str
+fn bool_to_str(value: bool) -> &'static str {
+    if value {
+        "True"
+    } else {
+        "False"
+    }
 }
