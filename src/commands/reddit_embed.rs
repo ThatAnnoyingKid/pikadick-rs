@@ -191,7 +191,7 @@ impl RedditEmbedData {
             })?;
 
         if !original_post.is_video {
-            return Ok(original_post.url);
+            return Ok(original_post.url.into());
         }
 
         self.create_video_url(url.as_str())
@@ -304,7 +304,7 @@ impl RedditEmbedData {
                 let url = self.create_video_url(&post_url).await?;
                 Ok(url.into())
             }
-            _ => Ok(link.url.clone()),
+            _ => Ok(link.url.clone().into()),
         }
     }
 }
