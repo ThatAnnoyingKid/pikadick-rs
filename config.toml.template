@@ -16,7 +16,8 @@ password = "[DEVIANT_PASSWORD]"
 
 # This section is optional
 [log]
-directives = [ # Logging directives. These are the suggested defaults.
+# Logging directives. These are the suggested defaults.
+directives = [ 
     "pikadick=info",
     "serenity::framework::standard=info",
 ]
