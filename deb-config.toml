@@ -1,6 +1,9 @@
 # Put yout bot token here
 # token = "[TOKEN]"
 
+# Put your bot application id here
+# application_id = [APPLICATION_ID]
+
 # Put your bot prefix here
 # prefix = "[PREFIX]"
 
@@ -33,6 +36,10 @@ directives = [
     "pikadick=info",
     "serenity::framework::standard=info",
 ]
+
+# Whether to enable opentelemetry
+opentelemetry = false
+
 # Endpoint for OTLP GRPC telemetry
 # endpoint = "[ENDPOINT_URL]" 
 
