@@ -153,7 +153,7 @@ members = [
 
 [package.metadata.deb]
 name = "pikadick"
-depends = ""
+depends = "ffmpeg"
 assets = [
     [ "target/release/pikadick", "usr/bin/", "700" ],
     [ "deb-config.toml", "etc/pikadick/config.toml", "600" ],
@@ -168,4 +168,6 @@ enable = true
 start = true
 
 [package.metadata.rpi-deploy]
-targets = [ "armv7-unknown-linux-gnueabihf" ]
+targets = [ 
+    "armv7-unknown-linux-gnueabihf",
+]
