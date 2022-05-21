@@ -170,4 +170,5 @@ start = true
 [package.metadata.rpi-deploy]
 targets = [ 
     "armv7-unknown-linux-gnueabihf",
+    "aarch64-unknown-linux-gnu",
 ]
