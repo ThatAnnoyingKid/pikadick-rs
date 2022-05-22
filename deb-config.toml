@@ -1,0 +1,47 @@
+# Put yout bot token here
+# token = "[TOKEN]"
+
+# Put your bot application id here
+# application_id = [APPLICATION_ID]
+
+# Put your bot prefix here
+# prefix = "[PREFIX]"
+
+# The path to the data directory
+data_dir = "/var/lib/pikadick/data"
+
+# The test guild id. Not necessary for normal operation.
+# test_guild = "[TEST_GUILD]"
+
+[status]
+# The "name" of the activity
+# name = "you like a damn fiddle" 
+# The status type. Must be "Playing", "Listening", or "Streaming"
+# type = "[STATUS_TYPE]"
+
+[fml]
+# The fml api key. You are fine using this.
+key = "4dccf019bdfac" 
+
+# [deviantart]
+# The deviantart username
+# username = "[DEVIANT_USERNAME]"
+# The deviantart password
+# password = "[DEVIANT_PASSWORD]"
+
+# This section is optional
+[log]
+# Logging directives. These are the suggested defaults.
+directives = [ 
+    "pikadick=info",
+    "serenity::framework::standard=info",
+]
+
+# Whether to enable opentelemetry
+opentelemetry = false
+
+# Endpoint for OTLP GRPC telemetry
+# endpoint = "[ENDPOINT_URL]" 
+
+# Headers for telemetry 
+# [log.headers]

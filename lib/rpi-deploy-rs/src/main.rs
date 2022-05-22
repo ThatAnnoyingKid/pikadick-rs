@@ -180,7 +180,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
                 let mut ssh_channel = session.channel_session()?;
                 ssh_channel.handle_extended_data(ssh2::ExtendedData::Merge)?;
                 ssh_channel.exec(
-                    format!("sudo dpkg -i --force-confold {}", remote_package_file_path).as_str(),
+                    format!("DEBIAN_FRONTEND=noninteractive sudo apt-get -y --fix-broken reinstall -o DPkg::options::=\"--force-confdef\" -o DPkg::options::=\"--force-confold\" {}", remote_package_file_path).as_str(),
                 )?;
 
                 {

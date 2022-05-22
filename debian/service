@@ -1,5 +1,5 @@
 [Unit]
-Description=The pikadick discord bot
+Description=The Pikadick discord bot
 
 [Service]
 ExecStart=/usr/bin/pikadick --config /etc/pikadick/config.toml

@@ -252,53 +252,102 @@ impl TikTokData {
                                 (TARGET_FILE_SIZE_BYTES / 1024) * 8 / 2,
                                 video_duration,
                             );
-                            let mut reencoded_file_path_tmp = DropRemovePath::new(
-                                crate::util::with_push_extension(&reencoded_file_path, "tmp"),
+                            let reencoded_file_path_tmp_1 = DropRemovePath::new(
+                                crate::util::with_push_extension(&reencoded_file_path, "1.tmp"),
                             );
 
                             info!(
                                 "re-encoding tiktok video `{}` to `{}` \
                                 @ video bitrate {}",
                                 file_path.display(),
-                                reencoded_file_path_tmp.display(),
+                                reencoded_file_path_tmp_1.display(),
                                 target_bitrate
                             );
-                            let mut stream = encoder_task
-                                .encode()
-                                .input(&file_path)
-                                .output(&*reencoded_file_path_tmp)
-                                .audio_codec("copy")
-                                .video_codec(video_encoder)
-                                .video_bitrate(format!("{}K", target_bitrate))
-                                .output_format("mp4")
-                                .try_send()
-                                .await
-                                .context("failed to start re-encoding")?;
 
-                            let mut maybe_exit_status = None;
-                            while let Some(msg) = stream.next().await {
-                                match msg.context("ffmpeg stream error") {
-                                    Ok(tokio_ffmpeg_cli::Event::ExitStatus(exit_status)) => {
-                                        maybe_exit_status = Some(exit_status);
-                                    }
-                                    Ok(tokio_ffmpeg_cli::Event::Progress(_progress)) => {
-                                        // For now, we don't care about progress as there is no way to report it to the user on discord.
-                                    }
-                                    Ok(tokio_ffmpeg_cli::Event::Unknown(_line)) => {
-                                        // warn!("unknown ffmpeg line: `{}`", line);
-                                        // We don't care about unkown lines
-                                    }
-                                    Err(e) => {
-                                        warn!("{:?}", e);
+                            {
+                                let mut stream = encoder_task
+                                    .encode()
+                                    .input(&file_path)
+                                    .output(&*reencoded_file_path_tmp_1)
+                                    .audio_codec("copy")
+                                    .video_codec(video_encoder)
+                                    .video_bitrate(format!("{}K", target_bitrate))
+                                    .output_format("mp4")
+                                    .try_send()
+                                    .await
+                                    .context("failed to start re-encoding")?;
+
+                                let mut maybe_exit_status = None;
+                                while let Some(msg) = stream.next().await {
+                                    match msg.context("ffmpeg stream error") {
+                                        Ok(tokio_ffmpeg_cli::Event::ExitStatus(exit_status)) => {
+                                            maybe_exit_status = Some(exit_status);
+                                        }
+                                        Ok(tokio_ffmpeg_cli::Event::Progress(_progress)) => {
+                                            // For now, we don't care about progress as there is no way to report it to the user on discord.
+                                        }
+                                        Ok(tokio_ffmpeg_cli::Event::Unknown(_line)) => {
+                                            // warn!("unknown ffmpeg line: `{}`", line);
+                                            // We don't care about unkown lines
+                                        }
+                                        Err(e) => {
+                                            warn!("{:?}", e);
+                                        }
                                     }
                                 }
+
+                                let exit_status = maybe_exit_status
+                                    .context("stream did not report an exit status")?;
+
+                                // Validate exit status
+                                ensure!(exit_status.success(), "invalid exit status");
                             }
 
-                            let exit_status = maybe_exit_status
-                                .context("stream did not report an exit status")?;
+                            // The RPI's ffmpeg produces invalid mp4 files.
+                            // Until we can investigate and fix, transcode the file to try to let ffmpeg fix it.
+                            let reencoded_file_path_tmp_2 = DropRemovePath::new(
+                                crate::util::with_push_extension(&reencoded_file_path, "2.tmp"),
+                            );
 
-                            // Validate exit status
-                            ensure!(exit_status.success(), "invalid exit status");
+                            {
+                                let mut stream = encoder_task
+                                    .encode()
+                                    .input(&*reencoded_file_path_tmp_1)
+                                    .output(&*reencoded_file_path_tmp_2)
+                                    .audio_codec("copy")
+                                    .video_codec("copy")
+                                    .output_format("mp4")
+                                    .try_send()
+                                    .await
+                                    .context("failed to start transcoding")?;
+
+                                let mut maybe_exit_status = None;
+                                while let Some(msg) = stream.next().await {
+                                    match msg.context("ffmpeg stream error") {
+                                        Ok(tokio_ffmpeg_cli::Event::ExitStatus(exit_status)) => {
+                                            maybe_exit_status = Some(exit_status);
+                                        }
+                                        Ok(tokio_ffmpeg_cli::Event::Progress(_progress)) => {
+                                            // For now, we don't care about progress as there is no way to report it to the user on discord.
+                                        }
+                                        Ok(tokio_ffmpeg_cli::Event::Unknown(_line)) => {
+                                            // warn!("unknown ffmpeg line: `{}`", line);
+                                            // We don't care about unkown lines
+                                        }
+                                        Err(e) => {
+                                            warn!("{:?}", e);
+                                        }
+                                    }
+                                }
+
+                                let exit_status = maybe_exit_status
+                                    .context("stream did not report an exit status")?;
+
+                                // Validate exit status
+                                ensure!(exit_status.success(), "invalid exit status");
+                            }
+
+                            let mut reencoded_file_path_tmp = reencoded_file_path_tmp_2;
 
                             // Validate file size
                             let metadata = tokio::fs::metadata(&reencoded_file_path_tmp)
