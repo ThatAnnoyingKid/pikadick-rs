@@ -95,6 +95,7 @@ impl Database {
 
     /// Close the db
     pub async fn close(&self) -> anyhow::Result<()> {
+        // Failing to run shutdown commands is not critical and should not prevent shutdown.
         if let Err(e) = self
             .db
             .access_db(|db| {
@@ -111,7 +112,7 @@ impl Database {
             .close()
             .await
             .context("failed to send close request to db")?;
-        self.db.join().await?;
+        self.db.join().await.context("failed to join db thread")?;
 
         Ok(())
     }
