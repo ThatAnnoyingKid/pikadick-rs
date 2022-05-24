@@ -53,6 +53,7 @@ use anyhow::{
     ensure,
     Context as _,
 };
+use camino::Utf8Path;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serenity::{
@@ -82,7 +83,6 @@ use serenity::{
 use songbird::SerenityInit;
 use std::{
     collections::HashSet,
-    path::Path,
     sync::Arc,
     time::{
         Duration,
@@ -486,10 +486,10 @@ async fn process_dispatch_error_future<'fut>(
 ///
 /// This prints to the stderr directly.
 /// It is intended to be called BEFORE the loggers are set up.
-fn load_config(path: &Path) -> anyhow::Result<Config> {
-    eprintln!("loading `{}`...", path.display());
-    let mut config = Config::load_from_path(path)
-        .with_context(|| format!("failed to load `{}`", path.display()))?;
+fn load_config(path: &Utf8Path) -> anyhow::Result<Config> {
+    eprintln!("loading `{}`...", path);
+    let mut config =
+        Config::load_from_path(path).with_context(|| format!("failed to load `{}`", path))?;
 
     eprintln!("validating config...");
     let errors = config.validate();
@@ -559,8 +559,8 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
 
     eprintln!("creating lockfile...");
     let lock_file_path = config.data_dir.join("pikadick.lock");
-    let lock_file =
-        AsyncLockFile::open_blocking(&lock_file_path).context("failed to open lockfile")?;
+    let lock_file = AsyncLockFile::open_blocking(lock_file_path.as_std_path())
+        .context("failed to open lockfile")?;
     let lock_file_locked = lock_file
         .try_lock_with_pid_blocking()
         .context("failed to try to lock the lockfile")?;

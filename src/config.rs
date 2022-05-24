@@ -1,4 +1,8 @@
 use anyhow::Context;
+use camino::{
+    Utf8Path,
+    Utf8PathBuf,
+};
 use serde::{
     Deserialize,
     Serialize,
@@ -10,10 +14,6 @@ use serenity::{
 use std::{
     borrow::Cow,
     collections::HashMap,
-    path::{
-        Path,
-        PathBuf,
-    },
 };
 
 fn default_prefix() -> String {
@@ -37,7 +37,7 @@ pub struct Config {
     pub status: Option<StatusConfig>,
 
     /// Data dir
-    pub data_dir: PathBuf,
+    pub data_dir: Utf8PathBuf,
 
     /// The test guild
     pub test_guild: Option<GuildId>,
@@ -62,10 +62,6 @@ pub struct Config {
 pub struct FmlConfig {
     /// FML API key
     pub key: String,
-
-    /// Unknown extra data
-    #[serde(flatten)]
-    pub extra: HashMap<String, toml::Value>,
 }
 
 /// Deviant Config
@@ -76,10 +72,6 @@ pub struct DeviantArtConfig {
 
     /// Password
     pub password: String,
-
-    /// Unknown extra data
-    #[serde(flatten)]
-    pub extra: HashMap<String, toml::Value>,
 }
 
 /// Log Config
@@ -142,19 +134,23 @@ impl Config {
     }
 
     /// The log file dir
-    pub fn log_file_dir(&self) -> PathBuf {
+    pub fn log_file_dir(&self) -> Utf8PathBuf {
         self.data_dir.join("logs")
     }
 
     /// The cache dir
-    pub fn cache_dir(&self) -> PathBuf {
+    pub fn cache_dir(&self) -> Utf8PathBuf {
         self.data_dir.join("cache")
     }
 
     /// Load a config from a path
-    pub fn load_from_path(path: &Path) -> anyhow::Result<Self> {
+    pub fn load_from_path<P>(path: P) -> anyhow::Result<Self>
+    where
+        P: AsRef<Utf8Path>,
+    {
+        let path = path.as_ref();
         std::fs::read(path)
-            .with_context(|| format!("failed to read config from '{}'", path.display()))
+            .with_context(|| format!("failed to read config from '{}'", path))
             .and_then(|b| Self::load_from_bytes(&b))
     }
 

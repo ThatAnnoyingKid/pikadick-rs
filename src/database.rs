@@ -11,13 +11,13 @@ pub use self::tic_tac_toe::{
     TicTacToeTryMoveResponse,
 };
 use anyhow::Context;
+use camino::{
+    Utf8Path,
+    Utf8PathBuf,
+};
 use once_cell::sync::Lazy;
 use std::{
     os::raw::c_int,
-    path::{
-        Path,
-        PathBuf,
-    },
     sync::Arc,
 };
 use tracing::{
@@ -54,7 +54,7 @@ impl Database {
     /// This must be called before any other sqlite functions are called.
     pub async unsafe fn new<P>(path: P, create_if_missing: bool) -> anyhow::Result<Self>
     where
-        P: Into<PathBuf>,
+        P: Into<Utf8PathBuf>,
     {
         let path = path.into();
         tokio::task::spawn_blocking(move || Self::blocking_new(&path, create_if_missing))
@@ -66,12 +66,15 @@ impl Database {
     ///
     /// # Safety
     /// This must be called before any other sqlite functions are called.
-    pub unsafe fn blocking_new(path: &Path, create_if_missing: bool) -> anyhow::Result<Self> {
+    pub unsafe fn blocking_new<P>(path: P, create_if_missing: bool) -> anyhow::Result<Self>
+    where
+        P: AsRef<Utf8Path>,
+    {
         LOGGER_INIT
             .clone()
             .context("failed to init sqlite logger")?;
 
-        let db = async_rusqlite::Database::blocking_open(path, create_if_missing, |db| {
+        let db = async_rusqlite::Database::blocking_open(path.as_ref(), create_if_missing, |db| {
             db.execute_batch(SETUP_TABLES_SQL)
                 .context("failed to setup database")?;
             Ok(())
