@@ -517,7 +517,7 @@ fn load_config(path: &Path) -> anyhow::Result<Config> {
 struct SetupData {
     tokio_rt: tokio::runtime::Runtime,
     config: Config,
-    missing_data_dir: bool,
+    database: Database,
     lock_file: AsyncLockFile,
     worker_guard: WorkerGuard,
 }
@@ -542,7 +542,7 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
         }
     };
 
-    let missing_data_dir = data_dir_metadata.is_none();
+    let _missing_data_dir = data_dir_metadata.is_none();
     match data_dir_metadata.as_ref() {
         Some(metadata) => {
             if metadata.is_dir() {
@@ -570,6 +570,15 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
     std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
 
     // TODO: Init db
+    eprintln!("opening database...");
+    let database_path = config.data_dir.join("pikadick.sqlite");
+
+    // Safety: This is called before any other sqlite functions.
+    // TODO: Is there a good reason to not remake the db if it is missing?
+    let database = unsafe {
+        Database::blocking_new(&database_path, true) // missing_data_dir
+            .context("failed to open database")?
+    };
 
     eprintln!("setting up logger...");
     let worker_guard = {
@@ -581,7 +590,7 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
     Ok(SetupData {
         tokio_rt,
         config,
-        missing_data_dir,
+        database,
         lock_file,
         worker_guard,
     })
@@ -606,7 +615,7 @@ fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
     let _enter_guard = setup_data.tokio_rt.enter();
     let ret = setup_data.tokio_rt.block_on(tokio::spawn(async_main(
         setup_data.config,
-        setup_data.missing_data_dir,
+        setup_data.database,
     )));
 
     let shutdown_start = Instant::now();
@@ -708,19 +717,12 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
 }
 
 /// The async entry
-async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<()> {
-    info!("opening database...");
-    let db_path = config.data_dir.join("pikadick.sqlite");
-    // TODO: Is there a good reason to not remake the db if it is missing?
-    let db = Database::new(&db_path, true) // missing_data_dir
-        .await
-        .context("failed to open database")?;
-
+async fn async_main(config: Config, database: Database) -> anyhow::Result<()> {
     let mut client = setup_client(&config)
         .await
         .context("failed to set up client")?;
 
-    let client_data = ClientData::init(client.shard_manager.clone(), config, db.clone())
+    let client_data = ClientData::init(client.shard_manager.clone(), config, database.clone())
         .await
         .context("client data initialization failed")?;
 
@@ -746,8 +748,8 @@ async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<(
     client_data.shutdown().await;
     drop(client_data);
 
-    info!("closing db...");
-    db.close().await.context("failed to close db")?;
+    info!("closing database...");
+    database.close().await.context("failed to close database")?;
 
     Ok(())
 }

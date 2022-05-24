@@ -7,7 +7,10 @@ use crate::{
 use rusqlite::Connection;
 use std::{
     panic::AssertUnwindSafe,
-    path::PathBuf,
+    path::{
+        Path,
+        PathBuf,
+    },
     sync::Arc,
 };
 
@@ -53,20 +56,21 @@ impl Database {
         P: Into<PathBuf>,
         S: FnMut(&mut rusqlite::Connection) -> Result<(), BoxedError> + Send + 'static,
     {
+        let path = path.into();
         tokio::task::spawn_blocking(move || {
-            Self::open_blocking(path, create_if_missing, setup_func)
+            Self::blocking_open(path, create_if_missing, setup_func)
         })
         .await?
     }
 
     /// Open a db in a blocking manner.
     pub fn blocking_open<P, S>(
-        path: PathBuf,
+        path: P,
         create_if_missing: bool,
         mut setup_func: S,
     ) -> Result<Self, Error>
     where
-        P: Into<PathBuf>,
+        P: AsRef<Path>,
         S: FnMut(&mut rusqlite::Connection) -> Result<(), BoxedError> + Send + 'static,
     {
         // Setup flags
