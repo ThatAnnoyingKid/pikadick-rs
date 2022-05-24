@@ -568,6 +568,8 @@ fn setup(
     std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
     std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
 
+    // TODO: Init db
+
     eprintln!("setting up logger...");
     let worker_guard = tokio_rt
         .block_on(async { crate::logger::setup(&config) })
@@ -583,18 +585,9 @@ fn setup(
 /// This allows more things to drop correctly.
 /// This also calls setup operations like loading config and setting up the tokio runtime,
 /// logging errors to the stderr instead of the loggers, which are not initialized yet.
-fn main() {
+fn main() -> anyhow::Result<()> {
     let cli_options = argh::from_env();
-    let (tokio_rt, config, missing_data_dir, lockfile, worker_guard) = match setup(cli_options) {
-        Ok(data) => data,
-        Err(e) => {
-            eprintln!("{:?}", e);
-            drop(e);
-
-            std::process::exit(1);
-        }
-    };
-
+    let (tokio_rt, config, missing_data_dir, lockfile, worker_guard) = setup(cli_options)?;
     let exit_code = match real_main(tokio_rt, config, missing_data_dir, lockfile, worker_guard) {
         Ok(()) => 0,
         Err(e) => {
