@@ -562,7 +562,6 @@ struct SetupData {
     database: Database,
     lock_file: AsyncLockFile,
     worker_guard: WorkerGuard,
-    client: Client,
 }
 
 /// Pre-main setup
@@ -631,13 +630,6 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
     eprintln!("setting up logger...");
     let worker_guard = crate::logger::setup(&config).context("failed to initialize logger")?;
 
-    // Spawn in seperate task to avoid stack overflow.
-    eprintln!("setting up client...");
-    let client = tokio_rt
-        .block_on(tokio::spawn(setup_client(config.clone())))
-        .context("failed to join tokio task")?
-        .context("failed to set up client")?;
-
     eprintln!();
     Ok(SetupData {
         tokio_rt,
@@ -645,7 +637,6 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
         database,
         lock_file,
         worker_guard,
-        client,
     })
 }
 
@@ -656,7 +647,11 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
 /// This also calls setup operations like loading config and setting up the tokio runtime,
 /// logging errors to the stderr instead of the loggers, which are not initialized yet.
 fn main() -> anyhow::Result<()> {
+    // This line MUST run first.
+    // It is needed to exit early if the options are invalid,
+    // and this will NOT run destructors if it does so.
     let cli_options = argh::from_env();
+
     let setup_data = setup(cli_options)?;
     real_main(setup_data)?;
     Ok(())
@@ -667,7 +662,6 @@ fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
     // We spawn this is a seperate thread/task as the main thread does not have enough stack space
     let _enter_guard = setup_data.tokio_rt.enter();
     let ret = setup_data.tokio_rt.block_on(tokio::spawn(async_main(
-        setup_data.client,
         setup_data.config,
         setup_data.database,
     )));
@@ -697,11 +691,13 @@ fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
 }
 
 /// The async entry
-async fn async_main(
-    mut client: Client,
-    config: Arc<Config>,
-    database: Database,
-) -> anyhow::Result<()> {
+async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<()> {
+    // TODO: See if it is possible to start serenity without a network
+    info!("setting up client...");
+    let mut client = setup_client(config.clone())
+        .await
+        .context("failed to set up client")?;
+
     let client_data = ClientData::init(client.shard_manager.clone(), config, database.clone())
         .await
         .context("client data initialization failed")?;
