@@ -500,7 +500,7 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     let uppercase_prefix = config_prefix.to_uppercase();
 
     // Build the standard framework
-    eprintln!("using prefix '{}'", &config_prefix);
+    info!("using prefix '{}'", &config_prefix);
     let framework = StandardFramework::new()
         .configure(|c| {
             c.prefixes(&[&config_prefix, &uppercase_prefix])

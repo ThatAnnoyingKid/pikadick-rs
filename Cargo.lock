@@ -576,7 +576,7 @@ dependencies = [
 [[package]]
 name = "command_attr"
 version = "0.4.0"
-source = "git+https://github.com/serenity-rs/serenity?branch=next#086a184da694130af61f60ef3bd21025e2a96bf0"
+source = "git+https://github.com/serenity-rs/serenity?branch=next#63b39a7c1b57cc841ff3e975c9f9f82b92b2904e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2083,9 +2083,9 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "once_cell"
-version = "1.11.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b10983b38c53aebdf33f542c6275b0f58a238129d00c4ae0e6fb59738d783ca"
+checksum = "7709cef83f0c1f58f666e746a08b21e0085f7440fa6a29cc194d68aac97a4225"
 
 [[package]]
 name = "oorandom"
@@ -3078,9 +3078,9 @@ dependencies = [
 
 [[package]]
 name = "rubato"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ceb88cff5e2414abd59f1470673e1bba0627118dfc13ce33cebf67ea4a8acb0"
+checksum = "cd70209c27d5b08f5528bdc779ea3ffb418954e28987f9f9775c6eac41003f9c"
 dependencies = [
  "num-complex",
  "num-integer",
@@ -3207,9 +3207,9 @@ checksum = "f2cc38e8fa666e2de3c4aba7edeb5ffc5246c1c2ed0e3d17e560aeeba736b23f"
 
 [[package]]
 name = "rusty_pool"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33a01b7876355018cbcc41204d38ff70227950dd3cd6fe3f4f52a10474b1a2de"
+checksum = "4ed36cdb20de66d89a17ea04b8883fc7a386f2cf877aaedca5005583ce4876ff"
 dependencies = [
  "crossbeam-channel",
  "futures",
@@ -3470,7 +3470,7 @@ dependencies = [
 [[package]]
 name = "serenity"
 version = "0.11.2"
-source = "git+https://github.com/serenity-rs/serenity?branch=next#086a184da694130af61f60ef3bd21025e2a96bf0"
+source = "git+https://github.com/serenity-rs/serenity?branch=next#63b39a7c1b57cc841ff3e975c9f9f82b92b2904e"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3503,7 +3503,7 @@ dependencies = [
 [[package]]
 name = "serenity-voice-model"
 version = "0.1.1"
-source = "git+https://github.com/serenity-rs/serenity?branch=next#086a184da694130af61f60ef3bd21025e2a96bf0"
+source = "git+https://github.com/serenity-rs/serenity?branch=next#63b39a7c1b57cc841ff3e975c9f9f82b92b2904e"
 dependencies = [
  "bitflags",
  "enum_primitive",
@@ -3638,7 +3638,7 @@ dependencies = [
 [[package]]
 name = "songbird"
 version = "0.2.2"
-source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#d23f7f1ac31148f036b9658b9c7b7d08165789ac"
+source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#bfbccb9eec44577949f26d69605079aaddcae7cc"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3661,12 +3661,11 @@ dependencies = [
  "serde_json",
  "serenity",
  "serenity-voice-model",
- "spin_sleep",
  "streamcatcher",
  "symphonia",
  "symphonia-core",
  "tokio",
- "tokio-util 0.6.10",
+ "tokio-util 0.7.2",
  "tracing",
  "tracing-futures",
  "typemap_rev",
@@ -3688,16 +3687,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c530c2b0d0bf8b69304b39fe2001993e267461948b890cd037d8ad4293fa1a0d"
 dependencies = [
  "lock_api",
-]
-
-[[package]]
-name = "spin_sleep"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cafa7900db085f4354dbc7025e25d7a839a14360ea13b5fc4fd717f2d3b23134"
-dependencies = [
- "once_cell",
- "winapi",
 ]
 
 [[package]]
@@ -3880,9 +3869,9 @@ dependencies = [
 
 [[package]]
 name = "systemstat"
-version = "0.1.10"
+version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8862adb0fd5f4c5707b0eeb6c2ec7610bd7a8bf5e069150bd6dde04a7f40ebf7"
+checksum = "5f5dc96f7634f46ac7e485b8c051f5b89ec8ee5cc023236dd12fe4ae2fb52f80"
 dependencies = [
  "bytesize",
  "chrono",
@@ -4586,9 +4575,9 @@ checksum = "7fcfc827f90e53a02eaef5e535ee14266c1d569214c6aa70133a624d8a3164ba"
 
 [[package]]
 name = "uuid"
-version = "0.8.2"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+checksum = "8cfcd319456c4d6ea10087ed423473267e1a071f3bc0aa89f80d60997843c6f0"
 dependencies = [
  "getrandom 0.2.6",
 ]
