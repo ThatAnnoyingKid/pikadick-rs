@@ -513,16 +513,17 @@ fn load_config(path: &Path) -> anyhow::Result<Config> {
     Ok(config)
 }
 
+/// Data from the setup function
+struct SetupData {
+    tokio_rt: tokio::runtime::Runtime,
+    config: Config,
+    missing_data_dir: bool,
+    lock_file: AsyncLockFile,
+    worker_guard: WorkerGuard,
+}
+
 /// Pre-main setup
-fn setup(
-    cli_options: CliOptions,
-) -> anyhow::Result<(
-    tokio::runtime::Runtime,
-    Config,
-    bool,
-    AsyncLockFile,
-    WorkerGuard,
-)> {
+fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
     eprintln!("starting tokio runtime...");
     let tokio_rt = RuntimeBuilder::new_multi_thread()
         .enable_all()
@@ -557,13 +558,13 @@ fn setup(
     }
 
     eprintln!("creating lockfile...");
-    let lockfile_path = config.data_dir.join("pikadick.lock");
-    let lockfile =
-        AsyncLockFile::open_blocking(&lockfile_path).context("failed to open lockfile")?;
-    let lockfile_locked = lockfile
+    let lock_file_path = config.data_dir.join("pikadick.lock");
+    let lock_file =
+        AsyncLockFile::open_blocking(&lock_file_path).context("failed to open lockfile")?;
+    let lock_file_locked = lock_file
         .try_lock_with_pid_blocking()
         .context("failed to try to lock the lockfile")?;
-    ensure!(lockfile_locked, "another process has locked the lockfile");
+    ensure!(lock_file_locked, "another process has locked the lockfile");
 
     std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
     std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
@@ -571,60 +572,64 @@ fn setup(
     // TODO: Init db
 
     eprintln!("setting up logger...");
-    let worker_guard = tokio_rt
-        .block_on(async { crate::logger::setup(&config) })
-        .context("failed to initialize logger")?;
+    let worker_guard = {
+        let _enter_guard = tokio_rt.handle().enter();
+        crate::logger::setup(&config).context("failed to initialize logger")?
+    };
 
     eprintln!();
-    Ok((tokio_rt, config, missing_data_dir, lockfile, worker_guard))
+    Ok(SetupData {
+        tokio_rt,
+        config,
+        missing_data_dir,
+        lock_file,
+        worker_guard,
+    })
 }
 
 /// The main entry.
 ///
-/// Calls `real_main` and prints the error, exiting with 1 of needed.
+/// Sets up the program and calls `real_main`.
 /// This allows more things to drop correctly.
 /// This also calls setup operations like loading config and setting up the tokio runtime,
 /// logging errors to the stderr instead of the loggers, which are not initialized yet.
 fn main() -> anyhow::Result<()> {
     let cli_options = argh::from_env();
-    let (tokio_rt, config, missing_data_dir, lockfile, worker_guard) = setup(cli_options)?;
-    let exit_code = match real_main(tokio_rt, config, missing_data_dir, lockfile, worker_guard) {
-        Ok(()) => 0,
-        Err(e) => {
-            error!("{:?}", e);
-            1
-        }
-    };
-
-    std::process::exit(exit_code);
+    let setup_data = setup(cli_options)?;
+    real_main(setup_data)?;
+    Ok(())
 }
 
 /// The actual entry point
-fn real_main(
-    tokio_rt: tokio::runtime::Runtime,
-    config: Config,
-    missing_data_dir: bool,
-    lockfile: AsyncLockFile,
-    _worker_guard: WorkerGuard,
-) -> anyhow::Result<()> {
+fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
     // We spawn this is a seperate thread/task as the main thread does not have enough stack space
-    let _enter_guard = tokio_rt.enter();
-    let ret = tokio_rt.block_on(tokio::spawn(async_main(config, missing_data_dir)));
+    let _enter_guard = setup_data.tokio_rt.enter();
+    let ret = setup_data.tokio_rt.block_on(tokio::spawn(async_main(
+        setup_data.config,
+        setup_data.missing_data_dir,
+    )));
 
     let shutdown_start = Instant::now();
     info!(
         "shutting down tokio runtime (shutdown timeout is {:?})...",
         TOKIO_RT_SHUTDOWN_TIMEOUT
     );
-    tokio_rt.shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
+    setup_data
+        .tokio_rt
+        .shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
     info!("shutdown tokio runtime in {:?}", shutdown_start.elapsed());
 
     info!("unlocking lockfile...");
-    lockfile
+    setup_data
+        .lock_file
         .unlock_blocking()
         .context("failed to unlock lockfile")?;
 
     info!("successful shutdown");
+
+    // Logging no longer reliable past this point
+    drop(setup_data.worker_guard);
+
     ret?
 }
 
