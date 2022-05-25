@@ -26,6 +26,9 @@ struct Options {
 
     #[argh(switch, description = "whether to build in release")]
     release: bool,
+    
+    #[argh(option, description = "the build profile")]
+    profile: Option<String>,
 
     #[argh(switch, long = "vv", description = "very verbose")]
     very_verbose: bool,
@@ -48,6 +51,8 @@ fn main() -> anyhow::Result<()> {
 
 /// The real entry point
 fn real_main(options: Options) -> anyhow::Result<()> {
+    ensure!(options.release ^ options.profile.is_some(), "the --release and --profile flags aure mutually exclusive");
+    
     println!("Fetching cargo metadata...");
     let metadata = MetadataCommand::new()
         .exec()
@@ -69,14 +74,25 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         .targets
         .get(options.target.as_str())
         .context("missing config for target")?;
+        
+    let profile = if options.release {
+        Some("release")
+    } else if let Some(profile) = options.profile.as_deref() {
+        Some(profile)
+    } else {
+        None
+    };
 
     // Setup command builder
     let mut command_builder = CrossCompileCommandBuilder::new();
     command_builder
         .target(options.target.as_str())
         .linker(target_config.linker.as_str())
-        .release(options.release)
         .very_verbose(options.very_verbose);
+        
+    if let Some(profile) = profile {
+        command_builder.profile(profile);
+    }
 
     if let Some(features) = options.features.as_deref() {
         command_builder.features(features);
@@ -117,7 +133,6 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         .build_command()
         .context("failed to build command")?;
 
-    
     println!("Compiling...");
     let status = command.status().context("failed to call compile command")?;
     let code = status.code();
@@ -142,8 +157,8 @@ pub struct CrossCompileCommandBuilder {
     /// Build features
     pub features: Option<Box<str>>,
 
-    /// Whether to build in release mode
-    pub release: bool,
+    /// The profile
+    pub profile: Option<Box<str>>,
 
     /// Whether to set the very verbose flag
     pub very_verbose: bool,
@@ -164,7 +179,7 @@ impl CrossCompileCommandBuilder {
         Self {
             target: None,
             features: None,
-            release: true,
+            profile: None,
             very_verbose: false,
             environment_variables: HashMap::with_capacity(16),
             linker: None,
@@ -185,9 +200,9 @@ impl CrossCompileCommandBuilder {
         self
     }
 
-    /// Set the release flag
-    pub fn release(&mut self, release: bool) -> &mut Self {
-        self.release = release;
+    /// Set the profile
+    pub fn profile(&mut self, profile: impl Into<Box<str>>) -> &mut Self {
+        self.profile = Some(profile.into());
         self
     }
 
@@ -231,7 +246,7 @@ impl CrossCompileCommandBuilder {
         // Take all data from self, leaving it empty
         let target = self.target.take();
         let features = self.features.take();
-        let release = self.release;
+        let profile = self.profile.take();
         let very_verbose = self.very_verbose;
         let environment_variables = std::mem::take(&mut self.environment_variables);
         let linker = self.linker.take();
@@ -264,9 +279,9 @@ impl CrossCompileCommandBuilder {
             command.args(&["--features", &*features]);
         }
 
-        // Set release flag if requested
-        if release {
-            command.arg("--release");
+        // Set profile flag if requested
+        if let Some(profile) = profile {
+            command.arg(format!("--profile={profile}"));
         }
 
         // Set the very verbose flag if requested
