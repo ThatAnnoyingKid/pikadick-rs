@@ -87,10 +87,8 @@ fn real_main(options: Options) -> anyhow::Result<()> {
 
     let profile = if options.release {
         Some("release")
-    } else if let Some(profile) = options.profile.as_deref() {
-        Some(profile)
     } else {
-        None
+        options.profile.as_deref()
     };
 
     // Setup command builder
@@ -109,7 +107,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
             cargo_build_wrapper
                 .split(' ')
                 .filter(|t| !t.is_empty())
-                .map(|arg| Box::from(arg))
+                .map(Box::from)
                 .collect(),
         );
     }
