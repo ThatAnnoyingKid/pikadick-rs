@@ -26,12 +26,19 @@ struct Options {
 
     #[argh(switch, description = "whether to build in release")]
     release: bool,
-    
+
     #[argh(option, description = "the build profile")]
     profile: Option<String>,
 
     #[argh(switch, long = "vv", description = "very verbose")]
     very_verbose: bool,
+
+    #[argh(
+        option,
+        long = "cargo-build-wrapper",
+        description = "use this command instead of `cargo build`"
+    )]
+    cargo_build_wrapper: Option<String>,
 
     #[argh(
         option,
@@ -51,8 +58,11 @@ fn main() -> anyhow::Result<()> {
 
 /// The real entry point
 fn real_main(options: Options) -> anyhow::Result<()> {
-    ensure!(!(options.release && options.profile.is_some()), "the `--release` and `--profile` flags aure mutually exclusive");
-    
+    ensure!(
+        !(options.release && options.profile.is_some()),
+        "the `--release` and `--profile` flags aure mutually exclusive"
+    );
+
     println!("Fetching cargo metadata...");
     let metadata = MetadataCommand::new()
         .exec()
@@ -74,7 +84,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         .targets
         .get(options.target.as_str())
         .context("missing config for target")?;
-        
+
     let profile = if options.release {
         Some("release")
     } else if let Some(profile) = options.profile.as_deref() {
@@ -89,9 +99,19 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         .target(options.target.as_str())
         .linker(target_config.linker.as_str())
         .very_verbose(options.very_verbose);
-        
+
     if let Some(profile) = profile {
         command_builder.profile(profile);
+    }
+
+    if let Some(cargo_build_wrapper) = options.cargo_build_wrapper {
+        command_builder.cargo_build_wrapper(
+            cargo_build_wrapper
+                .split(' ')
+                .filter(|t| !t.is_empty())
+                .map(|arg| Box::from(arg))
+                .collect(),
+        );
     }
 
     if let Some(features) = options.features.as_deref() {
@@ -168,6 +188,9 @@ pub struct CrossCompileCommandBuilder {
     /// The linker
     pub linker: Option<Box<str>>,
 
+    /// The cargo build wrapper
+    pub cargo_build_wrapper: Option<Box<[Box<str>]>>,
+
     /// This is some if the builder errored.
     pub error: Option<anyhow::Error>,
 }
@@ -182,6 +205,7 @@ impl CrossCompileCommandBuilder {
             very_verbose: false,
             environment_variables: HashMap::with_capacity(16),
             linker: None,
+            cargo_build_wrapper: None,
 
             error: None,
         }
@@ -240,6 +264,19 @@ impl CrossCompileCommandBuilder {
         self
     }
 
+    /// Set the cargo build wrapper
+    pub fn cargo_build_wrapper(&mut self, cargo_build_wrapper: Vec<Box<str>>) -> &mut Self {
+        if cargo_build_wrapper.is_empty() {
+            self.error = Some(anyhow::Error::msg(
+                "the cargo build wrapper cannot be empty",
+            ));
+            return self;
+        }
+
+        self.cargo_build_wrapper = Some(cargo_build_wrapper.into());
+        self
+    }
+
     /// Build a command to execute which will perform the cross compile
     pub fn build_command(&mut self) -> anyhow::Result<Command> {
         // Take all data from self, leaving it empty
@@ -249,6 +286,7 @@ impl CrossCompileCommandBuilder {
         let very_verbose = self.very_verbose;
         let environment_variables = std::mem::take(&mut self.environment_variables);
         let linker = self.linker.take();
+        let cargo_build_wrapper = self.cargo_build_wrapper.take();
         let error = self.error.take();
 
         // Return error if the builder errored out somewhere
@@ -267,8 +305,17 @@ impl CrossCompileCommandBuilder {
         rust_flags.push(' ');
 
         // Init cargo build command
-        let mut command = Command::new("cargo");
-        command.arg("build");
+        let mut command = if let Some(cargo_build_wrapper) = cargo_build_wrapper {
+            let mut command = Command::new(&*cargo_build_wrapper[0]);
+            if let Some(rest) = cargo_build_wrapper.get(1..) {
+                command.args(rest.iter().map(|arg| &**arg));
+            }
+            command
+        } else {
+            let mut command = Command::new("cargo");
+            command.arg("build");
+            command
+        };
 
         // Set target
         command.args(&["--target", &*target]);
