@@ -1,93 +1,97 @@
 [package]
 name = "pikadick"
 version = "0.0.0"
-authors = [ "professionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
-edition = "2018"
-license = "MIT/Apache-2.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+description = "yet another discord bot"
+authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 
 [dependencies]
-anyhow = "1.0.43"
+anyhow = "1.0.57"
+argh = "0.1.7"
+async-rusqlite = { path = "./lib/async-rusqlite-rs", features = [ "bundled" ] }
 bincode = "1.3.3"
+bitflags = "1.3.2"
+bytes = "1.1.0"
+camino = { version = "1.0.9", features = ["serde1"] }
 chrono = "0.4.19"
 crossbeam = "0.8.1"
-dashmap = "4.0.2"
-deviantart = { path = "./lib/deviantart-rs" }
-fml = { path = "./lib/fml-rs" }
+dashmap = "5.3.3"
+deviantart = { path = "./lib/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
+fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
+futures = { version = "0.3.21", features = [ "std" ], default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
-indexmap = "1.7.0"
-insta = { path = "./lib/insta-rs" }
-iqdb = { path = "./lib/iqdb-rs" }
+indexmap = "1.8.1"
+insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
+iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }
+itoa = "1.0.2"
 lazy_static = "1.4.0"
-minimax = { path = "./lib/minimax-rs" }
-nekos = { path = "./lib/nekos-rs" }
-opentelemetry = { version = "0.16.0", features = [ "rt-tokio" ] }
-opentelemetry-otlp = { version = "0.9.0", features = [ "tls", "tls-roots" ] }
-parking_lot = "0.11.1"
-quizizz = { path = "./lib/quizizz-rs" }
-r6stats = { path = "./lib/r6stats-rs" }
-r6tracker = { path = "./lib/r6tracker-rs" }
-rand = "0.8.4"
-reddit = { git = "https://github.com/adumbidiot/reddit-rs", rev = "b7e79ccd5451be21540d54d5cff2cf76749a753a" }
-reddit-tube = { path = "./lib/reddit-tube-rs" }
-regex = "1.5.4"
-rule34 = { path = "./lib/rule34-rs" }
-sauce-nao = { path = "./lib/sauce-nao-rs" }
-serde = { version = "1.0.127", features = [ "derive" ] }
-serenity = "0.10.9"
-shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", rev = "f131491d81042c0858ec781ae1f2ac6cbe7ef68a" } 
-sqlx = { version = "0.5.6", features = [ "sqlite", "runtime-tokio-rustls" ] }
-systemstat = "0.1.8"
-thiserror = "1.0.26"
-tiny-skia = { version = "0.5.1", features = [ "std", "simd", "png-format" ], default-features = false }
-tokio = { version = "1.10.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
-toml = "0.5.8"
-tonic = "0.5.2"
-tracing = "0.1.26"
-tracing-appender = "0.1.2"
-tracing-log = "0.1.2"
-tracing-opentelemetry = "0.15.0"
-tracing-subscriber = { version = "0.2.20", features = [ "env-filter", "fmt", "parking_lot" ] }
-ttf-parser = "0.12.3"
+nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls-tls" ] }
+once_cell = "1.12.0"
+opentelemetry = { version = "0.17.0", features = [ "rt-tokio" ] }
+opentelemetry-otlp = { version = "0.10.0", features = [ "tls", "tls-roots" ] }
+parking_lot = "0.12.0"
+pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
+pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "download_to_file", "arc_anyhow_error", "async_lock_file" ] }
+quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "rustls-tls" ] }
+r6stats = { path = "./lib/r6stats-rs", default-features = false, features = [ "rustls-tls" ] }
+r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = [ "rustls-tls" ] }
+rand = "0.8.5"
+reddit = { git = "https://github.com/adumbidiot/reddit-rs", features = [ "force-rustls-tls" ] }
+reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls-tls" ] }
+regex = "1.5.6"
+reqwest = { version = "0.11.10", default-features = false }
+rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
+rusqlite = { version = "0.27.0", features = [ "bundled", "blob", "trace" ] }
+ryu = "1.0.10"
+serde = { version = "1.0.137", features = [ "derive" ] }
+serenity = { version = "0.11.2", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
+shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
+songbird = "0.2.2"
+systemstat = "0.1.11"
+thiserror = "1.0.31"
+tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
+tiktok = { path = "lib/tiktok-rs" }
+tiny-skia = { version = "0.6.3", features = [ "std", "simd", "png-format" ], default-features = false }
+tokio = { version = "1.18.2", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
+tokio-stream = "0.1.8"
+toml = "0.5.9"
+tonic = "0.6.2"
+tracing = "0.1.34"
+tracing-appender = "0.2.2"
+tracing-log = "0.1.3"
+tracing-opentelemetry = "0.17.2"
+tracing-subscriber = { version = "0.3.11", features = [ "env-filter", "fmt", "parking_lot" ] }
+ttf-parser = "0.15.0"
 uom = "0.31.1"
-urban-dictionary = { path = "./lib/urban-dictionary-rs" }
+urban-dictionary = { path = "./lib/urban-dictionary-rs", default-features = false, features = [ "rustls-tls" ] }
 url = "2.2.2"
-xkcd = { path = "lib/xkcd-rs" }
-zalgo = { git = "https://github.com/adumbidiot/zalgo-rs", rev = "a5e0ce60cb37daee1f4b954c5270c30d1034c4af" }
+xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls-tls" ] }
+zalgo = { git = "https://github.com/adumbidiot/zalgo-rs" }
 
 # Optional
-openssl = { version = "0.10.36", optional = true, features = [ "vendored" ] }
+openssl = { version = "0.10.40", optional = true, features = [ "vendored" ] }
 
 [features]
-# Note: This is needed for cross comp as sqlx has a hard, non-optional dependency on native-tls
+# Note: This is needed for cross comp
 use-openssl-vendored = [ "openssl" ]
 
 [patch.crates-io]
 # Fix security advisory.
-heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }
+# heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }
+heim = { git = "https://github.com/vectordotdev/heim", branch = "update-nix" }
 
 # `servo_arc` has UB on crates.io. This still has UB, but less and I haven't seen any issues with it yet.
 # To fix this, I think https://doc.rust-lang.org/std/mem/fn.size_of_val_raw.html needs to stabilize.
 servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca1468a1767e3cc294f824036c" }
 
-[workspace]
-members = [ 
-    "lib/fml-rs",
-    "lib/nekos-rs", 
-    "lib/quizizz-rs",
-    "lib/r6stats-rs", 
-    "lib/r6tracker-rs", 
-    "lib/reddit-tube-rs",
-    "lib/rule34-rs",
-    "lib/insta-rs",
-    "lib/deviantart-rs",
-    "lib/urban-dictionary-rs",
-    "lib/xkcd-rs",
-    "lib/tiktok-rs",
-    "lib/minimax-rs",
-    "lib/open-graph-rs",
-    "lib/iqdb-rs",
-    "lib/sauce-nao-rs",
-]
+# Fix cross compilation, crates.io songbird does not support it
+# songbird = { git = "https://github.com/adumbidiot/songbird", branch = "audiopus-0.3.0" }
+# songbird requires serenity:next
+serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next" }
+songbird = { git = "https://github.com/FelixMcFelix/songbird", branch = "symphonia"}
 
 # To make image drawing times sane
 [profile.dev.package.tiny-skia]
@@ -110,6 +114,62 @@ opt-level = 3
 opt-level = 3
 
 [profile.release]
-lto = true
+lto = "fat"
 codegen-units = 1
 opt-level = 3
+strip = "symbols"
+
+[profile.bench]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+strip = "symbols"
+
+[workspace]
+members = [ 
+    "lib/fml-rs",
+    "lib/nekos-rs", 
+    "lib/quizizz-rs",
+    "lib/r6stats-rs", 
+    "lib/r6tracker-rs", 
+    "lib/reddit-tube-rs",
+    "lib/rule34-rs",
+    "lib/insta-rs",
+    "lib/deviantart-rs",
+    "lib/urban-dictionary-rs",
+    "lib/xkcd-rs",
+    "lib/tiktok-rs",
+    "lib/open-graph-rs",
+    "lib/iqdb-rs",
+    "lib/sauce-nao-rs",
+    "lib/tic-tac-toe-rs",
+    "lib/async-rusqlite-rs",
+    "lib/across-rs",
+    "lib/pikadick-slash-framework-rs",
+    "lib/pikadick-slash-framework-derive-rs",
+    "lib/rpi-deploy-rs",
+    "lib/tokio-ffmpeg-cli-rs",
+    "lib/pikadick-util-rs",
+]
+
+[package.metadata.deb]
+name = "pikadick"
+depends = "ffmpeg"
+assets = [
+    [ "target/release/pikadick", "usr/bin/", "700" ],
+    [ "deb-config.toml", "etc/pikadick/config.toml", "600" ],
+]
+conf-files = [
+    "etc/pikadick/config.toml",
+]
+maintainer-scripts = "debian/"
+
+[package.metadata.deb.systemd-units]
+enable = true
+start = true
+
+[package.metadata.rpi-deploy]
+targets = [ 
+    "armv7-unknown-linux-gnueabihf",
+    "aarch64-unknown-linux-gnu",
+]

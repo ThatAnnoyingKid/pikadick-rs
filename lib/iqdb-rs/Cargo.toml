@@ -1,9 +1,8 @@
 [package]
 name = "iqdb"
 version = "0.0.0"
-edition = "2018"
-authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
-license = "MIT"
+edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [[bin]]
 name = "iqdb"
@@ -12,22 +11,26 @@ required-features = [ "cli" ]
 
 [dependencies]
 lazy_static = "1.4.0"
-reqwest = { version = "0.11.4", features = [ "multipart", "stream" ] }
-scraper = { version = "0.12.0", default-features = false }
-thiserror = "1.0.26"
-tokio = { version = "1.10.0", features = [ "fs", "rt" ] }
-tokio-util = { version = "0.6.7", features = ["codec"] }
+reqwest = { version = "0.11.10", default-features = false, features = [ "multipart", "stream" ] }
+scraper = { version = "0.13.0", default-features = false }
+thiserror = "1.0.31"
+tokio = { version = "1.18.2", features = [ "fs", "rt" ] }
+tokio-util = { version = "0.7.2", features = ["codec"] }
 url = "2.2.2"
 
 # Optional
-anyhow = { version = "1.0.43", optional = true }
-argh = { version = "0.1.5", optional = true }
+anyhow = { version = "1.0.57", optional = true }
+argh = { version = "0.1.7", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.10.0", features = [ "macros" ] }
+tokio = { version = "1.18.2", features = [ "macros" ] }
 
 [features]
-default = []
+default = [ "reqwest/default-tls" ]
+
+native-tls = [ "reqwest/native-tls" ]
+rustls-tls = [ "reqwest/rustls-tls" ]
+
 cli = [
     "anyhow",
     "argh",

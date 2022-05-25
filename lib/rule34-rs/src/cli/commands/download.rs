@@ -4,7 +4,6 @@ use std::{
         HashSet,
         VecDeque,
     },
-    convert::TryFrom,
     path::{
         Path,
         PathBuf,
@@ -66,7 +65,10 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
     queue.push_back(options.id);
 
     while let Some(id) = queue.pop_front() {
-        let post = client.get_post(id).await.context("failed to get post")?;
+        let post = client
+            .get_html_post(id)
+            .await
+            .context("failed to get post")?;
         let image_name = post.get_image_name().context("missing image name")?;
         let image_extension = Path::new(image_name)
             .extension()
@@ -108,21 +110,22 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
         }
 
         if options.download_children && post.has_child_posts {
-            let mut offset = 0;
+            let mut pid = 0;
             loop {
                 let search_query = format!("parent:{}", post.id);
                 let page_results = client
-                    .search(&search_query, offset)
+                    .list_posts()
+                    .tags(Some(&search_query))
+                    .pid(Some(pid))
+                    .execute()
                     .await
-                    .context("failed to fetch post children")?
-                    .entries;
-                offset += u64::try_from(page_results.len())
-                    .context("failed to convert the page results to a usize")?;
-                if page_results.is_empty() {
+                    .context("failed to fetch post children")?;
+                pid += 1;
+                if page_results.posts.is_empty() {
                     break;
                 }
 
-                for result in page_results {
+                for result in page_results.posts {
                     if !downloaded.contains(&result.id) {
                         queue.push_back(result.id);
                     }
@@ -134,10 +137,10 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
     Ok(())
 }
 
-fn print_post_info(post: &rule34::Post, image_name: &str, out_path: &Path) {
+fn print_post_info(post: &rule34::HtmlPost, image_name: &str, out_path: &Path) {
     println!("ID: {}", post.id);
     println!("Post Date: {}", post.date);
-    println!("Post Url: {}", post.get_post_url());
+    println!("Post Url: {}", post.get_html_post_url());
     if let Some(source) = post.source.as_ref() {
         println!("Post Source: {}", source);
     }

@@ -17,13 +17,13 @@ impl Client {
     /// # Panics
     /// Panics if the [`Client`] could not be created.
     pub fn new() -> Self {
-        Client {
-            client: reqwest::ClientBuilder::new()
-                .cookie_store(true)
-                .user_agent("reddit-tube-rs")
-                .build()
-                .expect("failed to build client"),
-        }
+        let client = reqwest::ClientBuilder::new()
+            .cookie_store(true)
+            .user_agent("reddit-tube-rs")
+            .build()
+            .expect("failed to build client");
+
+        Client { client }
     }
 
     /// Gets [`MainPage`] data.
@@ -66,6 +66,7 @@ impl Client {
             .form(&[
                 ("url", url),
                 ("zip", ""),
+                ("hash", ""),
                 (&main_page.csrf_key, &main_page.csrf_value),
             ])
             .send()

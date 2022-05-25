@@ -1,5 +1,10 @@
 use crate::ClientDataKey;
 use parking_lot::Mutex;
+use pikadick_slash_framework::{
+    BoxFuture,
+    Command,
+    Reason as SlashReason,
+};
 use serenity::{
     client::Context,
     framework::standard::{
@@ -10,7 +15,10 @@ use serenity::{
         CommandOptions,
         Reason,
     },
-    model::prelude::*,
+    model::{
+        application::interaction::application_command::ApplicationCommandInteraction,
+        prelude::*,
+    },
 };
 use std::{
     collections::HashMap,
@@ -23,7 +31,6 @@ type MutexGuard<'a, T> = parking_lot::lock_api::MutexGuard<'a, parking_lot::RawM
 #[derive(Debug, Default, Clone)]
 pub struct EnabledCheckData {
     /// The set of all commands as strings.
-    ///
     command_name_cache: Arc<Mutex<Vec<String>>>,
 
     /// A way to look up commands by CommandOptions and fn addr.
@@ -33,13 +40,11 @@ pub struct EnabledCheckData {
     /// This is necessary as this is all serenity gives to [`Check`] functions.
     /// The only reason this works is because the serenity macro for making commands is used as the only way to make commands,
     /// as it recreates each names array for each command uniquely.
-    ///
     command_lookup: Arc<Mutex<HashMap<usize, String>>>,
 }
 
 impl EnabledCheckData {
     /// Make a new [`EnabledCheckData`].
-    ///
     pub fn new() -> Self {
         EnabledCheckData {
             command_name_cache: Arc::new(Mutex::new(Vec::new())),
@@ -48,7 +53,6 @@ impl EnabledCheckData {
     }
 
     /// Add a group to have its commands enabled/disabled.
-    ///
     pub fn add_groups(&self, groups: &[&CommandGroup]) {
         let mut names = Vec::with_capacity(4);
         let mut queue = Vec::new();
@@ -107,7 +111,6 @@ impl EnabledCheckData {
     }
 
     /// Returns a mutex guard to the list of command names.
-    ///
     pub fn get_command_names(&self) -> MutexGuard<'_, Vec<String>> {
         self.command_name_cache.lock()
     }
@@ -116,8 +119,7 @@ impl EnabledCheckData {
 /// Check if 2 [`Check`]s are the same.
 ///
 /// This includes their function pointers, though the argument references do not necessarily have to point to the same check.
-/// This is necessary as `serenity`'s `ParialEq` for [`Check`] only checks the name.
-///
+/// This is necessary as `serenity`'s `PartialEq` for [`Check`] only checks the name.
 fn checks_are_same(check1: &Check, check2: &Check) -> bool {
     let is_same_partial_eq = check1 == check2;
 
@@ -150,21 +152,12 @@ pub async fn enabled_check(
     };
 
     let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
+    let client_data = data_lock
+        .get::<ClientDataKey>()
+        .expect("missing client data");
     let enabled_check_data = client_data.enabled_check_data.clone();
     let db = client_data.db.clone();
     drop(data_lock);
-
-    let disabled_commands = match db.get_disabled_commands(guild_id).await {
-        Ok(data) => data,
-        Err(e) => {
-            error!("Failed to read disabled commands: {}", e);
-
-            // DB failure, return false to be safe.
-            // Avoid being specific with error to prevent users from spamming knowingly.
-            return Err(Reason::Unknown);
-        }
-    };
 
     let command_name = match enabled_check_data.get_command_name_from_options(opts) {
         Some(name) => name,
@@ -176,9 +169,54 @@ pub async fn enabled_check(
         }
     };
 
-    if disabled_commands.contains(&command_name) {
-        return Err(Reason::User("Command Disabled.".to_string()));
+    match db.is_command_disabled(guild_id, &command_name).await {
+        Ok(true) => Err(Reason::User("Command Disabled".to_string())),
+        Ok(false) => Ok(()),
+        Err(e) => {
+            error!("failed to read disabled commands: {}", e);
+            // DB failure, return false to be safe.
+            // Avoid being specific with error to prevent users from spamming knowingly.
+            Err(Reason::Unknown)
+        }
     }
+}
 
-    Ok(())
+/// Check if a command is enabled via slash framework
+pub fn create_slash_check<'a>(
+    ctx: &'a Context,
+    interaction: &'a ApplicationCommandInteraction,
+    command: &'a Command,
+) -> BoxFuture<'a, Result<(), SlashReason>> {
+    Box::pin(async move {
+        let guild_id = match interaction.guild_id {
+            Some(id) => id,
+            None => {
+                // Let's not care about dms for now.
+                // They'll probably need special handling anyways.
+                // This will also probably only be useful in Group DMs,
+                // which I don't think bots can participate in anyways.
+                return Ok(());
+            }
+        };
+
+        let data_lock = ctx.data.read().await;
+        let client_data = data_lock
+            .get::<ClientDataKey>()
+            .expect("missing client data");
+        let db = client_data.db.clone();
+        drop(data_lock);
+
+        let command_name = command.name();
+
+        match db.is_command_disabled(guild_id, command_name).await {
+            Ok(true) => Err(SlashReason::new_user("Command Disabled.".to_string())),
+            Ok(false) => Ok(()),
+            Err(e) => {
+                error!("failed to read disabled commands: {}", e);
+                // DB failure, return false to be safe.
+                // Avoid being specific with error to prevent users from spamming knowingly.
+                Err(SlashReason::new_unknown())
+            }
+        }
+    })
 }

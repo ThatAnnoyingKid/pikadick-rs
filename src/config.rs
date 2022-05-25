@@ -1,16 +1,19 @@
 use anyhow::Context;
+use camino::{
+    Utf8Path,
+    Utf8PathBuf,
+};
 use serde::{
     Deserialize,
     Serialize,
 };
-use serenity::client::validate_token;
+use serenity::{
+    model::prelude::GuildId,
+    utils::validate_token,
+};
 use std::{
     borrow::Cow,
     collections::HashMap,
-    path::{
-        Path,
-        PathBuf,
-    },
 };
 
 fn default_prefix() -> String {
@@ -23,6 +26,9 @@ pub struct Config {
     /// The discord token
     pub token: String,
 
+    /// The application id
+    pub application_id: u64,
+
     /// Prefix for the bot
     #[serde(default = "default_prefix")]
     pub prefix: String,
@@ -31,7 +37,10 @@ pub struct Config {
     pub status: Option<StatusConfig>,
 
     /// Data dir
-    pub data_dir: PathBuf,
+    pub data_dir: Utf8PathBuf,
+
+    /// The test guild
+    pub test_guild: Option<GuildId>,
 
     /// FML config
     pub fml: FmlConfig,
@@ -43,7 +52,8 @@ pub struct Config {
     pub sauce_nao: SauceNaoConfig,
 
     /// The log config
-    pub log: Option<LogConfig>,
+    #[serde(default)]
+    pub log: LogConfig,
 
     /// Unknown extra data
     #[serde(flatten)]
@@ -55,10 +65,6 @@ pub struct Config {
 pub struct FmlConfig {
     /// FML API key
     pub key: String,
-
-    /// Unknown extra data
-    #[serde(flatten)]
-    pub extra: HashMap<String, toml::Value>,
 }
 
 /// Deviant Config
@@ -69,10 +75,6 @@ pub struct DeviantArtConfig {
 
     /// Password
     pub password: String,
-
-    /// Unknown extra data
-    #[serde(flatten)]
-    pub extra: HashMap<String, toml::Value>,
 }
 
 /// SauceNao Config
@@ -89,16 +91,44 @@ pub struct SauceNaoConfig {
 /// Log Config
 #[derive(Deserialize, Debug)]
 pub struct LogConfig {
+    /// The logging directives.
+    #[serde(default = "LogConfig::default_directives")]
+    pub directives: Vec<String>,
+
+    /// Whether to use opentelemetry
+    #[serde(default, rename = "opentelemetry")]
+    pub opentelemetry: bool,
+
     /// The OTLP endpoint
     pub endpoint: Option<String>,
 
     /// Headers
     #[serde(default)]
     pub headers: HashMap<String, String>,
+}
 
-    /// Unknown extra data
-    #[serde(flatten)]
-    pub extra: HashMap<String, toml::Value>,
+impl LogConfig {
+    /// If logging directives not given, choose some defaults.
+    fn default_directives() -> Vec<String> {
+        // Only enable pikadick since serenity likes puking in the logs during connection failures
+        // serenity's framework section seems ok as well
+        vec![
+            "pikadick=info".to_string(),
+            "serenity::framework::standard=info".to_string(),
+        ]
+    }
+}
+
+impl Default for LogConfig {
+    fn default() -> Self {
+        Self {
+            directives: Self::default_directives(),
+
+            opentelemetry: false,
+            endpoint: None,
+            headers: HashMap::new(),
+        }
+    }
 }
 
 impl Config {
@@ -117,10 +147,24 @@ impl Config {
         self.status.as_ref().and_then(|s| s.kind)
     }
 
+    /// The log file dir
+    pub fn log_file_dir(&self) -> Utf8PathBuf {
+        self.data_dir.join("logs")
+    }
+
+    /// The cache dir
+    pub fn cache_dir(&self) -> Utf8PathBuf {
+        self.data_dir.join("cache")
+    }
+
     /// Load a config from a path
-    pub fn load_from_path(path: &Path) -> anyhow::Result<Self> {
+    pub fn load_from_path<P>(path: P) -> anyhow::Result<Self>
+    where
+        P: AsRef<Utf8Path>,
+    {
+        let path = path.as_ref();
         std::fs::read(path)
-            .with_context(|| format!("failed to read config from '{}'", path.display()))
+            .with_context(|| format!("failed to read config from '{}'", path))
             .and_then(|b| Self::load_from_bytes(&b))
     }
 
@@ -169,7 +213,7 @@ pub struct StatusConfig {
     url: Option<String>,
 
     #[serde(flatten)]
-    extra: HashMap<String, toml::Value>,
+    pub extra: HashMap<String, toml::Value>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Deserialize, Serialize)]

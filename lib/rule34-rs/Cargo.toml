@@ -2,8 +2,8 @@
 name = "rule34"
 version = "0.0.0"
 authors = [ "ProfessionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
-edition = "2018"
-license = "MIT/Apache-2.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [[bin]]
 name = "rule34"
@@ -11,24 +11,38 @@ required-features = [ "cli" ]
 path = "src/cli/main.rs"
 
 [dependencies]
-itoa = "0.4.7"
+itoa = "1.0.2"
 lazy_static = "1.4.0"
 quick-xml = { version = "0.22.0", features = [ "serialize" ] }
-reqwest = "0.11.4"
-scraper = { version = "0.12.0", default-features = false }
-serde = { version = "1.0.127", features = [ "derive" ] }
-thiserror = "1.0.26"
-tokio = "1.10.0"
+reqwest = { version = "0.11.10", default-features = false, features = [ "json", "brotli" ] }
+scraper = { version = "0.13.0", default-features = false }
+serde = { version = "1.0.137", features = [ "derive" ] }
+thiserror = "1.0.31"
+tokio = "1.18.2"
 url = { version = "2.2.2", features = [ "serde" ] }
+serde_json = "1.0.81"
 
 # Optional
-argh = { version = "0.1.5", optional = true }
-anyhow = { version = "1.0.43", optional = true }
+argh = { version = "0.1.7", optional = true }
+anyhow = { version = "1.0.57", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.10.0", features = [ "macros" ] }
+tokio = { version = "1.18.2", features = [ "macros" ] }
 
 [features]
+# Use reqwest's default by default.
+default = [ "default-tls" ]
+
+# Use the default TLS for this platform. 
+# This is reqwest's default.
+default-tls = [ "reqwest/default-tls" ]
+
+# Use native-tls for TLS
+native-tls = [ "reqwest/native-tls" ]
+
+# Use rustls for TLS
+rustls-tls = [ "reqwest/rustls-tls" ]
+
 cli = [
     "argh",
     "anyhow",

@@ -1,11 +1,9 @@
 use crate::{
-    checks::ENABLED_CHECK,
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
     util::{
-        LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
@@ -13,19 +11,6 @@ use crate::{
 };
 use anyhow::Context as _;
 use rand::seq::SliceRandom;
-use rule34::{
-    Post,
-    SearchResult,
-};
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
-};
 use std::sync::Arc;
 use tracing::{
     error,
@@ -36,8 +21,15 @@ use tracing::{
 #[derive(Clone, Default, Debug)]
 pub struct Rule34Client {
     client: rule34::Client,
-    search_cache: TimedCache<String, SearchResult>,
-    post_cache: TimedCache<u64, Post>,
+    // Ideally, this would be an LRU.
+    // However, we would also need to add time tracking to
+    // get new data when it goes stale.
+    // We would end up duplicating 90% of the logic from [`TimedCache`],
+    // so directly using an LRU isn't worth it.
+    // However, we could add an LRU based on [`TimedCache`]
+    // in the future, or add a setting to it to cap the maximum
+    // number of entries.
+    list_cache: TimedCache<String, rule34::PostList>,
 }
 
 impl Rule34Client {
@@ -45,126 +37,104 @@ impl Rule34Client {
     pub fn new() -> Rule34Client {
         Rule34Client {
             client: rule34::Client::new(),
-            search_cache: TimedCache::new(),
-            post_cache: TimedCache::new(),
+            list_cache: TimedCache::new(),
         }
     }
 
     /// Search for a query.
     #[tracing::instrument(skip(self))]
-    pub async fn search(&self, query: &str) -> anyhow::Result<Arc<TimedCacheEntry<SearchResult>>> {
-        if let Some(entry) = self.search_cache.get_if_fresh(query) {
+    pub async fn list(&self, tags: &str) -> anyhow::Result<Arc<TimedCacheEntry<rule34::PostList>>> {
+        if let Some(entry) = self.list_cache.get_if_fresh(tags) {
             return Ok(entry);
         }
 
-        let offset = 0;
         let results = self
             .client
-            .search(query, offset)
+            .list_posts()
+            .tags(Some(tags))
+            .limit(Some(1_000))
+            .execute()
             .await
             .context("failed to search rule34")?;
-        self.search_cache.insert(String::from(query), results);
-        self.search_cache
-            .get_if_fresh(query)
-            .context("search cache entry expired")
-    }
-
-    /// Get the [`Post`] for a given post id.
-    #[tracing::instrument(skip(self))]
-    pub async fn get_post(&self, id: u64) -> anyhow::Result<Arc<TimedCacheEntry<Post>>> {
-        if let Some(entry) = self.post_cache.get_if_fresh(&id) {
-            return Ok(entry);
-        }
-
-        let post = self
-            .client
-            .get_post(id)
-            .await
-            .context("failed to get post")?;
-        self.post_cache.insert(id, post);
-        self.post_cache
-            .get_if_fresh(&id)
-            .context("post cache entry expired")
+        Ok(self.list_cache.insert_and_get(String::from(tags), results))
     }
 }
 
 impl CacheStatsProvider for Rule34Client {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("rule34", "search_cache", self.search_cache.len() as f32);
-        cache_stats_builder.publish_stat("rule34", "post_cache", self.post_cache.len() as f32);
+        cache_stats_builder.publish_stat("rule34", "list_cache", self.list_cache.len() as f32);
     }
 }
 
-#[command]
-#[aliases("r34")]
-#[description("Look up rule34 for almost anything")]
-#[usage("\"<query>\"")]
-#[example("\"test\"")]
-#[min_args(1)]
-#[checks(Enabled)]
-async fn rule34(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let client = client_data.rule34_client.clone();
-    drop(data_lock);
+/// Options for the rule34 command
+#[derive(Debug, pikadick_slash_framework::FromOptions)]
+pub struct Rule34Options {
+    // The search query
+    query: String,
+}
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
+/// Create a slash command
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
+    pikadick_slash_framework::CommandBuilder::new()
+        .name("rule34")
+        .description("Look up rule34 for almost anything")
+        .argument(
+            pikadick_slash_framework::ArgumentParamBuilder::new()
+                .name("query")
+                .description("The search query")
+                .kind(pikadick_slash_framework::ArgumentKind::String)
+                .required(true)
+                .build()?,
+        )
+        .on_process(|ctx, interaction, args: Rule34Options| async move {
+            let data_lock = ctx.data.read().await;
+            let client_data = data_lock
+                .get::<ClientDataKey>()
+                .expect("missing client data");
+            let client = client_data.rule34_client.clone();
+            drop(data_lock);
 
-    let query_str = rule34::SearchQueryBuilder::new()
-        .add_tag_iter(args.raw_quoted())
-        .take_query_string();
+            let query_str = rule34::SearchQueryBuilder::new()
+                .add_tag_iter(args.query.split(' '))
+                .take_query_string();
 
-    info!("Searching rule34 for '{}'", query_str);
+            info!("searching rule34 for '{}'", query_str);
 
-    match client.search(&query_str).await {
-        Ok(search_results) => {
-            let maybe_post_id = search_results
-                .data()
-                .entries
-                .choose(&mut rand::thread_rng())
-                .map(|post| post.id);
+            let result = client
+                .list(&query_str)
+                .await
+                .context("failed to get search results");
 
-            if let Some(post_id) = maybe_post_id {
-                match client.get_post(post_id).await {
-                    Ok(post) => {
-                        let post_data = post.data();
-                        let image_url = post_data.image_url.as_str();
-                        info!("Sending {}", image_url);
+            interaction
+                .create_interaction_response(&ctx.http, |res| {
+                    res.interaction_response_data(|res| match result {
+                        Ok(list_results) => {
+                            let maybe_list_result: Option<String> = list_results
+                                .data()
+                                .posts
+                                .choose(&mut rand::thread_rng())
+                                .map(|list_result| list_result.file_url.to_string());
 
-                        msg.channel_id.say(&ctx.http, image_url).await?;
-                        loading.send_ok();
-                    }
-                    Err(e) => {
-                        error!("{:?}", e);
-
-                        msg.channel_id
-                            .say(&ctx.http, format!("Failed to get rule34 post: {:?}", e))
-                            .await?;
-                    }
-                }
-            } else {
-                info!("No results");
-
-                msg.channel_id
-                    .say(
-                        &ctx.http,
-                        format!("No results for '{}'. Searching is tag based, so make sure to use quotes to seperate tag arguments. ", query_str),
-                    )
-                    .await?;
-            }
-        }
-        Err(e) => {
-            error!("Failed to get search results: {:?}", e);
-            msg.channel_id
-                .say(&ctx.http, format!("Failed to get rule34 post, got: {}", e))
+                            if let Some(file_url) = maybe_list_result {
+                                info!("sending {}", file_url);
+                                res.content(file_url)
+                            } else {
+                                info!("no results");
+                                res.content(format!("No results for '{}'", query_str))
+                            }
+                        }
+                        Err(e) => {
+                            error!("{:?}", e);
+                            res.content(format!("{:?}", e))
+                        }
+                    })
+                })
                 .await?;
-        }
-    }
 
-    client.search_cache.trim();
-    client.post_cache.trim();
+            client.list_cache.trim();
 
-    Ok(())
+            Ok(())
+        })
+        .build()
+        .context("failed to build rule34 command")
 }

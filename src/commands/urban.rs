@@ -11,6 +11,7 @@ use crate::{
     },
     ClientDataKey,
 };
+use anyhow::Context as _;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -72,6 +73,7 @@ impl CacheStatsProvider for UrbanClient {
 #[min_args(1)]
 #[max_args(1)]
 #[checks(Enabled)]
+#[bucket("default")]
 pub async fn urban(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock.get::<ClientDataKey>().unwrap();
@@ -81,19 +83,24 @@ pub async fn urban(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
     let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
     let query = args.quoted().trimmed().current().expect("missing arg");
 
-    match client.search(query).await {
+    match client
+        .search(query)
+        .await
+        .context("failed to search urban dictionary")
+    {
         Ok(entry) => {
             if let Some(entry) = entry.data().list.first() {
                 msg.channel_id
                     .send_message(&ctx.http, |m| {
                         m.embed(|e| {
+                            let mut thumbs_down_buf = itoa::Buffer::new();
                             e.title(&entry.word)
                                 .timestamp(entry.written_on.as_str())
-                                .url(&entry.permalink)
-                                .field("Definition", entry.get_raw_definition(), false)
+                                .url(entry.permalink.as_str())
+                                .field("Definition", &entry.get_raw_definition(), false)
                                 .field("Example", &entry.get_raw_example(), false)
-                                .field("👍", &entry.thumbs_up, true)
-                                .field("👎", &entry.thumbs_down, true)
+                                .field("👍", &entry.thumbs_up.to_string(), true)
+                                .field("👎", thumbs_down_buf.format(entry.thumbs_down), true)
                         })
                     })
                     .await?;
@@ -105,13 +112,8 @@ pub async fn urban(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
         }
 
         Err(e) => {
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    format!("Failed to get urban dictionary search, got: {}", e),
-                )
-                .await?;
-            error!("Failed to get urban dictionary search, got: {}", e);
+            error!("{:?}", e);
+            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
         }
     }
 

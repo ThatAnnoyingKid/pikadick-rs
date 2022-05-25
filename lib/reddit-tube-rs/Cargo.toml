@@ -2,18 +2,24 @@
 name = "reddit-tube"
 version = "0.0.0"
 authors = [ "professionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
-edition = "2018"
-license = "MIT/Apache-2.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 lazy_static = "1.4.0"
-reqwest = { version = "0.11.4", features = [ "cookies", "json" ] }
-scraper = { version = "0.12.0", default-features = false }
-serde = { version = "1.0.127", features = [ "derive" ] } 
-serde_json = "1.0.66"
-thiserror = "1.0.26"
-tokio = { version = "1.10.0", features = [ "rt" ] }
+reqwest = { version = "0.11.10", default-features = false, features = [ "cookies", "json" ] }
+scraper = { version = "0.13.0", default-features = false }
+serde = { version = "1.0.137", features = [ "derive" ] } 
+serde_json = "1.0.81"
+thiserror = "1.0.31"
+tokio = { version = "1.18.2", features = [ "rt" ] }
 url = { version = "2.2.2", features = [ "serde" ] }
 
 [dev-dependencies]
-tokio = { version = "1.10.0", features = [ "macros" ] }
+tokio = { version = "1.18.2", features = [ "macros" ] }
+
+[features]
+default = [ "reqwest/default-tls" ]
+
+native-tls = [ "reqwest/native-tls" ]
+rustls-tls = [ "reqwest/rustls-tls" ]

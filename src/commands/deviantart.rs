@@ -50,9 +50,8 @@ impl DeviantartClient {
 
         let client = deviantart::Client::new();
 
-        let store = db.get_store(DATA_STORE_NAME).await;
-        let cookie_data: Option<Vec<u8>> = store
-            .get(COOKIE_KEY)
+        let cookie_data: Option<Vec<u8>> = db
+            .store_get(DATA_STORE_NAME, COOKIE_KEY)
             .await
             .context("failed to get cookie data")?;
 
@@ -63,7 +62,7 @@ impl DeviantartClient {
                     .load_json(BufReader::new(cookie_data.as_slice()))?;
             }
             None => {
-                info!("Could not load cookie data");
+                info!("could not load cookie data");
             }
         }
 
@@ -81,11 +80,10 @@ impl DeviantartClient {
         password: &str,
     ) -> anyhow::Result<()> {
         if !self.client.is_logged_in_online().await? {
-            info!("Re-signing in");
+            info!("re-signing in");
             self.client.signin(username, password).await?;
 
             // Store the new cookies
-            let store = db.get_store(DATA_STORE_NAME).await;
             let cookie_store = self.client.cookie_store.clone();
             let cookie_data = tokio::task::spawn_blocking(move || {
                 let mut cookie_data = Vec::with_capacity(1_000_000); // 1 MB
@@ -93,7 +91,8 @@ impl DeviantartClient {
                 anyhow::Result::<_>::Ok(cookie_data)
             })
             .await??;
-            store.put(COOKIE_KEY, cookie_data).await?;
+            db.store_put(DATA_STORE_NAME, COOKIE_KEY, cookie_data)
+                .await?;
         }
 
         Ok(())
@@ -121,14 +120,11 @@ impl DeviantartClient {
             .search(query, 1)
             .await
             .context("failed to search")?;
-        self.search_cache.insert(String::from(query), list);
-        let end = Instant::now();
+        let ret = self.search_cache.insert_and_get(String::from(query), list);
 
-        info!("Searched deviantart in {:?}", end - start);
+        info!("searched deviantart in {:?}", start.elapsed());
 
-        self.search_cache
-            .get_if_fresh(query)
-            .context("missing entry")
+        Ok(ret)
     }
 }
 
@@ -149,6 +145,7 @@ impl CacheStatsProvider for DeviantartClient {
 #[min_args(1)]
 #[max_args(1)]
 #[checks(Enabled)]
+#[bucket("default")]
 async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let data_lock = ctx.data.read().await;
     let client_data = data_lock

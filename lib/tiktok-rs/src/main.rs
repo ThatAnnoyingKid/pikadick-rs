@@ -1,8 +1,16 @@
+use anyhow::{
+    ensure,
+    Context,
+};
 use std::path::PathBuf;
+use tokio::{
+    fs::File,
+    io::AsyncWriteExt,
+};
 use url::Url;
 
 #[derive(argh::FromArgs)]
-#[argh(description = "App to download tiktok videos")]
+#[argh(description = "A small CLI to download tiktok videos")]
 struct CommandOptions {
     /// the post url
     #[argh(positional)]
@@ -15,60 +23,86 @@ struct CommandOptions {
 
 fn main() {
     let options: CommandOptions = argh::from_env();
-
-    let tokio_rt = match tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-    {
-        Ok(rt) => rt,
+    let code = match real_main(options) {
+        Ok(()) => 0,
         Err(e) => {
-            eprintln!("Failed to start tokio runtime: {}", e);
-            return;
+            eprintln!("Error: {:?}", e);
+            1
         }
     };
 
+    std::process::exit(code);
+}
+
+fn real_main(options: CommandOptions) -> anyhow::Result<()> {
+    let tokio_rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .context("failed to create tokio runtime")?;
+
+    tokio_rt.block_on(async_main(options))?;
+
+    Ok(())
+}
+
+async fn async_main(options: CommandOptions) -> anyhow::Result<()> {
     let client = tiktok::Client::new();
 
-    tokio_rt.block_on(async {
-        let url = match tiktok::PostUrl::from_url(options.url) {
-            Ok(url) => url,
-            Err(_e) => {
-                eprintln!("Invalid post url");
-                return;
-            }
-        };
+    eprintln!("Fetching post page...");
+    let post = client
+        .get_post(options.url.as_str())
+        .await
+        .context("failed to get post")?;
+    let video_url = post.get_video_download_url().context("missing video url")?;
 
-        eprintln!("Fetching post page...");
-        let post = match client.get_post(&url).await {
-            Ok(post) => post,
-            Err(e) => {
-                eprintln!("Failed to get post: {}", e);
-                return;
-            }
-        };
+    eprintln!("Downloading video from '{}'", video_url.as_str());
+    let mut file = File::create(&options.out_file)
+        .await
+        .context("failed to create file")?;
 
-        let video_url = match post.video_url.as_ref() {
-            Some(url) => url,
-            None => {
-                eprintln!("Missing video url");
-                return;
-            }
-        };
+    download_to_file(
+        &client.client,
+        &mut file,
+        video_url.as_str(),
+        "https://www.tiktok.com/",
+    )
+    .await
+    .context("failed to download video")?;
 
-        eprintln!("Downloading video from '{}'", video_url.as_str());
-        let mut file = match tokio::fs::File::create(&options.out_file).await {
-            Ok(file) => file,
-            Err(e) => {
-                eprintln!("Failed to create file: {}", e);
-                return;
-            }
-        };
+    Ok(())
+}
 
-        if let Err(e) = client.get_to(video_url.as_str(), &mut file).await {
-            eprintln!("Failed to download video: {}", e);
-            return;
-        }
-    });
+/// Download a url to a file
+async fn download_to_file(
+    client: &reqwest::Client,
+    file: &mut File,
+    url: &str,
+    referer: &str,
+) -> anyhow::Result<()> {
+    let mut response = client
+        .get(url)
+        .header(reqwest::header::REFERER, referer)
+        .send()
+        .await?
+        .error_for_status()?;
 
-    println!("Done.");
+    let content_length = response.content_length();
+    if let Some(content_length) = content_length {
+        file.set_len(content_length).await?;
+    }
+
+    let mut actual_length = 0;
+    while let Some(chunk) = response.chunk().await? {
+        file.write_all(&chunk).await?;
+        actual_length += u64::try_from(chunk.len())?;
+    }
+
+    if let Some(content_length) = content_length {
+        ensure!(
+            content_length == actual_length,
+            "content-length header mismatch"
+        );
+    }
+
+    Ok(())
 }

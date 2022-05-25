@@ -20,6 +20,7 @@ use zalgo::{
 #[min_args(1)]
 #[max_args(2)]
 #[checks(Enabled)]
+#[bucket("default")]
 pub async fn zalgo(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let input: String = args.single_quoted()?;
     let input_max = args.single().unwrap_or(2000);

@@ -1,0 +1,30 @@
+[package]
+name = "pikadick-util"
+version = "0.0.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+anyhow = { version = "1.0.57", optional = true }
+# fslock = { version = "0.2.1", optional = true }
+fslock = { git = "https://github.com/adumbidiot/fslock", branch = "send", optional = true }
+reqwest = { version = "0.11.10", default-features = false, optional = true }
+tokio = { version = "1.18.2", default-features = false, optional = true }
+
+[features]
+download_to_file = [
+    "anyhow",
+    "reqwest",
+    "tokio",
+    "tokio/fs",
+]
+arc_anyhow_error = [
+    "anyhow",
+]
+async_lock_file = [
+    "anyhow",
+    "fslock",
+    "tokio",
+    "tokio/sync",
+    "tokio/rt"
+]

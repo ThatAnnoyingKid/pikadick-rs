@@ -1,6 +1,8 @@
 token = "[BOT_TOKEN]"
+application_id = [APPLICATION_ID]
 prefix = "[PREFIX]" # EX: ~, p!, !
 data_dir = "[PATH_TO_DATA]" # EX: ./data
+test_guild = "[TEST_GUILD_ID]"
 
 [status]
 name = "you like a damn fiddle" # EX: "Crysis", "song", "basically anything"
@@ -15,7 +17,17 @@ password = "[DEVIANT_PASSWORD]"
 
 # This section is optional
 [log]
-endpoint = "[ENDPOINT_URL]" # Endpoint for OTLP GRPC telemetry
+# Logging directives. These are the suggested defaults.
+directives = [ 
+    "pikadick=info",
+    "serenity::framework::standard=info",
+]
+
+# Whether to enable opentelemetry
+opentelemetry = false
+
+# Endpoint for OTLP GRPC telemetry
+endpoint = "[ENDPOINT_URL]" 
 
 # Headers for telemetry 
 [log.headers]

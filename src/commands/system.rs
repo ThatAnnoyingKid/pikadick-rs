@@ -222,7 +222,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 e.color(Colour::from_rgb(255, 0, 0));
 
                 if let Some(icon) = profile.avatar_url() {
-                    e.thumbnail(icon);
+                    e.thumbnail(&icon);
                 }
 
                 if let Some(platform) = platform {
@@ -230,7 +230,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
                     e.field(
                         "OS",
-                        format!(
+                        &format!(
                             "{} {} (version {})",
                             platform.system(),
                             platform.release(),
@@ -243,27 +243,27 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 }
 
                 if let Some(boot_time) = boot_time {
-                    e.field("Boot Time", boot_time.to_rfc2822(), true);
+                    e.field("Boot Time", &boot_time.to_rfc2822(), true);
                 }
 
                 if let Some(uptime) = uptime {
-                    e.field("Uptime", fmt_uptime(uptime), true);
+                    e.field("Uptime", &fmt_uptime(uptime), true);
                 }
 
                 // Currently reports incorrectly on Windows
                 if let Some(cpu_frequency) = cpu_frequency {
                     e.field(
                         "Cpu Freq",
-                        fmt_cpu_frequency(&cpu_frequency.current()),
+                        &fmt_cpu_frequency(&cpu_frequency.current()),
                         true,
                     );
 
                     if let Some(min_cpu_frequency) = cpu_frequency.min() {
-                        e.field("Min Cpu Freq", fmt_cpu_frequency(&min_cpu_frequency), true);
+                        e.field("Min Cpu Freq", &fmt_cpu_frequency(&min_cpu_frequency), true);
                     }
 
                     if let Some(max_cpu_frequency) = cpu_frequency.max() {
-                        e.field("Max Cpu Freq", fmt_cpu_frequency(&max_cpu_frequency), true);
+                        e.field("Max Cpu Freq", &fmt_cpu_frequency(&max_cpu_frequency), true);
                     }
                 }
 
@@ -271,17 +271,21 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                     (Some(logical_count), Some(physical_count)) => {
                         e.field(
                             "Cpu Core Count",
-                            format!("{} logical, {} physical", logical_count, physical_count),
+                            &format!("{} logical, {} physical", logical_count, physical_count),
                             true,
                         );
                     }
                     (Some(logical_count), None) => {
-                        e.field("Cpu Core Count", format!("{} logical", logical_count), true);
+                        e.field(
+                            "Cpu Core Count",
+                            &format!("{} logical", logical_count),
+                            true,
+                        );
                     }
                     (None, Some(physical_count)) => {
                         e.field(
                             "Cpu Core Count",
-                            format!("{} physical", physical_count),
+                            &format!("{} physical", physical_count),
                             true,
                         );
                     }
@@ -289,11 +293,11 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 }
 
                 if let Some(memory) = memory {
-                    e.field("Memory Usage", fmt_memory(&memory), true);
+                    e.field("Memory Usage", &fmt_memory(&memory), true);
                 }
 
                 if let Some(swap) = swap {
-                    e.field("Swap Usage", fmt_swap(&swap), true);
+                    e.field("Swap Usage", &fmt_swap(&swap), true);
                 }
 
                 let virtualization_field = match virtualization.as_ref() {
@@ -305,7 +309,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 if let (Some(cpu_usage), Some(cpu_logical_count)) = (cpu_usage, cpu_logical_count) {
                     e.field(
                         "Cpu Usage",
-                        format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),
+                        &format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),
                         true,
                     );
                 }
@@ -318,7 +322,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 // TODO: This can probably be replaced with temprature readings from heim.
                 // It doesn't support Windows, but this never worked there anyways as Windows has no simple way to get temps
                 if let Some(cpu_temp) = cpu_temp {
-                    e.field("Cpu Temp", format!("{} °C", cpu_temp), true);
+                    e.field("Cpu Temp", &format!("{} °C", cpu_temp), true);
                 }
 
                 e.footer(|f| {

@@ -6,8 +6,6 @@ name: Rust
   pull_request:
     branches:
       - master
-env:
-  DATABASE_URL: sqlite:./testing/testing_db.sqlite
 
 jobs:
   lint:
@@ -77,6 +75,9 @@ jobs:
         with:
             profile: minimal
             toolchain: stable
+            
+      - name: Install FFMpeg
+        run: sudo apt-get install -y ffmpeg
         
       - name: Build Pikadick
         run: cargo build --verbose

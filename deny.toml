@@ -4,13 +4,17 @@ targets = [
     { triple = "x86_64-apple-darwin" },
     { triple = "x86_64-pc-windows-msvc" },
     { triple = "armv7-unknown-linux-gnueabihf" },
+    { triple = "aarch64-unknown-linux-gnueabihf" },
 ]
 
 [advisories]
 vulnerability = "deny"
 unmaintained = "deny"
 notice = "deny"
-ignore = []
+ignore = [    
+    # Blocked on criterion moving away from "serde_cbor". This is fine as criterion is a dev-dependency.
+    "RUSTSEC-2021-0127",
+]
 
 [licenses]
 unlicensed = "deny"
@@ -38,6 +42,13 @@ license-files = [
     { path = "LICENSE", hash = 0x001c7e6c },
 ]
 
+[[licenses.clarify]]
+name = "encoding_rs"
+expression = "(Apache-2.0 OR MIT) AND BSD-3-Clause"
+license-files = [
+    { path = "COPYRIGHT", hash = 0x39f8ad31 }
+]
+
 [bans]
 multiple-versions = "deny"
 highlight = "all"
@@ -48,30 +59,57 @@ skip = [
     # Blocked on rand updating getrandom to 0.2.x 
     { name = "getrandom", version = "0.1.15" },
     
-    # Blocked on rustls, and tungstentite bumping base64 to 0.13.x
-    { name = "base64", version = "0.12.3" },
-    
-    # Blocked on async-tungstenite updating webpki-roots to 0.21.x
-    { name = "webpki-roots", version = "0.20.0" },
-    
     # Blocked on phf_generator, tempfile, tungstenite, and zalgo moving to rand 0.8.x
     { name = "rand", version = "0.7.3" },
     { name = "rand_core", version = "0.5.1" },
     { name = "rand_chacha", version = "0.2.2" },
     
-    # Blocked on input_buffer and sqlx moving to bytes 1.0.x
-    { name = "bytes", version = "0.5.6" },
+    # Blocked on reqwest updating webpki
+    { name = "webpki", version = "0.21.4" },
     
-    # Blocked on png updating `miniz_oxide` to `0.4.x`
-    { name = "miniz_oxide", version = "0.3.7" },
+    # Blocked on async-tungstenite and tonic updating tokio-rustls to 0.23.1 and rustls to 0.20.x
+    { name = "tokio-rustls", version = "0.22.0" },
+    { name = "rustls", version = "0.19.1" },
+    { name = "sct", version = "0.6.1" },
+    
+    # Blocked on ring updating their version of spin to 0.9
+    { name = "spin", version = "0.9.2" },
+    
+    # Blocked on serenity-voice-model moving away from enum_primitive
+    { name = "num-traits", version = "0.1.43" },
+    
+    # Blocked on time getting updated from a lot of crates 
+    { name = "time", version = "0.2.27" },  
+    
+    # Blocked on a lot of crates moving to version 1. Re-evaluate in like a month or two. 12/7/2021.
+    { name = "itoa", version = "0.4.8" },
+    
+    # Blocked on updates to cssparser
+    { name = "phf_shared", version = "0.8.0" },
+    
+    # Blocked on cookie updating to time 0.3
+    { name = "time-macros", version = "0.1.1" },
+    
+    # Blocked on h2 updating tokio-util to v 7
+    { name = "tokio-util", version = "0.6.9" },
+    
+    # Blocked on markup5ever updating phf_codegen
+    { name = "phf_generator", version = "0.8.0" },
+    
+    # Blocked on updates to tiny-skia
+    { name = "arrayvec", version = "0.5.2" },
+    
+    # Blocked on cssparser updating phf
+    { name = "phf", version = "0.8.0" },
+    { name = "phf_codegen", version = "0.8.0" },
+    
+    # Blocked on many crates moving to hashbrown 12
+    { name = "hashbrown", version = "0.11.2" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
-deny = [            
-    # https://github.com/RustSec/advisory-db/issues/305
-    { name = "rental", version = "*" },
-    
-    # Appears to be moving towards integrating rio more tightly for io_uring support
+deny = [    
+    # This is basically Rust written like C.
     { name = "sled", version = "*" },
     
     # The general idea seems unsound, and the current version does contain UB.
@@ -91,27 +129,25 @@ deny = [
     # https://github.com/RustSec/advisory-db/issues/743
     { name = "fast-floats", version = "*" },
     
-    # https://github.com/RustSec/advisory-db/issues/880
-    { name = "nalgebra", version = "<0.26.2" },
-    
     # https://github.com/RustSec/advisory-db/issues/913
     { name = "hexchat", version = ">=0.3.0" },
     
     # https://github.com/RustSec/advisory-db/issues/613
     { name = "out-reference", version = "*" },
     
-    # https://github.com/RustSec/advisory-db/issues/235
-    { name = "shamir", version = "<2.0.0" },
+    # https://github.com/rustsec/advisory-db/issues/1175
+    { name = "futures-intrusive", version = "*" },
     
-    # https://github.com/RustSec/advisory-db/pull/671/files
-    # This is currently disabled as it is used by heim
-    # { name = "raw-cpuid", version = ">3.1.0" },
+    # Probably abandoned. Commented as it is used by `tracing-subscriber`.
+    # https://github.com/rustsec/advisory-db/issues/1095
+    # { name = "ansi_term", version = "*" },
     
-    # https://github.com/RustSec/advisory-db/pull/649
-    { name = "derive-com-impl", version = "<=0.1.1" },
+    # https://github.com/rustsec/advisory-db/issues/1173
+    { name = "prettytables-rs", version = "*" },
     
-    # https://github.com/RustSec/advisory-db/pull/593
-    { name = "bite", version = "*" },
+    # Makes cross-comp a pain. 
+    # This is commented out as cargo-deny does not seem to pick it up as disabled through features
+    # { name = "openssl", version = "*" },
 ]
 
 [sources]
@@ -122,6 +158,10 @@ allow-git = [
     "https://github.com/adumbidiot/zalgo-rs",
     "https://github.com/adumbidiot/shift-client-rs",
     "https://github.com/adumbidiot/reddit-rs",
-    "https://github.com/heim-rs/heim",
+    # "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
+    "https://github.com/serenity-rs/serenity",
+    "https://github.com/vectordotdev/heim",
+    "https://github.com/FelixMcFelix/songbird",
+    "https://github.com/adumbidiot/fslock",
 ]

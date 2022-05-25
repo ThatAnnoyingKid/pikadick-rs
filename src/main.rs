@@ -17,29 +17,44 @@
     future_incompatible,
     nonstandard_style
 )]
-#![allow(missing_doc_code_examples)] // TODO: Document everything properly
+#![allow(rustdoc::missing_doc_code_examples)] // TODO: Document everything properly
 
 //! # Pikadick
 
 pub mod checks;
+pub mod cli_options;
 pub mod client_data;
 pub mod commands;
 pub mod config;
 pub mod database;
 pub mod logger;
+pub mod setup;
 pub mod util;
 
 use crate::{
+    cli_options::CliOptions,
     client_data::ClientData,
     commands::*,
     config::{
         ActivityKind,
         Config,
-        Severity,
     },
-    database::Database,
+    database::{
+        model::TikTokEmbedFlags,
+        Database,
+    },
+    util::{
+        AsyncLockFile,
+        LoadingReaction,
+    },
 };
-use anyhow::Context as _;
+use anyhow::{
+    bail,
+    ensure,
+    Context as _,
+};
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serenity::{
     client::bridge::gateway::ShardManager,
     framework::standard::{
@@ -57,13 +72,16 @@ use serenity::{
         StandardFramework,
     },
     futures::future::BoxFuture,
-    model::prelude::*,
+    model::{
+        application::interaction::Interaction,
+        prelude::*,
+    },
     prelude::*,
     FutureExt,
 };
+use songbird::SerenityInit;
 use std::{
     collections::HashSet,
-    path::Path,
     sync::Arc,
     time::{
         Duration,
@@ -77,8 +95,13 @@ use tracing::{
     warn,
 };
 use tracing_appender::non_blocking::WorkerGuard;
+use url::Url;
 
 const TOKIO_RT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Source: <https://urlregex.com/>
+static URL_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex"));
 
 struct Handler;
 
@@ -89,6 +112,10 @@ impl EventHandler for Handler {
         let client_data = data_lock
             .get::<ClientDataKey>()
             .expect("missing client data");
+        let slash_framework = data_lock
+            .get::<SlashFrameworkKey>()
+            .expect("missing slash framework")
+            .clone();
         let config = client_data.config.clone();
         drop(data_lock);
 
@@ -107,11 +134,22 @@ impl EventHandler for Handler {
             }
         }
 
-        info!("Logged in as '{}'", ready.user.name);
+        info!("logged in as '{}'", ready.user.name);
+
+        // TODO: Consider shutting down the bot. It might be possible to use old data though.
+        if let Err(e) = slash_framework
+            .register(ctx.clone(), config.test_guild)
+            .await
+            .context("failed to register slash commands")
+        {
+            error!("{:?}", e);
+        }
+
+        info!("registered slash commands");
     }
 
     async fn resume(&self, _ctx: Context, resumed: ResumedEvent) {
-        warn!("Resumed connection. Trace: {:?}", resumed.trace);
+        warn!("resumed connection. trace: {:?}", resumed.trace);
     }
 
     #[tracing::instrument(skip(self, ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
@@ -121,11 +159,136 @@ impl EventHandler for Handler {
             .get::<ClientDataKey>()
             .expect("missing client data");
         let reddit_embed_data = client_data.reddit_embed_data.clone();
+        let tiktok_data = client_data.tiktok_data.clone();
+        let db = client_data.db.clone();
         drop(data_lock);
 
-        if let Err(e) = reddit_embed_data.process_msg(&ctx, &msg).await {
-            error!("Failed to generate reddit embed: {}", e);
+        // Process URL Embeds
+        {
+            // Only embed guild links
+            let guild_id = match msg.guild_id {
+                Some(id) => id,
+                None => {
+                    return;
+                }
+            };
+
+            // No Bots
+            if msg.author.bot {
+                return;
+            }
+
+            // Get enabled data for embeds
+            let reddit_embed_is_enabled_for_guild = db
+                .get_reddit_embed_enabled(guild_id)
+                .await
+                .with_context(|| {
+                    format!("failed to get reddit-embed server data for '{}'", guild_id)
+                })
+                .unwrap_or_else(|e| {
+                    error!("{:?}", e);
+                    false
+                });
+            let tiktok_embed_flags = db
+                .get_tiktok_embed_flags(guild_id)
+                .await
+                .with_context(|| {
+                    format!("failed to get tiktok-embed server data for '{}'", guild_id)
+                })
+                .unwrap_or_else(|e| {
+                    error!("{:?}", e);
+                    TikTokEmbedFlags::empty()
+                });
+
+            // Extract urls
+            // NOTE: Regex doesn't HAVE to be perfect.
+            // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
+            // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
+            let urls: Vec<Url> = URL_REGEX
+                .find_iter(&msg.content)
+                .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
+                .collect();
+
+            // Check to see if it we will even try to embed
+            let will_try_embedding = urls.iter().any(|url| {
+                let url_host = match url.host() {
+                    Some(host) => host,
+                    None => return false,
+                };
+
+                let reddit_url =
+                    matches!(url_host, url::Host::Domain("www.reddit.com" | "reddit.com"));
+
+                let tiktok_url = matches!(
+                    url_host,
+                    url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")
+                );
+
+                (reddit_url && reddit_embed_is_enabled_for_guild)
+                    || (tiktok_url && tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED))
+            });
+
+            // Return if we won't try embedding
+            if !will_try_embedding {
+                return;
+            }
+
+            let mut loading_reaction = Some(LoadingReaction::new(ctx.http.clone(), &msg));
+
+            // Embed for each url
+            // NOTE: we short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem,
+            // especially since serenity retries each req once
+            for url in urls.iter() {
+                match url.host() {
+                    Some(url::Host::Domain("www.reddit.com" | "reddit.com")) => {
+                        // Don't process if it isn't enabled
+                        if reddit_embed_is_enabled_for_guild {
+                            if let Err(e) = reddit_embed_data
+                                .try_embed_url(&ctx, &msg, url, &mut loading_reaction)
+                                .await
+                                .context("failed to generate reddit embed")
+                            {
+                                error!("{:?}", e);
+                            }
+                        }
+                    }
+                    Some(url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")) => {
+                        if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
+                            if let Err(e) = tiktok_data
+                                .try_embed_url(
+                                    &ctx,
+                                    &msg,
+                                    url,
+                                    &mut loading_reaction,
+                                    tiktok_embed_flags.contains(TikTokEmbedFlags::DELETE_LINK),
+                                )
+                                .await
+                                .context("failed to generate tiktok embed")
+                            {
+                                error!("{:?}", e);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            // Trim caches
+            reddit_embed_data.cache.trim();
+            reddit_embed_data.video_data_cache.trim();
+            tiktok_data.post_page_cache.trim();
         }
+    }
+
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        let data_lock = ctx.data.read().await;
+        let framework = data_lock
+            .get::<SlashFrameworkKey>()
+            .expect("missing slash framework")
+            .clone();
+        drop(data_lock);
+
+        framework.process_interaction_create(ctx, interaction).await;
     }
 }
 
@@ -134,6 +297,13 @@ pub struct ClientDataKey;
 
 impl TypeMapKey for ClientDataKey {
     type Value = ClientData;
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct SlashFrameworkKey;
+
+impl TypeMapKey for SlashFrameworkKey {
+    type Value = pikadick_slash_framework::Framework;
 }
 
 #[help]
@@ -145,19 +315,20 @@ async fn help(
     groups: &[&'static CommandGroup],
     owners: HashSet<UserId>,
 ) -> CommandResult {
-    let _ = help_commands::with_embeds(ctx, msg, args, help_options, groups, owners)
+    match help_commands::with_embeds(ctx, msg, args, help_options, groups, owners)
         .await
-        .is_some();
+        .context("failed to send help")
+    {
+        Ok(_) => {}
+        Err(e) => {
+            error!("{:?}", e);
+        }
+    }
     Ok(())
 }
 
 #[group]
 #[commands(
-    ping,
-    nekos,
-    r6stats,
-    r6tracker,
-    rule34,
     system,
     quizizz,
     fml,
@@ -176,19 +347,22 @@ async fn help(
     xkcd,
     tic_tac_toe,
     iqdb,
-    sauce_nao
+    reddit,
+    leave,
+    stop,
+    sauce_nao,
 )]
 struct General;
 
 async fn handle_ctrl_c(shard_manager: Arc<Mutex<ShardManager>>) {
     match tokio::signal::ctrl_c().await {
         Ok(_) => {
-            info!("Shutting down...");
-            info!("Stopping Client...");
+            info!("shutting down...");
+            info!("stopping client...");
             shard_manager.lock().await.shutdown_all().await;
         }
         Err(e) => {
-            warn!("Failed to set Ctrl-C handler: {}", e);
+            warn!("failed to set ctrl-c handler: {}", e);
             // The default "kill everything" handler is probably still installed, so this isn't a problem?
         }
     };
@@ -200,7 +374,7 @@ fn before_handler<'fut>(
     msg: &'fut Message,
     cmd_name: &'fut str,
 ) -> BoxFuture<'fut, bool> {
-    info!("Allowing command to process");
+    info!("allowing command to process");
     async move { true }.boxed()
 }
 
@@ -212,7 +386,7 @@ fn after_handler<'fut>(
 ) -> BoxFuture<'fut, ()> {
     async move {
         if let Err(e) = command_result {
-            error!("Failed to process command '{}': {}", command_name, e);
+            error!("failed to process command '{}': {}", command_name, e);
         }
     }
     .boxed()
@@ -224,7 +398,7 @@ fn unrecognised_command_handler<'fut>(
     command_name: &'fut str,
 ) -> BoxFuture<'fut, ()> {
     async move {
-        error!("Unrecognized command '{}'", command_name);
+        error!("unrecognized command '{}'", command_name);
 
         let _ = msg
             .channel_id
@@ -242,14 +416,16 @@ fn process_dispatch_error<'fut>(
     ctx: &'fut Context,
     msg: &'fut Message,
     error: DispatchError,
+    cmd_name: &'fut str,
 ) -> BoxFuture<'fut, ()> {
-    process_dispatch_error_future(ctx, msg, error).boxed()
+    process_dispatch_error_future(ctx, msg, error, cmd_name).boxed()
 }
 
 async fn process_dispatch_error_future<'fut>(
     ctx: &'fut Context,
     msg: &'fut Message,
     error: DispatchError,
+    _cmd_name: &'fut str,
 ) {
     match error {
         DispatchError::Ratelimited(s) => {
@@ -306,142 +482,33 @@ async fn process_dispatch_error_future<'fut>(
     };
 }
 
-/// Load a config.
-///
-/// This prints to the stderr directly.
-/// It is intended to be called BEFORE the loggers are set up.
-fn load_config() -> anyhow::Result<Config> {
-    let config_path: &Path = "./config.toml".as_ref();
+/// Set up a serenity client
+async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
+    // Setup slash framework
+    let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
+        .check(self::checks::enabled::create_slash_check)
+        .help_command(create_slash_help_command()?)
+        .command(self::commands::nekos::create_slash_command()?)
+        .command(self::commands::ping::create_slash_command()?)
+        .command(self::commands::r6stats::create_slash_command()?)
+        .command(self::commands::r6tracker::create_slash_command()?)
+        .command(self::commands::rule34::create_slash_command()?)
+        .command(self::commands::tiktok_embed::create_slash_command()?)
+        .build()?;
 
-    eprintln!("Loading `{}`...", config_path.display());
-    let mut config = Config::load_from_path(config_path)
-        .with_context(|| format!("failed to load `{}`", config_path.display()))?;
+    // Create second prefix that is uppercase so we are case-insensitive
+    let config_prefix = config.prefix.clone();
+    let uppercase_prefix = config_prefix.to_uppercase();
 
-    eprintln!("Validating config...");
-    let errors = config.validate();
-    let mut error_count = 0;
-    for e in errors {
-        match e.severity() {
-            Severity::Warn => {
-                eprintln!("Validation Warning: {}", e.error());
-            }
-            Severity::Error => {
-                eprintln!("Validation Error: {}", e.error());
-                error_count += 1;
-            }
-        }
-    }
-
-    if error_count != 0 {
-        anyhow::bail!("Validation failed with {} errors.", error_count);
-    }
-
-    Ok(config)
-}
-
-/// Pre-main setup
-fn setup() -> anyhow::Result<(tokio::runtime::Runtime, Config, bool, WorkerGuard)> {
-    eprintln!("Starting tokio runtime...");
-    let tokio_rt = RuntimeBuilder::new_multi_thread()
-        .enable_all()
-        .thread_name("pikadick-tokio-worker")
-        .build()
-        .context("failed to start Tokio Runtime")?;
-
-    let config = load_config().context("failed to load config")?;
-
-    eprintln!("Opening data directory...");
-    if config.data_dir.is_file() {
-        anyhow::bail!("failed to create or open data directory, the path is a file");
-    }
-
-    let missing_data_dir = !config.data_dir.exists();
-    if missing_data_dir {
-        eprintln!("Data directory does not exist. Creating...");
-        std::fs::create_dir_all(&config.data_dir).context("failed to create data directory")?;
-    } else if config.data_dir.is_dir() {
-        eprintln!("Data directory already exists.");
-    }
-
-    eprintln!("Setting up logger...");
-    let guard = tokio_rt
-        .block_on(async { crate::logger::setup(&config) })
-        .context("failed to initialize logger")?;
-
-    eprintln!();
-    Ok((tokio_rt, config, missing_data_dir, guard))
-}
-
-/// The main entry.
-///
-/// Calls `real_main` and prints the error, exiting with 1 of needed.
-/// This allows more things to drop correctly.
-/// This also calls setup operations like loading config and setting up the tokio runtime,
-/// logging errors to the stderr instead of the loggers, which are not initialized yet.
-fn main() {
-    let (tokio_rt, config, missing_data_dir, worker_guard) = match setup() {
-        Ok(data) => data,
-        Err(e) => {
-            eprintln!("{:?}", e);
-            drop(e);
-
-            std::process::exit(1);
-        }
-    };
-
-    let exit_code = match real_main(tokio_rt, config, missing_data_dir, worker_guard) {
-        Ok(()) => 0,
-        Err(e) => {
-            error!("{:?}", e);
-            1
-        }
-    };
-
-    std::process::exit(exit_code);
-}
-
-/// The actual entry point
-fn real_main(
-    tokio_rt: tokio::runtime::Runtime,
-    config: Config,
-    missing_data_dir: bool,
-    _worker_guard: WorkerGuard,
-) -> anyhow::Result<()> {
-    tokio_rt.block_on(async_main(config, missing_data_dir));
-
-    let shutdown_start = Instant::now();
-    info!(
-        "Shutting down tokio runtime (shutdown timeout is {:?})...",
-        TOKIO_RT_SHUTDOWN_TIMEOUT
-    );
-    tokio_rt.shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
-    info!("Shutdown tokio runtime in {:?}", shutdown_start.elapsed());
-
-    info!("Successful Shutdown");
-    Ok(())
-}
-
-/// The async entry
-async fn async_main(config: Config, missing_data_dir: bool) {
-    info!("Opening database...");
-    let db_path = config.data_dir.join("pikadick.sqlite");
-    let db = match Database::new(&db_path, missing_data_dir).await {
-        Ok(db) => db,
-        Err(e) => {
-            error!("Failed to open database: {}", e);
-            return;
-        }
-    };
-
-    let uppercase_prefix = config.prefix.to_uppercase();
+    // Build the standard framework
+    info!("using prefix '{}'", &config_prefix);
     let framework = StandardFramework::new()
         .configure(|c| {
-            c.prefixes(&[&config.prefix, &uppercase_prefix])
+            c.prefixes(&[&config_prefix, &uppercase_prefix])
                 .case_insensitivity(true)
         })
         .help(&HELP)
         .group(&GENERAL_GROUP)
-        // .bucket("nekos", |b| b.delay(1)) // TODO: Consider better ratelimit strategy
         .bucket("r6stats", |b| b.delay(7))
         .await
         .bucket("r6tracker", |b| b.delay(7))
@@ -452,48 +519,214 @@ async fn async_main(config: Config, missing_data_dir: bool) {
         .await
         .bucket("insta-dl", |b| b.delay(10))
         .await
+        .bucket("ttt-board", |b| b.delay(1))
+        .await
+        .bucket("default", |b| b.delay(1))
+        .await
         .before(before_handler)
         .after(after_handler)
         .unrecognised_command(unrecognised_command_handler)
         .on_dispatch_error(process_dispatch_error);
 
-    info!("Using prefix '{}'", &config.prefix);
+    // Build the client
+    let config_token = config.token.clone();
+    let client = Client::builder(
+        config_token,
+        GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
+    )
+    .event_handler(Handler)
+    .application_id(config.application_id)
+    .framework(framework)
+    .register_songbird()
+    .await
+    .context("failed to create client")?;
 
-    let mut client = match Client::builder(&config.token)
-        .event_handler(Handler)
-        .framework(framework)
-        .await
     {
-        Ok(c) => c,
-        Err(e) => {
-            error!("Failed to create client: {}", e);
-            return;
-        }
-    };
+        client
+            .data
+            .write()
+            .await
+            .insert::<SlashFrameworkKey>(slash_framework);
+    }
 
+    // TODO: Spawn a task for this earlier?
+    // Spawn the ctrl-c handler
     tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
 
-    let client_data = match ClientData::init(client.shard_manager.clone(), config, db).await {
-        Ok(c) => {
-            // Add all post-init client data changes here
-            c.enabled_check_data.add_groups(&[&GENERAL_GROUP]);
-            c
-        }
+    Ok(client)
+}
+
+/// Data from the setup function
+struct SetupData {
+    tokio_rt: tokio::runtime::Runtime,
+    config: Arc<Config>,
+    database: Database,
+    lock_file: AsyncLockFile,
+    worker_guard: WorkerGuard,
+}
+
+/// Pre-main setup
+fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
+    eprintln!("starting tokio runtime...");
+    let tokio_rt = RuntimeBuilder::new_multi_thread()
+        .enable_all()
+        .thread_name("pikadick-tokio-worker")
+        .build()
+        .context("failed to start tokio runtime")?;
+
+    let config = crate::setup::load_config(&cli_options.config)
+        .map(Arc::new)
+        .context("failed to load config")?;
+
+    eprintln!("opening data directory...");
+    let data_dir_metadata = match std::fs::metadata(&config.data_dir) {
+        Ok(metadata) => Some(metadata),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
         Err(e) => {
-            error!("Client Data Initialization failed: {}", e);
-            return;
+            return Err(e).context("failed to get metadata for the data dir");
         }
     };
+
+    let _missing_data_dir = data_dir_metadata.is_none();
+    match data_dir_metadata.as_ref() {
+        Some(metadata) => {
+            if metadata.is_dir() {
+                eprintln!("data directory already exists.");
+            } else if metadata.is_file() {
+                bail!("failed to create or open data directory, the path is a file");
+            }
+        }
+        None => {
+            eprintln!("data directory does not exist. creating...");
+            std::fs::create_dir_all(&config.data_dir).context("failed to create data directory")?;
+        }
+    }
+
+    eprintln!("creating lockfile...");
+    let lock_file_path = config.data_dir.join("pikadick.lock");
+    let lock_file = AsyncLockFile::open_blocking(lock_file_path.as_std_path())
+        .context("failed to open lockfile")?;
+    let lock_file_locked = lock_file
+        .try_lock_with_pid_blocking()
+        .context("failed to try to lock the lockfile")?;
+    ensure!(lock_file_locked, "another process has locked the lockfile");
+
+    std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
+    std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
+
+    // TODO: Init db
+    eprintln!("opening database...");
+    let database_path = config.data_dir.join("pikadick.sqlite");
+
+    // Safety: This is called before any other sqlite functions.
+    // TODO: Is there a good reason to not remake the db if it is missing?
+    let database = unsafe {
+        Database::blocking_new(&database_path, true) // missing_data_dir
+            .context("failed to open database")?
+    };
+
+    // Everything past here is assumed to need tokio
+    let _enter_guard = tokio_rt.handle().enter();
+
+    eprintln!("setting up logger...");
+    let worker_guard = crate::logger::setup(&config).context("failed to initialize logger")?;
+
+    eprintln!();
+    Ok(SetupData {
+        tokio_rt,
+        config,
+        database,
+        lock_file,
+        worker_guard,
+    })
+}
+
+/// The main entry.
+///
+/// Sets up the program and calls `real_main`.
+/// This allows more things to drop correctly.
+/// This also calls setup operations like loading config and setting up the tokio runtime,
+/// logging errors to the stderr instead of the loggers, which are not initialized yet.
+fn main() -> anyhow::Result<()> {
+    // This line MUST run first.
+    // It is needed to exit early if the options are invalid,
+    // and this will NOT run destructors if it does so.
+    let cli_options = argh::from_env();
+
+    let setup_data = setup(cli_options)?;
+    real_main(setup_data)?;
+    Ok(())
+}
+
+/// The actual entry point
+fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
+    // We spawn this is a seperate thread/task as the main thread does not have enough stack space
+    let _enter_guard = setup_data.tokio_rt.enter();
+    let ret = setup_data.tokio_rt.block_on(tokio::spawn(async_main(
+        setup_data.config,
+        setup_data.database,
+    )));
+
+    let shutdown_start = Instant::now();
+    info!(
+        "shutting down tokio runtime (shutdown timeout is {:?})...",
+        TOKIO_RT_SHUTDOWN_TIMEOUT
+    );
+    setup_data
+        .tokio_rt
+        .shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
+    info!("shutdown tokio runtime in {:?}", shutdown_start.elapsed());
+
+    info!("unlocking lockfile...");
+    setup_data
+        .lock_file
+        .unlock_blocking()
+        .context("failed to unlock lockfile")?;
+
+    info!("successful shutdown");
+
+    // Logging no longer reliable past this point
+    drop(setup_data.worker_guard);
+
+    ret?
+}
+
+/// The async entry
+async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<()> {
+    // TODO: See if it is possible to start serenity without a network
+    info!("setting up client...");
+    let mut client = setup_client(config.clone())
+        .await
+        .context("failed to set up client")?;
+
+    let client_data = ClientData::init(client.shard_manager.clone(), config, database.clone())
+        .await
+        .context("client data initialization failed")?;
+
+    // Add all post-init client data changes here
+    {
+        client_data.enabled_check_data.add_groups(&[&GENERAL_GROUP]);
+    }
 
     {
         let mut data = client.data.write().await;
         data.insert::<ClientDataKey>(client_data);
     }
 
-    info!("Logging in...");
-    if let Err(why) = client.start().await {
-        error!("Error while running client: {}", why);
-    }
-
+    info!("logging in...");
+    client.start().await.context("failed to run client")?;
+    let client_data = {
+        let mut data = client.data.write().await;
+        data.remove::<ClientDataKey>().expect("missing client data")
+    };
     drop(client);
+
+    info!("running shutdown routine for client data");
+    client_data.shutdown().await;
+    drop(client_data);
+
+    info!("closing database...");
+    database.close().await.context("failed to close database")?;
+
+    Ok(())
 }

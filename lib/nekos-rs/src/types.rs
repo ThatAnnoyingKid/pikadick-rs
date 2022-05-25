@@ -54,7 +54,7 @@ pub struct Image {
 impl Image {
     /// Get the url
     pub fn get_url(&self) -> Result<Url, url::ParseError> {
-        let base = Url::parse("https://nekos.moe/image/").expect("Valid Base");
+        let base = Url::parse("https://nekos.moe/image/").expect("invalid image base url");
         base.join(&self.id)
     }
 }
@@ -80,7 +80,7 @@ mod test {
 
     #[test]
     fn parse_image_list() {
-        let image_list: ImageList = serde_json::from_str(RANDOM).unwrap();
+        let image_list: ImageList = serde_json::from_str(RANDOM).expect("failed to parse");
         dbg!(image_list);
     }
 }

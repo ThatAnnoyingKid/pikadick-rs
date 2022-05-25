@@ -10,16 +10,20 @@ use crate::{
     util::{
         LoadingReaction,
         TimedCache,
+        TimedCacheEntry,
     },
     ClientDataKey,
 };
-use anyhow::Context as _;
-use lazy_static::lazy_static;
+use anyhow::{
+    bail,
+    Context as _,
+};
+use dashmap::DashMap;
+use rand::seq::SliceRandom;
 use reddit_tube::{
     types::get_video_response::GetVideoResponseOk,
     GetVideoResponse,
 };
-use regex::Regex;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -29,9 +33,16 @@ use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{
+        Duration,
+        Instant,
+    },
+};
 use tracing::{
     error,
+    info,
     warn,
 };
 use url::Url;
@@ -39,26 +50,30 @@ use url::Url;
 type SubReddit = String;
 type PostId = String;
 
-const DATA_STORE_NAME: &str = "reddit-embed";
+type LinkVec = Vec<Arc<reddit::Link>>;
 
-lazy_static! {
-    /// Source: https://urlregex.com/
-    static ref URL_REGEX: Regex = Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex");
-}
+// pub struct SubredditPostIdentifier {}
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct RedditEmbedData {
-    reddit_client: Arc<reddit::Client>,
+    reddit_client: reddit::Client,
     reddit_tube_client: reddit_tube::Client,
-    cache: TimedCache<(SubReddit, PostId), String>,
+
+    pub cache: TimedCache<(SubReddit, PostId), String>,
+    pub video_data_cache: TimedCache<String, Box<GetVideoResponseOk>>,
+    random_post_cache: Arc<DashMap<String, Arc<(Instant, LinkVec)>>>,
 }
 
 impl RedditEmbedData {
+    /// Make a new [`RedditEmbedData`].
     pub fn new() -> Self {
         RedditEmbedData {
-            reddit_client: Arc::new(reddit::Client::new()),
+            reddit_client: reddit::Client::new(),
             reddit_tube_client: reddit_tube::Client::new(),
+
             cache: Default::default(),
+            video_data_cache: TimedCache::new(),
+            random_post_cache: Arc::new(DashMap::new()),
         }
     }
 
@@ -73,25 +88,25 @@ impl RedditEmbedData {
         let mut post_data = self.reddit_client.get_post(subreddit, post_id).await?;
 
         if post_data.is_empty() {
-            anyhow::bail!("missing post");
+            bail!("missing post");
         }
 
         let mut post_data = post_data
             .swap_remove(0)
             .data
             .into_listing()
-            .ok_or_else(|| anyhow::anyhow!("missing post"))?
+            .context("missing post")?
             .children;
 
         if post_data.is_empty() {
-            anyhow::bail!("missing post");
+            bail!("missing post");
         }
 
         let mut post = post_data
             .swap_remove(0)
             .data
             .into_link()
-            .ok_or_else(|| anyhow::anyhow!("missing post"))?;
+            .context("missing post")?;
 
         // If cross post, resolve one level. Is it possible to crosspost a crosspost?
 
@@ -113,7 +128,7 @@ impl RedditEmbedData {
     }
 
     /// Get video data from reddit.tube. Takes a reddit url.
-    pub async fn get_video_data(&self, url: &Url) -> anyhow::Result<GetVideoResponseOk> {
+    pub async fn get_video_data(&self, url: &str) -> anyhow::Result<Box<GetVideoResponseOk>> {
         let main_page = self
             .reddit_tube_client
             .get_main_page()
@@ -121,134 +136,282 @@ impl RedditEmbedData {
             .context("failed to get main page")?;
         let video_data = self
             .reddit_tube_client
-            .get_video(&main_page, url.as_str())
+            .get_video(&main_page, url)
             .await
             .context("failed to get video data")?;
 
         match video_data {
             GetVideoResponse::Ok(video_data) => Ok(video_data),
-            GetVideoResponse::Error(e) => Err(anyhow::anyhow!(e)),
+            GetVideoResponse::Error(e) => Err(e).context("bad video response"),
         }
     }
 
-    /// Process a message and insert an embed if neccesary.
-    #[tracing::instrument(level = "info", skip(self, ctx, msg))]
-    pub async fn process_msg(&self, ctx: &Context, msg: &Message) -> CommandResult {
-        let data_lock = ctx.data.read().await;
-        let client_data = data_lock
-            .get::<ClientDataKey>()
-            .expect("missing client data");
-        let db = client_data.db.clone();
-        drop(data_lock);
-
-        let guild_id = match msg.guild_id {
-            Some(id) => id,
-            None => {
-                // Only embed guild links
-                return Ok(());
-            }
-        };
-
-        let is_enabled_for_guild = {
-            let store = db.get_store(DATA_STORE_NAME).await;
-            let key = guild_id.0.to_be_bytes();
-            match store.get(key).await {
-                Ok(Some(b)) => b,
-                Ok(None) => false,
-                Err(e) => {
-                    error!(
-                        "Failed to get reddit-embed guild data for '{}': {}",
-                        guild_id, e
-                    );
-                    false
-                }
-            }
-        };
-
-        if !is_enabled_for_guild || msg.author.bot {
-            // Don't process if it isn't enabled or the author is a bot
-            return Ok(());
+    /// Get video data, but using a cache.
+    pub async fn get_video_data_cached(
+        &self,
+        url: &str,
+    ) -> anyhow::Result<Arc<TimedCacheEntry<Box<GetVideoResponseOk>>>> {
+        if let Some(response) = self.video_data_cache.get_if_fresh(url) {
+            return Ok(response);
         }
 
-        // NOTE: Regex doesn't HAVE to be perfect.
-        // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
-        // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
-        let urls: Vec<Url> = URL_REGEX
-            .find_iter(&msg.content)
-            .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
-            .filter(|url| {
-                let host_str = match url.host_str() {
-                    Some(url) => url,
-                    None => return false,
-                };
+        let video_data = self.get_video_data(url).await?;
 
-                host_str == "www.reddit.com" || host_str == "reddit.com"
-            })
-            .collect();
+        Ok(self
+            .video_data_cache
+            .insert_and_get(url.to_string(), video_data))
+    }
 
-        let mut loading_reaction = if !urls.is_empty() {
-            Some(LoadingReaction::new(ctx.http.clone(), msg))
-        } else {
-            None
-        };
+    /// Create a video url for a url to a reddit video post.
+    pub async fn create_video_url(&self, url: &str) -> anyhow::Result<Url> {
+        let maybe_url = self
+            .get_video_data_cached(url)
+            .await
+            .with_context(|| format!("failed to get reddit video info for '{}'", url))
+            .map(|video_data| video_data.data().url.clone());
 
-        // Embed for each url
-        // NOTE: we short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem,
-        // especially since serenity retries each req once
-        for url in urls.iter() {
-            // This is sometimes TOO smart and finds data for invalid urls...
-            // TODO: Consider making parsing stricter
-            if let Some((subreddit, post_id)) = parse_post_url(url) {
-                // Try cache
-                let maybe_url = self
-                    .cache
-                    .get_if_fresh(&(subreddit.into(), post_id.into()))
-                    .map(|el| el.data().clone());
+        if let Err(e) = maybe_url.as_ref() {
+            warn!("{:?}", e);
+        }
 
-                let data = if let Some(value) = maybe_url.clone() {
-                    Some(value)
-                } else {
-                    match self.get_original_post(subreddit, post_id).await {
-                        Ok(post) => {
-                            if !post.is_video {
-                                Some(post.url)
-                            } else {
-                                match self.get_video_data(url).await {
-                                    Ok(video_data) => Some(video_data.url.into()),
-                                    Err(e) => {
-                                        warn!("Failed to get reddit video info, got error: {}", e);
-                                        None
-                                    }
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            warn!("Failed to get reddit post, got error: {}", e);
-                            None
-                        }
-                    }
-                };
+        maybe_url
+    }
 
-                if let Some(data) = data {
-                    self.cache
-                        .insert((subreddit.into(), post_id.into()), data.clone());
+    /// Get a reddit embed url for a given subreddit and post id
+    pub async fn get_embed_url(&self, url: &Url) -> anyhow::Result<String> {
+        let (subreddit, post_id) = parse_post_url(url).context("failed to parse post")?;
 
-                    // TODO: Consider downloading and reposting?
-                    msg.channel_id.say(&ctx.http, data).await?;
-                    if let Some(mut loading_reaction) = loading_reaction.take() {
-                        loading_reaction.send_ok();
-                    }
-                }
+        let original_post = self
+            .get_original_post(subreddit, post_id)
+            .await
+            .context("failed to get reddit post")
+            .map_err(|e| {
+                warn!("{:?}", e);
+                e
+            })?;
+
+        if !original_post.is_video {
+            return Ok(original_post.url.into());
+        }
+
+        self.create_video_url(url.as_str())
+            .await
+            .map(|url| url.into())
+    }
+
+    /// Try to embed a url
+    pub async fn try_embed_url(
+        &self,
+        ctx: &Context,
+        msg: &Message,
+        url: &Url,
+        loading_reaction: &mut Option<LoadingReaction>,
+    ) -> anyhow::Result<()> {
+        // This is sometimes TOO smart and finds data for invalid urls...
+        // TODO: Consider making parsing stricter
+        if let Some((subreddit, post_id)) = parse_post_url(url) {
+            // Try cache
+            let maybe_url = self
+                .cache
+                .get_if_fresh(&(subreddit.into(), post_id.into()))
+                .map(|el| el.data().clone());
+
+            let data = if let Some(value) = maybe_url.clone() {
+                Some(value)
             } else {
-                error!("Failed to parse reddit post url");
-                // TODO: Maybe expand this to an actual error to give better feedback
+                self.get_embed_url(url).await.ok()
+            };
+
+            if let Some(data) = data {
+                self.cache
+                    .insert((subreddit.into(), post_id.into()), data.clone());
+
+                // TODO: Consider downloading and reposting?
+                msg.channel_id.say(&ctx.http, data).await?;
+                if let Some(mut loading_reaction) = loading_reaction.take() {
+                    loading_reaction.send_ok();
+                }
             }
+        } else {
+            error!("failed to parse reddit post url");
+            // TODO: Maybe expand this to an actual error to give better feedback
         }
-
-        self.cache.trim();
-
         Ok(())
     }
+
+    /// Get a random post url for a subreddit
+    pub async fn get_random_post(&self, subreddit: &str) -> anyhow::Result<Option<String>> {
+        {
+            let urls = self.random_post_cache.get(subreddit);
+
+            if let Some(link) = urls.and_then(|v| {
+                let entry = v.value().clone();
+                if entry.0.elapsed() > Duration::from_secs(10 * 60) {
+                    return None;
+                }
+                entry.1.choose(&mut rand::thread_rng()).cloned()
+            }) {
+                let url = self.reddit_link_to_embed_url(&link).await?;
+                return Ok(Some(url));
+            }
+        }
+
+        info!("fetching reddit posts for '{}'", subreddit);
+        let mut maybe_url = None;
+        let list = self.reddit_client.get_subreddit(subreddit, 100).await?;
+        if let Some(listing) = list.data.into_listing() {
+            let posts: Vec<Arc<reddit::Link>> = listing
+                .children
+                .into_iter()
+                .filter_map(|child| child.data.into_link())
+                .filter_map(|post| {
+                    if let Some(mut post) = post.crosspost_parent_list {
+                        if post.is_empty() {
+                            None
+                        } else {
+                            Some(post.swap_remove(0).into())
+                        }
+                    } else {
+                        Some(post)
+                    }
+                })
+                .map(|link| Arc::new(*link))
+                .collect();
+
+            let maybe_link = posts.choose(&mut rand::thread_rng()).cloned();
+            if let Some(link) = maybe_link {
+                maybe_url = Some(self.reddit_link_to_embed_url(&link).await?);
+            }
+
+            self.random_post_cache
+                .insert(subreddit.to_string(), Arc::new((Instant::now(), posts)));
+        }
+
+        Ok(maybe_url)
+    }
+
+    /// Convert a reddit link to an embed url
+    async fn reddit_link_to_embed_url(&self, link: &reddit::Link) -> anyhow::Result<String> {
+        let post_url = format!("https://www.reddit.com{}", link.permalink);
+
+        // Discord should be able to embed non-18 stuff
+        if !link.over_18 {
+            return Ok(post_url);
+        }
+
+        match link.post_hint {
+            Some(reddit::PostHint::HostedVideo) => {
+                let url = self.create_video_url(&post_url).await?;
+                Ok(url.into())
+            }
+            _ => Ok(link.url.clone().into()),
+        }
+    }
+}
+
+impl CacheStatsProvider for RedditEmbedData {
+    fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
+        cache_stats_builder.publish_stat("reddit_embed", "link_cache", self.cache.len() as f32);
+        cache_stats_builder.publish_stat(
+            "reddit_embed",
+            "video_data_cache",
+            self.video_data_cache.len() as f32,
+        );
+        cache_stats_builder.publish_stat(
+            "reddit_embed",
+            "random_post_cache",
+            self.random_post_cache
+                .iter()
+                .map(|v| v.value().1.len())
+                .sum::<usize>() as f32,
+        );
+    }
+}
+
+impl std::fmt::Debug for RedditEmbedData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO: Replace with manual impl if/when reddit_client becomes debug
+        f.debug_struct("RedditEmbedData")
+            .field("reddit_tube_client", &self.reddit_tube_client)
+            .field("cache", &self.cache)
+            .finish()
+    }
+}
+
+impl Default for RedditEmbedData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// Broken in help:
+// #[required_permissions("ADMINISTRATOR")]
+
+#[command("reddit-embed")]
+#[description("Enable automaitc reddit embedding for this server")]
+#[usage("<enable/disable>")]
+#[example("enable")]
+#[min_args(1)]
+#[max_args(1)]
+#[checks(Admin, Enabled)]
+async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let data_lock = ctx.data.read().await;
+    let client_data = data_lock.get::<ClientDataKey>().unwrap();
+    let db = client_data.db.clone();
+    drop(data_lock);
+
+    let enable = match args.trimmed().current().expect("missing arg") {
+        "enable" => true,
+        "disable" => false,
+        arg => {
+            msg.channel_id
+                .say(
+                    &ctx.http,
+                    format!(
+                        "The argument '{}' is not recognized. Valid: enable, disable",
+                        arg
+                    ),
+                )
+                .await?;
+            return Ok(());
+        }
+    };
+
+    // TODO: Probably can unwrap if i add a check to the command
+    let guild_id = match msg.guild_id {
+        Some(id) => id,
+        None => {
+            msg.channel_id
+                .say(
+                    &ctx.http,
+                    "Missing server id. Are you in a server right now?",
+                )
+                .await?;
+            return Ok(());
+        }
+    };
+
+    let old_val = db.set_reddit_embed_enabled(guild_id, enable).await?;
+
+    let status_str = if enable { "enabled" } else { "disabled" };
+
+    if enable == old_val {
+        msg.channel_id
+            .say(
+                &ctx.http,
+                format!("Reddit embeds are already {} for this server", status_str),
+            )
+            .await?;
+    } else {
+        msg.channel_id
+            .say(
+                &ctx.http,
+                format!("Reddit embeds are now {} for this guild", status_str),
+            )
+            .await?;
+    }
+
+    Ok(())
 }
 
 /// Gets the subreddit and post id from a reddit url.
@@ -287,116 +450,4 @@ pub fn parse_post_url(url: &Url) -> Option<(&str, &str)> {
     // TODO: Should we reject urls with the wrong ending?
 
     Some((subreddit, post_id))
-}
-
-impl CacheStatsProvider for RedditEmbedData {
-    fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("reddit_embed", "link_cache", self.cache.len() as f32);
-    }
-}
-
-impl std::fmt::Debug for RedditEmbedData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO: Replace with manual impl if/when reddit_client becomes debug
-        f.debug_struct("RedditEmbedData")
-            .field("reddit_tube_client", &self.reddit_tube_client)
-            .field("cache", &self.cache)
-            .finish()
-    }
-}
-
-// Broken in help:
-// #[required_permissions("ADMINISTRATOR")]
-
-#[command("reddit-embed")]
-#[description("Enable automaitc reddit embedding for this server")]
-#[usage("<enable/disable>")]
-#[example("enable")]
-#[min_args(1)]
-#[max_args(1)]
-#[checks(Admin, Enabled)]
-async fn reddit_embed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let db = client_data.db.clone();
-    drop(data_lock);
-
-    let enable = match args.trimmed().current().unwrap() {
-        "enable" => true,
-        "disable" => false,
-        arg => {
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    format!(
-                        "The argument '{}' is not recognized. Valid: enable, disable",
-                        arg
-                    ),
-                )
-                .await?;
-            return Ok(());
-        }
-    };
-
-    // TODO: Probably can unwrap if i add a check to the command
-    let guild_id = match msg.guild_id {
-        Some(id) => id,
-        None => {
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    "Missing server id. Are you in a server right now?",
-                )
-                .await?;
-            return Ok(());
-        }
-    };
-
-    let (old_val, _set_new_data) = {
-        let store = db.get_store(DATA_STORE_NAME).await;
-        let key = guild_id.0.to_be_bytes();
-        let old_val: Option<bool> = match store.get(key).await {
-            Ok(v) => v,
-            Err(e) => {
-                error!(
-                    "Failed to get reddit-embed guild data for '{}': {}",
-                    guild_id, e
-                );
-                None
-            }
-        };
-
-        let set_new_data = match store.put(key, enable).await {
-            Ok(_) => true,
-            Err(e) => {
-                error!(
-                    "Failed to set reddit-embed guild data for '{}' to '{}': {}",
-                    guild_id, enable, e
-                );
-                false
-            }
-        };
-
-        (old_val.unwrap_or(false), set_new_data)
-    };
-
-    let status_str = if enable { "enabled" } else { "disabled" };
-
-    if enable == old_val {
-        msg.channel_id
-            .say(
-                &ctx.http,
-                format!("Reddit embeds are already {} for this server", status_str),
-            )
-            .await?;
-    } else {
-        msg.channel_id
-            .say(
-                &ctx.http,
-                format!("Reddit embeds are now {} for this guild", status_str),
-            )
-            .await?;
-    }
-
-    Ok(())
 }

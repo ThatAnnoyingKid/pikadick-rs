@@ -1,27 +1,16 @@
 use crate::{
-    checks::ENABLED_CHECK,
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
     util::{
-        LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
     ClientDataKey,
 };
 use anyhow::Context as _;
-use serenity::{
-    builder::CreateEmbed,
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
-};
+use serenity::builder::CreateEmbed;
 use std::sync::Arc;
 use tracing::{
     error,
@@ -45,18 +34,38 @@ impl Stats {
 
         if let Some(season) = self.overwolf_player.current_season_best_region.as_ref() {
             e.field("Current Rank", &season.rank_name, true)
-                .field("Current MMR", season.mmr, true)
-                .field("Seasonal Ranked K/D", format!("{:.2}", season.kd), true)
-                .field("Seasonal Ranked Win %", season.win_pct, true)
-                .field("Seasonal # of Ranked Matches", season.matches, true);
+                .field("Current MMR", itoa::Buffer::new().format(season.mmr), true)
+                .field("Seasonal Ranked K/D", &format!("{:.2}", season.kd), true)
+                .field(
+                    "Seasonal Ranked Win %",
+                    ryu::Buffer::new().format(season.win_pct),
+                    true,
+                )
+                .field(
+                    "Seasonal # of Ranked Matches",
+                    itoa::Buffer::new().format(season.matches),
+                    true,
+                );
         }
 
         if let Some(season) = self.overwolf_player.get_current_casual_season() {
             e.field("Current Casual Rank", &season.rank_name, true)
-                .field("Current Casual MMR", season.mmr, true)
-                .field("Seasonal Casual K/D", format!("{:.2}", season.kd), true)
-                .field("Seasonal Casual Win %", season.win_pct, true)
-                .field("Seasonal # of Casual Matches", season.matches, true);
+                .field(
+                    "Current Casual MMR",
+                    itoa::Buffer::new().format(season.mmr),
+                    true,
+                )
+                .field("Seasonal Casual K/D", &format!("{:.2}", season.kd), true)
+                .field(
+                    "Seasonal Casual Win %",
+                    ryu::Buffer::new().format(season.win_pct),
+                    true,
+                )
+                .field(
+                    "Seasonal # of Casual Matches",
+                    itoa::Buffer::new().format(season.matches),
+                    true,
+                );
         }
 
         // Best Rank/MMR lifetime stats are bugged in Overwolf.
@@ -82,7 +91,7 @@ impl Stats {
             .or_else(|| overwolf_best_mmr.map(|best_mmr| best_mmr.name.as_str()));
 
         if let Some(max_mmr) = max_mmr {
-            e.field("Best MMR", max_mmr, true);
+            e.field("Best MMR", itoa::Buffer::new().format(max_mmr), true);
         }
 
         if let Some(max_rank) = max_rank {
@@ -92,7 +101,7 @@ impl Stats {
         if let Some(lifetime_ranked_kd) = self.overwolf_player.get_lifetime_ranked_kd() {
             e.field(
                 "Lifetime Ranked K/D",
-                format!("{:.2}", lifetime_ranked_kd),
+                &format!("{:.2}", lifetime_ranked_kd),
                 true,
             );
         }
@@ -100,17 +109,21 @@ impl Stats {
         if let Some(lifetime_ranked_win_pct) = self.overwolf_player.get_lifetime_ranked_win_pct() {
             e.field(
                 "Lifetime Ranked Win %",
-                format!("{:.2}", lifetime_ranked_win_pct),
+                &format!("{:.2}", lifetime_ranked_win_pct),
                 true,
             );
         }
 
-        e.field("Lifetime K/D", self.overwolf_player.lifetime_stats.kd, true)
-            .field(
-                "Lifetime Win %",
-                self.overwolf_player.lifetime_stats.win_pct,
-                true,
-            );
+        e.field(
+            "Lifetime K/D",
+            ryu::Buffer::new().format(self.overwolf_player.lifetime_stats.kd),
+            true,
+        )
+        .field(
+            "Lifetime Win %",
+            ryu::Buffer::new().format(self.overwolf_player.lifetime_stats.win_pct),
+            true,
+        );
 
         // Old Non-Overwolf API
 
@@ -121,7 +134,7 @@ impl Stats {
 
         // Overwolf API does not send non-svg rank thumbnails
         if let Some(thumb) = self.profile.current_mmr_image() {
-            e.thumbnail(thumb);
+            e.thumbnail(thumb.as_str());
         }
 
         e
@@ -223,57 +236,60 @@ impl CacheStatsProvider for R6TrackerClient {
     }
 }
 
-#[command]
-#[description("Get r6 stats for a user from r6tracker")]
-#[usage("<player>")]
-#[example("KingGeorge")]
-#[bucket("r6tracker")]
-#[min_args(1)]
-#[max_args(1)]
-#[checks(Enabled)]
-async fn r6tracker(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let client = client_data.r6tracker_client.clone();
-    drop(data_lock);
+/// Options for r6tracker
+#[derive(Debug, pikadick_slash_framework::FromOptions)]
+struct R6TrackerOptions {
+    /// The user name
+    name: String,
+}
 
-    let name = args.trimmed().current().expect("missing name");
+/// Create a slash command
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
+    pikadick_slash_framework::CommandBuilder::new()
+        .name("r6tracker")
+        .description("Get r6 stats for a user from r6tracker")
+        .argument(
+            pikadick_slash_framework::ArgumentParamBuilder::new()
+                .name("name")
+                .description("The name of the user")
+                .kind(pikadick_slash_framework::ArgumentKind::String)
+                .required(true)
+                .build()?,
+        )
+        .on_process(|ctx, interaction, args: R6TrackerOptions| async move {
+            let data_lock = ctx.data.read().await;
+            let client_data = data_lock
+                .get::<ClientDataKey>()
+                .expect("missing client data");
+            let client = client_data.r6tracker_client.clone();
+            drop(data_lock);
 
-    info!("Getting r6 stats for '{}' using R6Tracker", name);
+            info!("Getting r6 stats for '{}' using R6Tracker", args.name);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
+            let result = client
+                .get_stats(&args.name)
+                .await
+                .with_context(|| format!("failed to get r6tracker stats for '{}'", args.name));
 
-    match client
-        .get_stats(name)
-        .await
-        .context("failed to get r6tracker stats")
-    {
-        Ok(entry) => {
-            loading.send_ok();
-            msg.channel_id
-                .send_message(&ctx.http, |m| {
-                    let stats = entry.data();
-
-                    match stats {
-                        Some(stats) => m.embed(|e| stats.populate_embed(e)),
-                        None => m.content("No Results"),
-                    }
+            interaction
+                .create_interaction_response(&ctx.http, |res| {
+                    res.interaction_response_data(|res| {
+                        match result.as_ref().map(|entry| entry.data()) {
+                            Ok(Some(stats)) => res.embed(|e| stats.populate_embed(e)),
+                            Ok(None) => res.content("No Results"),
+                            Err(e) => {
+                                error!("{:?}", e);
+                                res.content(format!("{:?}", e))
+                            }
+                        }
+                    })
                 })
                 .await?;
-        }
-        Err(e) => {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
 
-            error!(
-                "Failed to get r6 stats for '{}' using r6tracker: {:?}",
-                name, e
-            );
-        }
-    }
+            client.search_cache.trim();
 
-    client.search_cache.trim();
-
-    Ok(())
+            Ok(())
+        })
+        .build()
+        .context("failed to build r6tracker command")
 }

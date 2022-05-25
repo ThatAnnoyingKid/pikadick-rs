@@ -1,254 +1,118 @@
+mod disabled_commands;
+mod kv_store;
+pub mod model;
+mod reddit_embed;
+mod tic_tac_toe;
+mod tiktok_embed;
+
+pub use self::tic_tac_toe::{
+    TicTacToeCreateGameError,
+    TicTacToeTryMoveError,
+    TicTacToeTryMoveResponse,
+};
 use anyhow::Context;
-use serenity::model::prelude::*;
-use sqlx::{
-    sqlite::SqliteConnectOptions,
-    ConnectOptions,
-    SqlitePool,
-    Transaction,
+use camino::{
+    Utf8Path,
+    Utf8PathBuf,
 };
+use once_cell::sync::Lazy;
 use std::{
-    collections::HashSet,
-    path::Path,
+    os::raw::c_int,
+    sync::Arc,
+};
+use tracing::{
+    error,
+    warn,
 };
 
-/// Bincode Error type-alias
-pub type BincodeError = Box<bincode::ErrorKind>;
+// Setup
+const SETUP_TABLES_SQL: &str = include_str!("../sql/setup_tables.sql");
 
-/// Turn a prefix + key into  a key for the k/v store.
-///
-/// # Spec
-/// `Raw key = b"{prefix}0{key}"`
-fn make_key(prefix: &[u8], key: &[u8]) -> Vec<u8> {
-    let mut raw_key = prefix.to_vec();
-    raw_key.reserve(1 + key.len());
-    raw_key.push(0);
-    raw_key.extend(key);
+static LOGGER_INIT: Lazy<Result<(), Arc<rusqlite::Error>>> = Lazy::new(|| {
+    // Safety:
+    // 1. `sqlite_logger_func` is threadsafe.
+    // 2. This is called only once.
+    // 3. This is called before any sqlite functions are used
+    // 4. sqlite functions cannot be used until the logger initializes.
+    unsafe { rusqlite::trace::config_log(Some(sqlite_logger_func)).map_err(Arc::new) }
+});
 
-    raw_key
+fn sqlite_logger_func(error_code: c_int, msg: &str) {
+    warn!("sqlite error code ({}): {}", error_code, msg);
 }
 
 /// The database
 #[derive(Clone, Debug)]
 pub struct Database {
-    db: SqlitePool,
+    db: async_rusqlite::Database,
 }
 
 impl Database {
     //// Make a new [`Database`].
-    pub async fn new(db_path: &Path, create_if_missing: bool) -> anyhow::Result<Self> {
-        let mut connect_options = SqliteConnectOptions::new()
-            .filename(&db_path)
-            .create_if_missing(create_if_missing);
-        connect_options.disable_statement_logging();
-        let db = SqlitePool::connect_with(connect_options)
+    ///
+    /// # Safety
+    /// This must be called before any other sqlite functions are called.
+    pub async unsafe fn new<P>(path: P, create_if_missing: bool) -> anyhow::Result<Self>
+    where
+        P: Into<Utf8PathBuf>,
+    {
+        let path = path.into();
+        tokio::task::spawn_blocking(move || Self::blocking_new(&path, create_if_missing))
             .await
-            .context("failed to open database")?;
+            .context("failed to join tokio task")?
+    }
 
-        let mut txn = db.begin().await?;
-        sqlx::query!(
-            "
-CREATE TABLE IF NOT EXISTS kv_store (
-    key BLOB PRIMARY KEY,
-    value BLOB NOT NULL
-);
-            "
-        )
-        .execute(&mut txn)
-        .await
-        .context("failed to create kv_store table")?;
+    /// Make a new [`Database`] in a blocking manner.
+    ///
+    /// # Safety
+    /// This must be called before any other sqlite functions are called.
+    pub unsafe fn blocking_new<P>(path: P, create_if_missing: bool) -> anyhow::Result<Self>
+    where
+        P: AsRef<Utf8Path>,
+    {
+        LOGGER_INIT
+            .clone()
+            .context("failed to init sqlite logger")?;
 
-        sqlx::query!(
-            "
-CREATE TABLE IF NOT EXISTS guild_info (
-    id INTEGER PRIMARY KEY,
-    disabled_commands BLOB
-);
-            "
-        )
-        .execute(&mut txn)
-        .await
-        .context("failed to create guild_info table")?;
-
-        txn.commit().await.context("failed to set up database")?;
+        let db = async_rusqlite::Database::blocking_open(path.as_ref(), create_if_missing, |db| {
+            db.execute_batch(SETUP_TABLES_SQL)
+                .context("failed to setup database")?;
+            Ok(())
+        })
+        .context("failed to open database")?;
 
         Ok(Database { db })
     }
 
-    /// Gets the store by name.
-    pub async fn get_store(&self, name: &str) -> Store {
-        Store::new(self.db.clone(), name.into())
+    /// Access the db
+    async fn access_db<F, R>(&self, func: F) -> anyhow::Result<R>
+    where
+        F: FnOnce(&mut rusqlite::Connection) -> R + Send + 'static,
+        R: Send + 'static,
+    {
+        Ok(self.db.access_db(move |db| func(db)).await?)
     }
 
-    /// Sets a command as disabled if disabled is true
-    pub async fn disable_command(
-        &self,
-        id: GuildId,
-        cmd: &str,
-        disable: bool,
-    ) -> anyhow::Result<()> {
-        self.create_default_guild_info(id).await?;
-
-        let txn = self.db.begin().await?;
-        let (mut disabled_commands, mut txn) = get_disabled_commands(txn, id).await?;
-
-        if disable {
-            disabled_commands.insert(cmd.to_string());
-        } else {
-            disabled_commands.remove(cmd);
-        }
-
-        let id = id.0 as i64;
-        let data = bincode::serialize(&disabled_commands)?;
-
-        sqlx::query!(
-            "
-UPDATE guild_info
-SET disabled_commands = ?
-WHERE id = ?;
-            ",
-            data,
-            id
-        )
-        .execute(&mut txn)
-        .await?;
-
-        txn.commit().await?;
-
-        Ok(())
-    }
-
-    /// Get disabled commands as a set
-    pub async fn get_disabled_commands(&self, id: GuildId) -> anyhow::Result<HashSet<String>> {
-        self.create_default_guild_info(id).await?;
-        let txn = self.db.begin().await?;
-        let (data, txn) = get_disabled_commands(txn, id)
-            .await
-            .context("failed to get disabled commands")?;
-        txn.commit().await?;
-
-        Ok(data)
-    }
-
-    /// Create the default guild entry for the given GuildId
-    async fn create_default_guild_info(&self, id: GuildId) -> anyhow::Result<()> {
-        let id = id.0 as i64;
-        let mut txn = self
+    /// Close the db
+    pub async fn close(&self) -> anyhow::Result<()> {
+        // Failing to run shutdown commands is not critical and should not prevent shutdown.
+        if let Err(e) = self
             .db
-            .begin()
+            .access_db(|db| {
+                db.execute("PRAGMA OPTIMIZE;", [])?;
+                db.execute("VACUUM;", [])
+            })
             .await
-            .context("failed to start db transaction")?;
-
-        // SQLite doesn't support u64, only i64. We cast to i64 to cope,
-        // but the id will not match the actual id of the server.
-        // This is ok because I'm pretty sure using 'as' is essentially a transmute here.
-        // In the future, it might be better to use a byte array or an actual transmute
-        sqlx::query!(
-            "
-INSERT OR IGNORE INTO guild_info (id, disabled_commands) VALUES (?, NULL);
-            ",
-            id
-        )
-        .execute(&mut txn)
-        .await?;
-
-        txn.commit()
+            .context("failed to access db")
+            .and_then(|v| v.context("failed to execute shutdown commands"))
+        {
+            error!("{}", e);
+        }
+        self.db
+            .close()
             .await
-            .context("failed to create default guild info")?;
-
-        Ok(())
-    }
-}
-
-async fn get_disabled_commands(
-    mut txn: Transaction<'_, sqlx::Sqlite>,
-    id: GuildId,
-) -> anyhow::Result<(HashSet<String>, Transaction<'_, sqlx::Sqlite>)> {
-    let id = id.0 as i64;
-    let entry = sqlx::query!(
-        "
-SELECT disabled_commands FROM guild_info WHERE id = ?;
-            ",
-        id
-    )
-    .fetch_one(&mut txn)
-    .await?;
-
-    let data = if entry.disabled_commands.is_empty() {
-        HashSet::new()
-    } else {
-        bincode::deserialize(&entry.disabled_commands)
-            .context("failed to decode disabled commands")?
-    };
-
-    Ok((data, txn))
-}
-
-/// K/V Store
-#[derive(Debug)]
-pub struct Store {
-    db: SqlitePool,
-    prefix: String,
-}
-
-impl Store {
-    fn new(db: SqlitePool, prefix: String) -> Self {
-        Store { db, prefix }
-    }
-
-    /// Save a key in the store
-    pub async fn get<K: AsRef<[u8]>, V: serde::de::DeserializeOwned>(
-        &self,
-        key: K,
-    ) -> anyhow::Result<Option<V>> {
-        let key = key.as_ref();
-
-        let key = make_key(self.prefix.as_ref(), key);
-
-        let entry = sqlx::query!(
-            "
-SELECT * FROM kv_store WHERE key = ?;
-            ",
-            key
-        )
-        .fetch_optional(&self.db)
-        .await?;
-
-        let bytes = match entry {
-            Some(b) => b.value,
-            None => {
-                return Ok(None);
-            }
-        };
-
-        let data = bincode::deserialize(&bytes).context("failed to decode value")?;
-
-        Ok(Some(data))
-    }
-
-    /// Put a key in the store
-    pub async fn put<K: AsRef<[u8]>, V: serde::Serialize>(
-        &self,
-        key: K,
-        data: V,
-    ) -> anyhow::Result<()> {
-        let key = key.as_ref();
-
-        let key = make_key(self.prefix.as_ref(), key);
-        let value = bincode::serialize(&data).context("failed to serialize value")?;
-
-        let mut txn = self.db.begin().await?;
-        sqlx::query!(
-            "
-REPLACE INTO kv_store (key, value)
-VALUES(?, ?);
-            ",
-            key,
-            value,
-        )
-        .execute(&mut txn)
-        .await?;
-
-        txn.commit().await?;
+            .context("failed to send close request to db")?;
+        self.db.join().await.context("failed to join db thread")?;
 
         Ok(())
     }
