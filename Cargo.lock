@@ -2473,6 +2473,7 @@ dependencies = [
  "fslock",
  "reqwest",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
