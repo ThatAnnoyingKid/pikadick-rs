@@ -51,7 +51,7 @@ fn main() -> anyhow::Result<()> {
 
 /// The real entry point
 fn real_main(options: Options) -> anyhow::Result<()> {
-    ensure!(options.release ^ options.profile.is_some(), "the --release and --profile flags aure mutually exclusive");
+    ensure!(!(options.release && options.profile.is_some()), "the `--release` and `--profile` flags aure mutually exclusive");
     
     println!("Fetching cargo metadata...");
     let metadata = MetadataCommand::new()
@@ -119,8 +119,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         );
         if let Some(value) = value {
             bail!(
-                "`CMAKE_TOOLCHAIN_FILE` is already specified in the environment with value `{}`",
-                value
+                "`CMAKE_TOOLCHAIN_FILE` is already specified in the environment with value `{value}`"
             );
         }
     }
