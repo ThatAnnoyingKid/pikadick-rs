@@ -30,9 +30,6 @@ struct Options {
     #[argh(switch, long = "vv", description = "very verbose")]
     very_verbose: bool,
 
-    #[argh(switch, description = "whether to run strip on the binary")]
-    use_strip: bool,
-
     #[argh(
         option,
         short = 'c',
@@ -43,17 +40,10 @@ struct Options {
 }
 
 /// The entry point
-fn main() {
+fn main() -> anyhow::Result<()> {
     let options: Options = argh::from_env();
-    let code = match real_main(options) {
-        Ok(()) => 0,
-        Err(e) => {
-            eprintln!("{:?}", e);
-            1
-        }
-    };
-
-    std::process::exit(code);
+    real_main(options)?;
+    Ok(())
 }
 
 /// The real entry point
@@ -86,8 +76,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         .target(options.target.as_str())
         .linker(target_config.linker.as_str())
         .release(options.release)
-        .very_verbose(options.very_verbose)
-        .use_strip(options.use_strip);
+        .very_verbose(options.very_verbose);
 
     if let Some(features) = options.features.as_deref() {
         command_builder.features(features);
@@ -128,6 +117,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         .build_command()
         .context("failed to build command")?;
 
+    
     println!("Compiling...");
     let status = command.status().context("failed to call compile command")?;
     let code = status.code();
@@ -164,9 +154,6 @@ pub struct CrossCompileCommandBuilder {
     /// The linker
     pub linker: Option<Box<str>>,
 
-    /// Whether to strip the final binary
-    pub use_strip: bool,
-
     /// This is some if the builder errored.
     pub error: Option<anyhow::Error>,
 }
@@ -181,7 +168,6 @@ impl CrossCompileCommandBuilder {
             very_verbose: false,
             environment_variables: HashMap::with_capacity(16),
             linker: None,
-            use_strip: false,
 
             error: None,
         }
@@ -240,12 +226,6 @@ impl CrossCompileCommandBuilder {
         self
     }
 
-    /// Choose whether to strip the final binary
-    pub fn use_strip(&mut self, use_strip: bool) -> &mut Self {
-        self.use_strip = use_strip;
-        self
-    }
-
     /// Build a command to execute which will perform the cross compile
     pub fn build_command(&mut self) -> anyhow::Result<Command> {
         // Take all data from self, leaving it empty
@@ -255,7 +235,6 @@ impl CrossCompileCommandBuilder {
         let very_verbose = self.very_verbose;
         let environment_variables = std::mem::take(&mut self.environment_variables);
         let linker = self.linker.take();
-        let use_strip = self.use_strip;
         let error = self.error.take();
 
         // Return error if the builder errored out somewhere
@@ -272,11 +251,6 @@ impl CrossCompileCommandBuilder {
         rust_flags.push_str("-Clinker=");
         rust_flags.push_str(&*linker);
         rust_flags.push(' ');
-        if use_strip {
-            // TODO: allow user to specify strip level
-            rust_flags.push_str("-Cstrip=symbols");
-            rust_flags.push(' ');
-        }
 
         // Init cargo build command
         let mut command = Command::new("cargo");
