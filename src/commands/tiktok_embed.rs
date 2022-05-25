@@ -20,17 +20,15 @@ use anyhow::{
     ensure,
     Context as _,
 };
+use camino::{
+    Utf8Path,
+    Utf8PathBuf,
+};
 use serenity::{
     model::prelude::*,
     prelude::*,
 };
-use std::{
-    path::{
-        Path,
-        PathBuf,
-    },
-    sync::Arc,
-};
+use std::sync::Arc;
 use tokio_stream::StreamExt;
 use tracing::{
     info,
@@ -52,7 +50,7 @@ const ENCODER_PREFERENCE_LIST: &[&str] = &[
     "libx264rgb",
 ];
 
-type VideoDownloadRequestMap = Arc<RequestMap<String, Result<Arc<PathBuf>, ArcAnyhowError>>>;
+type VideoDownloadRequestMap = Arc<RequestMap<String, Result<Arc<Utf8Path>, ArcAnyhowError>>>;
 
 /// Calculate the target bitrate.
 ///
@@ -78,7 +76,7 @@ pub struct TikTokData {
     pub post_page_cache: TimedCache<String, tiktok::PostPage>,
 
     /// The path to tiktok's cache dir
-    video_download_cache_path: PathBuf,
+    video_download_cache_path: Utf8PathBuf,
 
     /// The request map for making requests for video downloads.
     video_download_request_map: VideoDownloadRequestMap,
@@ -88,7 +86,11 @@ pub struct TikTokData {
 
 impl TikTokData {
     /// Make a new [`TikTokData`].
-    pub async fn new(cache_dir: &Path, encoder_task: EncoderTask) -> anyhow::Result<Self> {
+    pub async fn new<P>(cache_dir: P, encoder_task: EncoderTask) -> anyhow::Result<Self>
+    where
+        P: AsRef<Utf8Path>,
+    {
+        let cache_dir = cache_dir.as_ref();
         let video_download_cache_path = cache_dir.join("tiktok");
 
         // TODO: Expand into proper filecache manager
@@ -163,7 +165,7 @@ impl TikTokData {
         format: &str,
         url: &str,
         video_duration: u64,
-    ) -> anyhow::Result<Arc<PathBuf>> {
+    ) -> anyhow::Result<Arc<Utf8Path>> {
         self.video_download_request_map
             .get_or_fetch(id.to_string(), || {
                 let client = self.client.client.clone();
@@ -186,7 +188,7 @@ impl TikTokData {
                     match tokio::fs::metadata(&reencoded_file_path).await {
                         Ok(_metadata) => {
                             // The reencoded file is present. Use it.
-                            return Ok(Arc::new(reencoded_file_path));
+                            return Ok(Arc::from(reencoded_file_path));
                         }
                         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
                             // The transcoded file is not present.
@@ -259,7 +261,7 @@ impl TikTokData {
                             info!(
                                 "re-encoding tiktok video `{}` to `{}` \
                                 @ video bitrate {}",
-                                file_path.display(),
+                                file_path,
                                 reencoded_file_path_tmp_1.display(),
                                 target_bitrate
                             );
@@ -375,9 +377,9 @@ impl TikTokData {
 
                         result.map_err(ArcAnyhowError::new)?;
 
-                        Ok(Arc::new(reencoded_file_path))
+                        Ok(Arc::from(reencoded_file_path))
                     } else {
-                        Ok(Arc::new(file_path))
+                        Ok(Arc::from(file_path))
                     }
                 }
             })
@@ -420,7 +422,7 @@ impl TikTokData {
             .context("failed to download tiktok video")?;
 
         msg.channel_id
-            .send_message(&ctx.http, |m| m.add_file(&*video_path))
+            .send_message(&ctx.http, |m| m.add_file(video_path.as_std_path()))
             .await?;
 
         if let Some(mut loading_reaction) = loading_reaction.take() {
