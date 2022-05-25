@@ -350,7 +350,7 @@ async fn help(
     reddit,
     leave,
     stop,
-    sauce_nao,
+    sauce_nao
 )]
 struct General;
 
