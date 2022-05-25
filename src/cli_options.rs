@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use camino::Utf8PathBuf;
 
 /// CLI Options
 #[derive(Debug, argh::FromArgs)]
@@ -7,7 +7,7 @@ pub struct CliOptions {
     #[argh(
         option,
         description = "the path to the config",
-        default = "PathBuf::from(\"./config.toml\")"
+        default = "Utf8PathBuf::from(\"./config.toml\")"
     )]
-    pub config: PathBuf,
+    pub config: Utf8PathBuf,
 }

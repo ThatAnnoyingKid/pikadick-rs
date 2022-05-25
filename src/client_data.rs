@@ -120,7 +120,7 @@ impl ClientData {
     /// Init this client data
     pub async fn init(
         shard_manager: Arc<Mutex<ShardManager>>,
-        config: Config,
+        config: Arc<Config>,
         db: Database,
     ) -> anyhow::Result<Self> {
         // TODO: Standardize an async init system with allocated data per command somehow. Maybe boxes?
@@ -158,7 +158,7 @@ impl ClientData {
 
             db,
 
-            config: Arc::new(config),
+            config,
         })
     }
 

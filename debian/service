@@ -1,5 +1,7 @@
 [Unit]
 Description=The Pikadick discord bot
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 ExecStart=/usr/bin/pikadick --config /etc/pikadick/config.toml

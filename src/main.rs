@@ -28,6 +28,7 @@ pub mod commands;
 pub mod config;
 pub mod database;
 pub mod logger;
+pub mod setup;
 pub mod util;
 
 use crate::{
@@ -37,7 +38,6 @@ use crate::{
     config::{
         ActivityKind,
         Config,
-        Severity,
     },
     database::{
         model::TikTokEmbedFlags,
@@ -82,7 +82,6 @@ use serenity::{
 use songbird::SerenityInit;
 use std::{
     collections::HashSet,
-    path::Path,
     sync::Arc,
     time::{
         Duration,
@@ -482,161 +481,8 @@ async fn process_dispatch_error_future<'fut>(
     };
 }
 
-/// Load a config.
-///
-/// This prints to the stderr directly.
-/// It is intended to be called BEFORE the loggers are set up.
-fn load_config(path: &Path) -> anyhow::Result<Config> {
-    eprintln!("loading `{}`...", path.display());
-    let mut config = Config::load_from_path(path)
-        .with_context(|| format!("failed to load `{}`", path.display()))?;
-
-    eprintln!("validating config...");
-    let errors = config.validate();
-    let mut error_count = 0;
-    for e in errors {
-        match e.severity() {
-            Severity::Warn => {
-                eprintln!("validation warning: {}", e.error());
-            }
-            Severity::Error => {
-                eprintln!("validation error: {}", e.error());
-                error_count += 1;
-            }
-        }
-    }
-
-    if error_count != 0 {
-        bail!("validation failed with {} errors.", error_count);
-    }
-
-    Ok(config)
-}
-
-/// Pre-main setup
-fn setup(
-    cli_options: CliOptions,
-) -> anyhow::Result<(
-    tokio::runtime::Runtime,
-    Config,
-    bool,
-    AsyncLockFile,
-    WorkerGuard,
-)> {
-    eprintln!("starting tokio runtime...");
-    let tokio_rt = RuntimeBuilder::new_multi_thread()
-        .enable_all()
-        .thread_name("pikadick-tokio-worker")
-        .build()
-        .context("failed to start tokio runtime")?;
-
-    let config = load_config(&cli_options.config).context("failed to load config")?;
-
-    eprintln!("opening data directory...");
-    let data_dir_metadata = match std::fs::metadata(&config.data_dir) {
-        Ok(metadata) => Some(metadata),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
-        Err(e) => {
-            return Err(e).context("failed to get metadata for the data dir");
-        }
-    };
-
-    let missing_data_dir = data_dir_metadata.is_none();
-    match data_dir_metadata.as_ref() {
-        Some(metadata) => {
-            if metadata.is_dir() {
-                eprintln!("data directory already exists.");
-            } else if metadata.is_file() {
-                bail!("failed to create or open data directory, the path is a file");
-            }
-        }
-        None => {
-            eprintln!("data directory does not exist. creating...");
-            std::fs::create_dir_all(&config.data_dir).context("failed to create data directory")?;
-        }
-    }
-
-    eprintln!("creating lockfile...");
-    let lockfile_path = config.data_dir.join("pikadick.lock");
-    let lockfile =
-        AsyncLockFile::open_blocking(&lockfile_path).context("failed to open lockfile")?;
-    let lockfile_locked = lockfile
-        .try_lock_with_pid_blocking()
-        .context("failed to try to lock the lockfile")?;
-    ensure!(lockfile_locked, "another process has locked the lockfile");
-
-    std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
-    std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
-
-    eprintln!("setting up logger...");
-    let worker_guard = tokio_rt
-        .block_on(async { crate::logger::setup(&config) })
-        .context("failed to initialize logger")?;
-
-    eprintln!();
-    Ok((tokio_rt, config, missing_data_dir, lockfile, worker_guard))
-}
-
-/// The main entry.
-///
-/// Calls `real_main` and prints the error, exiting with 1 of needed.
-/// This allows more things to drop correctly.
-/// This also calls setup operations like loading config and setting up the tokio runtime,
-/// logging errors to the stderr instead of the loggers, which are not initialized yet.
-fn main() {
-    let cli_options = argh::from_env();
-    let (tokio_rt, config, missing_data_dir, lockfile, worker_guard) = match setup(cli_options) {
-        Ok(data) => data,
-        Err(e) => {
-            eprintln!("{:?}", e);
-            drop(e);
-
-            std::process::exit(1);
-        }
-    };
-
-    let exit_code = match real_main(tokio_rt, config, missing_data_dir, lockfile, worker_guard) {
-        Ok(()) => 0,
-        Err(e) => {
-            error!("{:?}", e);
-            1
-        }
-    };
-
-    std::process::exit(exit_code);
-}
-
-/// The actual entry point
-fn real_main(
-    tokio_rt: tokio::runtime::Runtime,
-    config: Config,
-    missing_data_dir: bool,
-    lockfile: AsyncLockFile,
-    _worker_guard: WorkerGuard,
-) -> anyhow::Result<()> {
-    // We spawn this is a seperate thread/task as the main thread does not have enough stack space
-    let _enter_guard = tokio_rt.enter();
-    let ret = tokio_rt.block_on(tokio::spawn(async_main(config, missing_data_dir)));
-
-    let shutdown_start = Instant::now();
-    info!(
-        "shutting down tokio runtime (shutdown timeout is {:?})...",
-        TOKIO_RT_SHUTDOWN_TIMEOUT
-    );
-    tokio_rt.shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
-    info!("shutdown tokio runtime in {:?}", shutdown_start.elapsed());
-
-    info!("unlocking lockfile...");
-    lockfile
-        .unlock_blocking()
-        .context("failed to unlock lockfile")?;
-
-    info!("successful shutdown");
-    ret?
-}
-
 /// Set up a serenity client
-async fn setup_client(config: &Config) -> anyhow::Result<Client> {
+async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     // Setup slash framework
     let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
         .check(self::checks::enabled::create_slash_check)
@@ -709,20 +555,150 @@ async fn setup_client(config: &Config) -> anyhow::Result<Client> {
     Ok(client)
 }
 
-/// The async entry
-async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<()> {
-    info!("opening database...");
-    let db_path = config.data_dir.join("pikadick.sqlite");
-    // TODO: Is there a good reason to not remake the db if it is missing?
-    let db = Database::new(&db_path, true) // missing_data_dir
-        .await
-        .context("failed to open database")?;
+/// Data from the setup function
+struct SetupData {
+    tokio_rt: tokio::runtime::Runtime,
+    config: Arc<Config>,
+    database: Database,
+    lock_file: AsyncLockFile,
+    worker_guard: WorkerGuard,
+}
 
-    let mut client = setup_client(&config)
+/// Pre-main setup
+fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
+    eprintln!("starting tokio runtime...");
+    let tokio_rt = RuntimeBuilder::new_multi_thread()
+        .enable_all()
+        .thread_name("pikadick-tokio-worker")
+        .build()
+        .context("failed to start tokio runtime")?;
+
+    let config = crate::setup::load_config(&cli_options.config)
+        .map(Arc::new)
+        .context("failed to load config")?;
+
+    eprintln!("opening data directory...");
+    let data_dir_metadata = match std::fs::metadata(&config.data_dir) {
+        Ok(metadata) => Some(metadata),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+        Err(e) => {
+            return Err(e).context("failed to get metadata for the data dir");
+        }
+    };
+
+    let _missing_data_dir = data_dir_metadata.is_none();
+    match data_dir_metadata.as_ref() {
+        Some(metadata) => {
+            if metadata.is_dir() {
+                eprintln!("data directory already exists.");
+            } else if metadata.is_file() {
+                bail!("failed to create or open data directory, the path is a file");
+            }
+        }
+        None => {
+            eprintln!("data directory does not exist. creating...");
+            std::fs::create_dir_all(&config.data_dir).context("failed to create data directory")?;
+        }
+    }
+
+    eprintln!("creating lockfile...");
+    let lock_file_path = config.data_dir.join("pikadick.lock");
+    let lock_file = AsyncLockFile::open_blocking(lock_file_path.as_std_path())
+        .context("failed to open lockfile")?;
+    let lock_file_locked = lock_file
+        .try_lock_with_pid_blocking()
+        .context("failed to try to lock the lockfile")?;
+    ensure!(lock_file_locked, "another process has locked the lockfile");
+
+    std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
+    std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
+
+    // TODO: Init db
+    eprintln!("opening database...");
+    let database_path = config.data_dir.join("pikadick.sqlite");
+
+    // Safety: This is called before any other sqlite functions.
+    // TODO: Is there a good reason to not remake the db if it is missing?
+    let database = unsafe {
+        Database::blocking_new(&database_path, true) // missing_data_dir
+            .context("failed to open database")?
+    };
+
+    // Everything past here is assumed to need tokio
+    let _enter_guard = tokio_rt.handle().enter();
+
+    eprintln!("setting up logger...");
+    let worker_guard = crate::logger::setup(&config).context("failed to initialize logger")?;
+
+    eprintln!();
+    Ok(SetupData {
+        tokio_rt,
+        config,
+        database,
+        lock_file,
+        worker_guard,
+    })
+}
+
+/// The main entry.
+///
+/// Sets up the program and calls `real_main`.
+/// This allows more things to drop correctly.
+/// This also calls setup operations like loading config and setting up the tokio runtime,
+/// logging errors to the stderr instead of the loggers, which are not initialized yet.
+fn main() -> anyhow::Result<()> {
+    // This line MUST run first.
+    // It is needed to exit early if the options are invalid,
+    // and this will NOT run destructors if it does so.
+    let cli_options = argh::from_env();
+
+    let setup_data = setup(cli_options)?;
+    real_main(setup_data)?;
+    Ok(())
+}
+
+/// The actual entry point
+fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
+    // We spawn this is a seperate thread/task as the main thread does not have enough stack space
+    let _enter_guard = setup_data.tokio_rt.enter();
+    let ret = setup_data.tokio_rt.block_on(tokio::spawn(async_main(
+        setup_data.config,
+        setup_data.database,
+    )));
+
+    let shutdown_start = Instant::now();
+    info!(
+        "shutting down tokio runtime (shutdown timeout is {:?})...",
+        TOKIO_RT_SHUTDOWN_TIMEOUT
+    );
+    setup_data
+        .tokio_rt
+        .shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
+    info!("shutdown tokio runtime in {:?}", shutdown_start.elapsed());
+
+    info!("unlocking lockfile...");
+    setup_data
+        .lock_file
+        .unlock_blocking()
+        .context("failed to unlock lockfile")?;
+
+    info!("successful shutdown");
+
+    // Logging no longer reliable past this point
+    drop(setup_data.worker_guard);
+
+    ret?
+}
+
+/// The async entry
+async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<()> {
+    // TODO: See if it is possible to start serenity without a network
+    info!("setting up client...");
+    let mut client = setup_client(config.clone())
         .await
         .context("failed to set up client")?;
 
-    let client_data = ClientData::init(client.shard_manager.clone(), config, db.clone())
+    let client_data = ClientData::init(client.shard_manager.clone(), config, database.clone())
         .await
         .context("client data initialization failed")?;
 
@@ -748,8 +724,8 @@ async fn async_main(config: Config, _missing_data_dir: bool) -> anyhow::Result<(
     client_data.shutdown().await;
     drop(client_data);
 
-    info!("closing db...");
-    db.close().await.context("failed to close db")?;
+    info!("closing database...");
+    database.close().await.context("failed to close database")?;
 
     Ok(())
 }

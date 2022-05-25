@@ -11,10 +11,13 @@ pub use self::tic_tac_toe::{
     TicTacToeTryMoveResponse,
 };
 use anyhow::Context;
+use camino::{
+    Utf8Path,
+    Utf8PathBuf,
+};
 use once_cell::sync::Lazy;
 use std::{
     os::raw::c_int,
-    path::Path,
     sync::Arc,
 };
 use tracing::{
@@ -46,17 +49,36 @@ pub struct Database {
 
 impl Database {
     //// Make a new [`Database`].
-    pub async fn new(path: &Path, create_if_missing: bool) -> anyhow::Result<Self> {
+    ///
+    /// # Safety
+    /// This must be called before any other sqlite functions are called.
+    pub async unsafe fn new<P>(path: P, create_if_missing: bool) -> anyhow::Result<Self>
+    where
+        P: Into<Utf8PathBuf>,
+    {
+        let path = path.into();
+        tokio::task::spawn_blocking(move || Self::blocking_new(&path, create_if_missing))
+            .await
+            .context("failed to join tokio task")?
+    }
+
+    /// Make a new [`Database`] in a blocking manner.
+    ///
+    /// # Safety
+    /// This must be called before any other sqlite functions are called.
+    pub unsafe fn blocking_new<P>(path: P, create_if_missing: bool) -> anyhow::Result<Self>
+    where
+        P: AsRef<Utf8Path>,
+    {
         LOGGER_INIT
             .clone()
             .context("failed to init sqlite logger")?;
 
-        let db = async_rusqlite::Database::open(path, create_if_missing, |db| {
+        let db = async_rusqlite::Database::blocking_open(path.as_ref(), create_if_missing, |db| {
             db.execute_batch(SETUP_TABLES_SQL)
                 .context("failed to setup database")?;
             Ok(())
         })
-        .await
         .context("failed to open database")?;
 
         Ok(Database { db })
@@ -73,6 +95,7 @@ impl Database {
 
     /// Close the db
     pub async fn close(&self) -> anyhow::Result<()> {
+        // Failing to run shutdown commands is not critical and should not prevent shutdown.
         if let Err(e) = self
             .db
             .access_db(|db| {
@@ -89,7 +112,7 @@ impl Database {
             .close()
             .await
             .context("failed to send close request to db")?;
-        self.db.join().await?;
+        self.db.join().await.context("failed to join db thread")?;
 
         Ok(())
     }

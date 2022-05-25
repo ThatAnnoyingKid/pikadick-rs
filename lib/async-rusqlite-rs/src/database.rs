@@ -51,24 +51,26 @@ impl std::fmt::Debug for Database {
 
 impl Database {
     /// Open a database at the given path with the setup func.
-    pub async fn open<S>(path: &Path, create_if_missing: bool, setup_func: S) -> Result<Self, Error>
+    pub async fn open<P, S>(path: P, create_if_missing: bool, setup_func: S) -> Result<Self, Error>
     where
+        P: Into<PathBuf>,
         S: FnMut(&mut rusqlite::Connection) -> Result<(), BoxedError> + Send + 'static,
     {
-        let path = path.to_path_buf();
+        let path = path.into();
         tokio::task::spawn_blocking(move || {
-            Self::open_blocking(path, create_if_missing, setup_func)
+            Self::blocking_open(path, create_if_missing, setup_func)
         })
         .await?
     }
 
     /// Open a db in a blocking manner.
-    pub fn open_blocking<S>(
-        path: PathBuf,
+    pub fn blocking_open<P, S>(
+        path: P,
         create_if_missing: bool,
         mut setup_func: S,
     ) -> Result<Self, Error>
     where
+        P: AsRef<Path>,
         S: FnMut(&mut rusqlite::Connection) -> Result<(), BoxedError> + Send + 'static,
     {
         // Setup flags
