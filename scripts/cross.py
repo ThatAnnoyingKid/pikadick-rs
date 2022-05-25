@@ -27,4 +27,4 @@ if is_ci:
 ###############
 ### RUNNING ###
 ###############
-subprocess.run(f'cargo run -p across --release -- --config {cross_compile_info_file_name} --target {TARGET} --features use-openssl-vendored --release --use-strip', check=True, shell=True)
+subprocess.run(f'cargo run -p across --release -- --config {cross_compile_info_file_name} --target {TARGET} --features use-openssl-vendored --release', check=True, shell=True)
