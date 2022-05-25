@@ -629,18 +629,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "cookie"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94d4706de1b0fa5b132270cddffa8585166037822e260a944fe161acd137ca05"
+dependencies = [
+ "percent-encoding",
+ "time 0.3.9",
+ "version_check",
+]
+
+[[package]]
 name = "cookie_store"
 version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3f7034c0932dc36f5bd8ec37368d971346809435824f277cb3b8299fc56167c"
 dependencies = [
- "cookie",
+ "cookie 0.15.1",
  "idna",
  "log",
  "publicsuffix",
  "serde",
  "serde_json",
  "time 0.2.27",
+ "url",
+]
+
+[[package]]
+name = "cookie_store"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f83bfd36a664c5783fde601ab938bcd41c3e228c5eda1dfaae727a4a27bcb945"
+dependencies = [
+ "cookie 0.16.0",
+ "idna",
+ "log",
+ "publicsuffix",
+ "serde",
+ "serde_json",
+ "time 0.3.9",
  "url",
 ]
 
@@ -894,8 +921,8 @@ dependencies = [
  "anyhow",
  "argh",
  "bytes",
- "cookie",
- "cookie_store",
+ "cookie 0.15.1",
+ "cookie_store 0.16.0",
  "directories-next",
  "itoa 1.0.2",
  "once_cell",
@@ -1627,7 +1654,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "argh",
- "cookie_store",
+ "cookie_store 0.16.0",
  "directories-next",
  "once_cell",
  "regex",
@@ -2985,8 +3012,8 @@ dependencies = [
  "async-compression",
  "base64",
  "bytes",
- "cookie",
- "cookie_store",
+ "cookie 0.15.1",
+ "cookie_store 0.15.1",
  "encoding_rs",
  "futures-core",
  "futures-util",
@@ -3030,8 +3057,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48cbf3a2aeeeaa6d10a76db86068c3560320f6265c3a0e2642e0538e11c2d143"
 dependencies = [
  "bytes",
- "cookie",
- "cookie_store",
+ "cookie 0.15.1",
+ "cookie_store 0.15.1",
  "reqwest",
  "url",
 ]
