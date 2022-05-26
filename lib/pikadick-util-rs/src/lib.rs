@@ -13,6 +13,14 @@ mod async_lock_file;
 #[cfg(feature = "async_lock_file")]
 pub use self::async_lock_file::AsyncLockFile;
 
+#[cfg(feature = "drop_remove_file")]
+mod drop_remove_file;
+#[cfg(feature = "drop_remove_file")]
+pub use self::drop_remove_file::{
+    DropRemoveFile,
+    DropRemovePath,
+};
+
 use std::{
     ffi::{
         OsStr,
