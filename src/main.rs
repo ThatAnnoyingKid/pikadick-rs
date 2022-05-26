@@ -349,7 +349,8 @@ async fn help(
     iqdb,
     reddit,
     leave,
-    stop
+    stop,
+    sauce_nao
 )]
 struct General;
 

@@ -48,6 +48,9 @@ pub struct Config {
     /// DeviantArt config
     pub deviantart: DeviantArtConfig,
 
+    /// SauceNao config
+    pub sauce_nao: SauceNaoConfig,
+
     /// The log config
     #[serde(default)]
     pub log: LogConfig,
@@ -72,6 +75,17 @@ pub struct DeviantArtConfig {
 
     /// Password
     pub password: String,
+}
+
+/// SauceNao Config
+#[derive(Deserialize, Debug)]
+pub struct SauceNaoConfig {
+    /// The api key
+    pub api_key: String,
+
+    /// Unknown extra data
+    #[serde(flatten)]
+    pub extra: HashMap<String, toml::Value>,
 }
 
 /// Log Config
