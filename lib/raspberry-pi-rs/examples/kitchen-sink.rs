@@ -6,6 +6,10 @@ fn main() {
         "Model Type: {:?}",
         raspberry_pi::bcm_host_get_model_type().expect("failed to get model type")
     );
+    println!(
+        "Processor Id: {:?}",
+        raspberry_pi::bcm_host_get_processor_id().expect("failed to get processor id")
+    );
     println!();
 
     // Native

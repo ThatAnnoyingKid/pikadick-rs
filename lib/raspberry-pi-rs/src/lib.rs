@@ -115,12 +115,26 @@ impl TryFrom<u8> for BoardType {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 #[repr(u8)]
 pub enum ProcessorId {
-    Bcm2835,
-    Bcm2836,
-    Bcm2837,
+    Bcm2835 = 0x00,
+    Bcm2836 = 0x01,
+    Bcm2837 = 0x02,
 
     /// This is also Bcm2838, which is a deprecated name for this id.
-    Bcm2711,
+    Bcm2711 = 0x03,
+}
+
+impl TryFrom<u8> for ProcessorId {
+    type Error = u8;
+
+    fn try_from(n: u8) -> Result<Self, Self::Error> {
+        match n {
+            0x00 => Ok(Self::Bcm2835),
+            0x01 => Ok(Self::Bcm2836),
+            0x02 => Ok(Self::Bcm2837),
+            0x03 => Ok(Self::Bcm2711),
+            _ => Err(n),
+        }
+    }
 }
 
 /// Get the revision code.
@@ -202,4 +216,22 @@ pub fn bcm_host_get_model_type() -> Result<BoardType, Error> {
             }
         })
         .copied()
+}
+
+/// Get the processor id
+///
+/// # Changes
+/// In contrast with the original function, this one is thread-safe and provides error info.
+///
+/// Ported from `https://github.com/raspberrypi/userland/blob/c4fd1b8986c6d6d4ae5cd51e65a8bbeb495dfa4e/host_applications/linux/libs/bcm_host/bcm_host.c#L277-L290`.
+pub fn bcm_host_get_processor_id() -> Result<ProcessorId, Error> {
+    let revision_num = get_revision_code()?;
+
+    if revision_num & 0x800000 != 0 {
+        ProcessorId::try_from(u8::try_from((revision_num & 0xf000) >> 12).unwrap())
+            .map_err(|_n| Error::NotFound)
+    } else {
+        // Old style number only used 2835
+        Ok(ProcessorId::Bcm2835)
+    }
 }
