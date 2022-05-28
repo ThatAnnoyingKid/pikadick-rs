@@ -15,6 +15,7 @@ pub mod r6tracker;
 pub mod reddit;
 pub mod reddit_embed;
 pub mod rule34;
+pub mod sauce_nao;
 pub mod shift;
 pub mod stop;
 pub mod system;
@@ -39,6 +40,7 @@ pub use crate::commands::{
     quizizz::QUIZIZZ_COMMAND,
     reddit::REDDIT_COMMAND,
     reddit_embed::REDDIT_EMBED_COMMAND,
+    sauce_nao::SAUCE_NAO_COMMAND,
     shift::SHIFT_COMMAND,
     stop::STOP_COMMAND,
     system::SYSTEM_COMMAND,

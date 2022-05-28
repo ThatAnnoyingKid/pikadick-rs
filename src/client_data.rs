@@ -10,6 +10,7 @@ use crate::{
         r6tracker::R6TrackerClient,
         reddit_embed::RedditEmbedData,
         rule34::Rule34Client,
+        sauce_nao::SauceNaoClient,
         shift::ShiftClient,
         tic_tac_toe::TicTacToeData,
         tiktok_embed::TikTokData,
@@ -104,6 +105,8 @@ pub struct ClientData {
     pub tic_tac_toe_data: TicTacToeData,
     /// The iqdb client
     pub iqdb_client: IqdbClient,
+    /// The sauce nao client
+    pub sauce_nao_client: SauceNaoClient,
     /// TikTokData
     pub tiktok_data: TikTokData,
     /// Encoder Task
@@ -153,6 +156,7 @@ impl ClientData {
             xkcd_client: Default::default(),
             tic_tac_toe_data: Default::default(),
             iqdb_client: Default::default(),
+            sauce_nao_client: SauceNaoClient::new(config.sauce_nao.api_key.as_str()),
             tiktok_data,
             encoder_task,
 

@@ -10,6 +10,10 @@ anyhow = { version = "1.0.57", optional = true }
 fslock = { git = "https://github.com/adumbidiot/fslock", branch = "send", optional = true }
 reqwest = { version = "0.11.10", default-features = false, optional = true }
 tokio = { version = "1.18.2", default-features = false, optional = true }
+tracing = { version = "0.1.34", optional = true }
+
+[dev-dependencies]
+tokio = { version = "1.18.2", features = [ "macros" ] }
 
 [features]
 download_to_file = [
@@ -27,4 +31,10 @@ async_lock_file = [
     "tokio",
     "tokio/sync",
     "tokio/rt"
+]
+drop_remove_file = [
+    "tokio",
+    "tokio/fs",
+    "tokio/rt",
+    "tracing",
 ]

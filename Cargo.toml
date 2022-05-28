@@ -33,7 +33,7 @@ opentelemetry = { version = "0.17.0", features = [ "rt-tokio" ] }
 opentelemetry-otlp = { version = "0.10.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.12.0"
 pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
-pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "download_to_file", "arc_anyhow_error", "async_lock_file" ] }
+pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "download_to_file", "arc_anyhow_error", "async_lock_file", "drop_remove_file" ] }
 quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "rustls-tls" ] }
 r6stats = { path = "./lib/r6stats-rs", default-features = false, features = [ "rustls-tls" ] }
 r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = [ "rustls-tls" ] }
@@ -45,6 +45,7 @@ reqwest = { version = "0.11.10", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
 rusqlite = { version = "0.27.0", features = [ "bundled", "blob", "trace" ] }
 ryu = "1.0.10"
+sauce-nao = { path = "./lib/sauce-nao-rs", default-features = false, features = [ "rustls-tls" ] }
 serde = { version = "1.0.137", features = [ "derive" ] }
 serenity = { version = "0.11.2", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
