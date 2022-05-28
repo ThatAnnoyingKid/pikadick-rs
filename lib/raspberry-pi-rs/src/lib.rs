@@ -218,6 +218,16 @@ pub fn bcm_host_get_model_type() -> Result<BoardType, Error> {
         .copied()
 }
 
+/// Test if the host is a member of the Pi 4 family (4B, 400 and CM4)
+///
+/// # Changes
+/// In contrast with the original function, this one is thread-safe and provides error info.
+///
+/// Ported from `https://github.com/raspberrypi/userland/blob/c4fd1b8986c6d6d4ae5cd51e65a8bbeb495dfa4e/host_applications/linux/libs/bcm_host/bcm_host.c#L270-L273`
+pub fn bcm_host_is_model_pi4() -> Result<bool, Error> {
+    Ok(bcm_host_get_processor_id()? == ProcessorId::Bcm2711)
+}
+
 /// Get the processor id
 ///
 /// # Changes
@@ -234,4 +244,64 @@ pub fn bcm_host_get_processor_id() -> Result<ProcessorId, Error> {
         // Old style number only used 2835
         Ok(ProcessorId::Bcm2835)
     }
+}
+
+/// A version of [`std::fs::read_to_string`] which returns `None` for missing files
+fn try_read_to_string<P>(path: P) -> Result<Option<String>, std::io::Error>
+where
+    P: AsRef<std::path::Path>,
+{
+    match std::fs::read_to_string(path) {
+        Ok(data) => Ok(Some(data)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e),
+    }
+}
+
+/// Check if fkms or kms is active.
+///
+/// # Changes
+/// In contrast with the original function, this one provides error info.
+///
+/// Ported from `https://github.com/raspberrypi/userland/blob/c4fd1b8986c6d6d4ae5cd51e65a8bbeb495dfa4e/host_applications/linux/libs/bcm_host/bcm_host.c#L293-L300`.
+fn bcm_host_is_fkms_or_kms_active(kms: bool) -> Result<bool, Error> {
+    if !try_read_to_string("/proc/device-tree/soc/v3d@7ec00000/status")?
+        .map_or(false, |data| data.contains("okay"))
+        && !try_read_to_string("/proc/device-tree/v3dbus/v3d@7ec04000/status")?
+            .map_or(false, |data| data.contains("okay"))
+    {
+        Ok(false)
+    } else {
+        Ok(
+            (std::fs::read_to_string("/proc/device-tree/soc/firmwarekms@7e600000/status")?
+                .contains("okay"))
+                ^ kms,
+        )
+    }
+}
+
+/// Check if fkms is active.
+///
+/// # Changes
+/// In contrast with the original function, this one is thread-safe and provides error info.
+///
+/// Ported from `https://github.com/raspberrypi/userland/blob/c4fd1b8986c6d6d4ae5cd51e65a8bbeb495dfa4e/host_applications/linux/libs/bcm_host/bcm_host.c#L302-L308`
+pub fn bcm_host_is_fkms_active() -> Result<bool, Error> {
+    static ACTIVE: OnceCell<bool> = OnceCell::new();
+    ACTIVE
+        .get_or_try_init(|| bcm_host_is_fkms_or_kms_active(false))
+        .copied()
+}
+
+/// Check if kms is active.
+///
+/// # Changes
+/// In contrast with the original function, this one is thread-safe and provides error info.
+///
+/// Ported from `https://github.com/raspberrypi/userland/blob/c4fd1b8986c6d6d4ae5cd51e65a8bbeb495dfa4e/host_applications/linux/libs/bcm_host/bcm_host.c#L310-L316`
+pub fn bcm_host_is_kms_active() -> Result<bool, Error> {
+    static ACTIVE: OnceCell<bool> = OnceCell::new();
+    ACTIVE
+        .get_or_try_init(|| bcm_host_is_fkms_or_kms_active(true))
+        .copied()
 }

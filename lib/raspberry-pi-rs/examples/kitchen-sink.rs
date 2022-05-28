@@ -7,6 +7,18 @@ fn main() {
         raspberry_pi::bcm_host_get_model_type().expect("failed to get model type")
     );
     println!(
+        "Is Pi 4?: {}",
+        raspberry_pi::bcm_host_is_model_pi4().expect("failed to check if the host is a pi 4")
+    );
+    println!(
+        "Is FKMS Active?: {}",
+        raspberry_pi::bcm_host_is_fkms_active().expect("failed to check if fkms is active")
+    );
+    println!(
+        "Is KMS Active?: {}",
+        raspberry_pi::bcm_host_is_kms_active().expect("failed to check if kms is active")
+    );
+    println!(
         "Processor Id: {:?}",
         raspberry_pi::bcm_host_get_processor_id().expect("failed to get processor id")
     );
