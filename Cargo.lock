@@ -1120,7 +1120,7 @@ dependencies = [
 [[package]]
 name = "fslock"
 version = "0.2.1"
-source = "git+https://github.com/adumbidiot/fslock?branch=send#93aba923347121b6da3fc479d213707435fb975c"
+source = "git+https://github.com/adumbidiot/fslock#cceb79f02c73cee0def73e1be0696fc26b395863"
 dependencies = [
  "libc",
  "winapi",
@@ -2863,6 +2863,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
 dependencies = [
  "rand_core 0.5.1",
+]
+
+[[package]]
+name = "raspberry-pi"
+version = "0.0.0"
+dependencies = [
+ "libloading",
+ "raspberry-pi-sys",
+ "thiserror",
 ]
 
 [[package]]

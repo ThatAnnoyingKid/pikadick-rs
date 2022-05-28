@@ -152,6 +152,7 @@ members = [
     "lib/tokio-ffmpeg-cli-rs",
     "lib/pikadick-util-rs",
     "lib/raspberry-pi-sys-rs",
+    "lib/raspberry-pi-rs"
 ]
 
 [package.metadata.deb]
