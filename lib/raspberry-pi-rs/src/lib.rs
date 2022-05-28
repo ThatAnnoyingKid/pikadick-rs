@@ -1,3 +1,5 @@
+#![cfg(all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux"))]
+
 use std::os::raw::c_int;
 
 /// The error type
