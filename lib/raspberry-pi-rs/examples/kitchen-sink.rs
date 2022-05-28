@@ -1,6 +1,14 @@
-use raspberrypi::RaspberryPi;
+use raspberry_pi::RaspberryPi;
 
 fn main() {
+    println!("# Rust");
+    println!(
+        "Model Type: {:?}",
+        raspberry_pi::bcm_host_get_model_type().expect("failed to get model type")
+    );
+    println!();
+
+    // Native
     let mut raspberrypi =
         unsafe { RaspberryPi::new().expect("failed to load raspberry pi libraries") };
 
@@ -10,26 +18,12 @@ fn main() {
         .expect("failed to get model type");
     let display_size = raspberrypi.graphics_get_display_size(0);
 
+    println!("# Native");
     println!("Model Type: {:?}", model_type);
     println!("Display Size: {:?}", display_size);
-    println!(
-        "Is Pi 4?: {}",
-        raspberrypi
-            .is_model_pi4()
-            .expect("failed to check if model is a pi4")
-    );
-    println!(
-        "Is FKMS Active?: {}",
-        raspberrypi
-            .is_fkms_active()
-            .expect("failed to check if fkms is active")
-    );
-    println!(
-        "Is KMS Active?: {}",
-        raspberrypi
-            .is_kms_active()
-            .expect("failed to check if kms is active")
-    );
+    println!("Is Pi 4?: {}", raspberrypi.is_model_pi4());
+    println!("Is FKMS Active?: {}", raspberrypi.is_fkms_active());
+    println!("Is KMS Active?: {}", raspberrypi.is_kms_active());
     println!(
         "Processor Id: {:?}",
         raspberrypi
