@@ -14,4 +14,3 @@ pub use self::arm_bindings::*;
 mod arm64_bindings;
 #[cfg(all(target_arch = "aarch64", target_os = "linux"))]
 pub use self::arm64_bindings::*;
-
