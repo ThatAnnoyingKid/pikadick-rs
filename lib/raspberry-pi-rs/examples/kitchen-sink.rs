@@ -1,7 +1,7 @@
-#![cfg(all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux"))]
-
+#[cfg(all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux"))]
 use raspberry_pi::RaspberryPi;
 
+#[cfg(all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux"))]
 fn main() {
     println!("# Rust");
     println!(
@@ -52,4 +52,9 @@ fn main() {
     unsafe {
         raspberrypi.bcm_host_deinit().expect("failed to deinit");
     }
+}
+
+#[cfg(not(all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux")))]
+fn main() {
+    panic!("this example only works for arm on linux");
 }
