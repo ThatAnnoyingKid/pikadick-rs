@@ -4,6 +4,7 @@
 #![allow(rustdoc::broken_intra_doc_links)]
 #![allow(clippy::unused_unit)]
 #![allow(clippy::missing_safety_doc)]
+#![allow(clippy::too_many_arguments)]
 
 #[cfg(all(target_arch = "arm", target_os = "linux"))]
 mod arm_bindings;

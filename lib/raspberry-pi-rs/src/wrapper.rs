@@ -98,7 +98,7 @@ impl RaspberryPi {
     /// # Safety
     /// The user must be done using the GPU.
     pub unsafe fn bcm_host_deinit(&mut self) -> Result<(), Error> {
-        if self.bcm_host_initialized == false {
+        if !self.bcm_host_initialized {
             return Err(Error::BcmHostNotInitialized);
         }
         self.bcm_host.bcm_host_deinit();
@@ -109,7 +109,7 @@ impl RaspberryPi {
 
     /// Get the size of the graphics display.
     pub fn graphics_get_display_size(&mut self, display_number: u16) -> Result<(u32, u32), Error> {
-        if self.bcm_host_initialized == false {
+        if !self.bcm_host_initialized {
             return Err(Error::BcmHostNotInitialized);
         }
 
@@ -129,11 +129,11 @@ impl RaspberryPi {
 
     /// Get the model type
     pub fn get_model_type(&mut self) -> Result<BoardType, Error> {
-        if self.bcm_host_initialized == false {
+        if !self.bcm_host_initialized {
             return Err(Error::BcmHostNotInitialized);
         }
         BoardType::new(unsafe { self.bcm_host.bcm_host_get_model_type() })
-            .map_err(|board_type| Error::UnknownBoardType(board_type))
+            .map_err(Error::UnknownBoardType)
     }
 
     /// Return `true` if this is a pi 4, or in the same family.
@@ -153,10 +153,10 @@ impl RaspberryPi {
 
     /// Get the processor id.
     pub fn get_processor_id(&mut self) -> Result<ProcessorId, Error> {
-        if self.bcm_host_initialized == false {
+        if !self.bcm_host_initialized {
             return Err(Error::BcmHostNotInitialized);
         }
         ProcessorId::new(unsafe { self.bcm_host.bcm_host_get_processor_id() })
-            .map_err(|id| Error::UnknownProcessorId(id))
+            .map_err(Error::UnknownProcessorId)
     }
 }
