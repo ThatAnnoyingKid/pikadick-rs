@@ -129,9 +129,6 @@ impl RaspberryPi {
 
     /// Get the model type
     pub fn get_model_type(&mut self) -> Result<BoardType, Error> {
-        if !self.bcm_host_initialized {
-            return Err(Error::BcmHostNotInitialized);
-        }
         BoardType::new(unsafe { self.bcm_host.bcm_host_get_model_type() })
             .map_err(Error::UnknownBoardType)
     }
@@ -153,9 +150,6 @@ impl RaspberryPi {
 
     /// Get the processor id.
     pub fn get_processor_id(&mut self) -> Result<ProcessorId, Error> {
-        if !self.bcm_host_initialized {
-            return Err(Error::BcmHostNotInitialized);
-        }
         ProcessorId::new(unsafe { self.bcm_host.bcm_host_get_processor_id() })
             .map_err(Error::UnknownProcessorId)
     }
