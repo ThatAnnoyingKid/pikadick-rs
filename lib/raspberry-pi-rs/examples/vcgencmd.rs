@@ -48,8 +48,9 @@ fn main() -> ExitCode {
 
     raspberrypi.bcm_host_init();
 
+    let command = args[1..].join(" ");
     raspberrypi
-        .vc_gencmd_send(&*args[1])
+        .vc_gencmd_send(command)
         .expect("failed to measure temp");
     let response = raspberrypi
         .vc_gencmd_read_response()
