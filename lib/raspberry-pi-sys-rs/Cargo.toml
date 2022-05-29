@@ -1,0 +1,8 @@
+[package]
+name = "raspberry-pi-sys"
+version = "0.0.0"
+edition = "2021"
+license = "BSD-3-Clause"
+
+[target.'cfg(all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux"))'.dependencies]
+libloading = "0.7.3"
