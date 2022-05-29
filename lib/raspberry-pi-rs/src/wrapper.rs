@@ -1,7 +1,9 @@
 use crate::{
-    BoardType,
+    bcm_host::{
+        BoardType,
+        ProcessorId,
+    },
     Error,
-    ProcessorId,
 };
 use std::{
     ffi::CString,
