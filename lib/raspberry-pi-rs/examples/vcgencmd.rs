@@ -1,5 +1,13 @@
+#[cfg(all(
+    feature = "wrapper",
+    all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux")
+))]
 use raspberry_pi::RaspberryPi;
 
+#[cfg(all(
+    feature = "wrapper",
+    all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux")
+))]
 fn main() {
     let mut raspberrypi =
         unsafe { RaspberryPi::new().expect("failed to load raspberry pi libraries") };
@@ -22,4 +30,12 @@ fn main() {
     unsafe {
         raspberrypi.bcm_host_deinit().expect("failed to deinit");
     }
+}
+
+#[cfg(not(all(
+    feature = "wrapper",
+    all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux")
+)))]
+fn main() {
+    panic!("this example will currently not work without the `wrapper` feature and will not work on platforms that are not arm linux");
 }
