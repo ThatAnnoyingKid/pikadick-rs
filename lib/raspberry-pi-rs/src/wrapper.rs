@@ -60,6 +60,8 @@ impl ProcessorId {
 pub struct RaspberryPi {
     bcm_host: raspberry_pi_sys::libbcm_host::libbcm_host,
     bcm_host_initialized: bool,
+
+    vc_gencmd_initialized: bool,
 }
 
 impl RaspberryPi {
@@ -82,6 +84,8 @@ impl RaspberryPi {
         Ok(Self {
             bcm_host,
             bcm_host_initialized: false,
+
+            vc_gencmd_initialized: false,
         })
     }
 
@@ -159,12 +163,36 @@ impl RaspberryPi {
             .map_err(Error::UnknownProcessorId)
     }
 
-    /*
-        vc_gencmd_init: unsafe extern "C" fn() -> c_int
-    vc_gencmd_stop: unsafe extern "C" fn()
-    */
+    /// Initialise the general command service for use.
+    pub fn vc_gencmd_init(&mut self) -> Result<(), Error> {
+        let error_code = unsafe { self.bcm_host.vc_gencmd_init() };
+
+        if error_code < 0 {
+            return Err(Error::VcGenCmd(error_code));
+        }
+
+        self.vc_gencmd_initialized = true;
+
+        Ok(())
+    }
+
+    /// Stop the service from being used.
+    pub fn vc_gencmd_stop(&mut self) -> Result<(), Error> {
+        if !self.vc_gencmd_initialized {
+            return Ok(());
+        }
+
+        unsafe { self.bcm_host.vc_gencmd_stop() };
+        self.vc_gencmd_initialized = false;
+
+        Ok(())
+    }
+
     /// Send command to general command serivce
-    pub fn vc_gencmd_send(&mut self, format: &str) -> Result<(), Error> {
+    pub fn vc_gencmd_send<F>(&mut self, format: F) -> Result<(), Error>
+    where
+        F: Into<Vec<u8>>,
+    {
         if !self.bcm_host_initialized {
             return Err(Error::BcmHostNotInitialized);
         }
