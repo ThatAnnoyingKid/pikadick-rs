@@ -27,11 +27,18 @@ struct Options {
     #[argh(switch, description = "whether to build in release")]
     release: bool,
 
+    #[argh(option, description = "the build profile")]
+    profile: Option<String>,
+
     #[argh(switch, long = "vv", description = "very verbose")]
     very_verbose: bool,
 
-    #[argh(switch, description = "whether to run strip on the binary")]
-    use_strip: bool,
+    #[argh(
+        option,
+        long = "cargo-build-wrapper",
+        description = "use this command instead of `cargo build`"
+    )]
+    cargo_build_wrapper: Option<String>,
 
     #[argh(
         option,
@@ -43,21 +50,19 @@ struct Options {
 }
 
 /// The entry point
-fn main() {
+fn main() -> anyhow::Result<()> {
     let options: Options = argh::from_env();
-    let code = match real_main(options) {
-        Ok(()) => 0,
-        Err(e) => {
-            eprintln!("{:?}", e);
-            1
-        }
-    };
-
-    std::process::exit(code);
+    real_main(options)?;
+    Ok(())
 }
 
 /// The real entry point
 fn real_main(options: Options) -> anyhow::Result<()> {
+    ensure!(
+        !(options.release && options.profile.is_some()),
+        "the `--release` and `--profile` flags aure mutually exclusive"
+    );
+
     println!("Fetching cargo metadata...");
     let metadata = MetadataCommand::new()
         .exec()
@@ -80,14 +85,32 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         .get(options.target.as_str())
         .context("missing config for target")?;
 
+    let profile = if options.release {
+        Some("release")
+    } else {
+        options.profile.as_deref()
+    };
+
     // Setup command builder
     let mut command_builder = CrossCompileCommandBuilder::new();
     command_builder
         .target(options.target.as_str())
         .linker(target_config.linker.as_str())
-        .release(options.release)
-        .very_verbose(options.very_verbose)
-        .use_strip(options.use_strip);
+        .very_verbose(options.very_verbose);
+
+    if let Some(profile) = profile {
+        command_builder.profile(profile);
+    }
+
+    if let Some(cargo_build_wrapper) = options.cargo_build_wrapper {
+        command_builder.cargo_build_wrapper(
+            cargo_build_wrapper
+                .split(' ')
+                .filter(|t| !t.is_empty())
+                .map(Box::from)
+                .collect(),
+        );
+    }
 
     if let Some(features) = options.features.as_deref() {
         command_builder.features(features);
@@ -114,8 +137,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
         );
         if let Some(value) = value {
             bail!(
-                "`CMAKE_TOOLCHAIN_FILE` is already specified in the environment with value `{}`",
-                value
+                "`CMAKE_TOOLCHAIN_FILE` is already specified in the environment with value `{value}`"
             );
         }
     }
@@ -152,8 +174,8 @@ pub struct CrossCompileCommandBuilder {
     /// Build features
     pub features: Option<Box<str>>,
 
-    /// Whether to build in release mode
-    pub release: bool,
+    /// The profile
+    pub profile: Option<Box<str>>,
 
     /// Whether to set the very verbose flag
     pub very_verbose: bool,
@@ -164,8 +186,8 @@ pub struct CrossCompileCommandBuilder {
     /// The linker
     pub linker: Option<Box<str>>,
 
-    /// Whether to strip the final binary
-    pub use_strip: bool,
+    /// The cargo build wrapper
+    pub cargo_build_wrapper: Option<Box<[Box<str>]>>,
 
     /// This is some if the builder errored.
     pub error: Option<anyhow::Error>,
@@ -177,11 +199,11 @@ impl CrossCompileCommandBuilder {
         Self {
             target: None,
             features: None,
-            release: true,
+            profile: None,
             very_verbose: false,
             environment_variables: HashMap::with_capacity(16),
             linker: None,
-            use_strip: false,
+            cargo_build_wrapper: None,
 
             error: None,
         }
@@ -199,9 +221,9 @@ impl CrossCompileCommandBuilder {
         self
     }
 
-    /// Set the release flag
-    pub fn release(&mut self, release: bool) -> &mut Self {
-        self.release = release;
+    /// Set the profile
+    pub fn profile(&mut self, profile: impl Into<Box<str>>) -> &mut Self {
+        self.profile = Some(profile.into());
         self
     }
 
@@ -240,9 +262,16 @@ impl CrossCompileCommandBuilder {
         self
     }
 
-    /// Choose whether to strip the final binary
-    pub fn use_strip(&mut self, use_strip: bool) -> &mut Self {
-        self.use_strip = use_strip;
+    /// Set the cargo build wrapper
+    pub fn cargo_build_wrapper(&mut self, cargo_build_wrapper: Vec<Box<str>>) -> &mut Self {
+        if cargo_build_wrapper.is_empty() {
+            self.error = Some(anyhow::Error::msg(
+                "the cargo build wrapper cannot be empty",
+            ));
+            return self;
+        }
+
+        self.cargo_build_wrapper = Some(cargo_build_wrapper.into());
         self
     }
 
@@ -251,11 +280,11 @@ impl CrossCompileCommandBuilder {
         // Take all data from self, leaving it empty
         let target = self.target.take();
         let features = self.features.take();
-        let release = self.release;
+        let profile = self.profile.take();
         let very_verbose = self.very_verbose;
         let environment_variables = std::mem::take(&mut self.environment_variables);
         let linker = self.linker.take();
-        let use_strip = self.use_strip;
+        let cargo_build_wrapper = self.cargo_build_wrapper.take();
         let error = self.error.take();
 
         // Return error if the builder errored out somewhere
@@ -272,15 +301,19 @@ impl CrossCompileCommandBuilder {
         rust_flags.push_str("-Clinker=");
         rust_flags.push_str(&*linker);
         rust_flags.push(' ');
-        if use_strip {
-            // TODO: allow user to specify strip level
-            rust_flags.push_str("-Cstrip=symbols");
-            rust_flags.push(' ');
-        }
 
         // Init cargo build command
-        let mut command = Command::new("cargo");
-        command.arg("build");
+        let mut command = if let Some(cargo_build_wrapper) = cargo_build_wrapper {
+            let mut command = Command::new(&*cargo_build_wrapper[0]);
+            if let Some(rest) = cargo_build_wrapper.get(1..) {
+                command.args(rest.iter().map(|arg| &**arg));
+            }
+            command
+        } else {
+            let mut command = Command::new("cargo");
+            command.arg("build");
+            command
+        };
 
         // Set target
         command.args(&["--target", &*target]);
@@ -290,9 +323,9 @@ impl CrossCompileCommandBuilder {
             command.args(&["--features", &*features]);
         }
 
-        // Set release flag if requested
-        if release {
-            command.arg("--release");
+        // Set profile flag if requested
+        if let Some(profile) = profile {
+            command.arg(format!("--profile={profile}"));
         }
 
         // Set the very verbose flag if requested
