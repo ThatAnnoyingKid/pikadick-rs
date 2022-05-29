@@ -1,19 +1,11 @@
-#[cfg(all(
-    feature = "wrapper",
-    all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux")
-))]
-use raspberry_pi::RaspberryPi;
-#[cfg(all(
-    feature = "wrapper",
-    all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux")
-))]
+///! A port of `vcgencmd` to Rust
+///!
+///! See:
+///! https://chem.libretexts.org/Courses/Intercollegiate_Courses/Internet_of_Science_Things_(2020)/5%3A_Appendix_3%3A_General_Tasks/5.9%3A_Monitoring_your_Raspberry_Pi#:~:text=Using%20the%20vcgencmd%20command%20we,information%20about%20our%20Raspberry%20Pis.&text=According%20to%20Raspberry%20Pi%20Documentation,with%20a%20half%2Dfilled%20thermometer.
+///! https://www.raspberrypi.com/documentation/computers/os.html#vcgencmd
 use std::process::ExitCode;
 
 /// Ported from `https://github.com/raspberrypi/userland/blob/6e8f786db223c2ab6eb9098a5cb0e5e1b25281cd/host_applications/linux/apps/gencmd/gencmd.c#L40-L53`
-#[cfg(all(
-    feature = "wrapper",
-    all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux")
-))]
 fn show_usage() {
     println!("Usage: vcgencmd [-t] command");
     println!("Send a command to the VideoCore and print the result.\n");
@@ -28,10 +20,6 @@ fn show_usage() {
     println!("https://www.raspberrypi.org/documentation/computers/os.html#vcgencmd\n");
 }
 
-#[cfg(all(
-    feature = "wrapper",
-    all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux")
-))]
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     if args.len() == 1 {
@@ -43,33 +31,41 @@ fn main() -> ExitCode {
         return ExitCode::from(0);
     }
 
-    let mut raspberrypi =
-        unsafe { RaspberryPi::new().expect("failed to load raspberry pi libraries") };
+    #[cfg(all(
+        feature = "wrapper",
+        all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux")
+    ))]
+    {
+        use raspberry_pi::RaspberryPi;
 
-    raspberrypi.bcm_host_init();
+        let mut raspberrypi =
+            unsafe { RaspberryPi::new().expect("failed to load raspberry pi libraries") };
 
-    let command = args[1..].join(" ");
-    raspberrypi
-        .vc_gencmd_send(command)
-        .expect("failed to measure temp");
-    let response = raspberrypi
-        .vc_gencmd_read_response()
-        .expect("failed to read response")
-        .into_string()
-        .expect("response is not valid utf8");
-    println!("{}", response);
+        raspberrypi.bcm_host_init();
 
-    unsafe {
-        raspberrypi.bcm_host_deinit().expect("failed to deinit");
+        let command = args[1..].join(" ");
+        raspberrypi
+            .vc_gencmd_send(command)
+            .expect("failed to measure temp");
+        let response = raspberrypi
+            .vc_gencmd_read_response()
+            .expect("failed to read response")
+            .into_string()
+            .expect("response is not valid utf8");
+        println!("{}", response);
+
+        unsafe {
+            raspberrypi.bcm_host_deinit().expect("failed to deinit");
+        }
+
+        return ExitCode::from(0);
     }
 
-    return ExitCode::from(0);
-}
-
-#[cfg(not(all(
-    feature = "wrapper",
-    all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux")
-)))]
-fn main() {
-    panic!("this example will currently not work without the `wrapper` feature and will not work on platforms that are not arm linux");
+    #[cfg(not(all(
+        feature = "wrapper",
+        all(any(target_arch = "arm", target_arch = "aarch64"), target_os = "linux")
+    )))]
+    {
+        panic!("this example will currently not work without the `wrapper` feature and will not work on platforms that are not arm linux");
+    }
 }
