@@ -51,8 +51,13 @@ pub enum Error {
 
     /// A vc_gencmd error
     #[cfg(feature = "wrapper")]
-    #[error("a vc gen cmd function failed with `{0}`")]
+    #[error("a vc gen cmd function failed with error code`{0}`")]
     VcGenCmd(c_int),
+
+    /// A VCos Error
+    #[cfg(feature = "wrapper")]
+    #[error("a vcos function failed with error code `{0}`")]
+    VCos(raspberry_pi_sys::libbcm_host::VCOS_STATUS_T),
 
     /// Io Error
     #[error(transparent)]

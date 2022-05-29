@@ -62,6 +62,7 @@ pub struct RaspberryPi {
     bcm_host_initialized: bool,
 
     vc_gencmd_initialized: bool,
+    vcos_initialized: bool,
 }
 
 impl RaspberryPi {
@@ -86,6 +87,7 @@ impl RaspberryPi {
             bcm_host_initialized: false,
 
             vc_gencmd_initialized: false,
+            vcos_initialized: false,
         })
     }
 
@@ -243,4 +245,39 @@ impl RaspberryPi {
     vc_gencmd_number_property: unsafe extern "C" fn(text: *mut c_char, property: *const c_char, number: *mut c_int) -> c_int
     vc_gencmd_until: unsafe extern "C" fn(cmd: *mut c_char, property: *const c_char, value: *mut c_char, error_string: *const c_char, timeout: c_int) -> c_int
         */
+
+    /// vcos initialization. Call this function before using other vcos functions.
+    /// Calls can be nested within the same process; they are reference counted so
+    /// that only a call from uninitialized state has any effect.
+    /// # Note
+    /// On platforms/toolchains that support it, gcc's constructor attribute or
+    /// similar is used to invoke this function before main() or equivalent.
+    ///
+    /// # Returns
+    /// Status of initialisation.
+    pub fn vcos_init(&mut self) -> Result<(), Error> {
+        let error_code = unsafe { self.bcm_host.vcos_init() };
+
+        if error_code != 0 {
+            return Err(Error::VCos(error_code));
+        }
+
+        Ok(())
+    }
+
+    /// vcos deinitialization. Call this function when vcos is no longer required,
+    /// in order to free resources.
+    /// Calls can be nested within the same process; they are reference counted so
+    /// that only a call that decrements the reference count to 0 has any effect.
+    ///
+    /// # Note
+    /// On platforms/toolchains that support it, gcc's destructor attribute or
+    /// similar is used to invoke this function after exit() or equivalent.
+    pub unsafe fn vcos_deinit(&mut self) {
+        if !self.vcos_initialized {
+            return;
+        }
+
+        self.bcm_host.vcos_deinit()
+    }
 }

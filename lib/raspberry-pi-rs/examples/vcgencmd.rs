@@ -1,8 +1,9 @@
 ///! A port of `vcgencmd` to Rust
 ///!
 ///! See:
-///! https://chem.libretexts.org/Courses/Intercollegiate_Courses/Internet_of_Science_Things_(2020)/5%3A_Appendix_3%3A_General_Tasks/5.9%3A_Monitoring_your_Raspberry_Pi#:~:text=Using%20the%20vcgencmd%20command%20we,information%20about%20our%20Raspberry%20Pis.&text=According%20to%20Raspberry%20Pi%20Documentation,with%20a%20half%2Dfilled%20thermometer.
-///! https://www.raspberrypi.com/documentation/computers/os.html#vcgencmd
+///! * `https://chem.libretexts.org/Courses/Intercollegiate_Courses/Internet_of_Science_Things_(2020)/5%3A_Appendix_3%3A_General_Tasks/5.9%3A_Monitoring_your_Raspberry_Pi#:~:text=Using%20the%20vcgencmd%20command%20we,information%20about%20our%20Raspberry%20Pis.&text=According%20to%20Raspberry%20Pi%20Documentation,with%20a%20half%2Dfilled%20thermometer`
+///! * `https://www.raspberrypi.com/documentation/computers/os.html#vcgencmd`
+///! * `https://github.com/raspberrypi/userland/blob/6e8f786db223c2ab6eb9098a5cb0e5e1b25281cd/host_applications/linux/apps/gencmd/gencmd.c#L40-L53`
 use std::process::ExitCode;
 
 /// Ported from `https://github.com/raspberrypi/userland/blob/6e8f786db223c2ab6eb9098a5cb0e5e1b25281cd/host_applications/linux/apps/gencmd/gencmd.c#L40-L53`
@@ -41,6 +42,7 @@ fn main() -> ExitCode {
         let mut raspberrypi =
             unsafe { RaspberryPi::new().expect("failed to load raspberry pi libraries") };
 
+        raspberrypi.vcos_init().expect("failed to init vcos");
         raspberrypi.bcm_host_init();
 
         let command = args[1..].join(" ");
@@ -55,6 +57,7 @@ fn main() -> ExitCode {
         println!("{}", response);
 
         unsafe {
+            raspberrypi.vcos_deinit();
             raspberrypi.bcm_host_deinit().expect("failed to deinit");
         }
 
