@@ -2869,6 +2869,7 @@ dependencies = [
 name = "raspberry-pi"
 version = "0.0.0"
 dependencies = [
+ "libc",
  "libloading",
  "once_cell",
  "raspberry-pi-sys",

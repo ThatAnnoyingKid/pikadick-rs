@@ -25,6 +25,7 @@ pub const BCM_HOST_PROCESSOR_BCM2836: u32 = 1;
 pub const BCM_HOST_PROCESSOR_BCM2837: u32 = 2;
 pub const BCM_HOST_PROCESSOR_BCM2838: u32 = 3;
 pub const BCM_HOST_PROCESSOR_BCM2711: u32 = 3;
+pub const GENCMDSERVICE_MSGFIFO_SIZE: u32 = 4092;
 pub type __uint16_t = ::std::os::raw::c_ushort;
 pub type __int32_t = ::std::os::raw::c_int;
 pub type __uint32_t = ::std::os::raw::c_uint;
@@ -38,6 +39,32 @@ pub struct libbcm_host {
     pub bcm_host_get_peripheral_address: unsafe extern "C" fn() -> ::std::os::raw::c_uint,
     pub bcm_host_get_peripheral_size: unsafe extern "C" fn() -> ::std::os::raw::c_uint,
     pub bcm_host_get_sdram_address: unsafe extern "C" fn() -> ::std::os::raw::c_uint,
+    pub vc_gencmd_init: unsafe extern "C" fn() -> ::std::os::raw::c_int,
+    pub vc_gencmd_stop: unsafe extern "C" fn(),
+    pub vc_gencmd_send:
+        unsafe extern "C" fn(format: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int,
+    pub vc_gencmd_read_response: unsafe extern "C" fn(
+        response: *mut ::std::os::raw::c_char,
+        maxlen: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int,
+    pub vc_gencmd_string_property: unsafe extern "C" fn(
+        text: *mut ::std::os::raw::c_char,
+        property: *const ::std::os::raw::c_char,
+        value: *mut *mut ::std::os::raw::c_char,
+        length: *mut ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int,
+    pub vc_gencmd_number_property: unsafe extern "C" fn(
+        text: *mut ::std::os::raw::c_char,
+        property: *const ::std::os::raw::c_char,
+        number: *mut ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int,
+    pub vc_gencmd_until: unsafe extern "C" fn(
+        cmd: *mut ::std::os::raw::c_char,
+        property: *const ::std::os::raw::c_char,
+        value: *mut ::std::os::raw::c_char,
+        error_string: *const ::std::os::raw::c_char,
+        timeout: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int,
     pub bcm_host_get_model_type: unsafe extern "C" fn() -> ::std::os::raw::c_int,
     pub bcm_host_is_model_pi4: unsafe extern "C" fn() -> ::std::os::raw::c_int,
     pub bcm_host_is_fkms_active: unsafe extern "C" fn() -> ::std::os::raw::c_int,
@@ -71,6 +98,19 @@ impl libbcm_host {
         let bcm_host_get_sdram_address = __library
             .get(b"bcm_host_get_sdram_address\0")
             .map(|sym| *sym)?;
+        let vc_gencmd_init = __library.get(b"vc_gencmd_init\0").map(|sym| *sym)?;
+        let vc_gencmd_stop = __library.get(b"vc_gencmd_stop\0").map(|sym| *sym)?;
+        let vc_gencmd_send = __library.get(b"vc_gencmd_send\0").map(|sym| *sym)?;
+        let vc_gencmd_read_response = __library
+            .get(b"vc_gencmd_read_response\0")
+            .map(|sym| *sym)?;
+        let vc_gencmd_string_property = __library
+            .get(b"vc_gencmd_string_property\0")
+            .map(|sym| *sym)?;
+        let vc_gencmd_number_property = __library
+            .get(b"vc_gencmd_number_property\0")
+            .map(|sym| *sym)?;
+        let vc_gencmd_until = __library.get(b"vc_gencmd_until\0").map(|sym| *sym)?;
         let bcm_host_get_model_type = __library
             .get(b"bcm_host_get_model_type\0")
             .map(|sym| *sym)?;
@@ -90,6 +130,13 @@ impl libbcm_host {
             bcm_host_get_peripheral_address,
             bcm_host_get_peripheral_size,
             bcm_host_get_sdram_address,
+            vc_gencmd_init,
+            vc_gencmd_stop,
+            vc_gencmd_send,
+            vc_gencmd_read_response,
+            vc_gencmd_string_property,
+            vc_gencmd_number_property,
+            vc_gencmd_until,
             bcm_host_get_model_type,
             bcm_host_is_model_pi4,
             bcm_host_is_fkms_active,
@@ -119,6 +166,46 @@ impl libbcm_host {
     }
     pub unsafe fn bcm_host_get_sdram_address(&self) -> ::std::os::raw::c_uint {
         (self.bcm_host_get_sdram_address)()
+    }
+    pub unsafe fn vc_gencmd_init(&self) -> ::std::os::raw::c_int {
+        (self.vc_gencmd_init)()
+    }
+    pub unsafe fn vc_gencmd_stop(&self) -> () {
+        (self.vc_gencmd_stop)()
+    }
+    pub unsafe fn vc_gencmd_read_response(
+        &self,
+        response: *mut ::std::os::raw::c_char,
+        maxlen: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int {
+        (self.vc_gencmd_read_response)(response, maxlen)
+    }
+    pub unsafe fn vc_gencmd_string_property(
+        &self,
+        text: *mut ::std::os::raw::c_char,
+        property: *const ::std::os::raw::c_char,
+        value: *mut *mut ::std::os::raw::c_char,
+        length: *mut ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int {
+        (self.vc_gencmd_string_property)(text, property, value, length)
+    }
+    pub unsafe fn vc_gencmd_number_property(
+        &self,
+        text: *mut ::std::os::raw::c_char,
+        property: *const ::std::os::raw::c_char,
+        number: *mut ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int {
+        (self.vc_gencmd_number_property)(text, property, number)
+    }
+    pub unsafe fn vc_gencmd_until(
+        &self,
+        cmd: *mut ::std::os::raw::c_char,
+        property: *const ::std::os::raw::c_char,
+        value: *mut ::std::os::raw::c_char,
+        error_string: *const ::std::os::raw::c_char,
+        timeout: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int {
+        (self.vc_gencmd_until)(cmd, property, value, error_string, timeout)
     }
     pub unsafe fn bcm_host_get_model_type(&self) -> ::std::os::raw::c_int {
         (self.bcm_host_get_model_type)()

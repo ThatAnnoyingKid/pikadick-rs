@@ -42,6 +42,14 @@ pub enum Error {
     #[error("the processor id `{0}` is unknown")]
     UnknownProcessorId(c_int),
 
+    /// Failed to conver to CString
+    #[error(transparent)]
+    InteriorNul(#[from] std::ffi::NulError),
+
+    /// A vc_gencmd error
+    #[error("a vc gen cmd function failed with `{0}`")]
+    VcGenCmd(c_int),
+
     /// Io Error
     #[error(transparent)]
     Io(#[from] std::io::Error),

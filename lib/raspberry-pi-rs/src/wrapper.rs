@@ -3,7 +3,10 @@ use crate::{
     Error,
     ProcessorId,
 };
-use std::os::raw::c_int;
+use std::{
+    ffi::CString,
+    os::raw::c_int,
+};
 
 impl BoardType {
     /// Make a new [`BoardType`] from a [`c_int`].
@@ -153,4 +156,61 @@ impl RaspberryPi {
         ProcessorId::new(unsafe { self.bcm_host.bcm_host_get_processor_id() })
             .map_err(Error::UnknownProcessorId)
     }
+
+    /*
+        vc_gencmd_init: unsafe extern "C" fn() -> c_int
+    vc_gencmd_stop: unsafe extern "C" fn()
+    */
+    /// Send command to general command serivce
+    pub fn vc_gencmd_send(&mut self, format: &str) -> Result<(), Error> {
+        if !self.bcm_host_initialized {
+            return Err(Error::BcmHostNotInitialized);
+        }
+
+        let format = CString::new(format)?;
+        let error_code = unsafe { (self.bcm_host.vc_gencmd_send)(format.as_ptr()) };
+
+        if error_code != 0 {
+            return Err(Error::VcGenCmd(error_code));
+        }
+
+        Ok(())
+    }
+
+    /// get resonse from general command serivce
+    pub fn vc_gencmd_read_response(&mut self) -> Result<CString, Error> {
+        if !self.bcm_host_initialized {
+            return Err(Error::BcmHostNotInitialized);
+        }
+
+        let capacity: usize = raspberry_pi_sys::libbcm_host::GENCMDSERVICE_MSGFIFO_SIZE
+            .try_into()
+            .expect("`GENCMDSERVICE_MSGFIFO_SIZE` is larger than a `usize`");
+
+        let mut buffer = Vec::with_capacity(capacity);
+
+        unsafe {
+            let error_code = self.bcm_host.vc_gencmd_read_response(
+                buffer.as_mut_ptr(),
+                capacity
+                    .try_into()
+                    .expect("`GENCMDSERVICE_MSGFIFO_SIZE` is larger than a `u32`"),
+            );
+
+            if error_code != 0 {
+                return Err(Error::VcGenCmd(error_code));
+            }
+
+            *buffer.as_mut_ptr().add(capacity - 1) = 0;
+            let len = libc::strlen(buffer.as_ptr());
+            buffer.set_len(len);
+        }
+
+        Ok(CString::new(buffer).expect("there should be only one nul"))
+    }
+    /*
+    vc_gencmd_string_property: unsafe extern "C" fn(text: *mut c_char, property: *const c_char, value: *mut *mut c_char, length: *mut c_int) -> c_int
+    vc_gencmd_number_property: unsafe extern "C" fn(text: *mut c_char, property: *const c_char, number: *mut c_int) -> c_int
+    vc_gencmd_until: unsafe extern "C" fn(cmd: *mut c_char, property: *const c_char, value: *mut c_char, error_string: *const c_char, timeout: c_int) -> c_int
+        */
 }

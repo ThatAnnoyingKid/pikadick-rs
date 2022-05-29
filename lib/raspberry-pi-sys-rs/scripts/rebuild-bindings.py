@@ -97,7 +97,7 @@ def generate_bindings(arch):
 		raise Exception(f'unsupported arch `{arch}`')
 	
 	# libbcm_host
-	subprocess.run(f'bindgen bundled/{arch}/usr/include/bcm_host.h -o src/{bindings_directory}/libbcm_host.rs --allowlist-function bcm_host_.* --allowlist-function graphics_get_display_size --allowlist-var BCM_HOST_.* --dynamic-loading libbcm_host --dynamic-link-require-all -- --target={clang_target} --sysroot=bundled/{arch} -Ibundled/{arch}/usr/include', check=True)
+	subprocess.run(f'bindgen bindgen-bcm_host.h -o src/{bindings_directory}/libbcm_host.rs --allowlist-function bcm_host_.* --allowlist-function graphics_get_display_size --allowlist-var BCM_HOST_.* --allowlist-function vc_gencmd_.* --allowlist-var GENCMDSERVICE_MSGFIFO_SIZE --blocklist-function vc_gencmd_inum --blocklist-function vc_gencmd_read_response_partial --blocklist-function vc_gencmd_close_response_partial --blocklist-function vc_gencmd_read_partial_state --dynamic-loading libbcm_host --dynamic-link-require-all -- --target={clang_target} --sysroot=bundled/{arch} -Ibundled/{arch}/usr/include', check=True)
 
 	# libvcos
 	subprocess.run(f'bindgen bundled/{arch}/usr/include/interface/vcos/vcos.h -o src/{bindings_directory}/libvcos.rs --allowlist-function vcos_.* --dynamic-loading libvcos --dynamic-link-require-all -- --target={clang_target} --sysroot=bundled/{arch} -Ibundled/{arch}/usr/include', check=True)

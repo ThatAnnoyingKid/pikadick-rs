@@ -5,6 +5,7 @@ edition = "2021"
 license = "BSD-3-Clause"
 
 [dependencies]
+libc = "0.2.126"
 libloading = "0.7.3"
 once_cell = "1.12.0"
 raspberry-pi-sys = { path = "../raspberry-pi-sys-rs" }
