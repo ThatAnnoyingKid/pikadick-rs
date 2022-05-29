@@ -1,6 +1,7 @@
 ///! A port of the `bcm_host_*` functions.
 ///
 ///! See `https://github.com/raspberrypi/firmware/blob/93420678493d9bb4ce97ab03d3fe87d60b1b3aa0/hardfp/opt/vc/include/bcm_host.h`
+///! Also see `https://github.com/raspberrypi/userland/blob/c4fd1b8986c6d6d4ae5cd51e65a8bbeb495dfa4e/host_applications/linux/libs/bcm_host/bcm_host.c`
 use crate::Error;
 use once_cell::sync::OnceCell;
 use std::{
