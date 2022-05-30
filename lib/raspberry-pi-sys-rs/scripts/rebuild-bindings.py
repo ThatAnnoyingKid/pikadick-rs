@@ -98,12 +98,56 @@ def generate_bindings(arch):
 		raise Exception(f'unsupported arch `{arch}`')
 	
 	# libbcm_host
-	allowlist_bcm_host = '--allowlist-function bcm_host_.* --allowlist-function graphics_get_display_size --allowlist-var BCM_HOST_.*'
-	allowlist_vc_gencmd = '--allowlist-function vc_gencmd_.* --allowlist-var GENCMDSERVICE_MSGFIFO_SIZE'
-	blocklist_vc_gencmd = '--blocklist-function vc_gencmd_inum --blocklist-function vc_gencmd_read_response_partial --blocklist-function vc_gencmd_close_response_partial --blocklist-function vc_gencmd_read_partial_state'
+	output_file = f'src/{bindings_directory}/libbcm_host.rs'
+	allowlist_bcm_host = ' '.join([
+		'--allowlist-function bcm_host_.*',
+		'--allowlist-function graphics_get_display_size',
+		'--allowlist-var BCM_HOST_.*',
+	])
+	allowlist_vc_gencmd = ' '.join([
+		'--allowlist-function vc_gencmd_.*', 
+		'--allowlist-var GENCMDSERVICE_MSGFIFO_SIZE',
+	])
+	blocklist_vc_gencmd = ' '.join([
+		'--blocklist-function vc_gencmd_inum', 
+		'--blocklist-function vc_gencmd_read_response_partial',
+		'--blocklist-function vc_gencmd_close_response_partial', 
+		'--blocklist-function vc_gencmd_read_partial_state',
+	])
 	allowlist_vcos = '--allowlist-function vcos_.*'
-	blocklist_vcos = '--blocklist-function vcos_pthreads_timer_reset --blocklist-function vcos_kmalloc --blocklist-function vcos_kcalloc --blocklist-function vcos_kfree --blocklist-function vcos_log_set_level_all --blocklist-function vcos_log_assert_cmd --blocklist-function vcos_log_set_cmd --blocklist-function vcos_log_status_cmd --blocklist-function vcos_log_test_cmd --blocklist-function vc_dispman_init --blocklist-function vc_dispmanx_resource_write_data_handle'
-	subprocess.run(f'bindgen bindgen-bcm_host.h -o src/{bindings_directory}/libbcm_host.rs {allowlist_bcm_host} {allowlist_vc_gencmd} {blocklist_vc_gencmd} {allowlist_vcos} {blocklist_vcos} --dynamic-loading libbcm_host --allowlist-function vchi_.* --blocklist-function vchi_crc_control --blocklist-function vchi_allocate_buffer --blocklist-function vchi_free_buffer --blocklist-function vchi_current_time --blocklist-function vchi_get_peer_version --blocklist-function vchi_msg_queuev_ex --blocklist-function vchi_msg_look_ahead --blocklist-function vchi_held_msg_ptr --blocklist-function vchi_held_msg_size --blocklist-function vchi_held_msg_tx_timestamp --dynamic-link-require-all -- --target={clang_target} --sysroot=bundled/{arch} -Ibundled/{arch}/usr/include', check=True)
+	blocklist_vcos = ' '.join([
+		'--blocklist-function vcos_pthreads_timer_reset', 
+		'--blocklist-function vcos_kmalloc', 
+		'--blocklist-function vcos_kcalloc',
+		'--blocklist-function vcos_kfree', 
+		'--blocklist-function vcos_log_set_level_all', 
+		'--blocklist-function vcos_log_assert_cmd', 
+		'--blocklist-function vcos_log_set_cmd', 
+		'--blocklist-function vcos_log_status_cmd', 
+		'--blocklist-function vcos_log_test_cmd', 
+		'--blocklist-function vc_dispman_init', 
+		'--blocklist-function vc_dispmanx_resource_write_data_handle',
+	])
+	allowlist_vchi = '--allowlist-function vchi_.*'
+	blocklist_vchi = ' '.join([
+		'--blocklist-function vchi_crc_control', 
+		'--blocklist-function vchi_allocate_buffer', 
+		'--blocklist-function vchi_free_buffer', 
+		'--blocklist-function vchi_current_time', 
+		'--blocklist-function vchi_get_peer_version', 
+		'--blocklist-function vchi_msg_queuev_ex', 
+		'--blocklist-function vchi_msg_look_ahead', 
+		'--blocklist-function vchi_held_msg_ptr', 
+		'--blocklist-function vchi_held_msg_size', 
+		'--blocklist-function vchi_held_msg_tx_timestamp', 
+		'--blocklist-function vchi_held_msg_rx_timestamp', 
+		'--blocklist-function vchi_msg_iter_has_next', 
+		'--blocklist-function vchi_msg_iter_next', 
+		'--blocklist-function vchi_msg_iter_remove', 
+		'--blocklist-function vchi_msg_iter_hold'
+	])
+	
+	subprocess.run(f'bindgen bindgen-bcm_host.h -o {output_file} {allowlist_bcm_host} {allowlist_vc_gencmd} {blocklist_vc_gencmd} {allowlist_vcos} {blocklist_vcos} {allowlist_vchi} {blocklist_vchi} --dynamic-loading libbcm_host --dynamic-link-require-all -- --target={clang_target} --sysroot=bundled/{arch} -Ibundled/{arch}/usr/include', check=True)
 
 def main():
 	parser = argparse.ArgumentParser(description='Rebuild bindings')
