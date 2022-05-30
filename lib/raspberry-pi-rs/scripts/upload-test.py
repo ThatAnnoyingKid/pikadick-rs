@@ -14,7 +14,7 @@ def main():
 	config_pi_target = config_pi['target']
 		
 	print('Compiling...')
-	subprocess.run(f'cargo test --target {config_pi_target} --features=wrapper --no-run', check=True)
+	subprocess.run(f'cargo run -p across -- --cargo-build-wrapper "cargo test --no-run" --target {config_pi_target} --features wrapper', check=True)
 	
 	print('Parsing cargo metadata...')
 	cargo_metadata_process = subprocess.run(f'cargo metadata --format-version 1', check=True, capture_output=True)
