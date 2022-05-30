@@ -106,6 +106,8 @@ pub const BCM_HOST_PROCESSOR_BCM2837: u32 = 2;
 pub const BCM_HOST_PROCESSOR_BCM2838: u32 = 3;
 pub const BCM_HOST_PROCESSOR_BCM2711: u32 = 3;
 pub const GENCMDSERVICE_MSGFIFO_SIZE: u32 = 4092;
+pub type __uint8_t = ::std::os::raw::c_uchar;
+pub type __int16_t = ::std::os::raw::c_short;
 pub type __uint16_t = ::std::os::raw::c_ushort;
 pub type __int32_t = ::std::os::raw::c_int;
 pub type __uint32_t = ::std::os::raw::c_uint;
@@ -128,6 +130,8 @@ pub const VCOS_STATUS_T_VCOS_EEXIST: VCOS_STATUS_T = 8;
 pub const VCOS_STATUS_T_VCOS_ENXIO: VCOS_STATUS_T = 9;
 pub const VCOS_STATUS_T_VCOS_EINTR: VCOS_STATUS_T = 10;
 pub type VCOS_STATUS_T = ::std::os::raw::c_uint;
+pub type vcos_bool_t = i32;
+pub type vcos_fourcc_t = i32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct timespec {
@@ -1969,6 +1973,2290 @@ fn bindgen_test_layout_VCOS_CMD_S() {
         )
     );
 }
+pub const VCHI_FLAGS_T_VCHI_FLAGS_NONE: VCHI_FLAGS_T = 0;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_BLOCK_UNTIL_OP_COMPLETE: VCHI_FLAGS_T = 1;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_CALLBACK_WHEN_OP_COMPLETE: VCHI_FLAGS_T = 2;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_BLOCK_UNTIL_QUEUED: VCHI_FLAGS_T = 4;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_ALLOW_PARTIAL: VCHI_FLAGS_T = 8;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_BLOCK_UNTIL_DATA_READ: VCHI_FLAGS_T = 16;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_CALLBACK_WHEN_DATA_READ: VCHI_FLAGS_T = 32;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_ALIGN_SLOT: VCHI_FLAGS_T = 128;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_BULK_AUX_QUEUED: VCHI_FLAGS_T = 65536;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_BULK_AUX_COMPLETE: VCHI_FLAGS_T = 131072;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_BULK_DATA_QUEUED: VCHI_FLAGS_T = 262144;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_BULK_DATA_COMPLETE: VCHI_FLAGS_T = 524288;
+pub const VCHI_FLAGS_T_VCHI_FLAGS_INTERNAL: VCHI_FLAGS_T = 16711680;
+pub type VCHI_FLAGS_T = ::std::os::raw::c_uint;
+pub const VCHI_CRC_CONTROL_T_VCHI_CRC_NOTHING: VCHI_CRC_CONTROL_T = -1;
+pub const VCHI_CRC_CONTROL_T_VCHI_CRC_PER_SERVICE: VCHI_CRC_CONTROL_T = 0;
+pub const VCHI_CRC_CONTROL_T_VCHI_CRC_EVERYTHING: VCHI_CRC_CONTROL_T = 1;
+pub type VCHI_CRC_CONTROL_T = ::std::os::raw::c_int;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_REASON_MIN: VCHI_CALLBACK_REASON_T = 0;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_MSG_AVAILABLE: VCHI_CALLBACK_REASON_T = 1;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_MSG_SENT: VCHI_CALLBACK_REASON_T = 2;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_MSG_SPACE_AVAILABLE: VCHI_CALLBACK_REASON_T = 3;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_BULK_RECEIVED: VCHI_CALLBACK_REASON_T = 4;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_BULK_SENT: VCHI_CALLBACK_REASON_T = 5;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_BULK_RX_SPACE_AVAILABLE: VCHI_CALLBACK_REASON_T = 6;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_BULK_TX_SPACE_AVAILABLE: VCHI_CALLBACK_REASON_T = 7;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_SERVICE_CLOSED: VCHI_CALLBACK_REASON_T = 8;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_SENT_XOFF: VCHI_CALLBACK_REASON_T = 9;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_SENT_XON: VCHI_CALLBACK_REASON_T = 10;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_BULK_DATA_READ: VCHI_CALLBACK_REASON_T = 11;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_PEER_OFF: VCHI_CALLBACK_REASON_T = 12;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_PEER_SUSPENDED: VCHI_CALLBACK_REASON_T = 13;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_PEER_ON: VCHI_CALLBACK_REASON_T = 14;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_PEER_RESUMED: VCHI_CALLBACK_REASON_T = 15;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_FORCED_POWER_OFF: VCHI_CALLBACK_REASON_T = 16;
+pub const VCHI_CALLBACK_REASON_T_VCHI_CALLBACK_REASON_MAX: VCHI_CALLBACK_REASON_T = 17;
+pub type VCHI_CALLBACK_REASON_T = ::std::os::raw::c_uint;
+pub const VCHI_SERVICE_OPTION_T_VCHI_SERVICE_OPTION_MIN: VCHI_SERVICE_OPTION_T = 0;
+pub const VCHI_SERVICE_OPTION_T_VCHI_SERVICE_OPTION_TRACE: VCHI_SERVICE_OPTION_T = 1;
+pub const VCHI_SERVICE_OPTION_T_VCHI_SERVICE_OPTION_SYNCHRONOUS: VCHI_SERVICE_OPTION_T = 2;
+pub const VCHI_SERVICE_OPTION_T_VCHI_SERVICE_OPTION_MAX: VCHI_SERVICE_OPTION_T = 3;
+pub type VCHI_SERVICE_OPTION_T = ::std::os::raw::c_uint;
+pub type VCHI_CALLBACK_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        callback_param: *mut ::std::os::raw::c_void,
+        reason: VCHI_CALLBACK_REASON_T,
+        handle: *mut ::std::os::raw::c_void,
+    ),
+>;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vchi_msg_vector {
+    pub vec_base: *const ::std::os::raw::c_void,
+    pub vec_len: i32,
+}
+#[test]
+fn bindgen_test_layout_vchi_msg_vector() {
+    assert_eq!(
+        ::std::mem::size_of::<vchi_msg_vector>(),
+        8usize,
+        concat!("Size of: ", stringify!(vchi_msg_vector))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vchi_msg_vector>(),
+        4usize,
+        concat!("Alignment of ", stringify!(vchi_msg_vector))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vchi_msg_vector>())).vec_base as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector),
+            "::",
+            stringify!(vec_base)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vchi_msg_vector>())).vec_len as *const _ as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector),
+            "::",
+            stringify!(vec_len)
+        )
+    );
+}
+pub type VCHI_MSG_VECTOR_T = vchi_msg_vector;
+pub type VCHI_CONNECTION_API_T = opaque_vchi_connection_api_t;
+pub type VCHI_MESSAGE_DRIVER_T = opaque_vchi_message_driver_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct VCHI_MSG_ITER_T {
+    pub service: *mut opaque_vchi_service_t,
+    pub last: *mut ::std::os::raw::c_void,
+    pub next: *mut ::std::os::raw::c_void,
+    pub remove: *mut ::std::os::raw::c_void,
+}
+#[test]
+fn bindgen_test_layout_VCHI_MSG_ITER_T() {
+    assert_eq!(
+        ::std::mem::size_of::<VCHI_MSG_ITER_T>(),
+        16usize,
+        concat!("Size of: ", stringify!(VCHI_MSG_ITER_T))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<VCHI_MSG_ITER_T>(),
+        4usize,
+        concat!("Alignment of ", stringify!(VCHI_MSG_ITER_T))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<VCHI_MSG_ITER_T>())).service as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(VCHI_MSG_ITER_T),
+            "::",
+            stringify!(service)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<VCHI_MSG_ITER_T>())).last as *const _ as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(VCHI_MSG_ITER_T),
+            "::",
+            stringify!(last)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<VCHI_MSG_ITER_T>())).next as *const _ as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(VCHI_MSG_ITER_T),
+            "::",
+            stringify!(next)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<VCHI_MSG_ITER_T>())).remove as *const _ as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(VCHI_MSG_ITER_T),
+            "::",
+            stringify!(remove)
+        )
+    );
+}
+pub const message_event_type_MESSAGE_EVENT_NONE: message_event_type = 0;
+pub const message_event_type_MESSAGE_EVENT_NOP: message_event_type = 1;
+pub const message_event_type_MESSAGE_EVENT_MESSAGE: message_event_type = 2;
+pub const message_event_type_MESSAGE_EVENT_SLOT_COMPLETE: message_event_type = 3;
+pub const message_event_type_MESSAGE_EVENT_RX_BULK_PAUSED: message_event_type = 4;
+pub const message_event_type_MESSAGE_EVENT_RX_BULK_COMPLETE: message_event_type = 5;
+pub const message_event_type_MESSAGE_EVENT_TX_COMPLETE: message_event_type = 6;
+pub const message_event_type_MESSAGE_EVENT_MSG_DISCARDED: message_event_type = 7;
+pub type message_event_type = ::std::os::raw::c_uint;
+pub use self::message_event_type as MESSAGE_EVENT_TYPE_T;
+pub const vchi_msg_flags_VCHI_MSG_FLAGS_NONE: vchi_msg_flags = 0;
+pub const vchi_msg_flags_VCHI_MSG_FLAGS_TERMINATE_DMA: vchi_msg_flags = 1;
+pub type vchi_msg_flags = ::std::os::raw::c_uint;
+pub use self::vchi_msg_flags as VCHI_MSG_FLAGS_T;
+pub const message_tx_channel_MESSAGE_TX_CHANNEL_MESSAGE: message_tx_channel = 0;
+pub const message_tx_channel_MESSAGE_TX_CHANNEL_BULK: message_tx_channel = 1;
+pub type message_tx_channel = ::std::os::raw::c_uint;
+pub use self::message_tx_channel as MESSAGE_TX_CHANNEL_T;
+pub const message_rx_channel_MESSAGE_RX_CHANNEL_MESSAGE: message_rx_channel = 0;
+pub const message_rx_channel_MESSAGE_RX_CHANNEL_BULK: message_rx_channel = 1;
+pub type message_rx_channel = ::std::os::raw::c_uint;
+pub use self::message_rx_channel as MESSAGE_RX_CHANNEL_T;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rx_msg_slot_info {
+    pub next: *mut rx_msg_slot_info,
+    pub addr: *mut u8,
+    pub len: u32,
+    pub write_ptr: u32,
+    pub read_ptr: u32,
+    pub active: ::std::os::raw::c_int,
+    pub msgs_parsed: u32,
+    pub msgs_released: u32,
+    pub state: *mut ::std::os::raw::c_void,
+    pub ref_count: [u8; 36usize],
+}
+#[test]
+fn bindgen_test_layout_rx_msg_slot_info() {
+    assert_eq!(
+        ::std::mem::size_of::<rx_msg_slot_info>(),
+        72usize,
+        concat!("Size of: ", stringify!(rx_msg_slot_info))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<rx_msg_slot_info>(),
+        4usize,
+        concat!("Alignment of ", stringify!(rx_msg_slot_info))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_msg_slot_info>())).next as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_msg_slot_info),
+            "::",
+            stringify!(next)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_msg_slot_info>())).addr as *const _ as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_msg_slot_info),
+            "::",
+            stringify!(addr)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_msg_slot_info>())).len as *const _ as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_msg_slot_info),
+            "::",
+            stringify!(len)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_msg_slot_info>())).write_ptr as *const _ as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_msg_slot_info),
+            "::",
+            stringify!(write_ptr)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_msg_slot_info>())).read_ptr as *const _ as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_msg_slot_info),
+            "::",
+            stringify!(read_ptr)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_msg_slot_info>())).active as *const _ as usize },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_msg_slot_info),
+            "::",
+            stringify!(active)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_msg_slot_info>())).msgs_parsed as *const _ as usize },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_msg_slot_info),
+            "::",
+            stringify!(msgs_parsed)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_msg_slot_info>())).msgs_released as *const _ as usize },
+        28usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_msg_slot_info),
+            "::",
+            stringify!(msgs_released)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_msg_slot_info>())).state as *const _ as usize },
+        32usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_msg_slot_info),
+            "::",
+            stringify!(state)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_msg_slot_info>())).ref_count as *const _ as usize },
+        36usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_msg_slot_info),
+            "::",
+            stringify!(ref_count)
+        )
+    );
+}
+pub type RX_MSG_SLOTINFO_T = rx_msg_slot_info;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rx_bulk_slotinfo_t {
+    pub next: *mut rx_bulk_slotinfo_t,
+    pub blocking: *mut VCOS_SEMAPHORE_T,
+    pub addr: *mut ::std::os::raw::c_void,
+    pub len: u32,
+    pub service: *mut ::std::os::raw::c_void,
+    pub handle: *mut ::std::os::raw::c_void,
+    pub flags: VCHI_FLAGS_T,
+}
+#[test]
+fn bindgen_test_layout_rx_bulk_slotinfo_t() {
+    assert_eq!(
+        ::std::mem::size_of::<rx_bulk_slotinfo_t>(),
+        28usize,
+        concat!("Size of: ", stringify!(rx_bulk_slotinfo_t))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<rx_bulk_slotinfo_t>(),
+        4usize,
+        concat!("Alignment of ", stringify!(rx_bulk_slotinfo_t))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_bulk_slotinfo_t>())).next as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_bulk_slotinfo_t),
+            "::",
+            stringify!(next)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_bulk_slotinfo_t>())).blocking as *const _ as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_bulk_slotinfo_t),
+            "::",
+            stringify!(blocking)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_bulk_slotinfo_t>())).addr as *const _ as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_bulk_slotinfo_t),
+            "::",
+            stringify!(addr)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_bulk_slotinfo_t>())).len as *const _ as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_bulk_slotinfo_t),
+            "::",
+            stringify!(len)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_bulk_slotinfo_t>())).service as *const _ as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_bulk_slotinfo_t),
+            "::",
+            stringify!(service)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_bulk_slotinfo_t>())).handle as *const _ as usize },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_bulk_slotinfo_t),
+            "::",
+            stringify!(handle)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<rx_bulk_slotinfo_t>())).flags as *const _ as usize },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(rx_bulk_slotinfo_t),
+            "::",
+            stringify!(flags)
+        )
+    );
+}
+pub type RX_BULK_SLOTINFO_T = rx_bulk_slotinfo_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct MESSAGE_EVENT_T {
+    pub type_: MESSAGE_EVENT_TYPE_T,
+    pub message: MESSAGE_EVENT_T__bindgen_ty_1,
+    pub rx_msg: *mut RX_MSG_SLOTINFO_T,
+    pub rx_bulk: *mut RX_BULK_SLOTINFO_T,
+    pub tx_handle: *mut ::std::os::raw::c_void,
+    pub tx_channel: MESSAGE_TX_CHANNEL_T,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct MESSAGE_EVENT_T__bindgen_ty_1 {
+    pub addr: *mut ::std::os::raw::c_void,
+    pub slot_delta: u16,
+    pub len: u32,
+    pub slot: *mut RX_MSG_SLOTINFO_T,
+    pub service: vcos_fourcc_t,
+    pub tx_timestamp: u32,
+    pub rx_timestamp: u32,
+}
+#[test]
+fn bindgen_test_layout_MESSAGE_EVENT_T__bindgen_ty_1() {
+    assert_eq!(
+        ::std::mem::size_of::<MESSAGE_EVENT_T__bindgen_ty_1>(),
+        28usize,
+        concat!("Size of: ", stringify!(MESSAGE_EVENT_T__bindgen_ty_1))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<MESSAGE_EVENT_T__bindgen_ty_1>(),
+        4usize,
+        concat!("Alignment of ", stringify!(MESSAGE_EVENT_T__bindgen_ty_1))
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<MESSAGE_EVENT_T__bindgen_ty_1>())).addr as *const _ as usize
+        },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T__bindgen_ty_1),
+            "::",
+            stringify!(addr)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<MESSAGE_EVENT_T__bindgen_ty_1>())).slot_delta as *const _
+                as usize
+        },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T__bindgen_ty_1),
+            "::",
+            stringify!(slot_delta)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<MESSAGE_EVENT_T__bindgen_ty_1>())).len as *const _ as usize
+        },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T__bindgen_ty_1),
+            "::",
+            stringify!(len)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<MESSAGE_EVENT_T__bindgen_ty_1>())).slot as *const _ as usize
+        },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T__bindgen_ty_1),
+            "::",
+            stringify!(slot)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<MESSAGE_EVENT_T__bindgen_ty_1>())).service as *const _ as usize
+        },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T__bindgen_ty_1),
+            "::",
+            stringify!(service)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<MESSAGE_EVENT_T__bindgen_ty_1>())).tx_timestamp as *const _
+                as usize
+        },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T__bindgen_ty_1),
+            "::",
+            stringify!(tx_timestamp)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<MESSAGE_EVENT_T__bindgen_ty_1>())).rx_timestamp as *const _
+                as usize
+        },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T__bindgen_ty_1),
+            "::",
+            stringify!(rx_timestamp)
+        )
+    );
+}
+#[test]
+fn bindgen_test_layout_MESSAGE_EVENT_T() {
+    assert_eq!(
+        ::std::mem::size_of::<MESSAGE_EVENT_T>(),
+        48usize,
+        concat!("Size of: ", stringify!(MESSAGE_EVENT_T))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<MESSAGE_EVENT_T>(),
+        4usize,
+        concat!("Alignment of ", stringify!(MESSAGE_EVENT_T))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<MESSAGE_EVENT_T>())).type_ as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T),
+            "::",
+            stringify!(type_)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<MESSAGE_EVENT_T>())).message as *const _ as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T),
+            "::",
+            stringify!(message)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<MESSAGE_EVENT_T>())).rx_msg as *const _ as usize },
+        32usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T),
+            "::",
+            stringify!(rx_msg)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<MESSAGE_EVENT_T>())).rx_bulk as *const _ as usize },
+        36usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T),
+            "::",
+            stringify!(rx_bulk)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<MESSAGE_EVENT_T>())).tx_handle as *const _ as usize },
+        40usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T),
+            "::",
+            stringify!(tx_handle)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<MESSAGE_EVENT_T>())).tx_channel as *const _ as usize },
+        44usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(MESSAGE_EVENT_T),
+            "::",
+            stringify!(tx_channel)
+        )
+    );
+}
+pub type VCHI_MESSAGE_DRIVER_EVENT_CALLBACK_T =
+    ::std::option::Option<unsafe extern "C" fn(state: *mut ::std::os::raw::c_void)>;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct VCHI_MESSAGE_DRIVER_OPEN_T {
+    pub event_callback: VCHI_MESSAGE_DRIVER_EVENT_CALLBACK_T,
+}
+#[test]
+fn bindgen_test_layout_VCHI_MESSAGE_DRIVER_OPEN_T() {
+    assert_eq!(
+        ::std::mem::size_of::<VCHI_MESSAGE_DRIVER_OPEN_T>(),
+        4usize,
+        concat!("Size of: ", stringify!(VCHI_MESSAGE_DRIVER_OPEN_T))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<VCHI_MESSAGE_DRIVER_OPEN_T>(),
+        4usize,
+        concat!("Alignment of ", stringify!(VCHI_MESSAGE_DRIVER_OPEN_T))
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<VCHI_MESSAGE_DRIVER_OPEN_T>())).event_callback as *const _
+                as usize
+        },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(VCHI_MESSAGE_DRIVER_OPEN_T),
+            "::",
+            stringify!(event_callback)
+        )
+    );
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct opaque_mhandle_t {
+    _unused: [u8; 0],
+}
+pub type VCHI_MDRIVER_HANDLE_T = *mut opaque_mhandle_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct opaque_vchi_message_driver_t {
+    pub open: ::std::option::Option<
+        unsafe extern "C" fn(
+            params: *mut VCHI_MESSAGE_DRIVER_OPEN_T,
+            state: *mut ::std::os::raw::c_void,
+        ) -> *mut VCHI_MDRIVER_HANDLE_T,
+    >,
+    pub suspending:
+        ::std::option::Option<unsafe extern "C" fn(handle: *mut VCHI_MDRIVER_HANDLE_T) -> i32>,
+    pub resumed:
+        ::std::option::Option<unsafe extern "C" fn(handle: *mut VCHI_MDRIVER_HANDLE_T) -> i32>,
+    pub power_control: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            arg1: MESSAGE_TX_CHANNEL_T,
+            enable: vcos_bool_t,
+        ) -> i32,
+    >,
+    pub add_msg_rx_slot: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            slot: *mut RX_MSG_SLOTINFO_T,
+        ) -> i32,
+    >,
+    pub add_bulk_rx: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            data: *mut ::std::os::raw::c_void,
+            len: u32,
+            slot: *mut RX_BULK_SLOTINFO_T,
+        ) -> i32,
+    >,
+    pub send: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            channel: MESSAGE_TX_CHANNEL_T,
+            data: *const ::std::os::raw::c_void,
+            len: u32,
+            flags: VCHI_MSG_FLAGS_T,
+            send_handle: *mut ::std::os::raw::c_void,
+        ) -> i32,
+    >,
+    pub next_event: ::std::option::Option<
+        unsafe extern "C" fn(handle: *mut VCHI_MDRIVER_HANDLE_T, event: *mut MESSAGE_EVENT_T),
+    >,
+    pub enable:
+        ::std::option::Option<unsafe extern "C" fn(handle: *mut VCHI_MDRIVER_HANDLE_T) -> i32>,
+    pub form_message: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            service_id: vcos_fourcc_t,
+            vector: *mut VCHI_MSG_VECTOR_T,
+            count: u32,
+            address: *mut ::std::os::raw::c_void,
+            length_avail: u32,
+            max_total_length: u32,
+            pad_to_fill: vcos_bool_t,
+            allow_partial: vcos_bool_t,
+        ) -> i32,
+    >,
+    pub update_message: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            dest: *mut ::std::os::raw::c_void,
+            slot_count: *mut i16,
+        ) -> i32,
+    >,
+    pub buffer_aligned: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            tx: ::std::os::raw::c_int,
+            uncached: ::std::os::raw::c_int,
+            address: *const ::std::os::raw::c_void,
+            length: u32,
+        ) -> i32,
+    >,
+    pub allocate_buffer: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            length: *mut u32,
+        ) -> *mut ::std::os::raw::c_void,
+    >,
+    pub free_buffer: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            address: *mut ::std::os::raw::c_void,
+        ),
+    >,
+    pub rx_slot_size: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            msg_size: ::std::os::raw::c_int,
+        ) -> ::std::os::raw::c_int,
+    >,
+    pub tx_slot_size: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            msg_size: ::std::os::raw::c_int,
+        ) -> ::std::os::raw::c_int,
+    >,
+    pub tx_supports_terminate: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *const VCHI_MDRIVER_HANDLE_T,
+            channel: MESSAGE_TX_CHANNEL_T,
+        ) -> vcos_bool_t,
+    >,
+    pub tx_bulk_chunk_size: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *const VCHI_MDRIVER_HANDLE_T,
+            channel: MESSAGE_TX_CHANNEL_T,
+        ) -> u32,
+    >,
+    pub tx_alignment: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *const VCHI_MDRIVER_HANDLE_T,
+            channel: MESSAGE_TX_CHANNEL_T,
+        ) -> ::std::os::raw::c_int,
+    >,
+    pub rx_alignment: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *const VCHI_MDRIVER_HANDLE_T,
+            channel: MESSAGE_RX_CHANNEL_T,
+        ) -> ::std::os::raw::c_int,
+    >,
+    pub form_bulk_aux: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: *mut VCHI_MDRIVER_HANDLE_T,
+            channel: MESSAGE_TX_CHANNEL_T,
+            data: *const ::std::os::raw::c_void,
+            len: u32,
+            chunk_size: u32,
+            aux_data: *mut *const ::std::os::raw::c_void,
+            aux_len: *mut i32,
+        ),
+    >,
+    pub debug: ::std::option::Option<unsafe extern "C" fn(handle: *mut VCHI_MDRIVER_HANDLE_T)>,
+}
+#[test]
+fn bindgen_test_layout_opaque_vchi_message_driver_t() {
+    assert_eq!(
+        ::std::mem::size_of::<opaque_vchi_message_driver_t>(),
+        88usize,
+        concat!("Size of: ", stringify!(opaque_vchi_message_driver_t))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<opaque_vchi_message_driver_t>(),
+        4usize,
+        concat!("Alignment of ", stringify!(opaque_vchi_message_driver_t))
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).open as *const _ as usize
+        },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(open)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).suspending as *const _ as usize
+        },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(suspending)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).resumed as *const _ as usize
+        },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(resumed)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).power_control as *const _
+                as usize
+        },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(power_control)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).add_msg_rx_slot as *const _
+                as usize
+        },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(add_msg_rx_slot)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).add_bulk_rx as *const _
+                as usize
+        },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(add_bulk_rx)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).send as *const _ as usize
+        },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(send)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).next_event as *const _ as usize
+        },
+        28usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(next_event)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).enable as *const _ as usize
+        },
+        32usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(enable)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).form_message as *const _
+                as usize
+        },
+        36usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(form_message)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).update_message as *const _
+                as usize
+        },
+        40usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(update_message)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).buffer_aligned as *const _
+                as usize
+        },
+        44usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(buffer_aligned)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).allocate_buffer as *const _
+                as usize
+        },
+        48usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(allocate_buffer)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).free_buffer as *const _
+                as usize
+        },
+        52usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(free_buffer)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).rx_slot_size as *const _
+                as usize
+        },
+        56usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(rx_slot_size)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).tx_slot_size as *const _
+                as usize
+        },
+        60usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(tx_slot_size)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).tx_supports_terminate
+                as *const _ as usize
+        },
+        64usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(tx_supports_terminate)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).tx_bulk_chunk_size as *const _
+                as usize
+        },
+        68usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(tx_bulk_chunk_size)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).tx_alignment as *const _
+                as usize
+        },
+        72usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(tx_alignment)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).rx_alignment as *const _
+                as usize
+        },
+        76usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(rx_alignment)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).form_bulk_aux as *const _
+                as usize
+        },
+        80usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(form_bulk_aux)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_message_driver_t>())).debug as *const _ as usize
+        },
+        84usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_message_driver_t),
+            "::",
+            stringify!(debug)
+        )
+    );
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct opaque_vchi_connection_connected_service_handle_t {
+    _unused: [u8; 0],
+}
+pub type VCHI_CONNECTION_SERVICE_HANDLE_T = *mut opaque_vchi_connection_connected_service_handle_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct opaque_vchi_connection_info_t {
+    _unused: [u8; 0],
+}
+pub type VCHI_CONNECTION_STATE_T = opaque_vchi_connection_info_t;
+pub type VCHI_CONNECTION_T = vchi_connection_t;
+pub type VCHI_CONNECTION_INIT_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        connection: *mut vchi_connection_t,
+        driver: *const VCHI_MESSAGE_DRIVER_T,
+    ) -> *mut VCHI_CONNECTION_STATE_T,
+>;
+pub type VCHI_CONNECTION_CRC_CONTROL_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        state_handle: *mut VCHI_CONNECTION_STATE_T,
+        control: VCHI_CRC_CONTROL_T,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_SERVICE_CONNECT_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        state_handle: *mut VCHI_CONNECTION_STATE_T,
+        service_id: vcos_fourcc_t,
+        rx_fifo_size: u32,
+        tx_fifo_size: u32,
+        server: ::std::os::raw::c_int,
+        callback: VCHI_CALLBACK_T,
+        callback_param: *mut ::std::os::raw::c_void,
+        want_crc: vcos_bool_t,
+        want_unaligned_bulk_rx: vcos_bool_t,
+        want_unaligned_bulk_tx: vcos_bool_t,
+        service_handle: *mut VCHI_CONNECTION_SERVICE_HANDLE_T,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_SERVICE_DISCONNECT_T = ::std::option::Option<
+    unsafe extern "C" fn(service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T) -> i32,
+>;
+pub type VCHI_CONNECTION_SERVICE_QUEUE_MESSAGE_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        data: *const ::std::os::raw::c_void,
+        data_size: u32,
+        flags: VCHI_FLAGS_T,
+        msg_handle: *mut ::std::os::raw::c_void,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_SERVICE_QUEUE_MESSAGEV_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        vector: *mut VCHI_MSG_VECTOR_T,
+        count: u32,
+        flags: VCHI_FLAGS_T,
+        msg_handle: *mut ::std::os::raw::c_void,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_SERVICE_DEQUEUE_MESSAGE_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        data: *mut ::std::os::raw::c_void,
+        max_data_size_to_read: u32,
+        actual_msg_size: *mut u32,
+        flags: VCHI_FLAGS_T,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_SERVICE_PEEK_MESSAGE_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        data: *mut *mut ::std::os::raw::c_void,
+        msg_size: *mut u32,
+        flags: VCHI_FLAGS_T,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_SERVICE_HOLD_MESSAGE_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        data: *mut *mut ::std::os::raw::c_void,
+        msg_size: *mut u32,
+        flags: VCHI_FLAGS_T,
+        message_handle: *mut *mut ::std::os::raw::c_void,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_SERVICE_LOOKAHEAD_MESSAGE_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        iter: *mut VCHI_MSG_ITER_T,
+        flags: VCHI_FLAGS_T,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_HELD_MSG_RELEASE_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        message_handle: *mut ::std::os::raw::c_void,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_HELD_MSG_INFO_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        message_handle: *mut ::std::os::raw::c_void,
+        data: *mut *mut ::std::os::raw::c_void,
+        msg_size: *mut i32,
+        tx_timestamp: *mut u32,
+        rx_timestamp: *mut u32,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_MSG_ITER_HAS_NEXT_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        iter: *const VCHI_MSG_ITER_T,
+    ) -> vcos_bool_t,
+>;
+pub type VCHI_CONNECTION_MSG_ITER_NEXT_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        iter: *mut VCHI_MSG_ITER_T,
+        data: *mut *mut ::std::os::raw::c_void,
+        msg_size: *mut u32,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_MSG_ITER_REMOVE_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        iter: *mut VCHI_MSG_ITER_T,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_MSG_ITER_HOLD_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        iter: *mut VCHI_MSG_ITER_T,
+        msg_handle: *mut *mut ::std::os::raw::c_void,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_BULK_QUEUE_TRANSMIT_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        data_src: *const ::std::os::raw::c_void,
+        data_size: u32,
+        flags: VCHI_FLAGS_T,
+        bulk_handle: *mut ::std::os::raw::c_void,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_BULK_QUEUE_RECEIVE_T = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        data_dst: *mut ::std::os::raw::c_void,
+        data_size: u32,
+        flags: VCHI_FLAGS_T,
+        bulk_handle: *mut ::std::os::raw::c_void,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_SERVER_PRESENT = ::std::option::Option<
+    unsafe extern "C" fn(
+        state: *mut VCHI_CONNECTION_STATE_T,
+        service_id: vcos_fourcc_t,
+        peer_flags: i32,
+    ) -> i32,
+>;
+pub type VCHI_CONNECTION_RX_SLOTS_AVAILABLE = ::std::option::Option<
+    unsafe extern "C" fn(state: *const VCHI_CONNECTION_STATE_T) -> ::std::os::raw::c_int,
+>;
+pub type VCHI_CONNECTION_RX_SLOT_SIZE =
+    ::std::option::Option<unsafe extern "C" fn(state: *const VCHI_CONNECTION_STATE_T) -> u32>;
+pub type VCHI_CONNECTION_RX_BULK_BUFFER_ADDED = ::std::option::Option<
+    unsafe extern "C" fn(
+        state: *mut VCHI_CONNECTION_STATE_T,
+        service: vcos_fourcc_t,
+        length: u32,
+        channel: MESSAGE_TX_CHANNEL_T,
+        channel_params: u32,
+        data_length: u32,
+        data_offset: u32,
+    ),
+>;
+pub type VCHI_CONNECTION_FLOW_CONTROL = ::std::option::Option<
+    unsafe extern "C" fn(state: *mut VCHI_CONNECTION_STATE_T, service_id: vcos_fourcc_t, xoff: i32),
+>;
+pub type VCHI_CONNECTION_SERVER_AVAILABLE_REPLY = ::std::option::Option<
+    unsafe extern "C" fn(
+        state: *mut VCHI_CONNECTION_STATE_T,
+        service_id: vcos_fourcc_t,
+        flags: u32,
+    ),
+>;
+pub type VCHI_CONNECTION_BULK_AUX_RECEIVED =
+    ::std::option::Option<unsafe extern "C" fn(state: *mut VCHI_CONNECTION_STATE_T)>;
+pub type VCHI_CONNECTION_BULK_AUX_TRANSMITTED = ::std::option::Option<
+    unsafe extern "C" fn(state: *mut VCHI_CONNECTION_STATE_T, handle: *mut ::std::os::raw::c_void),
+>;
+pub type VCHI_CONNECTION_INFO = ::std::option::Option<
+    unsafe extern "C" fn(
+        state: *mut VCHI_CONNECTION_STATE_T,
+        protocol_version: u32,
+        slot_size: u32,
+        num_slots: u32,
+        min_bulk_size: u32,
+    ),
+>;
+pub type VCHI_CONNECTION_DISCONNECT =
+    ::std::option::Option<unsafe extern "C" fn(state: *mut VCHI_CONNECTION_STATE_T, flags: u32)>;
+pub type VCHI_CONNECTION_POWER_CONTROL = ::std::option::Option<
+    unsafe extern "C" fn(
+        state: *mut VCHI_CONNECTION_STATE_T,
+        channel: MESSAGE_TX_CHANNEL_T,
+        enable: vcos_bool_t,
+    ),
+>;
+pub type VCHI_BUFFER_ALLOCATE = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        length: *mut u32,
+    ) -> *mut ::std::os::raw::c_void,
+>;
+pub type VCHI_BUFFER_FREE = ::std::option::Option<
+    unsafe extern "C" fn(
+        service_handle: VCHI_CONNECTION_SERVICE_HANDLE_T,
+        address: *mut ::std::os::raw::c_void,
+    ),
+>;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct opaque_vchi_connection_api_t {
+    pub init: VCHI_CONNECTION_INIT_T,
+    pub crc_control: VCHI_CONNECTION_CRC_CONTROL_T,
+    pub service_connect: VCHI_CONNECTION_SERVICE_CONNECT_T,
+    pub service_disconnect: VCHI_CONNECTION_SERVICE_DISCONNECT_T,
+    pub service_queue_msg: VCHI_CONNECTION_SERVICE_QUEUE_MESSAGE_T,
+    pub service_queue_msgv: VCHI_CONNECTION_SERVICE_QUEUE_MESSAGEV_T,
+    pub service_dequeue_msg: VCHI_CONNECTION_SERVICE_DEQUEUE_MESSAGE_T,
+    pub service_peek_msg: VCHI_CONNECTION_SERVICE_PEEK_MESSAGE_T,
+    pub service_hold_msg: VCHI_CONNECTION_SERVICE_HOLD_MESSAGE_T,
+    pub service_look_ahead_msg: VCHI_CONNECTION_SERVICE_LOOKAHEAD_MESSAGE_T,
+    pub held_msg_release: VCHI_CONNECTION_HELD_MSG_RELEASE_T,
+    pub held_msg_info: VCHI_CONNECTION_HELD_MSG_INFO_T,
+    pub msg_iter_has_next: VCHI_CONNECTION_MSG_ITER_HAS_NEXT_T,
+    pub msg_iter_next: VCHI_CONNECTION_MSG_ITER_NEXT_T,
+    pub msg_iter_remove: VCHI_CONNECTION_MSG_ITER_REMOVE_T,
+    pub msg_iter_hold: VCHI_CONNECTION_MSG_ITER_HOLD_T,
+    pub bulk_queue_transmit: VCHI_CONNECTION_BULK_QUEUE_TRANSMIT_T,
+    pub bulk_queue_receive: VCHI_CONNECTION_BULK_QUEUE_RECEIVE_T,
+    pub server_present: VCHI_CONNECTION_SERVER_PRESENT,
+    pub connection_rx_slots_available: VCHI_CONNECTION_RX_SLOTS_AVAILABLE,
+    pub connection_rx_slot_size: VCHI_CONNECTION_RX_SLOT_SIZE,
+    pub rx_bulk_buffer_added: VCHI_CONNECTION_RX_BULK_BUFFER_ADDED,
+    pub flow_control: VCHI_CONNECTION_FLOW_CONTROL,
+    pub server_available_reply: VCHI_CONNECTION_SERVER_AVAILABLE_REPLY,
+    pub bulk_aux_received: VCHI_CONNECTION_BULK_AUX_RECEIVED,
+    pub bulk_aux_transmitted: VCHI_CONNECTION_BULK_AUX_TRANSMITTED,
+    pub connection_info: VCHI_CONNECTION_INFO,
+    pub disconnect: VCHI_CONNECTION_DISCONNECT,
+    pub power_control: VCHI_CONNECTION_POWER_CONTROL,
+    pub buffer_allocate: VCHI_BUFFER_ALLOCATE,
+    pub buffer_free: VCHI_BUFFER_FREE,
+}
+#[test]
+fn bindgen_test_layout_opaque_vchi_connection_api_t() {
+    assert_eq!(
+        ::std::mem::size_of::<opaque_vchi_connection_api_t>(),
+        124usize,
+        concat!("Size of: ", stringify!(opaque_vchi_connection_api_t))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<opaque_vchi_connection_api_t>(),
+        4usize,
+        concat!("Alignment of ", stringify!(opaque_vchi_connection_api_t))
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).init as *const _ as usize
+        },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(init)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).crc_control as *const _
+                as usize
+        },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(crc_control)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).service_connect as *const _
+                as usize
+        },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(service_connect)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).service_disconnect as *const _
+                as usize
+        },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(service_disconnect)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).service_queue_msg as *const _
+                as usize
+        },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(service_queue_msg)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).service_queue_msgv as *const _
+                as usize
+        },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(service_queue_msgv)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).service_dequeue_msg as *const _
+                as usize
+        },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(service_dequeue_msg)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).service_peek_msg as *const _
+                as usize
+        },
+        28usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(service_peek_msg)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).service_hold_msg as *const _
+                as usize
+        },
+        32usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(service_hold_msg)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).service_look_ahead_msg
+                as *const _ as usize
+        },
+        36usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(service_look_ahead_msg)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).held_msg_release as *const _
+                as usize
+        },
+        40usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(held_msg_release)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).held_msg_info as *const _
+                as usize
+        },
+        44usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(held_msg_info)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).msg_iter_has_next as *const _
+                as usize
+        },
+        48usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(msg_iter_has_next)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).msg_iter_next as *const _
+                as usize
+        },
+        52usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(msg_iter_next)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).msg_iter_remove as *const _
+                as usize
+        },
+        56usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(msg_iter_remove)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).msg_iter_hold as *const _
+                as usize
+        },
+        60usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(msg_iter_hold)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).bulk_queue_transmit as *const _
+                as usize
+        },
+        64usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(bulk_queue_transmit)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).bulk_queue_receive as *const _
+                as usize
+        },
+        68usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(bulk_queue_receive)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).server_present as *const _
+                as usize
+        },
+        72usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(server_present)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).connection_rx_slots_available
+                as *const _ as usize
+        },
+        76usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(connection_rx_slots_available)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).connection_rx_slot_size
+                as *const _ as usize
+        },
+        80usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(connection_rx_slot_size)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).rx_bulk_buffer_added
+                as *const _ as usize
+        },
+        84usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(rx_bulk_buffer_added)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).flow_control as *const _
+                as usize
+        },
+        88usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(flow_control)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).server_available_reply
+                as *const _ as usize
+        },
+        92usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(server_available_reply)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).bulk_aux_received as *const _
+                as usize
+        },
+        96usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(bulk_aux_received)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).bulk_aux_transmitted
+                as *const _ as usize
+        },
+        100usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(bulk_aux_transmitted)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).connection_info as *const _
+                as usize
+        },
+        104usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(connection_info)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).disconnect as *const _ as usize
+        },
+        108usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(disconnect)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).power_control as *const _
+                as usize
+        },
+        112usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(power_control)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).buffer_allocate as *const _
+                as usize
+        },
+        116usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(buffer_allocate)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<opaque_vchi_connection_api_t>())).buffer_free as *const _
+                as usize
+        },
+        120usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(opaque_vchi_connection_api_t),
+            "::",
+            stringify!(buffer_free)
+        )
+    );
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct vchi_connection_t {
+    pub api: *const VCHI_CONNECTION_API_T,
+    pub state: *mut VCHI_CONNECTION_STATE_T,
+    pub sem: VCOS_SEMAPHORE_T,
+}
+#[test]
+fn bindgen_test_layout_vchi_connection_t() {
+    assert_eq!(
+        ::std::mem::size_of::<vchi_connection_t>(),
+        24usize,
+        concat!("Size of: ", stringify!(vchi_connection_t))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vchi_connection_t>(),
+        4usize,
+        concat!("Alignment of ", stringify!(vchi_connection_t))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vchi_connection_t>())).api as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_connection_t),
+            "::",
+            stringify!(api)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vchi_connection_t>())).state as *const _ as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_connection_t),
+            "::",
+            stringify!(state)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vchi_connection_t>())).sem as *const _ as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_connection_t),
+            "::",
+            stringify!(sem)
+        )
+    );
+}
+pub type VCHI_MEM_HANDLE_T = i32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct VCHI_VERSION_T {
+    pub version: u32,
+    pub version_min: u32,
+}
+#[test]
+fn bindgen_test_layout_VCHI_VERSION_T() {
+    assert_eq!(
+        ::std::mem::size_of::<VCHI_VERSION_T>(),
+        8usize,
+        concat!("Size of: ", stringify!(VCHI_VERSION_T))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<VCHI_VERSION_T>(),
+        4usize,
+        concat!("Alignment of ", stringify!(VCHI_VERSION_T))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<VCHI_VERSION_T>())).version as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(VCHI_VERSION_T),
+            "::",
+            stringify!(version)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<VCHI_VERSION_T>())).version_min as *const _ as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(VCHI_VERSION_T),
+            "::",
+            stringify!(version_min)
+        )
+    );
+}
+pub const VCHI_MSG_VECTOR_TYPE_T_VCHI_VEC_POINTER: VCHI_MSG_VECTOR_TYPE_T = 0;
+pub const VCHI_MSG_VECTOR_TYPE_T_VCHI_VEC_HANDLE: VCHI_MSG_VECTOR_TYPE_T = 1;
+pub const VCHI_MSG_VECTOR_TYPE_T_VCHI_VEC_LIST: VCHI_MSG_VECTOR_TYPE_T = 2;
+pub type VCHI_MSG_VECTOR_TYPE_T = ::std::os::raw::c_uint;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct vchi_msg_vector_ex {
+    pub type_: VCHI_MSG_VECTOR_TYPE_T,
+    pub u: vchi_msg_vector_ex__bindgen_ty_1,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union vchi_msg_vector_ex__bindgen_ty_1 {
+    pub handle: vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1,
+    pub ptr: vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_2,
+    pub list: vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_3,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1 {
+    pub handle: VCHI_MEM_HANDLE_T,
+    pub offset: u32,
+    pub vec_len: i32,
+}
+#[test]
+fn bindgen_test_layout_vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1() {
+    assert_eq!(
+        ::std::mem::size_of::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1>(),
+        12usize,
+        concat!(
+            "Size of: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1)
+        )
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1>(),
+        4usize,
+        concat!(
+            "Alignment of ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1>())).handle
+                as *const _ as usize
+        },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1),
+            "::",
+            stringify!(handle)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1>())).offset
+                as *const _ as usize
+        },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1),
+            "::",
+            stringify!(offset)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1>())).vec_len
+                as *const _ as usize
+        },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_1),
+            "::",
+            stringify!(vec_len)
+        )
+    );
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_2 {
+    pub vec_base: *const ::std::os::raw::c_void,
+    pub vec_len: i32,
+}
+#[test]
+fn bindgen_test_layout_vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_2() {
+    assert_eq!(
+        ::std::mem::size_of::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_2>(),
+        8usize,
+        concat!(
+            "Size of: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_2)
+        )
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_2>(),
+        4usize,
+        concat!(
+            "Alignment of ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_2)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_2>())).vec_base
+                as *const _ as usize
+        },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_2),
+            "::",
+            stringify!(vec_base)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_2>())).vec_len
+                as *const _ as usize
+        },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_2),
+            "::",
+            stringify!(vec_len)
+        )
+    );
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_3 {
+    pub vec: *mut vchi_msg_vector_ex,
+    pub vec_len: u32,
+}
+#[test]
+fn bindgen_test_layout_vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_3() {
+    assert_eq!(
+        ::std::mem::size_of::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_3>(),
+        8usize,
+        concat!(
+            "Size of: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_3)
+        )
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_3>(),
+        4usize,
+        concat!(
+            "Alignment of ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_3)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_3>())).vec
+                as *const _ as usize
+        },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_3),
+            "::",
+            stringify!(vec)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_3>())).vec_len
+                as *const _ as usize
+        },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1__bindgen_ty_3),
+            "::",
+            stringify!(vec_len)
+        )
+    );
+}
+#[test]
+fn bindgen_test_layout_vchi_msg_vector_ex__bindgen_ty_1() {
+    assert_eq!(
+        ::std::mem::size_of::<vchi_msg_vector_ex__bindgen_ty_1>(),
+        12usize,
+        concat!("Size of: ", stringify!(vchi_msg_vector_ex__bindgen_ty_1))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vchi_msg_vector_ex__bindgen_ty_1>(),
+        4usize,
+        concat!(
+            "Alignment of ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vchi_msg_vector_ex__bindgen_ty_1>())).handle as *const _ as usize
+        },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1),
+            "::",
+            stringify!(handle)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vchi_msg_vector_ex__bindgen_ty_1>())).ptr as *const _ as usize
+        },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1),
+            "::",
+            stringify!(ptr)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vchi_msg_vector_ex__bindgen_ty_1>())).list as *const _ as usize
+        },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex__bindgen_ty_1),
+            "::",
+            stringify!(list)
+        )
+    );
+}
+#[test]
+fn bindgen_test_layout_vchi_msg_vector_ex() {
+    assert_eq!(
+        ::std::mem::size_of::<vchi_msg_vector_ex>(),
+        16usize,
+        concat!("Size of: ", stringify!(vchi_msg_vector_ex))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vchi_msg_vector_ex>(),
+        4usize,
+        concat!("Alignment of ", stringify!(vchi_msg_vector_ex))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vchi_msg_vector_ex>())).type_ as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex),
+            "::",
+            stringify!(type_)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vchi_msg_vector_ex>())).u as *const _ as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vchi_msg_vector_ex),
+            "::",
+            stringify!(u)
+        )
+    );
+}
+pub type VCHI_MSG_VECTOR_EX_T = vchi_msg_vector_ex;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct opaque_vchi_service_t {
+    _unused: [u8; 0],
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct VCHI_HELD_MSG_T {
+    pub service: *mut opaque_vchi_service_t,
+    pub message: *mut ::std::os::raw::c_void,
+}
+#[test]
+fn bindgen_test_layout_VCHI_HELD_MSG_T() {
+    assert_eq!(
+        ::std::mem::size_of::<VCHI_HELD_MSG_T>(),
+        8usize,
+        concat!("Size of: ", stringify!(VCHI_HELD_MSG_T))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<VCHI_HELD_MSG_T>(),
+        4usize,
+        concat!("Alignment of ", stringify!(VCHI_HELD_MSG_T))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<VCHI_HELD_MSG_T>())).service as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(VCHI_HELD_MSG_T),
+            "::",
+            stringify!(service)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<VCHI_HELD_MSG_T>())).message as *const _ as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(VCHI_HELD_MSG_T),
+            "::",
+            stringify!(message)
+        )
+    );
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct SERVICE_CREATION_T {
+    pub version: VCHI_VERSION_T,
+    pub service_id: vcos_fourcc_t,
+    pub connection: *mut VCHI_CONNECTION_T,
+    pub rx_fifo_size: u32,
+    pub tx_fifo_size: u32,
+    pub callback: VCHI_CALLBACK_T,
+    pub callback_param: *mut ::std::os::raw::c_void,
+    pub want_unaligned_bulk_rx: vcos_bool_t,
+    pub want_unaligned_bulk_tx: vcos_bool_t,
+    pub want_crc: vcos_bool_t,
+}
+#[test]
+fn bindgen_test_layout_SERVICE_CREATION_T() {
+    assert_eq!(
+        ::std::mem::size_of::<SERVICE_CREATION_T>(),
+        44usize,
+        concat!("Size of: ", stringify!(SERVICE_CREATION_T))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<SERVICE_CREATION_T>(),
+        4usize,
+        concat!("Alignment of ", stringify!(SERVICE_CREATION_T))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<SERVICE_CREATION_T>())).version as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(SERVICE_CREATION_T),
+            "::",
+            stringify!(version)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<SERVICE_CREATION_T>())).service_id as *const _ as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(SERVICE_CREATION_T),
+            "::",
+            stringify!(service_id)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<SERVICE_CREATION_T>())).connection as *const _ as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(SERVICE_CREATION_T),
+            "::",
+            stringify!(connection)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<SERVICE_CREATION_T>())).rx_fifo_size as *const _ as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(SERVICE_CREATION_T),
+            "::",
+            stringify!(rx_fifo_size)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<SERVICE_CREATION_T>())).tx_fifo_size as *const _ as usize },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(SERVICE_CREATION_T),
+            "::",
+            stringify!(tx_fifo_size)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<SERVICE_CREATION_T>())).callback as *const _ as usize },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(SERVICE_CREATION_T),
+            "::",
+            stringify!(callback)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<SERVICE_CREATION_T>())).callback_param as *const _ as usize
+        },
+        28usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(SERVICE_CREATION_T),
+            "::",
+            stringify!(callback_param)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<SERVICE_CREATION_T>())).want_unaligned_bulk_rx as *const _
+                as usize
+        },
+        32usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(SERVICE_CREATION_T),
+            "::",
+            stringify!(want_unaligned_bulk_rx)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<SERVICE_CREATION_T>())).want_unaligned_bulk_tx as *const _
+                as usize
+        },
+        36usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(SERVICE_CREATION_T),
+            "::",
+            stringify!(want_unaligned_bulk_tx)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<SERVICE_CREATION_T>())).want_crc as *const _ as usize },
+        40usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(SERVICE_CREATION_T),
+            "::",
+            stringify!(want_crc)
+        )
+    );
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct opaque_vchi_instance_handle_t {
+    _unused: [u8; 0],
+}
+pub type VCHI_INSTANCE_T = *mut opaque_vchi_instance_handle_t;
+pub type VCHI_SERVICE_HANDLE_T = ::std::os::raw::c_uint;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct pagelist_struct {
+    _unused: [u8; 0],
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct VCOS_NAMED_SEMAPHORE_IMPL_T {
@@ -2246,6 +4534,87 @@ pub struct libbcm_host {
         once_control: *mut VCOS_ONCE_T,
         init_routine: ::std::option::Option<unsafe extern "C" fn()>,
     ) -> VCOS_STATUS_T,
+    pub vchi_create_connection: unsafe extern "C" fn(
+        function_table: *const VCHI_CONNECTION_API_T,
+        low_level: *const VCHI_MESSAGE_DRIVER_T,
+    ) -> *mut VCHI_CONNECTION_T,
+    pub vchi_initialise: unsafe extern "C" fn(instance_handle: *mut VCHI_INSTANCE_T) -> i32,
+    pub vchi_connect: unsafe extern "C" fn(
+        connections: *mut *mut VCHI_CONNECTION_T,
+        num_connections: u32,
+        instance_handle: VCHI_INSTANCE_T,
+    ) -> i32,
+    pub vchi_disconnect: unsafe extern "C" fn(instance_handle: VCHI_INSTANCE_T) -> i32,
+    pub vchi_service_create: unsafe extern "C" fn(
+        instance_handle: VCHI_INSTANCE_T,
+        setup: *mut SERVICE_CREATION_T,
+        handle: *mut VCHI_SERVICE_HANDLE_T,
+    ) -> i32,
+    pub vchi_service_destroy: unsafe extern "C" fn(handle: VCHI_SERVICE_HANDLE_T) -> i32,
+    pub vchi_service_open: unsafe extern "C" fn(
+        instance_handle: VCHI_INSTANCE_T,
+        setup: *mut SERVICE_CREATION_T,
+        handle: *mut VCHI_SERVICE_HANDLE_T,
+    ) -> i32,
+    pub vchi_service_close: unsafe extern "C" fn(handle: VCHI_SERVICE_HANDLE_T) -> i32,
+    pub vchi_service_use: unsafe extern "C" fn(handle: VCHI_SERVICE_HANDLE_T) -> i32,
+    pub vchi_service_release: unsafe extern "C" fn(handle: VCHI_SERVICE_HANDLE_T) -> i32,
+    pub vchi_service_set_option: unsafe extern "C" fn(
+        handle: VCHI_SERVICE_HANDLE_T,
+        option: VCHI_SERVICE_OPTION_T,
+        value: ::std::os::raw::c_int,
+    ) -> i32,
+    pub vchi_msg_queue: unsafe extern "C" fn(
+        handle: VCHI_SERVICE_HANDLE_T,
+        data: *const ::std::os::raw::c_void,
+        data_size: u32,
+        flags: VCHI_FLAGS_T,
+        msg_handle: *mut ::std::os::raw::c_void,
+    ) -> i32,
+    pub vchi_msg_queuev: unsafe extern "C" fn(
+        handle: VCHI_SERVICE_HANDLE_T,
+        vector: *mut VCHI_MSG_VECTOR_T,
+        count: u32,
+        flags: VCHI_FLAGS_T,
+        msg_handle: *mut ::std::os::raw::c_void,
+    ) -> i32,
+    pub vchi_msg_dequeue: unsafe extern "C" fn(
+        handle: VCHI_SERVICE_HANDLE_T,
+        data: *mut ::std::os::raw::c_void,
+        max_data_size_to_read: u32,
+        actual_msg_size: *mut u32,
+        flags: VCHI_FLAGS_T,
+    ) -> i32,
+    pub vchi_msg_peek: unsafe extern "C" fn(
+        handle: VCHI_SERVICE_HANDLE_T,
+        data: *mut *mut ::std::os::raw::c_void,
+        msg_size: *mut u32,
+        flags: VCHI_FLAGS_T,
+    ) -> i32,
+    pub vchi_msg_remove: unsafe extern "C" fn(handle: VCHI_SERVICE_HANDLE_T) -> i32,
+    pub vchi_msg_hold: unsafe extern "C" fn(
+        handle: VCHI_SERVICE_HANDLE_T,
+        data: *mut *mut ::std::os::raw::c_void,
+        msg_size: *mut u32,
+        flags: VCHI_FLAGS_T,
+        message_descriptor: *mut VCHI_HELD_MSG_T,
+    ) -> i32,
+    pub vchi_held_msg_release: unsafe extern "C" fn(message: *mut VCHI_HELD_MSG_T) -> i32,
+    pub vchi_bulk_queue_receive: unsafe extern "C" fn(
+        handle: VCHI_SERVICE_HANDLE_T,
+        data_dst: *mut ::std::os::raw::c_void,
+        data_size: u32,
+        flags: VCHI_FLAGS_T,
+        transfer_handle: *mut ::std::os::raw::c_void,
+    ) -> i32,
+    pub vchi_bulk_queue_transmit: unsafe extern "C" fn(
+        handle: VCHI_SERVICE_HANDLE_T,
+        data_src: *const ::std::os::raw::c_void,
+        data_size: u32,
+        flags: VCHI_FLAGS_T,
+        transfer_handle: *mut ::std::os::raw::c_void,
+    ) -> i32,
+    pub vchi_mphi_message_driver_func_table: unsafe extern "C" fn() -> *const VCHI_MESSAGE_DRIVER_T,
     pub vc_gencmd_init: unsafe extern "C" fn() -> ::std::os::raw::c_int,
     pub vc_gencmd_stop: unsafe extern "C" fn(),
     pub vc_gencmd_send:
@@ -2472,6 +4841,35 @@ impl libbcm_host {
         let vcos_thread_attr_init = __library.get(b"vcos_thread_attr_init\0").map(|sym| *sym)?;
         let vcos_timer_init = __library.get(b"vcos_timer_init\0").map(|sym| *sym)?;
         let vcos_once = __library.get(b"vcos_once\0").map(|sym| *sym)?;
+        let vchi_create_connection = __library.get(b"vchi_create_connection\0").map(|sym| *sym)?;
+        let vchi_initialise = __library.get(b"vchi_initialise\0").map(|sym| *sym)?;
+        let vchi_connect = __library.get(b"vchi_connect\0").map(|sym| *sym)?;
+        let vchi_disconnect = __library.get(b"vchi_disconnect\0").map(|sym| *sym)?;
+        let vchi_service_create = __library.get(b"vchi_service_create\0").map(|sym| *sym)?;
+        let vchi_service_destroy = __library.get(b"vchi_service_destroy\0").map(|sym| *sym)?;
+        let vchi_service_open = __library.get(b"vchi_service_open\0").map(|sym| *sym)?;
+        let vchi_service_close = __library.get(b"vchi_service_close\0").map(|sym| *sym)?;
+        let vchi_service_use = __library.get(b"vchi_service_use\0").map(|sym| *sym)?;
+        let vchi_service_release = __library.get(b"vchi_service_release\0").map(|sym| *sym)?;
+        let vchi_service_set_option = __library
+            .get(b"vchi_service_set_option\0")
+            .map(|sym| *sym)?;
+        let vchi_msg_queue = __library.get(b"vchi_msg_queue\0").map(|sym| *sym)?;
+        let vchi_msg_queuev = __library.get(b"vchi_msg_queuev\0").map(|sym| *sym)?;
+        let vchi_msg_dequeue = __library.get(b"vchi_msg_dequeue\0").map(|sym| *sym)?;
+        let vchi_msg_peek = __library.get(b"vchi_msg_peek\0").map(|sym| *sym)?;
+        let vchi_msg_remove = __library.get(b"vchi_msg_remove\0").map(|sym| *sym)?;
+        let vchi_msg_hold = __library.get(b"vchi_msg_hold\0").map(|sym| *sym)?;
+        let vchi_held_msg_release = __library.get(b"vchi_held_msg_release\0").map(|sym| *sym)?;
+        let vchi_bulk_queue_receive = __library
+            .get(b"vchi_bulk_queue_receive\0")
+            .map(|sym| *sym)?;
+        let vchi_bulk_queue_transmit = __library
+            .get(b"vchi_bulk_queue_transmit\0")
+            .map(|sym| *sym)?;
+        let vchi_mphi_message_driver_func_table = __library
+            .get(b"vchi_mphi_message_driver_func_table\0")
+            .map(|sym| *sym)?;
         let vc_gencmd_init = __library.get(b"vc_gencmd_init\0").map(|sym| *sym)?;
         let vc_gencmd_stop = __library.get(b"vc_gencmd_stop\0").map(|sym| *sym)?;
         let vc_gencmd_send = __library.get(b"vc_gencmd_send\0").map(|sym| *sym)?;
@@ -2589,6 +4987,27 @@ impl libbcm_host {
             vcos_thread_attr_init,
             vcos_timer_init,
             vcos_once,
+            vchi_create_connection,
+            vchi_initialise,
+            vchi_connect,
+            vchi_disconnect,
+            vchi_service_create,
+            vchi_service_destroy,
+            vchi_service_open,
+            vchi_service_close,
+            vchi_service_use,
+            vchi_service_release,
+            vchi_service_set_option,
+            vchi_msg_queue,
+            vchi_msg_queuev,
+            vchi_msg_dequeue,
+            vchi_msg_peek,
+            vchi_msg_remove,
+            vchi_msg_hold,
+            vchi_held_msg_release,
+            vchi_bulk_queue_receive,
+            vchi_bulk_queue_transmit,
+            vchi_mphi_message_driver_func_table,
             vc_gencmd_init,
             vc_gencmd_stop,
             vc_gencmd_send,
@@ -3074,6 +5493,141 @@ impl libbcm_host {
         init_routine: ::std::option::Option<unsafe extern "C" fn()>,
     ) -> VCOS_STATUS_T {
         (self.vcos_once)(once_control, init_routine)
+    }
+    pub unsafe fn vchi_create_connection(
+        &self,
+        function_table: *const VCHI_CONNECTION_API_T,
+        low_level: *const VCHI_MESSAGE_DRIVER_T,
+    ) -> *mut VCHI_CONNECTION_T {
+        (self.vchi_create_connection)(function_table, low_level)
+    }
+    pub unsafe fn vchi_initialise(&self, instance_handle: *mut VCHI_INSTANCE_T) -> i32 {
+        (self.vchi_initialise)(instance_handle)
+    }
+    pub unsafe fn vchi_connect(
+        &self,
+        connections: *mut *mut VCHI_CONNECTION_T,
+        num_connections: u32,
+        instance_handle: VCHI_INSTANCE_T,
+    ) -> i32 {
+        (self.vchi_connect)(connections, num_connections, instance_handle)
+    }
+    pub unsafe fn vchi_disconnect(&self, instance_handle: VCHI_INSTANCE_T) -> i32 {
+        (self.vchi_disconnect)(instance_handle)
+    }
+    pub unsafe fn vchi_service_create(
+        &self,
+        instance_handle: VCHI_INSTANCE_T,
+        setup: *mut SERVICE_CREATION_T,
+        handle: *mut VCHI_SERVICE_HANDLE_T,
+    ) -> i32 {
+        (self.vchi_service_create)(instance_handle, setup, handle)
+    }
+    pub unsafe fn vchi_service_destroy(&self, handle: VCHI_SERVICE_HANDLE_T) -> i32 {
+        (self.vchi_service_destroy)(handle)
+    }
+    pub unsafe fn vchi_service_open(
+        &self,
+        instance_handle: VCHI_INSTANCE_T,
+        setup: *mut SERVICE_CREATION_T,
+        handle: *mut VCHI_SERVICE_HANDLE_T,
+    ) -> i32 {
+        (self.vchi_service_open)(instance_handle, setup, handle)
+    }
+    pub unsafe fn vchi_service_close(&self, handle: VCHI_SERVICE_HANDLE_T) -> i32 {
+        (self.vchi_service_close)(handle)
+    }
+    pub unsafe fn vchi_service_use(&self, handle: VCHI_SERVICE_HANDLE_T) -> i32 {
+        (self.vchi_service_use)(handle)
+    }
+    pub unsafe fn vchi_service_release(&self, handle: VCHI_SERVICE_HANDLE_T) -> i32 {
+        (self.vchi_service_release)(handle)
+    }
+    pub unsafe fn vchi_service_set_option(
+        &self,
+        handle: VCHI_SERVICE_HANDLE_T,
+        option: VCHI_SERVICE_OPTION_T,
+        value: ::std::os::raw::c_int,
+    ) -> i32 {
+        (self.vchi_service_set_option)(handle, option, value)
+    }
+    pub unsafe fn vchi_msg_queue(
+        &self,
+        handle: VCHI_SERVICE_HANDLE_T,
+        data: *const ::std::os::raw::c_void,
+        data_size: u32,
+        flags: VCHI_FLAGS_T,
+        msg_handle: *mut ::std::os::raw::c_void,
+    ) -> i32 {
+        (self.vchi_msg_queue)(handle, data, data_size, flags, msg_handle)
+    }
+    pub unsafe fn vchi_msg_queuev(
+        &self,
+        handle: VCHI_SERVICE_HANDLE_T,
+        vector: *mut VCHI_MSG_VECTOR_T,
+        count: u32,
+        flags: VCHI_FLAGS_T,
+        msg_handle: *mut ::std::os::raw::c_void,
+    ) -> i32 {
+        (self.vchi_msg_queuev)(handle, vector, count, flags, msg_handle)
+    }
+    pub unsafe fn vchi_msg_dequeue(
+        &self,
+        handle: VCHI_SERVICE_HANDLE_T,
+        data: *mut ::std::os::raw::c_void,
+        max_data_size_to_read: u32,
+        actual_msg_size: *mut u32,
+        flags: VCHI_FLAGS_T,
+    ) -> i32 {
+        (self.vchi_msg_dequeue)(handle, data, max_data_size_to_read, actual_msg_size, flags)
+    }
+    pub unsafe fn vchi_msg_peek(
+        &self,
+        handle: VCHI_SERVICE_HANDLE_T,
+        data: *mut *mut ::std::os::raw::c_void,
+        msg_size: *mut u32,
+        flags: VCHI_FLAGS_T,
+    ) -> i32 {
+        (self.vchi_msg_peek)(handle, data, msg_size, flags)
+    }
+    pub unsafe fn vchi_msg_remove(&self, handle: VCHI_SERVICE_HANDLE_T) -> i32 {
+        (self.vchi_msg_remove)(handle)
+    }
+    pub unsafe fn vchi_msg_hold(
+        &self,
+        handle: VCHI_SERVICE_HANDLE_T,
+        data: *mut *mut ::std::os::raw::c_void,
+        msg_size: *mut u32,
+        flags: VCHI_FLAGS_T,
+        message_descriptor: *mut VCHI_HELD_MSG_T,
+    ) -> i32 {
+        (self.vchi_msg_hold)(handle, data, msg_size, flags, message_descriptor)
+    }
+    pub unsafe fn vchi_held_msg_release(&self, message: *mut VCHI_HELD_MSG_T) -> i32 {
+        (self.vchi_held_msg_release)(message)
+    }
+    pub unsafe fn vchi_bulk_queue_receive(
+        &self,
+        handle: VCHI_SERVICE_HANDLE_T,
+        data_dst: *mut ::std::os::raw::c_void,
+        data_size: u32,
+        flags: VCHI_FLAGS_T,
+        transfer_handle: *mut ::std::os::raw::c_void,
+    ) -> i32 {
+        (self.vchi_bulk_queue_receive)(handle, data_dst, data_size, flags, transfer_handle)
+    }
+    pub unsafe fn vchi_bulk_queue_transmit(
+        &self,
+        handle: VCHI_SERVICE_HANDLE_T,
+        data_src: *const ::std::os::raw::c_void,
+        data_size: u32,
+        flags: VCHI_FLAGS_T,
+        transfer_handle: *mut ::std::os::raw::c_void,
+    ) -> i32 {
+        (self.vchi_bulk_queue_transmit)(handle, data_src, data_size, flags, transfer_handle)
+    }
+    pub unsafe fn vchi_mphi_message_driver_func_table(&self) -> *const VCHI_MESSAGE_DRIVER_T {
+        (self.vchi_mphi_message_driver_func_table)()
     }
     pub unsafe fn vc_gencmd_init(&self) -> ::std::os::raw::c_int {
         (self.vc_gencmd_init)()

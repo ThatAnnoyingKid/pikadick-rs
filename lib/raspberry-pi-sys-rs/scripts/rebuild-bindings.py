@@ -144,7 +144,11 @@ def generate_bindings(arch):
 		'--blocklist-function vchi_msg_iter_has_next', 
 		'--blocklist-function vchi_msg_iter_next', 
 		'--blocklist-function vchi_msg_iter_remove', 
-		'--blocklist-function vchi_msg_iter_hold'
+		'--blocklist-function vchi_msg_iter_hold',
+		'--blocklist-function vchi_msg_iter_hold_next',
+		'--blocklist-function vchi_bulk_queue_receive_reloc',
+		'--blocklist-function vchi_bulk_queue_receive_reloc_func',
+		'--blocklist-function vchi_bulk_queue_transmit_reloc',
 	])
 	
 	subprocess.run(f'bindgen bindgen-bcm_host.h -o {output_file} {allowlist_bcm_host} {allowlist_vc_gencmd} {blocklist_vc_gencmd} {allowlist_vcos} {blocklist_vcos} {allowlist_vchi} {blocklist_vchi} --dynamic-loading libbcm_host --dynamic-link-require-all -- --target={clang_target} --sysroot=bundled/{arch} -Ibundled/{arch}/usr/include', check=True)
