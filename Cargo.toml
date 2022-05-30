@@ -17,7 +17,7 @@ bytes = "1.1.0"
 camino = { version = "1.0.9", features = ["serde1"] }
 chrono = "0.4.19"
 crossbeam = "0.8.1"
-dashmap = "5.3.3"
+dashmap = "5.3.4"
 deviantart = { path = "./lib/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
 futures = { version = "0.3.21", features = [ "std" ], default-features = false }
