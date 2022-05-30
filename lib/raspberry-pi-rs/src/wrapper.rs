@@ -273,6 +273,10 @@ impl RaspberryPi {
     /// # Note
     /// On platforms/toolchains that support it, gcc's destructor attribute or
     /// similar is used to invoke this function after exit() or equivalent.
+    ///
+    /// # Safety
+    /// This function should not be called if vcos is not initialized.
+    /// Furthermore, you should not use this while still using vcos interfaces.
     pub unsafe fn vcos_deinit(&mut self) {
         if !self.vcos_initialized {
             return;
