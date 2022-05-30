@@ -107,12 +107,18 @@ def generate_bindings(arch):
 	allowlist_vc_gencmd = ' '.join([
 		'--allowlist-function vc_gencmd_.*', 
 		'--allowlist-var GENCMDSERVICE_MSGFIFO_SIZE',
+		
+		# Replacement for `vc_gencmd_init`
+		'--allowlist-function vc_vchi_gencmd_init',
 	])
 	blocklist_vc_gencmd = ' '.join([
 		'--blocklist-function vc_gencmd_inum', 
 		'--blocklist-function vc_gencmd_read_response_partial',
 		'--blocklist-function vc_gencmd_close_response_partial', 
 		'--blocklist-function vc_gencmd_read_partial_state',
+		
+		# This function unconditonally aborts, use `vc_vchi_gencmd_init` instead.
+		'--blocklist-function vc_gencmd_init',
 	])
 	allowlist_vcos = '--allowlist-function vcos_.*'
 	blocklist_vcos = ' '.join([
@@ -125,6 +131,8 @@ def generate_bindings(arch):
 		'--blocklist-function vcos_log_set_cmd', 
 		'--blocklist-function vcos_log_status_cmd', 
 		'--blocklist-function vcos_log_test_cmd', 
+		
+		# TODO: These should go in another section
 		'--blocklist-function vc_dispman_init', 
 		'--blocklist-function vc_dispmanx_resource_write_data_handle',
 	])

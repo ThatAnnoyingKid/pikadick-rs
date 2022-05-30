@@ -165,18 +165,14 @@ impl RaspberryPi {
             .map_err(Error::UnknownProcessorId)
     }
 
+    /*
     /// Initialise the general command service for use.
-    pub fn vc_gencmd_init(&mut self) -> Result<(), Error> {
-        let error_code = unsafe { self.bcm_host.vc_gencmd_init() };
-
-        if error_code < 0 {
-            return Err(Error::VcGenCmd(error_code));
-        }
+    pub fn vc_vchi_gencmd_init(&mut self) {
+        unsafe { self.bcm_host.vc_vchi_gencmd_init() }
 
         self.vc_gencmd_initialized = true;
-
-        Ok(())
     }
+    */
 
     /// Stop the service from being used.
     pub fn vc_gencmd_stop(&mut self) -> Result<(), Error> {

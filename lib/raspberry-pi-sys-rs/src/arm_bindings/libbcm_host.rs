@@ -4615,7 +4615,11 @@ pub struct libbcm_host {
         transfer_handle: *mut ::std::os::raw::c_void,
     ) -> i32,
     pub vchi_mphi_message_driver_func_table: unsafe extern "C" fn() -> *const VCHI_MESSAGE_DRIVER_T,
-    pub vc_gencmd_init: unsafe extern "C" fn() -> ::std::os::raw::c_int,
+    pub vc_vchi_gencmd_init: unsafe extern "C" fn(
+        initialise_instance: VCHI_INSTANCE_T,
+        connections: *mut *mut VCHI_CONNECTION_T,
+        num_connections: u32,
+    ),
     pub vc_gencmd_stop: unsafe extern "C" fn(),
     pub vc_gencmd_send:
         unsafe extern "C" fn(format: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int,
@@ -4870,7 +4874,7 @@ impl libbcm_host {
         let vchi_mphi_message_driver_func_table = __library
             .get(b"vchi_mphi_message_driver_func_table\0")
             .map(|sym| *sym)?;
-        let vc_gencmd_init = __library.get(b"vc_gencmd_init\0").map(|sym| *sym)?;
+        let vc_vchi_gencmd_init = __library.get(b"vc_vchi_gencmd_init\0").map(|sym| *sym)?;
         let vc_gencmd_stop = __library.get(b"vc_gencmd_stop\0").map(|sym| *sym)?;
         let vc_gencmd_send = __library.get(b"vc_gencmd_send\0").map(|sym| *sym)?;
         let vc_gencmd_read_response = __library
@@ -5008,7 +5012,7 @@ impl libbcm_host {
             vchi_bulk_queue_receive,
             vchi_bulk_queue_transmit,
             vchi_mphi_message_driver_func_table,
-            vc_gencmd_init,
+            vc_vchi_gencmd_init,
             vc_gencmd_stop,
             vc_gencmd_send,
             vc_gencmd_read_response,
@@ -5629,8 +5633,13 @@ impl libbcm_host {
     pub unsafe fn vchi_mphi_message_driver_func_table(&self) -> *const VCHI_MESSAGE_DRIVER_T {
         (self.vchi_mphi_message_driver_func_table)()
     }
-    pub unsafe fn vc_gencmd_init(&self) -> ::std::os::raw::c_int {
-        (self.vc_gencmd_init)()
+    pub unsafe fn vc_vchi_gencmd_init(
+        &self,
+        initialise_instance: VCHI_INSTANCE_T,
+        connections: *mut *mut VCHI_CONNECTION_T,
+        num_connections: u32,
+    ) -> () {
+        (self.vc_vchi_gencmd_init)(initialise_instance, connections, num_connections)
     }
     pub unsafe fn vc_gencmd_stop(&self) -> () {
         (self.vc_gencmd_stop)()
