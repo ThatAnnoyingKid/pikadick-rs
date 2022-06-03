@@ -46,15 +46,37 @@ fn main() -> ExitCode {
         raspberrypi.bcm_host_init();
 
         let command = args[1..].join(" ");
-        raspberrypi
-            .vc_gencmd_send(command)
-            .expect("failed to measure temp");
-        let response = raspberrypi
+        if let Err(e) = raspberrypi.vc_gencmd_send(command) {
+            println!("vc_gencmd_send returned {:?}", e);
+        }
+        match raspberrypi
             .vc_gencmd_read_response()
-            .expect("failed to read response")
-            .into_string()
-            .expect("response is not valid utf8");
-        println!("{}", response);
+            .map(|response| response.into_string())
+        {
+            Ok(Ok(response)) => {
+                if !response.is_empty() {
+                    if response.ends_with('\n') {
+                        println!("{}", response);
+                    } else if response.starts_with("error=") {
+                        eprintln!("{}", response);
+                        if response == "error=1 error_msg=\"Command not registered\"" {
+                            eprintln!("Use 'vcgencmd commands' to get a list of commands");
+                        }
+
+                        // TODO: Return nicely somehow
+                        std::process::exit(-2);
+                    } else {
+                        println!("{}", response);
+                    }
+                }
+            }
+            Ok(Err(e)) => {
+                println!("response is not valid utf8: {}", e);
+            }
+            Err(e) => {
+                println!("vc_gencmd_read_response returned {:?}", e);
+            }
+        }
 
         unsafe {
             raspberrypi.vcos_deinit();
