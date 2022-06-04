@@ -3532,7 +3532,7 @@ dependencies = [
 [[package]]
 name = "serenity-voice-model"
 version = "0.1.1"
-source = "git+https://github.com/serenity-rs/serenity?branch=next#c0dec472ae48447ead2fff80e3c9454597a4257a"
+source = "git+https://github.com/serenity-rs/serenity?branch=next#8bde9d43e7ce8cd1558325851dc7cd39cc0d3930"
 dependencies = [
  "bitflags",
  "enum_primitive",
@@ -3667,7 +3667,7 @@ dependencies = [
 [[package]]
 name = "songbird"
 version = "0.2.2"
-source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#988a191a6bbdb666f3f35fc0b7515f77d6da8b83"
+source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#a975dd2a5df5de51691030ce6972055f8451e80d"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4121,9 +4121,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.18.2"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4903bf0427cf68dddd5aa6a93220756f8be0c34fcfa9f5e6191e103e15a31395"
+checksum = "0f392c8f16bda3456c0b00c6de39cb100449b98de55ac41c6cdd2bfcf53a1245"
 dependencies = [
  "bytes",
  "libc",

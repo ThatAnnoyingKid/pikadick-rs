@@ -17,12 +17,12 @@ bytes = "1.1.0"
 camino = { version = "1.0.9", features = ["serde1"] }
 chrono = "0.4.19"
 crossbeam = "0.8.1"
-dashmap = "5.3.3"
+dashmap = "5.3.4"
 deviantart = { path = "./lib/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
 futures = { version = "0.3.21", features = [ "std" ], default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
-indexmap = "1.8.1"
+indexmap = "1.8.2"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }
 itoa = "1.0.2"
@@ -31,7 +31,7 @@ nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustl
 once_cell = "1.12.0"
 opentelemetry = { version = "0.17.0", features = [ "rt-tokio" ] }
 opentelemetry-otlp = { version = "0.10.0", features = [ "tls", "tls-roots" ] }
-parking_lot = "0.12.0"
+parking_lot = "0.12.1"
 pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
 pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "download_to_file", "arc_anyhow_error", "async_lock_file", "drop_remove_file" ] }
 quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "rustls-tls" ] }
@@ -55,7 +55,7 @@ thiserror = "1.0.31"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiktok = { path = "lib/tiktok-rs" }
 tiny-skia = { version = "0.6.3", features = [ "std", "simd", "png-format" ], default-features = false }
-tokio = { version = "1.18.2", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tokio = { version = "1.19.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
 tokio-stream = "0.1.8"
 toml = "0.5.9"
