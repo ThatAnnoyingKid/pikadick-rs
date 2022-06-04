@@ -14,6 +14,9 @@ notice = "deny"
 ignore = [    
     # Blocked on criterion moving away from "serde_cbor". This is fine as criterion is a dev-dependency.
     "RUSTSEC-2021-0127",
+    
+    # Blocked on removing chrono
+    "RUSTSEC-2020-0071",
 ]
 
 [licenses]
@@ -164,4 +167,5 @@ allow-git = [
     "https://github.com/vectordotdev/heim",
     "https://github.com/FelixMcFelix/songbird",
     "https://github.com/adumbidiot/fslock",
+    "https://github.com/adumbidiot/serenity"
 ]

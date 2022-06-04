@@ -14,9 +14,7 @@ use serenity::{
 #[bucket("default")]
 #[checks(Enabled)]
 async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild_id = msg
-        .guild_field(&ctx.cache, |guild| guild.id)
-        .context("missing server data")?;
+    let guild_id: GuildId = msg.guild(&ctx.cache).context("missing server data")?.id;
 
     let manager = songbird::get(ctx)
         .await

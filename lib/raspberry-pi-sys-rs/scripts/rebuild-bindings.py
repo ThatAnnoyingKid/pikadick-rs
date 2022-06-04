@@ -5,6 +5,7 @@ import tarfile
 import unix_ar
 import os
 import subprocess
+import argparse
 
 HOST = "https://archive.raspberrypi.org"
 DIST = "bullseye"
@@ -97,43 +98,106 @@ def generate_bindings(arch):
 		raise Exception(f'unsupported arch `{arch}`')
 	
 	# libbcm_host
-	subprocess.run(f'bindgen bundled/{arch}/usr/include/bcm_host.h -o src/{bindings_directory}/libbcm_host.rs --allowlist-function bcm_host_.* --allowlist-function graphics_get_display_size --allowlist-var BCM_HOST_.* --dynamic-loading libbcm_host --dynamic-link-require-all -- --target={clang_target} --sysroot=bundled/{arch} -Ibundled/{arch}/usr/include', check=True)
-
-	# libvcos
-	subprocess.run(f'bindgen bundled/{arch}/usr/include/interface/vcos/vcos.h -o src/{bindings_directory}/libvcos.rs --allowlist-function vcos_.* --dynamic-loading libvcos --dynamic-link-require-all -- --target={clang_target} --sysroot=bundled/{arch} -Ibundled/{arch}/usr/include', check=True)
+	output_file = f'src/{bindings_directory}/libbcm_host.rs'
+	allowlist_bcm_host = ' '.join([
+		'--allowlist-function bcm_host_.*',
+		'--allowlist-function graphics_get_display_size',
+		'--allowlist-var BCM_HOST_.*',
+	])
+	allowlist_vc_gencmd = ' '.join([
+		'--allowlist-function vc_gencmd_.*', 
+		'--allowlist-var GENCMDSERVICE_MSGFIFO_SIZE',
+		
+		# Replacement for `vc_gencmd_init`
+		'--allowlist-function vc_vchi_gencmd_init',
+	])
+	blocklist_vc_gencmd = ' '.join([
+		'--blocklist-function vc_gencmd_inum', 
+		'--blocklist-function vc_gencmd_read_response_partial',
+		'--blocklist-function vc_gencmd_close_response_partial', 
+		'--blocklist-function vc_gencmd_read_partial_state',
+		
+		# This function unconditonally aborts, use `vc_vchi_gencmd_init` instead.
+		'--blocklist-function vc_gencmd_init',
+	])
+	allowlist_vcos = '--allowlist-function vcos_.*'
+	blocklist_vcos = ' '.join([
+		'--blocklist-function vcos_pthreads_timer_reset', 
+		'--blocklist-function vcos_kmalloc', 
+		'--blocklist-function vcos_kcalloc',
+		'--blocklist-function vcos_kfree', 
+		'--blocklist-function vcos_log_set_level_all', 
+		'--blocklist-function vcos_log_assert_cmd', 
+		'--blocklist-function vcos_log_set_cmd', 
+		'--blocklist-function vcos_log_status_cmd', 
+		'--blocklist-function vcos_log_test_cmd', 
+		
+		# TODO: These should go in another section
+		'--blocklist-function vc_dispman_init', 
+		'--blocklist-function vc_dispmanx_resource_write_data_handle',
+	])
+	allowlist_vchi = '--allowlist-function vchi_.*'
+	blocklist_vchi = ' '.join([
+		'--blocklist-function vchi_crc_control', 
+		'--blocklist-function vchi_allocate_buffer', 
+		'--blocklist-function vchi_free_buffer', 
+		'--blocklist-function vchi_current_time', 
+		'--blocklist-function vchi_get_peer_version', 
+		'--blocklist-function vchi_msg_queuev_ex', 
+		'--blocklist-function vchi_msg_look_ahead', 
+		'--blocklist-function vchi_held_msg_ptr', 
+		'--blocklist-function vchi_held_msg_size', 
+		'--blocklist-function vchi_held_msg_tx_timestamp', 
+		'--blocklist-function vchi_held_msg_rx_timestamp', 
+		'--blocklist-function vchi_msg_iter_has_next', 
+		'--blocklist-function vchi_msg_iter_next', 
+		'--blocklist-function vchi_msg_iter_remove', 
+		'--blocklist-function vchi_msg_iter_hold',
+		'--blocklist-function vchi_msg_iter_hold_next',
+		'--blocklist-function vchi_bulk_queue_receive_reloc',
+		'--blocklist-function vchi_bulk_queue_receive_reloc_func',
+		'--blocklist-function vchi_bulk_queue_transmit_reloc',
+	])
+	
+	subprocess.run(f'bindgen bindgen-bcm_host.h -o {output_file} {allowlist_bcm_host} {allowlist_vc_gencmd} {blocklist_vc_gencmd} {allowlist_vcos} {blocklist_vcos} {allowlist_vchi} {blocklist_vchi} --dynamic-loading libbcm_host --dynamic-link-require-all -- --target={clang_target} --sysroot=bundled/{arch} -Ibundled/{arch}/usr/include', check=True)
 
 def main():
-	apt_package_downloader = AptPackageDownloader()
+	parser = argparse.ArgumentParser(description='Rebuild bindings')
+	parser.add_argument('--skip-apt', action='store_true', help='skip downloading apt packages')
+	args = parser.parse_args()
 	
-	armhf_dir = "bundled/armhf"
-	arm64_dir = "bundled/arm64"
-	
-	print('Getting packages list...')
-	package_list_armhf = apt_package_downloader.get_package_list('armhf')
-	print(f'Got {len(package_list_armhf)} armhf packages')
-	package_list_arm64 = apt_package_downloader.get_package_list('arm64')
-	print(f'Got {len(package_list_arm64)} arm64 packages')
-	
-	try:
-		os.mkdir(armhf_dir)
-	except FileExistsError:
-		pass
-	try:
-		os.mkdir(arm64_dir)
-	except FileExistsError:
-		pass
+	if not args.skip_apt:
+		apt_package_downloader = AptPackageDownloader()
 		
-	needed_packages = [
-		"libraspberrypi-dev",
-		"libc6-dev",
-		"linux-libc-dev",
-	]
-	
-	for package in needed_packages:
-		print(f'Installing `{package}` (armhf)...')
-		install_deb(apt_package_downloader, 'armhf', package, armhf_dir)
-		print(f'Installing `{package}` (arm64)...')
-		install_deb(apt_package_downloader, 'arm64', package, arm64_dir)
+		armhf_dir = "bundled/armhf"
+		arm64_dir = "bundled/arm64"
+		
+		print('Getting packages list...')
+		package_list_armhf = apt_package_downloader.get_package_list('armhf')
+		print(f'Got {len(package_list_armhf)} armhf packages')
+		package_list_arm64 = apt_package_downloader.get_package_list('arm64')
+		print(f'Got {len(package_list_arm64)} arm64 packages')
+		
+		try:
+			os.mkdir(armhf_dir)
+		except FileExistsError:
+			pass
+		try:
+			os.mkdir(arm64_dir)
+		except FileExistsError:
+			pass
+			
+		needed_packages = [
+			"libraspberrypi-dev",
+			"libc6-dev",
+			"linux-libc-dev",
+		]
+		
+		for package in needed_packages:
+			print(f'Installing `{package}` (armhf)...')
+			install_deb(apt_package_downloader, 'armhf', package, armhf_dir)
+			print(f'Installing `{package}` (arm64)...')
+			install_deb(apt_package_downloader, 'arm64', package, arm64_dir)
 		
 	print('Generating bindings (armhf)...')
 	generate_bindings("armhf")

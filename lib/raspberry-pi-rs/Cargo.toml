@@ -5,7 +5,21 @@ edition = "2021"
 license = "BSD-3-Clause"
 
 [dependencies]
-libloading = "0.7.3"
 once_cell = "1.12.0"
-raspberry-pi-sys = { path = "../raspberry-pi-sys-rs" }
 thiserror = "1.0.31"
+
+# Optional
+libc = { version = "0.2.126", optional = true }
+libloading = { version = "0.7.3", optional = true }
+raspberry-pi-sys = { path = "../raspberry-pi-sys-rs", optional = true }
+
+[features]
+default = []
+
+# Include wrapper code for the rpi shared objects
+wrapper = [
+    "libc",
+    "libloading",
+    "raspberry-pi-sys",
+]
+
