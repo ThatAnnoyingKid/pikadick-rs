@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 rusqlite = "0.27.0"
 thiserror = "1.0.31"
-tokio = { version = "1.19.0", features = [ "rt", "sync" ] }
+tokio = { version = "1.19.1", features = [ "rt", "sync" ] }
 
 [features]
 bundled = [ "rusqlite/bundled" ]

@@ -13,7 +13,7 @@ thiserror = "1.0.31"
 url = { version = "2.2.2", features = [ "serde" ] }
 
 [dev-dependencies]
-tokio = { version = "1.19.0", features = [ "macros" ] }
+tokio = { version = "1.19.1", features = [ "macros" ] }
 
 [features]
 default = [ "reqwest/default-tls" ]

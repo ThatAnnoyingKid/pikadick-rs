@@ -12,7 +12,7 @@ serde_json = "1.0.81"
 thiserror = "1.0.31"
 
 [dev-dependencies]
-tokio = { version = "1.19.0", features = [ "macros" ] }
+tokio = { version = "1.19.1", features = [ "macros" ] }
 
 [features]
 default = [ "reqwest/default-tls" ]
