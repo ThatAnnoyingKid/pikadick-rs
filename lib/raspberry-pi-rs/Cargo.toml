@@ -11,7 +11,7 @@ thiserror = "1.0.31"
 # Optional
 libc = { version = "0.2.126", optional = true }
 libloading = { version = "0.7.3", optional = true }
-raspberry-pi-sys = { path = "../raspberry-pi-sys-rs", optional = true }
+raspberry-pi-sys = { git = "https://github.com/nathaniel-daniel/raspberry-pi-rs", optional = true }
 
 [features]
 default = []

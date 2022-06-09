@@ -2878,6 +2878,7 @@ dependencies = [
 [[package]]
 name = "raspberry-pi-sys"
 version = "0.0.0"
+source = "git+https://github.com/nathaniel-daniel/raspberry-pi-rs#00675e8ec40ea93689583fe59403e49efc6854d3"
 dependencies = [
  "libloading",
 ]
