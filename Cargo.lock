@@ -629,12 +629,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "cookie"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94d4706de1b0fa5b132270cddffa8585166037822e260a944fe161acd137ca05"
+dependencies = [
+ "time 0.3.9",
+ "version_check",
+]
+
+[[package]]
 name = "cookie_store"
 version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3f7034c0932dc36f5bd8ec37368d971346809435824f277cb3b8299fc56167c"
 dependencies = [
- "cookie",
+ "cookie 0.15.1",
  "idna",
  "log",
  "publicsuffix",
@@ -895,7 +905,7 @@ dependencies = [
  "anyhow",
  "argh",
  "bytes",
- "cookie",
+ "cookie 0.16.0",
  "cookie_store",
  "directories-next",
  "itoa 1.0.2",
@@ -1717,16 +1727,6 @@ name = "libc"
 version = "0.2.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
-
-[[package]]
-name = "libloading"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efbc0f03f9a775e9f6aed295c6a1ba2253c5757a9e03d55c6caa46a681abcddd"
-dependencies = [
- "cfg-if",
- "winapi",
-]
 
 [[package]]
 name = "libsqlite3-sys"
@@ -2865,25 +2865,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "raspberry-pi"
-version = "0.0.0"
-dependencies = [
- "libc",
- "libloading",
- "once_cell",
- "raspberry-pi-sys",
- "thiserror",
-]
-
-[[package]]
-name = "raspberry-pi-sys"
-version = "0.0.0"
-source = "git+https://github.com/nathaniel-daniel/raspberry-pi-rs#00675e8ec40ea93689583fe59403e49efc6854d3"
-dependencies = [
- "libloading",
-]
-
-[[package]]
 name = "raw-cpuid"
 version = "9.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3015,7 +2996,7 @@ dependencies = [
  "async-compression",
  "base64",
  "bytes",
- "cookie",
+ "cookie 0.15.1",
  "cookie_store",
  "encoding_rs",
  "futures-core",
@@ -3060,7 +3041,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48cbf3a2aeeeaa6d10a76db86068c3560320f6265c3a0e2642e0538e11c2d143"
 dependencies = [
  "bytes",
- "cookie",
+ "cookie 0.15.1",
  "cookie_store",
  "reqwest",
  "url",
