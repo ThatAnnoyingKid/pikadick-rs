@@ -1322,7 +1322,7 @@ dependencies = [
  "indexmap",
  "slab",
  "tokio",
- "tokio-util 0.7.2",
+ "tokio-util 0.7.3",
  "tracing",
 ]
 
@@ -1666,7 +1666,7 @@ dependencies = [
  "scraper",
  "thiserror",
  "tokio",
- "tokio-util 0.7.2",
+ "tokio-util 0.7.3",
  "url",
 ]
 
@@ -1717,16 +1717,6 @@ name = "libc"
 version = "0.2.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
-
-[[package]]
-name = "libloading"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efbc0f03f9a775e9f6aed295c6a1ba2253c5757a9e03d55c6caa46a681abcddd"
-dependencies = [
- "cfg-if",
- "winapi",
-]
 
 [[package]]
 name = "libsqlite3-sys"
@@ -2865,25 +2855,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "raspberry-pi"
-version = "0.0.0"
-dependencies = [
- "libc",
- "libloading",
- "once_cell",
- "raspberry-pi-sys",
- "thiserror",
-]
-
-[[package]]
-name = "raspberry-pi-sys"
-version = "0.0.0"
-source = "git+https://github.com/nathaniel-daniel/raspberry-pi-rs#00675e8ec40ea93689583fe59403e49efc6854d3"
-dependencies = [
- "libloading",
-]
-
-[[package]]
 name = "raw-cpuid"
 version = "9.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3294,7 +3265,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
- "tokio-util 0.7.2",
+ "tokio-util 0.7.3",
  "toml",
  "url",
 ]
@@ -3695,7 +3666,7 @@ dependencies = [
  "symphonia",
  "symphonia-core",
  "tokio",
- "tokio-util 0.7.2",
+ "tokio-util 0.7.3",
  "tracing",
  "tracing-futures",
  "typemap_rev",
@@ -4234,9 +4205,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f988a1a1adc2fb21f9c12aa96441da33a1728193ae0b95d2be22dbd17fcb4e5c"
+checksum = "cc463cd8deddc3770d20f9852143d50bf6094e640b485cb2e189a2099085ff45"
 dependencies = [
  "bytes",
  "futures-core",
@@ -4326,7 +4297,7 @@ dependencies = [
  "rand 0.8.5",
  "slab",
  "tokio",
- "tokio-util 0.7.2",
+ "tokio-util 0.7.3",
  "tower-layer",
  "tower-service",
  "tracing",
