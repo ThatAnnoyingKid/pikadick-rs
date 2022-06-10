@@ -107,7 +107,6 @@ impl Context {
             let status = std::process::Command::new("across")
                 .args(["--target", target])
                 .arg("--release")
-                .arg("--use-strip")
                 .status()
                 .context("failed to spawn build command")?;
             ensure!(status.success(), "build command failed");
