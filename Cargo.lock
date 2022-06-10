@@ -1719,16 +1719,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
 
 [[package]]
-name = "libloading"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efbc0f03f9a775e9f6aed295c6a1ba2253c5757a9e03d55c6caa46a681abcddd"
-dependencies = [
- "cfg-if",
- "winapi",
-]
-
-[[package]]
 name = "libsqlite3-sys"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2862,25 +2852,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
 dependencies = [
  "rand_core 0.5.1",
-]
-
-[[package]]
-name = "raspberry-pi"
-version = "0.0.0"
-dependencies = [
- "libc",
- "libloading",
- "once_cell",
- "raspberry-pi-sys",
- "thiserror",
-]
-
-[[package]]
-name = "raspberry-pi-sys"
-version = "0.0.0"
-source = "git+https://github.com/nathaniel-daniel/raspberry-pi-rs#00675e8ec40ea93689583fe59403e49efc6854d3"
-dependencies = [
- "libloading",
 ]
 
 [[package]]
@@ -4083,9 +4054,9 @@ dependencies = [
 
 [[package]]
 name = "tiny-skia"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bcfd4339bdd4545eabed74b208f2f1555f2e6540fb58135c01f46c0940aa138"
+checksum = "6f5ac9783610677139de05b2b438cf46d13ae3260721ad77f9f72d4f324bcbf7"
 dependencies = [
  "arrayref",
  "arrayvec 0.5.2",
