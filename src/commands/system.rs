@@ -1,6 +1,5 @@
 use crate::checks::ENABLED_CHECK;
 use anyhow::Context as _;
-use chrono::DateTime;
 use heim::{
     memory::{
         Memory,
@@ -15,7 +14,6 @@ use heim::{
             byte,
             gigabyte,
         },
-        time::nanosecond,
         Frequency,
     },
 };
@@ -32,7 +30,6 @@ use serenity::{
 use std::time::{
     Duration,
     Instant,
-    UNIX_EPOCH,
 };
 use systemstat::{
     platform::common::Platform,
@@ -47,10 +44,6 @@ use uom::{
         Information as InformationF32,
     },
 };
-
-fn epoch_nanos_to_local_datetime(nanos: u64) -> DateTime<chrono::Local> {
-    DateTime::from(UNIX_EPOCH + Duration::from_nanos(nanos))
-}
 
 fn fmt_uptime(uptime: Duration) -> String {
     let raw_secs = uptime.as_secs();
@@ -137,8 +130,11 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let boot_time = match pikadick_system_info::get_boot_time()
         .context("failed to get boot time")
         .map(time::OffsetDateTime::from)
-        .and_then(|boot_time| boot_time.format(&Rfc2822).context("failed "))
-    {
+        .and_then(|boot_time| {
+            boot_time
+                .format(&Rfc2822)
+                .context("failed to format boot time date")
+        }) {
         Ok(boot_time) => Some(boot_time),
         Err(e) => {
             warn!("{:?}", e);
@@ -146,10 +142,10 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         }
     };
 
-    let uptime = match heim::host::uptime().await {
-        Ok(uptime) => Some(Duration::from_nanos(uptime.get::<nanosecond>() as u64)),
+    let uptime = match pikadick_system_info::get_uptime().context("failed to get uptime") {
+        Ok(uptime) => Some(uptime),
         Err(e) => {
-            warn!("Failed to get uptime: {}", e);
+            warn!("{:?}", e);
             None
         }
     };

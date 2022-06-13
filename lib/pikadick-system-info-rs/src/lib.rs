@@ -10,7 +10,10 @@ cfg_if::cfg_if! {
     }
 }
 
-use std::time::SystemTime;
+use std::time::{
+    Duration,
+    SystemTime,
+};
 
 /// The library error type
 #[derive(Debug, thiserror::Error)]
@@ -23,6 +26,11 @@ pub enum Error {
 /// Get the boot time.
 pub fn get_boot_time() -> Result<SystemTime, Error> {
     imp::get_boot_time()
+}
+
+/// Get the uptime.
+pub fn get_uptime() -> Result<Duration, Error> {
+    imp::get_uptime()
 }
 
 #[cfg(test)]

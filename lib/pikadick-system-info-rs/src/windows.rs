@@ -7,7 +7,12 @@ use windows_sys::Win32::System::SystemInformation::GetTickCount64;
 
 /// Get the time the system was booted
 pub fn get_boot_time() -> Result<SystemTime, Error> {
-    Ok(SystemTime::now() - get_tick_count_64())
+    Ok(SystemTime::now() - get_uptime()?)
+}
+
+/// Get the uptime.
+pub fn get_uptime() -> Result<Duration, Error> {
+    Ok(get_tick_count_64())
 }
 
 /// A wrapper for `GetTickCount64`.
