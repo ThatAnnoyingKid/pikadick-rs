@@ -12,8 +12,16 @@ cfg_if::cfg_if! {
 
 use std::time::SystemTime;
 
+/// The library error type
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    /// An io error occured
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+}
+
 /// Get the boot time.
-pub fn get_boot_time() -> SystemTime {
+pub fn get_boot_time() -> Result<SystemTime, Error> {
     imp::get_boot_time()
 }
 
@@ -27,7 +35,7 @@ mod tests {
         let offset = time::UtcOffset::current_local_offset().expect("failed to get local offset");
 
         let start = Instant::now();
-        let boot_time = get_boot_time();
+        let boot_time = get_boot_time().expect("failed to get boot time");
         let elapsed = start.elapsed();
         println!(
             "Boot Time: {}\nTime: {:?}",

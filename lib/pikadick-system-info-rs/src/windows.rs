@@ -1,3 +1,4 @@
+use super::Error;
 use std::time::{
     Duration,
     SystemTime,
@@ -5,8 +6,8 @@ use std::time::{
 use windows_sys::Win32::System::SystemInformation::GetTickCount64;
 
 /// Get the time the system was booted
-pub fn get_boot_time() -> SystemTime {
-    SystemTime::now() - get_tick_count_64()
+pub fn get_boot_time() -> Result<SystemTime, Error> {
+    Ok(SystemTime::now() - get_tick_count_64())
 }
 
 /// A wrapper for `GetTickCount64`.

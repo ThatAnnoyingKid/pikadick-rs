@@ -1390,7 +1390,7 @@ dependencies = [
  "lazy_static",
  "libc",
  "mach",
- "nix",
+ "nix 0.23.1",
  "pin-utils",
  "uom",
  "winapi",
@@ -1982,6 +1982,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "nix"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f17df307904acd05aa8e32e97bb20f2a0df1728bbc2d771ae8f9a90463441e9"
+dependencies = [
+ "bitflags",
+ "cfg-if",
+ "libc",
+]
+
+[[package]]
 name = "no-std-net"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2475,6 +2486,8 @@ name = "pikadick-system-info"
 version = "0.0.0"
 dependencies = [
  "cfg-if",
+ "nix 0.24.1",
+ "thiserror",
  "time 0.3.9",
  "windows-sys",
 ]
