@@ -1,12 +1,14 @@
-#[cfg(target_os = "windows")]
-mod windows;
-#[cfg(target_os = "windows")]
-use self::windows as imp;
-
-#[cfg(target_os = "linux")]
-mod linux;
-#[cfg(target_os = "linux")]
-use self::linux as imp;
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "windows")] {
+        mod windows;
+        use self::windows as imp;
+    } else if #[cfg(target_os = "linux")] {
+        mod linux;
+        use self::linux as imp;
+    } else {
+        compile_error!("unsupported platform");
+    }
+}
 
 use std::time::SystemTime;
 
@@ -22,6 +24,6 @@ mod tests {
     #[test]
     fn boot_time() {
         let boot_time = get_boot_time();
-        dbg!(&boot_time);
+        println!("Boot Time: {}", time::OffsetDateTime::from(boot_time));
     }
 }

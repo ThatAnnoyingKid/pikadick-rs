@@ -2474,6 +2474,7 @@ dependencies = [
 name = "pikadick-system-info"
 version = "0.0.0"
 dependencies = [
+ "cfg-if",
  "time 0.3.9",
  "windows-sys",
 ]
