@@ -13,7 +13,7 @@ pub fn get_boot_time() -> Result<SystemTime, Error> {
 /// Get the uptime.
 pub fn get_uptime() -> Result<Duration, Error> {
     let sysinfo = sysinfo().map_err(std::io::Error::from)?;
-    sysinfo.uptime()
+    Ok(sysinfo.uptime())
 }
 
 #[cfg(test)]
