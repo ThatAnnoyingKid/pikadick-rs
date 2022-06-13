@@ -1,4 +1,5 @@
 use crate::checks::ENABLED_CHECK;
+use anyhow::Context as _;
 use chrono::DateTime;
 use heim::{
     memory::{
@@ -37,6 +38,7 @@ use systemstat::{
     platform::common::Platform,
     System,
 };
+use time::format_description::well_known::Rfc2822;
 use tracing::warn;
 use uom::{
     fmt::DisplayStyle,
@@ -132,12 +134,14 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         }
     };
 
-    let boot_time = match heim::host::boot_time().await {
-        Ok(boot_time) => Some(epoch_nanos_to_local_datetime(
-            boot_time.get::<nanosecond>() as u64
-        )),
+    let boot_time = match pikadick_system_info::get_boot_time()
+        .context("failed to get boot time")
+        .map(time::OffsetDateTime::from)
+        .and_then(|boot_time| boot_time.format(&Rfc2822).context("failed "))
+    {
+        Ok(boot_time) => Some(boot_time),
         Err(e) => {
-            warn!("Failed to get boot time: {}", e);
+            warn!("{:?}", e);
             None
         }
     };
@@ -243,7 +247,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 }
 
                 if let Some(boot_time) = boot_time {
-                    e.field("Boot Time", &boot_time.to_rfc2822(), true);
+                    e.field("Boot Time", &boot_time, true);
                 }
 
                 if let Some(uptime) = uptime {

@@ -34,6 +34,7 @@ opentelemetry-otlp = { version = "0.10.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.12.1"
 pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
 pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "download_to_file", "arc_anyhow_error", "async_lock_file", "drop_remove_file" ] }
+pikadick-system-info = { path = "./lib/pikadick-system-info-rs" }
 quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "rustls-tls" ] }
 r6stats = { path = "./lib/r6stats-rs", default-features = false, features = [ "rustls-tls" ] }
 r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = [ "rustls-tls" ] }
@@ -54,6 +55,7 @@ systemstat = "0.1.11"
 thiserror = "1.0.31"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiktok = { path = "lib/tiktok-rs" }
+time = "0.3.9"
 tiny-skia = { version = "0.6.3", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.19.2", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }

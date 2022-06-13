@@ -108,6 +108,9 @@ skip = [
     
     # Blocked on many crates moving to hashbrown 12
     { name = "hashbrown", version = "0.11.2" },
+    
+    # Blocked on removing heim
+    { name = "nix", version = "0.23.1" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
