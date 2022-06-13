@@ -10,8 +10,10 @@ pub fn get_boot_time() -> Result<SystemTime, Error> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::time::Instant;
-    use std::time::Duration;
+    use std::time::{
+        Duration,
+        Instant,
+    };
 
     #[test]
     fn sysinfo_does_not_block() {
