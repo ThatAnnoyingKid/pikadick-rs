@@ -35,7 +35,7 @@ mod tests {
         let offset = match time::UtcOffset::current_local_offset() {
             Ok(offset) => offset,
             Err(error) => {
-                eprintln!("failed to get offset ({error}), using UTC...");
+                eprintln!("failed to get local offset ({error}), using UTC...");
                 time::UtcOffset::UTC
             }
         };

@@ -26,6 +26,6 @@ mod test {
     fn get_tick_count_64_does_not_block() {
         let start = Instant::now();
         let _boot_time = get_boot_time();
-        assert!(start.elapsed() < Duration::from_millis(4));
+        assert!(start.elapsed() < Duration::from_millis(1));
     }
 }
