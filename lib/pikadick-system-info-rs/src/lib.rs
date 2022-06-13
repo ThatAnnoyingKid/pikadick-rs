@@ -32,7 +32,13 @@ mod tests {
 
     #[test]
     fn boot_time() {
-        let offset = time::UtcOffset::current_local_offset().expect("failed to get local offset");
+        let offset = match time::UtcOffset::current_local_offset() {
+            Ok(offset) => offset,
+            Err(error) => {
+                eprintln!("failed to get offset ({error}), using UTC...");
+                time::UtcOffset::UTC
+            }
+        };
 
         let start = Instant::now();
         let boot_time = get_boot_time().expect("failed to get boot time");
