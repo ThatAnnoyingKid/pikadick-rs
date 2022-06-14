@@ -21,6 +21,14 @@ pub enum Error {
     /// An io error occured
     #[error(transparent)]
     Io(#[from] std::io::Error),
+
+    /// Invalid UTF8 string
+    #[error(transparent)]
+    InvalidUtf8String(#[from] std::string::FromUtf8Error),
+
+    /// Invalid UTF16 string
+    #[error(transparent)]
+    InvalidUtf16String(#[from] std::string::FromUtf16Error),
 }
 
 /// Get the boot time.
@@ -31,6 +39,11 @@ pub fn get_boot_time() -> Result<SystemTime, Error> {
 /// Get the uptime.
 pub fn get_uptime() -> Result<Duration, Error> {
     imp::get_uptime()
+}
+
+/// Get the hostname
+pub fn get_hostname() -> Result<String, Error> {
+    imp::get_hostname()
 }
 
 #[cfg(test)]
@@ -56,5 +69,16 @@ mod tests {
             time::OffsetDateTime::from(boot_time).to_offset(offset),
             elapsed
         );
+    }
+
+    #[test]
+    fn uptime() {
+        dbg!(get_uptime().expect("failed to get uptime"));
+    }
+
+    #[test]
+    fn hostname() {
+        let hostname = get_hostname().expect("failed to get hostname");
+        dbg!(hostname);
     }
 }
