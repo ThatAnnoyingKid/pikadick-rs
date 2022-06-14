@@ -64,7 +64,7 @@ mod tests {
         let start = Instant::now();
         let boot_time = get_boot_time().expect("failed to get boot time");
         let elapsed = start.elapsed();
-        
+
         println!(
             "Boot Time: {}\nTime: {:?}",
             time::OffsetDateTime::from(boot_time).to_offset(offset),
@@ -77,12 +77,8 @@ mod tests {
         let start = Instant::now();
         let uptime = get_uptime().expect("failed to get uptime");
         let elapsed = start.elapsed();
-        
-        println!(
-            "Uptime: {:?}\nTime: {:?}",
-            uptime,
-            elapsed
-        );
+
+        println!("Uptime: {:?}\nTime: {:?}", uptime, elapsed);
     }
 
     #[test]
