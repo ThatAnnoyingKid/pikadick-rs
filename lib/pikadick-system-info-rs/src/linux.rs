@@ -55,6 +55,11 @@ mod test {
     #[test]
     fn gethostname_does_not_block() {
         let start = Instant::now();
+        let hostname_len: usize = sysconf(SysconfVar::HOST_NAME_MAX)
+            .expect("failed to get hostname len")
+            .unwrap_or(255)
+            .try_into()
+            .expect("failed to convert to usize");
         let mut buffer = vec![0; hostname_len];
         let _hostname = gethostname(&mut buffer).expect("failed to get hostname");
         assert!(start.elapsed() < Duration::from_millis(1));
