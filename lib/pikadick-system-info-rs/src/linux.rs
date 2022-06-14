@@ -51,4 +51,12 @@ mod test {
         let _sysinfo = sysinfo();
         assert!(start.elapsed() < Duration::from_millis(1));
     }
+
+    #[test]
+    fn gethostname_does_not_block() {
+        let start = Instant::now();
+        let mut buffer = vec![0; hostname_len];
+        let _hostname = gethostname(&mut buffer).expect("failed to get hostname");
+        assert!(start.elapsed() < Duration::from_millis(1));
+    }
 }

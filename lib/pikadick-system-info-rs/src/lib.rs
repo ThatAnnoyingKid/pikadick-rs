@@ -56,7 +56,7 @@ mod tests {
         let offset = match time::UtcOffset::current_local_offset() {
             Ok(offset) => offset,
             Err(error) => {
-                eprintln!("failed to get local offset ({error}), using UTC...");
+                println!("failed to get local offset ({error}), using UTC...");
                 time::UtcOffset::UTC
             }
         };
@@ -78,7 +78,10 @@ mod tests {
 
     #[test]
     fn hostname() {
+        let start = Instant::now();
         let hostname = get_hostname().expect("failed to get hostname");
-        dbg!(hostname);
+        let elapsed = start.elapsed();
+
+        println!("Hostname: {}\nTime: {:?}", hostname, elapsed);
     }
 }

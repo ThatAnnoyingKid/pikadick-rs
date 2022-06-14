@@ -102,4 +102,11 @@ mod test {
         let _boot_time = get_boot_time();
         assert!(start.elapsed() < Duration::from_millis(1));
     }
+
+    #[test]
+    fn get_computer_name_does_not_block() {
+        let start = Instant::now();
+        let _hostname = get_computer_name(ComputerNameFormat::PhysicalDnsHostname);
+        assert!(start.elapsed() < Duration::from_millis(1));
+    }
 }
