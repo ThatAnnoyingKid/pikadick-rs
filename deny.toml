@@ -14,9 +14,6 @@ notice = "deny"
 ignore = [    
     # Blocked on criterion moving away from "serde_cbor". This is fine as criterion is a dev-dependency.
     "RUSTSEC-2021-0127",
-    
-    # Blocked on removing chrono
-    "RUSTSEC-2020-0071",
 ]
 
 [licenses]
@@ -55,10 +52,7 @@ license-files = [
 [bans]
 multiple-versions = "deny"
 highlight = "all"
-skip = [    
-    # Blocked on chrono, systemstat, and xml5ever bumping time to 0.2.16
-    { name = "time", version = "0.1.43" },
-    
+skip = [
     # Blocked on rand updating getrandom to 0.2.x 
     { name = "getrandom", version = "0.1.15" },
     
