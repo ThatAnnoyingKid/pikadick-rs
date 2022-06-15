@@ -32,12 +32,17 @@ pub fn get_hostname() -> Result<String, Error> {
         .unwrap_or(255usize)
         + 1usize;
 
-    let mut buffer = vec![0; hostname_len];
+    let mut buffer = vec![std::mem::MaybeUninit::uninit(); hostname_len];
     let hostname_c_str = gethostname(&mut buffer).map_err(std::io::Error::from)?;
     let len = hostname_c_str.len();
     buffer.truncate(len);
 
-    String::from_utf8(buffer).map_err(Error::InvalidUtf8String)
+    let initialized_buffer = unsafe {
+        let mut buffer = std::mem::ManuallyDrop::new(buffer);
+        Vec::from_raw_parts(buffer.as_mut_ptr().cast(), buffer.len(), buffer.capacity())
+    };
+
+    String::from_utf8(initialized_buffer).map_err(Error::InvalidUtf8String)
 }
 
 #[cfg(test)]
@@ -60,7 +65,7 @@ mod test {
             .unwrap_or(255)
             .try_into()
             .expect("failed to convert to usize");
-        let mut buffer = vec![0; hostname_len];
+        let mut buffer = vec![std::mem::MaybeUninit::uninit(); hostname_len];
         let _hostname = gethostname(&mut buffer).expect("failed to get hostname");
         assert!(start.elapsed() < Duration::from_millis(1));
     }
