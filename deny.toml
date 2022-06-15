@@ -81,17 +81,11 @@ skip = [
     # Blocked on serenity-voice-model moving away from enum_primitive
     { name = "num-traits", version = "0.1.43" },
     
-    # Blocked on time getting updated from a lot of crates 
-    { name = "time", version = "0.2.27" },  
-    
     # Blocked on a lot of crates moving to version 1. Re-evaluate in like a month or two. 12/7/2021.
     { name = "itoa", version = "0.4.8" },
     
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.8.0" },
-    
-    # Blocked on cookie updating to time 0.3
-    { name = "time-macros", version = "0.1.1" },
     
     # Blocked on h2 updating tokio-util to v 7
     { name = "tokio-util", version = "0.6.9" },
@@ -171,7 +165,7 @@ allow-git = [
     "https://github.com/FelixMcFelix/songbird",
     "https://github.com/adumbidiot/fslock",
     "https://github.com/adumbidiot/serenity",
-    "https://github.com/nathaniel-daniel/raspberry-pi-rs",
+    # "https://github.com/nathaniel-daniel/raspberry-pi-rs",
     "https://github.com/nathaniel-daniel/nix",
     "https://github.com/FelixMcFelix/Symphonia",
 ]
