@@ -443,8 +443,7 @@ fn rtl_get_version() -> OsVersionInfoEx {
 
     assert!(code == STATUS_SUCCESS);
 
-    let os_version_info = unsafe { OsVersionInfoEx(os_version_info.assume_init()) };
-    os_version_info
+    unsafe { OsVersionInfoEx(os_version_info.assume_init()) }
 }
 
 /*
