@@ -262,15 +262,15 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 }
 
                 if let Some(hostname) = hostname {
-                    e.field("Hostname", hostname.as_str(), true);
+                    e.field("Hostname", hostname, true);
                 }
 
                 if let Some(system_name) = system_name {
-                    e.field("OS", system_name.as_str(), true);
+                    e.field("OS", system_name, true);
                 }
 
                 if let Some(system_version) = system_version {
-                    e.field("OS Version", system_version.as_str(), true);
+                    e.field("OS Version", system_version, true);
                 }
 
                 if let Some(architecture) = architecture {
@@ -278,27 +278,27 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 }
 
                 if let Some(boot_time) = boot_time {
-                    e.field("Boot Time", &boot_time, true);
+                    e.field("Boot Time", boot_time, true);
                 }
 
                 if let Some(uptime) = uptime {
-                    e.field("Uptime", &fmt_uptime(uptime), true);
+                    e.field("Uptime", fmt_uptime(uptime), true);
                 }
 
                 // Currently reports incorrectly on Windows
                 if let Some(cpu_frequency) = cpu_frequency {
                     e.field(
                         "Cpu Freq",
-                        &fmt_cpu_frequency(&cpu_frequency.current()),
+                        fmt_cpu_frequency(&cpu_frequency.current()),
                         true,
                     );
 
                     if let Some(min_cpu_frequency) = cpu_frequency.min() {
-                        e.field("Min Cpu Freq", &fmt_cpu_frequency(&min_cpu_frequency), true);
+                        e.field("Min Cpu Freq", fmt_cpu_frequency(&min_cpu_frequency), true);
                     }
 
                     if let Some(max_cpu_frequency) = cpu_frequency.max() {
-                        e.field("Max Cpu Freq", &fmt_cpu_frequency(&max_cpu_frequency), true);
+                        e.field("Max Cpu Freq", fmt_cpu_frequency(&max_cpu_frequency), true);
                     }
                 }
 

@@ -35,7 +35,7 @@ impl Stats {
         if let Some(season) = self.overwolf_player.current_season_best_region.as_ref() {
             e.field("Current Rank", &season.rank_name, true)
                 .field("Current MMR", itoa::Buffer::new().format(season.mmr), true)
-                .field("Seasonal Ranked K/D", &format!("{:.2}", season.kd), true)
+                .field("Seasonal Ranked K/D", format!("{:.2}", season.kd), true)
                 .field(
                     "Seasonal Ranked Win %",
                     ryu::Buffer::new().format(season.win_pct),
@@ -55,7 +55,7 @@ impl Stats {
                     itoa::Buffer::new().format(season.mmr),
                     true,
                 )
-                .field("Seasonal Casual K/D", &format!("{:.2}", season.kd), true)
+                .field("Seasonal Casual K/D", format!("{:.2}", season.kd), true)
                 .field(
                     "Seasonal Casual Win %",
                     ryu::Buffer::new().format(season.win_pct),
@@ -101,7 +101,7 @@ impl Stats {
         if let Some(lifetime_ranked_kd) = self.overwolf_player.get_lifetime_ranked_kd() {
             e.field(
                 "Lifetime Ranked K/D",
-                &format!("{:.2}", lifetime_ranked_kd),
+                format!("{:.2}", lifetime_ranked_kd),
                 true,
             );
         }
@@ -109,7 +109,7 @@ impl Stats {
         if let Some(lifetime_ranked_win_pct) = self.overwolf_player.get_lifetime_ranked_win_pct() {
             e.field(
                 "Lifetime Ranked Win %",
-                &format!("{:.2}", lifetime_ranked_win_pct),
+                format!("{:.2}", lifetime_ranked_win_pct),
                 true,
             );
         }

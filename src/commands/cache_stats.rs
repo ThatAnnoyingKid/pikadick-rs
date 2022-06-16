@@ -25,7 +25,7 @@ pub async fn cache_stats(ctx: &Context, msg: &Message, _args: Args) -> CommandRe
     let stats = client_data.generate_cache_stats();
     drop(data_lock);
 
-    info!("Reporting all cache stats");
+    info!("reporting all cache stats");
 
     msg.channel_id
         .send_message(&ctx.http, |m| {
@@ -38,10 +38,10 @@ pub async fn cache_stats(ctx: &Context, msg: &Message, _args: Args) -> CommandRe
                     let mut output = String::with_capacity(stat_family.len() * 16);
 
                     for (stat_name, stat) in stat_family.iter() {
-                        writeln!(&mut output, "**{}**: {} item(s)", stat_name, stat).unwrap();
+                        writeln!(&mut output, "**{stat_name}**: {stat} item(s)").unwrap();
                     }
 
-                    e.field(stat_family_name, &output, false);
+                    e.field(stat_family_name, output, false);
                 }
 
                 e
