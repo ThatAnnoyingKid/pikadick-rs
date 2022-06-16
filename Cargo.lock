@@ -569,7 +569,7 @@ dependencies = [
 [[package]]
 name = "command_attr"
 version = "0.4.0"
-source = "git+https://github.com/adumbidiot/serenity?branch=next#c0dec472ae48447ead2fff80e3c9454597a4257a"
+source = "git+https://github.com/adumbidiot/serenity?branch=next#013cfbfec5322fe017be74c2fe04c4f32f607de2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3443,7 +3443,7 @@ dependencies = [
 [[package]]
 name = "serenity"
 version = "0.11.2"
-source = "git+https://github.com/adumbidiot/serenity?branch=next#c0dec472ae48447ead2fff80e3c9454597a4257a"
+source = "git+https://github.com/adumbidiot/serenity?branch=next#013cfbfec5322fe017be74c2fe04c4f32f607de2"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3476,7 +3476,7 @@ dependencies = [
 [[package]]
 name = "serenity-voice-model"
 version = "0.1.1"
-source = "git+https://github.com/serenity-rs/serenity?branch=next#c7be67f326813b4ec3a1465e6516fcbd9ce33636"
+source = "git+https://github.com/serenity-rs/serenity?branch=next#013cfbfec5322fe017be74c2fe04c4f32f607de2"
 dependencies = [
  "bitflags",
  "enum_primitive",
@@ -3596,7 +3596,7 @@ dependencies = [
 [[package]]
 name = "songbird"
 version = "0.2.2"
-source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#835325c8205ad2acf8eb085b0bb8d4dfeca1c20a"
+source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#1c02610d8f59fafa8dba911c23503ed4b2e7aa06"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3723,7 +3723,7 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 [[package]]
 name = "symphonia"
 version = "0.5.0"
-source = "git+https://github.com/FelixMcFelix/Symphonia?branch=fix-ogg-opus-timebase#e15316c358aa09e4af02f1abfa68c833a7b66b49"
+source = "git+https://github.com/FelixMcFelix/Symphonia?branch=songbird-fixes#12f29a5a895b8c3c1680fe3d55fc3e2df30000bd"
 dependencies = [
  "lazy_static",
  "symphonia-core",
@@ -3733,7 +3733,7 @@ dependencies = [
 [[package]]
 name = "symphonia-core"
 version = "0.5.0"
-source = "git+https://github.com/FelixMcFelix/Symphonia?branch=fix-ogg-opus-timebase#e15316c358aa09e4af02f1abfa68c833a7b66b49"
+source = "git+https://github.com/FelixMcFelix/Symphonia?branch=songbird-fixes#12f29a5a895b8c3c1680fe3d55fc3e2df30000bd"
 dependencies = [
  "arrayvec 0.7.2",
  "bitflags",
@@ -3745,7 +3745,7 @@ dependencies = [
 [[package]]
 name = "symphonia-metadata"
 version = "0.5.0"
-source = "git+https://github.com/FelixMcFelix/Symphonia?branch=fix-ogg-opus-timebase#e15316c358aa09e4af02f1abfa68c833a7b66b49"
+source = "git+https://github.com/FelixMcFelix/Symphonia?branch=songbird-fixes#12f29a5a895b8c3c1680fe3d55fc3e2df30000bd"
 dependencies = [
  "encoding_rs",
  "lazy_static",
