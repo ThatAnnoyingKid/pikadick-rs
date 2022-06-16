@@ -104,10 +104,7 @@ async fn get_cpu_usage() -> Result<f32, heim::Error> {
 async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let start = Instant::now();
 
-    let profile = {
-        let http = ctx.http.clone();
-        tokio::spawn(async move { http.get_current_user().await })
-    };
+    let profile_avatar_url = ctx.cache.current_user().avatar_url();
 
     // Start Legacy data gathering
     let sys = System::new();
@@ -234,8 +231,6 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         }
     };
 
-    let profile = profile.await??;
-
     let data_retrieval_time = Instant::now() - start;
 
     // Start WIP
@@ -257,7 +252,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 e.title("System Status");
                 e.color(Colour::from_rgb(255, 0, 0));
 
-                if let Some(icon) = profile.avatar_url() {
+                if let Some(icon) = profile_avatar_url {
                     e.thumbnail(&icon);
                 }
 
