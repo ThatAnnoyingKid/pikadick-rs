@@ -158,6 +158,19 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         }
     };
 
+    let architecture =
+        match pikadick_system_info::get_architecture().context("failed to get architecture") {
+            Ok(architecture) => Some(
+                architecture
+                    .map(|architecture| architecture.as_str())
+                    .unwrap_or("unknown"),
+            ),
+            Err(e) => {
+                warn!("{:?}", e);
+                None
+            }
+        };
+
     let cpu_frequency = match heim::cpu::frequency().await {
         Ok(cpu_frequency) => Some(cpu_frequency),
         Err(e) => {
@@ -249,7 +262,9 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                         true,
                     );
 
-                    e.field("Arch", platform.architecture().as_str(), true);
+                    if let Some(architecture) = architecture {
+                        e.field("Architecture", architecture, true);
+                    }
                 }
 
                 if let Some(boot_time) = boot_time {
