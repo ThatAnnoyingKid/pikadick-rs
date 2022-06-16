@@ -15,6 +15,9 @@ key = "4dccf019bdfac" # Use this
 username = "[DEVIANT_USERNAME]"
 password = "[DEVIANT_PASSWORD]"
 
+[sauce_nao]
+api_key = "[SAUCE_NAO_API_KEY]"
+
 # This section is optional
 [log]
 # Logging directives. These are the suggested defaults.
