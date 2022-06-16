@@ -128,6 +128,16 @@ pub fn get_system_name() -> Result<Option<String>, Error> {
     Ok(Some(system_name.to_string()))
 }
 
+/// Get the os version
+pub fn get_system_version() -> Result<String, Error> {
+    let os_version_info = rtl_get_version();
+    let major_version = os_version_info.major_version();
+    let minor_version = os_version_info.minor_version();
+    let build_number = os_version_info.build_number();
+
+    Ok(format!("{major_version}.{minor_version}.{build_number}"))
+}
+
 /// A wrapper for `GetTickCount64`.
 ///
 /// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount64

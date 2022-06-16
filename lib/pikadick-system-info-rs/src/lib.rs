@@ -79,6 +79,14 @@ pub fn get_system_name() -> Result<Option<String>, Error> {
     imp::get_system_name()
 }
 
+/// Get the operating system version.
+///
+/// # Blocking
+/// This is NOT blocking.
+pub fn get_system_version() -> Result<String, Error> {
+    imp::get_system_version()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

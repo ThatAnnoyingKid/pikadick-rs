@@ -122,14 +122,6 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     // End Legacy data gathering
 
-    let platform = match heim::host::platform().await {
-        Ok(platform) => Some(platform),
-        Err(e) => {
-            warn!("Failed to get platform info: {}", e);
-            None
-        }
-    };
-
     let boot_time = match pikadick_system_info::get_boot_time()
         .context("failed to get boot time")
         .map(time::OffsetDateTime::from)
@@ -168,6 +160,24 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                     .map(|architecture| architecture.as_str())
                     .unwrap_or("unknown"),
             ),
+            Err(e) => {
+                warn!("{:?}", e);
+                None
+            }
+        };
+
+    let system_name =
+        match pikadick_system_info::get_system_name().context("failed to get system name") {
+            Ok(system_name) => system_name,
+            Err(e) => {
+                warn!("{:?}", e);
+                None
+            }
+        };
+
+    let system_version =
+        match pikadick_system_info::get_system_version().context("failed to get system version") {
+            Ok(system_name) => Some(system_name),
             Err(e) => {
                 warn!("{:?}", e);
                 None
@@ -255,17 +265,12 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                     e.field("Hostname", hostname.as_str(), true);
                 }
 
-                if let Some(platform) = platform {
-                    e.field(
-                        "OS",
-                        &format!(
-                            "{} {} (version {})",
-                            platform.system(),
-                            platform.release(),
-                            platform.version()
-                        ),
-                        true,
-                    );
+                if let Some(system_name) = system_name {
+                    e.field("OS", system_name.as_str(), true);
+                }
+
+                if let Some(system_version) = system_version {
+                    e.field("OS Version", system_version.as_str(), true);
                 }
 
                 if let Some(architecture) = architecture {
