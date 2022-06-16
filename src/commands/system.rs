@@ -104,7 +104,10 @@ async fn get_cpu_usage() -> Result<f32, heim::Error> {
 async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let start = Instant::now();
 
-    let profile = ctx.http.get_current_user().await?;
+    let profile = {
+        let http = ctx.http.clone();
+        tokio::spawn(async move { http.get_current_user().await })
+    };
 
     // Start Legacy data gathering
     let sys = System::new();
@@ -220,6 +223,8 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
             None
         }
     };
+
+    let profile = profile.await??;
 
     let data_retrieval_time = Instant::now() - start;
 
