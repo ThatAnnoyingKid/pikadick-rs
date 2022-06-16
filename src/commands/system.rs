@@ -266,10 +266,10 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                         ),
                         true,
                     );
+                }
 
-                    if let Some(architecture) = architecture {
-                        e.field("Architecture", architecture, true);
-                    }
+                if let Some(architecture) = architecture {
+                    e.field("Architecture", architecture, true);
                 }
 
                 if let Some(boot_time) = boot_time {

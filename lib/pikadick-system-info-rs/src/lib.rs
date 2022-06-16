@@ -71,6 +71,14 @@ pub fn get_architecture() -> Result<Option<Arch>, Error> {
     imp::get_architecture()
 }
 
+/// Get the system name, or the name of the operating system.
+///
+/// # Blocking
+/// This is NOT blocking.
+pub fn get_system_name() -> Result<Option<String>, Error> {
+    imp::get_system_name()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -126,5 +134,14 @@ mod tests {
             arch.map(|arch| arch.as_str()).unwrap_or("unknown"),
             elapsed
         );
+    }
+
+    #[test]
+    fn system_name() {
+        let start = Instant::now();
+        let system_name = get_system_name().expect("failed to get system name");
+        let elapsed = start.elapsed();
+
+        println!("System Name: {:?}\nTime: {:?}", system_name, elapsed);
     }
 }

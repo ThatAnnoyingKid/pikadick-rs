@@ -67,6 +67,18 @@ pub fn get_architecture() -> Result<Option<Arch>, Error> {
     }
 }
 
+/// Get the system name.
+pub fn get_system_name() -> Result<Option<String>, Error> {
+    let utsname = uname().map_err(std::io::Error::from)?;
+    Ok(Some(
+        utsname
+            .sysname()
+            .to_str()
+            .ok_or(Error::InvalidUtf8OsStr)?
+            .to_string(),
+    ))
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
