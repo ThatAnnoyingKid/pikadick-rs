@@ -150,6 +150,14 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         }
     };
 
+    let hostname = match pikadick_system_info::get_hostname().context("failed to get hostname") {
+        Ok(hostname) => Some(hostname),
+        Err(e) => {
+            warn!("{:?}", e);
+            None
+        }
+    };
+
     let cpu_frequency = match heim::cpu::frequency().await {
         Ok(cpu_frequency) => Some(cpu_frequency),
         Err(e) => {
@@ -225,9 +233,11 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                     e.thumbnail(&icon);
                 }
 
-                if let Some(platform) = platform {
-                    e.field("Hostname", platform.hostname(), true);
+                if let Some(hostname) = hostname {
+                    e.field("Hostname", hostname.as_str(), true);
+                }
 
+                if let Some(platform) = platform {
                     e.field(
                         "OS",
                         &format!(

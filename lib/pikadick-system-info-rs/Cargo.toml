@@ -6,10 +6,11 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 cfg-if = "1.0.0"
+platforms = "3.0.0"
 thiserror = "1.0.31"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows-sys = { version = "0.36.1", features = [ "Win32_System_SystemInformation", "Win32_System_WindowsProgramming", "Win32_Foundation" ] }
+windows-sys = { version = "0.36.1", features = [ "Win32_System_SystemInformation", "Win32_System_WindowsProgramming", "Win32_Foundation", "Win32_System_Diagnostics_Debug" ] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 nix = { version = "0.24.1", features = [ "hostname", "feature" ], default-features = false }

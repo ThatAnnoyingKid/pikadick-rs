@@ -99,6 +99,7 @@ skip = [
     
     # Blocked on removing heim
     { name = "nix", version = "0.23.1" },
+    { name = "platforms", version = "1.1.0" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs

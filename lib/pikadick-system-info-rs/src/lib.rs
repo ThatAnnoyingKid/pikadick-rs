@@ -10,6 +10,7 @@ cfg_if::cfg_if! {
     }
 }
 
+pub use platforms::Arch;
 use std::time::{
     Duration,
     SystemTime,
@@ -29,21 +30,45 @@ pub enum Error {
     /// Invalid UTF16 string
     #[error(transparent)]
     InvalidUtf16String(#[from] std::string::FromUtf16Error),
+
+    /// Invalid Utf8 OsStr
+    #[error("invalid utf8 os str")]
+    InvalidUtf8OsStr,
 }
 
 /// Get the boot time.
+///
+/// # Blocking
+/// This is NOT blocking.
 pub fn get_boot_time() -> Result<SystemTime, Error> {
     imp::get_boot_time()
 }
 
 /// Get the uptime.
+///
+/// # Blocking
+/// This is NOT blocking.
 pub fn get_uptime() -> Result<Duration, Error> {
     imp::get_uptime()
 }
 
-/// Get the hostname
+/// Get the hostname.
+///
+/// # Blocking
+/// This is NOT blocking.
 pub fn get_hostname() -> Result<String, Error> {
     imp::get_hostname()
+}
+
+/// Get the arch.
+///
+/// # Returns
+/// This returns `None` if the arch is unknown.
+///
+/// # Blocking
+/// This is NOT blocking.
+pub fn get_architecture() -> Result<Option<Arch>, Error> {
+    imp::get_architecture()
 }
 
 #[cfg(test)]
@@ -88,5 +113,18 @@ mod tests {
         let elapsed = start.elapsed();
 
         println!("Hostname: {}\nTime: {:?}", hostname, elapsed);
+    }
+
+    #[test]
+    fn architecture() {
+        let start = Instant::now();
+        let arch = get_architecture().expect("failed to get arch");
+        let elapsed = start.elapsed();
+
+        println!(
+            "Arch: {}\nTime: {:?}",
+            arch.map(|arch| arch.as_str()).unwrap_or("unknown"),
+            elapsed
+        );
     }
 }

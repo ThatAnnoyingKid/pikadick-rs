@@ -1408,7 +1408,7 @@ dependencies = [
  "log",
  "mach",
  "ntapi",
- "platforms",
+ "platforms 1.1.0",
  "winapi",
 ]
 
@@ -2468,6 +2468,7 @@ version = "0.0.0"
 dependencies = [
  "cfg-if",
  "nix 0.24.1",
+ "platforms 3.0.0",
  "thiserror",
  "time",
  "windows-sys",
@@ -2527,6 +2528,12 @@ name = "platforms"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "989d43012e2ca1c4a02507c67282691a0a3207f9dc67cec596b43fe925b3d325"
+
+[[package]]
+name = "platforms"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86d1db500905601725f5c3629a5815a2ce7611fe063de279964b451f3edb3532"
 
 [[package]]
 name = "plotters"
