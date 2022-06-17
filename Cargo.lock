@@ -2436,6 +2436,7 @@ dependencies = [
  "bitflags",
  "cfg-if",
  "nix 0.24.1",
+ "once_cell",
  "platforms",
  "thiserror",
  "time",

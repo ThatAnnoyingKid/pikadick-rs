@@ -119,6 +119,114 @@ pub fn get_available_swap() -> Result<u64, Error> {
     imp::get_available_swap()
 }
 
+/// A context for caching data related to information queries.
+///
+/// A system may occasionally give more data than requested when asked.
+/// Using this allows the use of that data without fetching it again.
+/// A new context should be created if new data is required, as it will happily reuse old data if it has it.
+#[derive(Debug)]
+pub struct CacheContext {
+    inner: imp::CacheContext,
+}
+
+impl CacheContext {
+    /// Make a new [`CacheContext`].
+    pub fn new() -> Self {
+        Self {
+            inner: imp::CacheContext::new(),
+        }
+    }
+
+    /// Get the boot time.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_boot_time(&self) -> Result<SystemTime, Error> {
+        self.inner.get_boot_time()
+    }
+
+    /// Get the computer uptime.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_uptime(&self) -> Result<Duration, Error> {
+        self.inner.get_uptime()
+    }
+
+    /// Get the hostname.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_hostname(&self) -> Result<String, Error> {
+        self.inner.get_hostname()
+    }
+
+    /// Get the arch.
+    ///
+    /// # Returns
+    /// This returns `None` if the arch is unknown.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_architecture(&self) -> Result<Option<Arch>, Error> {
+        self.inner.get_architecture()
+    }
+
+    /// Get the system name, or the name of the operating system.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_system_name(&self) -> Result<Option<String>, Error> {
+        self.inner.get_system_name()
+    }
+
+    /// Get the operating system version.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_system_version(&self) -> Result<String, Error> {
+        self.inner.get_system_version()
+    }
+
+    /// Get the total amount of memory in the computer, in bytes.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_total_memory(&self) -> Result<u64, Error> {
+        self.inner.get_total_memory()
+    }
+
+    /// Get the available amount of memory in the computer, in bytes.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_available_memory(&self) -> Result<u64, Error> {
+        self.inner.get_available_memory()
+    }
+
+    /// Get the total amount of swap in the computer, in bytes.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_total_swap(&self) -> Result<u64, Error> {
+        self.inner.get_total_swap()
+    }
+
+    /// Get the available amount of swap in the computer, in bytes.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_available_swap(&self) -> Result<u64, Error> {
+        self.inner.get_available_swap()
+    }
+}
+
+impl Default for CacheContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -206,12 +314,82 @@ mod tests {
     #[test]
     fn available_memory() {
         let start = Instant::now();
-        let available_memory = get_total_memory().expect("failed to get available memory");
+        let available_memory = get_available_memory().expect("failed to get available memory");
         let elapsed = start.elapsed();
 
         println!(
             "Available Memory: {}\nTime: {:?}",
             available_memory, elapsed
         );
+    }
+
+    #[test]
+    fn total_swap() {
+        let start = Instant::now();
+        let total_swap = get_total_swap().expect("failed to get total swap");
+        let elapsed = start.elapsed();
+
+        println!("Total Swap: {}\nTime: {:?}", total_swap, elapsed);
+    }
+
+    #[test]
+    fn available_swap() {
+        let start = Instant::now();
+        let available_swap = get_total_swap().expect("failed to get swap memory");
+        let elapsed = start.elapsed();
+
+        println!("Available Swap: {}\nTime: {:?}", available_swap, elapsed);
+    }
+
+    #[test]
+    fn cache_context_is_faster() {
+        let start = Instant::now();
+        let _boot_time = get_boot_time().expect("failed to get boot time");
+        let _uptime = get_uptime().expect("failed to get uptime");
+        let _hostname = get_hostname().expect("failed to get hostname");
+        let _arch = get_architecture().expect("failed to get arch");
+        let _system_name = get_system_name().expect("failed to get system name");
+        let _system_version = get_system_version().expect("failed to get system version");
+        let _total_memory = get_total_memory().expect("failed to get total memory");
+        let _available_memory = get_total_memory().expect("failed to get available memory");
+        let _total_swap = get_total_swap().expect("failed to get total swap");
+        let _available_swap = get_total_swap().expect("failed to get swap memory");
+        let elapsed = start.elapsed();
+        dbg!(elapsed);
+
+        let start = Instant::now();
+        let cache_context = CacheContext::new();
+        let _boot_time = cache_context
+            .get_boot_time()
+            .expect("failed to get boot time");
+        let _uptime = cache_context.get_uptime().expect("failed to get uptime");
+        let _hostname = cache_context
+            .get_hostname()
+            .expect("failed to get hostname");
+        let _arch = cache_context
+            .get_architecture()
+            .expect("failed to get arch");
+        let _system_name = cache_context
+            .get_system_name()
+            .expect("failed to get system name");
+        let _system_version = cache_context
+            .get_system_version()
+            .expect("failed to get system version");
+        let _total_memory = cache_context
+            .get_total_memory()
+            .expect("failed to get total memory");
+        let _available_memory = cache_context
+            .get_total_memory()
+            .expect("failed to get available memory");
+        let _total_swap = cache_context
+            .get_total_swap()
+            .expect("failed to get total swap");
+        let _available_swap = cache_context
+            .get_total_swap()
+            .expect("failed to get swap memory");
+        let cache_elapsed = start.elapsed();
+        dbg!(cache_elapsed);
+
+        assert!(elapsed > cache_elapsed);
     }
 }
