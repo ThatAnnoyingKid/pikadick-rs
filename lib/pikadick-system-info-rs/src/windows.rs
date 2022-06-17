@@ -82,12 +82,12 @@ impl CacheContext {
     }
 
     fn get_system_info(&self) -> &SystemInfo {
-        self.system_info.get_or_init(|| get_system_info())
+        self.system_info.get_or_init(get_system_info)
     }
 
     fn get_memory_status_ex(&self) -> Result<&MemoryStatusEx, Error> {
         self.memory_status_ex
-            .get_or_try_init(|| global_memory_status_ex())
+            .get_or_try_init(global_memory_status_ex)
     }
 
     /// Get the time the system was booted
