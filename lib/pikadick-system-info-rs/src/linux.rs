@@ -59,7 +59,7 @@ pub fn get_architecture() -> Result<Option<Arch>, Error> {
         "i386" | "i586" | "i686" => Ok(Some(Arch::X86)),
         "x86_64" | "amd64" | "x86" => Ok(Some(Arch::X86_64)),
         "arm" | "armv6l" | "armv7" | "armv7l" => Ok(Some(Arch::Arm)),
-        "aarch64_be" | "aarch64" | "armv8b" | "armv8l" => Ok(Some(Arch::Arm)),
+        "aarch64_be" | "aarch64" | "armv8b" | "armv8l" => Ok(Some(Arch::Arm64)),
         "ppc" => Ok(Some(Arch::PowerPc)),
         "ppc64" | "ppc64le" => Ok(Some(Arch::PowerPc64)),
         "sparc64" => Ok(Some(Arch::Sparc64)),
