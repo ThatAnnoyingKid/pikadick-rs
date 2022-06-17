@@ -1,18 +1,11 @@
 use crate::checks::ENABLED_CHECK;
 use anyhow::Context as _;
-use heim::{
-    memory::Swap,
-    units::{
-        frequency::{
-            gigahertz,
-            hertz,
-        },
-        information::{
-            byte,
-            gigabyte,
-        },
-        Frequency,
+use heim::units::{
+    frequency::{
+        gigahertz,
+        hertz,
     },
+    Frequency,
 };
 use serenity::{
     framework::standard::{
@@ -36,10 +29,7 @@ use time::format_description::well_known::Rfc2822;
 use tracing::warn;
 use uom::{
     fmt::DisplayStyle,
-    si::f32::{
-        Frequency as FrequencyF32,
-        Information as InformationF32,
-    },
+    si::f32::Frequency as FrequencyF32,
 };
 
 const BYTES_IN_GB_F64: f64 = 1_000_000_000_f64;
