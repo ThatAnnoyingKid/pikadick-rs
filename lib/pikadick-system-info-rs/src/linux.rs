@@ -84,6 +84,18 @@ pub fn get_system_version() -> Result<String, Error> {
     Ok(version.to_string())
 }
 
+/// Get the total amount of memory in the computer, in bytes
+pub fn get_total_memory() -> Result<u64, Error> {
+    let sysinfo = sysinfo().map_err(std::io::Error::from)?;
+    Ok(sysinfo.ram_total())
+}
+
+/// Get the available amount of memory in the computer, in bytes
+pub fn get_available_memory() -> Result<u64, Error> {
+    let sysinfo = sysinfo().map_err(std::io::Error::from)?;
+    Ok(sysinfo.ram_unused())
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

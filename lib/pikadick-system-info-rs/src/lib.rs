@@ -87,6 +87,22 @@ pub fn get_system_version() -> Result<String, Error> {
     imp::get_system_version()
 }
 
+/// Get the total amount of memory in the computer, in bytes.
+///
+/// # Blocking
+/// This is NOT blocking.
+pub fn get_total_memory() -> Result<u64, Error> {
+    imp::get_total_memory()
+}
+
+/// Get the total amount of memory in the computer, in bytes.
+///
+/// # Blocking
+/// This is NOT blocking.
+pub fn get_available_memory() -> Result<u64, Error> {
+    imp::get_available_memory()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -151,5 +167,35 @@ mod tests {
         let elapsed = start.elapsed();
 
         println!("System Name: {:?}\nTime: {:?}", system_name, elapsed);
+    }
+
+    #[test]
+    fn system_version() {
+        let start = Instant::now();
+        let system_version = get_system_version().expect("failed to get system version");
+        let elapsed = start.elapsed();
+
+        println!("System Version: {:?}\nTime: {:?}", system_version, elapsed);
+    }
+
+    #[test]
+    fn total_memory() {
+        let start = Instant::now();
+        let total_memory = get_total_memory().expect("failed to get total memory");
+        let elapsed = start.elapsed();
+
+        println!("Total Memory: {}\nTime: {:?}", total_memory, elapsed);
+    }
+
+    #[test]
+    fn available_memory() {
+        let start = Instant::now();
+        let available_memory = get_total_memory().expect("failed to get available memory");
+        let elapsed = start.elapsed();
+
+        println!(
+            "Available Memory: {}\nTime: {:?}",
+            available_memory, elapsed
+        );
     }
 }

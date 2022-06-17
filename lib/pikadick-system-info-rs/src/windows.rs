@@ -35,6 +35,8 @@ use windows_sys::Win32::{
             GetNativeSystemInfo,
             GetTickCount64,
             GetVersionExW,
+            GlobalMemoryStatusEx,
+            MEMORYSTATUSEX,
             OSVERSIONINFOEXW,
             OSVERSIONINFOW,
             SYSTEM_INFO,
@@ -136,6 +138,18 @@ pub fn get_system_version() -> Result<String, Error> {
     let build_number = os_version_info.build_number();
 
     Ok(format!("{major_version}.{minor_version}.{build_number}"))
+}
+
+/// Get the total amount of memory in the computer, in bytes
+pub fn get_total_memory() -> Result<u64, Error> {
+    let memory_info_ex = global_memory_status_ex()?;
+    Ok(memory_info_ex.total_physical())
+}
+
+/// Get the available amount of memory in the computer, in bytes
+pub fn get_available_memory() -> Result<u64, Error> {
+    let memory_info_ex = global_memory_status_ex()?;
+    Ok(memory_info_ex.available_physical())
 }
 
 /// A wrapper for `GetTickCount64`.
@@ -446,6 +460,82 @@ fn rtl_get_version() -> OsVersionInfoEx {
     unsafe { OsVersionInfoEx(os_version_info.assume_init()) }
 }
 
+/// A wrapper for `MEMORYSTATUSEX`.
+///
+/// See `https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex`
+struct MemoryStatusEx(MEMORYSTATUSEX);
+
+impl MemoryStatusEx {
+    /// Get the percentage of memory in use, on a scale from 0 to 100
+    pub fn memory_load(&self) -> u8 {
+        u8::try_from(self.0.dwMemoryLoad).expect("`dwMemoryLoad` cannot fit in a `u8`")
+    }
+
+    /// The total amount of physical memory in bytes
+    pub fn total_physical(&self) -> u64 {
+        self.0.ullTotalPhys
+    }
+
+    /// The total amount of available physical memory in bytes
+    pub fn available_physical(&self) -> u64 {
+        self.0.ullAvailPhys
+    }
+
+    /// The max page file size for the process or computer, whichever is smaller.
+    pub fn total_page_file(&self) -> u64 {
+        self.0.ullTotalPageFile
+    }
+
+    /// The available page file size for the process or computer, whichever is smaller.
+    pub fn available_page_file(&self) -> u64 {
+        self.0.ullAvailPageFile
+    }
+
+    /// The size of the total user-mode address space, in bytes.
+    pub fn total_virtual(&self) -> u64 {
+        self.0.ullTotalVirtual
+    }
+
+    /// The size of the available user-mode address space (unreserved and uncomitted), in bytes.
+    pub fn available_virtual(&self) -> u64 {
+        self.0.ullAvailVirtual
+    }
+}
+
+impl std::fmt::Debug for MemoryStatusEx {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("MemoryStatusEx")
+            .field("memory_load", &self.memory_load())
+            .field("total_physical", &self.total_physical())
+            .field("available_physical", &self.available_physical())
+            .field("total_page_file", &self.total_page_file())
+            .field("available_page_file", &self.available_page_file())
+            .field("total_virtual", &self.total_virtual())
+            .field("total_virtual", &self.available_virtual())
+            .finish()
+    }
+}
+
+/// A wrapper for `GlobalMemoryStatusEx`.
+///
+/// See `https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-globalmemorystatusex`.
+fn global_memory_status_ex() -> Result<MemoryStatusEx, Error> {
+    const MEMORY_STATUS_EX_SIZE: u32 = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
+
+    let mut memory_status_ex: std::mem::MaybeUninit<MEMORYSTATUSEX> = unsafe {
+        let mut memory_status_ex: std::mem::MaybeUninit<MEMORYSTATUSEX> =
+            std::mem::MaybeUninit::uninit();
+        std::ptr::addr_of_mut!((*memory_status_ex.as_mut_ptr()).dwLength)
+            .write(MEMORY_STATUS_EX_SIZE);
+        memory_status_ex
+    };
+    let code = unsafe { GlobalMemoryStatusEx(memory_status_ex.as_mut_ptr().cast()) };
+    if code == 0 {
+        return Err(Error::Io(std::io::Error::last_os_error()));
+    }
+    Ok(MemoryStatusEx(unsafe { memory_status_ex.assume_init() }))
+}
+
 /*
 /// A wrapper for `GetLastError`.
 ///
@@ -490,5 +580,15 @@ mod test {
         assert!(elapsed < Duration::from_millis(1));
 
         dbg!(version);
+    }
+
+    #[test]
+    fn global_memory_status_ex_works() {
+        let start = Instant::now();
+        let memory_status = global_memory_status_ex().expect("failed to get global memory status");
+        let elapsed = start.elapsed();
+        assert!(elapsed < Duration::from_millis(1));
+
+        dbg!(memory_status);
     }
 }

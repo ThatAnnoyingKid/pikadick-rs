@@ -1,10 +1,7 @@
 use crate::checks::ENABLED_CHECK;
 use anyhow::Context as _;
 use heim::{
-    memory::{
-        Memory,
-        Swap,
-    },
+    memory::Swap,
     units::{
         frequency::{
             gigahertz,
@@ -45,33 +42,7 @@ use uom::{
     },
 };
 
-fn fmt_uptime(uptime: Duration) -> String {
-    let raw_secs = uptime.as_secs();
-
-    let days = raw_secs / (60 * 60 * 24);
-    let hours = (raw_secs % (60 * 60 * 24)) / (60 * 60);
-    let minutes = (raw_secs % (60 * 60)) / 60;
-    let secs = raw_secs % 60;
-
-    format!(
-        "{} days {} hours {} minutes {} seconds",
-        days, hours, minutes, secs
-    )
-}
-
-fn fmt_memory(memory: &Memory) -> String {
-    let fmt_args = InformationF32::format_args(gigabyte, DisplayStyle::Abbreviation);
-
-    let avail_mem = InformationF32::new::<byte>(memory.available().get::<byte>() as f32);
-    let total_mem = InformationF32::new::<byte>(memory.total().get::<byte>() as f32);
-    let used_mem = total_mem - avail_mem;
-
-    format!(
-        "{:.2} / {:.2}",
-        fmt_args.with(used_mem),
-        fmt_args.with(total_mem),
-    )
-}
+const BYTES_IN_GB_F64: f64 = 1_000_000_000_f64;
 
 fn fmt_swap(swap: &Swap) -> String {
     let fmt_args = InformationF32::format_args(gigabyte, DisplayStyle::Abbreviation);
@@ -181,6 +152,25 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
             }
         };
 
+    let total_memory =
+        match pikadick_system_info::get_total_memory().context("failed to get total memory") {
+            Ok(memory) => Some(memory),
+            Err(e) => {
+                warn!("{:?}", e);
+                None
+            }
+        };
+
+    let available_memory = match pikadick_system_info::get_available_memory()
+        .context("failed to get available memory")
+    {
+        Ok(memory) => Some(memory),
+        Err(e) => {
+            warn!("{:?}", e);
+            None
+        }
+    };
+
     let cpu_frequency = match heim::cpu::frequency().await {
         Ok(cpu_frequency) => Some(cpu_frequency),
         Err(e) => {
@@ -201,14 +191,6 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         Ok(cpu_physical_count) => cpu_physical_count, // This returns an option, so we return it here to flatten it.
         Err(e) => {
             warn!("Failed to get physical cpu count: {}", e);
-            None
-        }
-    };
-
-    let memory = match heim::memory::memory().await {
-        Ok(memory) => Some(memory),
-        Err(e) => {
-            warn!("Failed to get memory usage: {}", e);
             None
         }
     };
@@ -277,7 +259,53 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 }
 
                 if let Some(uptime) = uptime {
-                    e.field("Uptime", fmt_uptime(uptime), true);
+                    let raw_secs = uptime.as_secs();
+
+                    let days = raw_secs / (60 * 60 * 24);
+                    let hours = (raw_secs % (60 * 60 * 24)) / (60 * 60);
+                    let minutes = (raw_secs % (60 * 60)) / 60;
+                    let seconds = raw_secs % 60;
+
+                    let mut value = String::with_capacity(64);
+                    if days != 0 {
+                        value.push_str(itoa::Buffer::new().format(days));
+                        value.push_str(" day");
+                        if days > 1 {
+                            value.push('s');
+                        }
+                    }
+
+                    if hours != 0 {
+                        value.push(' ');
+
+                        value.push_str(itoa::Buffer::new().format(hours));
+                        value.push_str(" hour");
+                        if hours > 1 {
+                            value.push('s');
+                        }
+                    }
+
+                    if minutes != 0 {
+                        value.push(' ');
+
+                        value.push_str(itoa::Buffer::new().format(minutes));
+                        value.push_str(" minute");
+                        if minutes > 1 {
+                            value.push('s');
+                        }
+                    }
+
+                    if seconds != 0 {
+                        value.push(' ');
+
+                        value.push_str(itoa::Buffer::new().format(seconds));
+                        value.push_str(" second");
+                        if seconds > 1 {
+                            value.push('s');
+                        }
+                    }
+
+                    e.field("Uptime", value, true);
                 }
 
                 // Currently reports incorrectly on Windows
@@ -322,8 +350,18 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                     (None, None) => {}
                 }
 
-                if let Some(memory) = memory {
-                    e.field("Memory Usage", &fmt_memory(&memory), true);
+                if let (Some(total_memory), Some(available_memory)) =
+                    (total_memory, available_memory)
+                {
+                    e.field(
+                        "Memory Usage",
+                        format!(
+                            "{:.2} GB / {:.2} GB",
+                            (total_memory - available_memory) as f64 / BYTES_IN_GB_F64,
+                            total_memory as f64 / BYTES_IN_GB_F64,
+                        ),
+                        true,
+                    );
                 }
 
                 if let Some(swap) = swap {
