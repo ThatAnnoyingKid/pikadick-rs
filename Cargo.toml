@@ -20,7 +20,7 @@ dashmap = "5.3.4"
 deviantart = { path = "./lib/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
 futures = { version = "0.3.21", features = [ "std" ], default-features = false }
-heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt", "memory" ] }
+heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
 indexmap = "1.8.2"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }

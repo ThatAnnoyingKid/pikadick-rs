@@ -1353,7 +1353,6 @@ source = "git+https://github.com/vectordotdev/heim?branch=update-nix#76fa765c7ed
 dependencies = [
  "heim-common",
  "heim-cpu",
- "heim-memory",
  "heim-runtime",
  "heim-virt",
 ]
@@ -1391,20 +1390,6 @@ dependencies = [
  "mach",
  "ntapi",
  "smol",
- "winapi",
-]
-
-[[package]]
-name = "heim-memory"
-version = "0.1.0-rc.1"
-source = "git+https://github.com/vectordotdev/heim?branch=update-nix#76fa765c7ed7fbe43d1465bf52da6b8d19f2d2a9"
-dependencies = [
- "cfg-if",
- "heim-common",
- "heim-runtime",
- "lazy_static",
- "libc",
- "mach",
  "winapi",
 ]
 
