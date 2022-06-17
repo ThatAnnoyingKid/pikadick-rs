@@ -152,6 +152,18 @@ pub fn get_available_memory() -> Result<u64, Error> {
     Ok(memory_info_ex.available_physical())
 }
 
+/// Get the total amount of swap in the computer, in bytes
+pub fn get_total_swap() -> Result<u64, Error> {
+    let memory_info_ex = global_memory_status_ex()?;
+    Ok(memory_info_ex.total_page_file() - memory_info_ex.total_physical())
+}
+
+/// Get the available amount of swap in the computer, in bytes
+pub fn get_available_swap() -> Result<u64, Error> {
+    let memory_info_ex = global_memory_status_ex()?;
+    Ok(memory_info_ex.available_page_file() - memory_info_ex.available_physical())
+}
+
 /// A wrapper for `GetTickCount64`.
 ///
 /// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount64
@@ -481,12 +493,12 @@ impl MemoryStatusEx {
         self.0.ullAvailPhys
     }
 
-    /// The max page file size for the process or computer, whichever is smaller.
+    /// The max available memory (with page file) size for the process or computer, whichever is smaller.
     pub fn total_page_file(&self) -> u64 {
         self.0.ullTotalPageFile
     }
 
-    /// The available page file size for the process or computer, whichever is smaller.
+    /// The available memory (with page file) size for the process or computer, whichever is smaller.
     pub fn available_page_file(&self) -> u64 {
         self.0.ullAvailPageFile
     }

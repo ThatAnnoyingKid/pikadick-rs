@@ -96,6 +96,18 @@ pub fn get_available_memory() -> Result<u64, Error> {
     Ok(sysinfo.ram_unused())
 }
 
+/// Get the total amount of swap in the computer, in bytes
+pub fn get_total_swap() -> Result<u64, Error> {
+    let sysinfo = sysinfo().map_err(std::io::Error::from)?;
+    Ok(sysinfo.swap_total())
+}
+
+/// Get the available amount of swap in the computer, in bytes
+pub fn get_available_swap() -> Result<u64, Error> {
+    let sysinfo = sysinfo().map_err(std::io::Error::from)?;
+    Ok(sysinfo.swap_free())
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

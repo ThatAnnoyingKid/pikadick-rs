@@ -44,15 +44,6 @@ use uom::{
 
 const BYTES_IN_GB_F64: f64 = 1_000_000_000_f64;
 
-fn fmt_swap(swap: &Swap) -> String {
-    let fmt_args = InformationF32::format_args(gigabyte, DisplayStyle::Abbreviation);
-
-    let used = InformationF32::new::<byte>(swap.used().get::<byte>() as f32);
-    let total = InformationF32::new::<byte>(swap.total().get::<byte>() as f32);
-
-    format!("{:.2} / {:.2}", fmt_args.with(used), fmt_args.with(total),)
-}
-
 fn fmt_cpu_frequency(freq: &Frequency) -> String {
     let fmt_args = FrequencyF32::format_args(gigahertz, DisplayStyle::Abbreviation);
     let freq = FrequencyF32::new::<hertz>(freq.get::<hertz>() as f32);
@@ -171,6 +162,24 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         }
     };
 
+    let total_swap =
+        match pikadick_system_info::get_total_swap().context("failed to get total swap") {
+            Ok(memory) => Some(memory),
+            Err(e) => {
+                warn!("{:?}", e);
+                None
+            }
+        };
+
+    let available_swap =
+        match pikadick_system_info::get_available_swap().context("failed to get available swap") {
+            Ok(memory) => Some(memory),
+            Err(e) => {
+                warn!("{:?}", e);
+                None
+            }
+        };
+
     let cpu_frequency = match heim::cpu::frequency().await {
         Ok(cpu_frequency) => Some(cpu_frequency),
         Err(e) => {
@@ -191,14 +200,6 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         Ok(cpu_physical_count) => cpu_physical_count, // This returns an option, so we return it here to flatten it.
         Err(e) => {
             warn!("Failed to get physical cpu count: {}", e);
-            None
-        }
-    };
-
-    let swap = match heim::memory::swap().await {
-        Ok(swap) => Some(swap),
-        Err(e) => {
-            warn!("Failed to get swap usage: {}", e);
             None
         }
     };
@@ -364,8 +365,16 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                     );
                 }
 
-                if let Some(swap) = swap {
-                    e.field("Swap Usage", &fmt_swap(&swap), true);
+                if let (Some(total_swap), Some(available_swap)) = (total_swap, available_swap) {
+                    e.field(
+                        "Swap Usage",
+                        format!(
+                            "{:.2} GB / {:.2} GB",
+                            (total_swap - available_swap) as f64 / BYTES_IN_GB_F64,
+                            total_swap as f64 / BYTES_IN_GB_F64,
+                        ),
+                        true,
+                    );
                 }
 
                 let virtualization_field = match virtualization.as_ref() {

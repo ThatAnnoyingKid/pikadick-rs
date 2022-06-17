@@ -95,12 +95,28 @@ pub fn get_total_memory() -> Result<u64, Error> {
     imp::get_total_memory()
 }
 
-/// Get the total amount of memory in the computer, in bytes.
+/// Get the available amount of memory in the computer, in bytes.
 ///
 /// # Blocking
 /// This is NOT blocking.
 pub fn get_available_memory() -> Result<u64, Error> {
     imp::get_available_memory()
+}
+
+/// Get the total amount of swap in the computer, in bytes.
+///
+/// # Blocking
+/// This is NOT blocking.
+pub fn get_total_swap() -> Result<u64, Error> {
+    imp::get_total_swap()
+}
+
+/// Get the available amount of swap in the computer, in bytes.
+///
+/// # Blocking
+/// This is NOT blocking.
+pub fn get_available_swap() -> Result<u64, Error> {
+    imp::get_available_swap()
 }
 
 #[cfg(test)]
