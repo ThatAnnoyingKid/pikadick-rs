@@ -98,7 +98,7 @@ impl CacheContext {
 
     /// Get the time the system was booted
     pub fn get_boot_time(&self) -> Result<SystemTime, Error> {
-        Ok(SystemTime::now() - get_uptime()?)
+        Ok(SystemTime::now() - self.get_uptime()?)
     }
 
     /// Get the uptime.
@@ -196,106 +196,6 @@ impl CacheContext {
         let memory_info_ex = self.get_memory_status_ex()?;
         Ok(memory_info_ex.available_page_file() - memory_info_ex.available_physical())
     }
-}
-
-/// Get the time the system was booted
-pub fn get_boot_time() -> Result<SystemTime, Error> {
-    Ok(SystemTime::now() - get_uptime()?)
-}
-
-/// Get the uptime.
-pub fn get_uptime() -> Result<Duration, Error> {
-    Ok(get_tick_count_64())
-}
-
-/// Get the hostname
-pub fn get_hostname() -> Result<String, Error> {
-    get_computer_name(ComputerNameFormat::PhysicalDnsHostname)
-}
-
-/// Get the architecture.
-pub fn get_architecture() -> Result<Option<Arch>, Error> {
-    let system_info = get_system_info();
-    match system_info.processor_architecture() {
-        Ok(ProcessorArchitecture::Amd64) => Ok(Some(Arch::X86_64)),
-        Ok(ProcessorArchitecture::Arm) => Ok(Some(Arch::Arm)),
-        Ok(ProcessorArchitecture::Arm64) => Ok(Some(Arch::AArch64)),
-        // Rust doesn't currently support Itanium, so I don't see how we could possibly get this value here?
-        Ok(ProcessorArchitecture::Ia64) => Ok(None),
-        Ok(ProcessorArchitecture::Intel) => Ok(Some(Arch::X86)),
-        Ok(ProcessorArchitecture::Unknown) => Ok(None),
-        Err(_e) => Ok(None),
-    }
-}
-
-/// Get the system name
-pub fn get_system_name() -> Result<Option<String>, Error> {
-    let os_version_info = rtl_get_version();
-
-    // https://www.lifewire.com/windows-version-numbers-2625171
-    // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ns-wdm-_osversioninfoexw
-    let system_name = match (
-        os_version_info.major_version(),
-        os_version_info.minor_version(),
-        os_version_info.build_number(),
-        os_version_info.product_type(),
-        os_version_info.suite_mask(),
-    ) {
-        (10, 0, build, Ok(ProductType::Workstation), _) if build >= 22000 => "Windows 11",
-        (10, 0, build, _, _) if build >= 22000 => "Windows Server 2022",
-        (10, 0, _, Ok(ProductType::Workstation), _) => "Windows 10",
-        (10, 0, _, _, _) => "Windows Server 2016",
-        (6, 3, _, Ok(ProductType::Workstation), _) => "Windows 8.1",
-        (6, 3, _, _, _) => "Windows Server 2012 R2",
-        (6, 2, _, Ok(ProductType::Workstation), _) => "Windows 8",
-        (6, 2, _, _, _) => "Windows Server 2012",
-        (6, 1, _, Ok(ProductType::Workstation), _) => "Windows 7",
-        (6, 1, _, _, _) => "Windows Server 2008 R2",
-        (6, 0, _, Ok(ProductType::Workstation), _) => "Windows Vista",
-        (6, 0, _, _, _) => "Windows Server 2008",
-        (5, 2, _, _, ProductSuite::WH_SERVER) => "Windows Home Server",
-        (5, 2, _, Ok(ProductType::Workstation), _) => "Windows XP Professional x64 Edition",
-        (5, 2, _, _, _) => "Windows Server 2003",
-        (5, 1, _, _, _) => "Windows XP",
-        (5, 0, _, _, _) => "Windows 2000",
-        _ => return Ok(None),
-    };
-
-    Ok(Some(system_name.to_string()))
-}
-
-/// Get the os version
-pub fn get_system_version() -> Result<String, Error> {
-    let os_version_info = rtl_get_version();
-    let major_version = os_version_info.major_version();
-    let minor_version = os_version_info.minor_version();
-    let build_number = os_version_info.build_number();
-
-    Ok(format!("{major_version}.{minor_version}.{build_number}"))
-}
-
-/// Get the total amount of memory in the computer, in bytes
-pub fn get_total_memory() -> Result<u64, Error> {
-    let memory_info_ex = global_memory_status_ex()?;
-    Ok(memory_info_ex.total_physical())
-}
-
-/// Get the available amount of memory in the computer, in bytes
-pub fn get_available_memory() -> Result<u64, Error> {
-    let memory_info_ex = global_memory_status_ex()?;
-    Ok(memory_info_ex.available_physical())
-}
-
-/// Get the total amount of swap in the computer, in bytes
-pub fn get_total_swap() -> Result<u64, Error> {
-    let memory_info_ex = global_memory_status_ex()?;
-    Ok(memory_info_ex.total_page_file() - memory_info_ex.total_physical())
-}
-
-/// Get the available amount of swap in the computer, in bytes
-pub fn get_available_swap() -> Result<u64, Error> {
-    let memory_info_ex = global_memory_status_ex()?;
-    Ok(memory_info_ex.available_page_file() - memory_info_ex.available_physical())
 }
 
 /// A wrapper for `GetTickCount64`.
@@ -709,7 +609,7 @@ mod test {
     #[test]
     fn get_tick_count_64_does_not_block() {
         let start = Instant::now();
-        let _boot_time = get_boot_time();
+        let _boot_time = CacheContext::new().get_boot_time();
         assert!(start.elapsed() < Duration::from_millis(1));
     }
 
