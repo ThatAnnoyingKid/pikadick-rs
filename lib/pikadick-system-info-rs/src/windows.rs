@@ -70,6 +70,7 @@ extern "system" {
 pub(crate) struct CacheContext {
     system_info: OnceCell<SystemInfo>,
     memory_status_ex: OnceCell<MemoryStatusEx>,
+    os_version_info_ex: OnceCell<OsVersionInfoEx>,
 }
 
 impl CacheContext {
@@ -78,6 +79,7 @@ impl CacheContext {
         Self {
             system_info: OnceCell::new(),
             memory_status_ex: OnceCell::new(),
+            os_version_info_ex: OnceCell::new(),
         }
     }
 
@@ -88,6 +90,10 @@ impl CacheContext {
     fn get_memory_status_ex(&self) -> Result<&MemoryStatusEx, Error> {
         self.memory_status_ex
             .get_or_try_init(global_memory_status_ex)
+    }
+
+    fn get_os_version_info(&self) -> &OsVersionInfoEx {
+        self.os_version_info_ex.get_or_init(rtl_get_version)
     }
 
     /// Get the time the system was booted
@@ -122,7 +128,7 @@ impl CacheContext {
 
     /// Get the system name
     pub fn get_system_name(&self) -> Result<Option<String>, Error> {
-        let os_version_info = rtl_get_version();
+        let os_version_info = self.get_os_version_info();
 
         // https://www.lifewire.com/windows-version-numbers-2625171
         // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ns-wdm-_osversioninfoexw
@@ -158,7 +164,8 @@ impl CacheContext {
 
     /// Get the os version
     pub fn get_system_version(&self) -> Result<String, Error> {
-        let os_version_info = rtl_get_version();
+        let os_version_info = self.get_os_version_info();
+
         let major_version = os_version_info.major_version();
         let minor_version = os_version_info.minor_version();
         let build_number = os_version_info.build_number();
@@ -391,6 +398,10 @@ impl std::fmt::Debug for SystemInfo {
             .finish()
     }
 }
+
+// This is essentially just bytes.
+// Even though it has a pointer in it, it doesn't point to valid memory and simply marks the start and end of the address space.
+unsafe impl Send for SystemInfo {}
 
 /// A wrapper for `GetNativeSystemInfo`.
 ///
@@ -689,6 +700,12 @@ mod test {
     use super::*;
     use std::time::Instant;
 
+    fn assert_impl_send<T>()
+    where
+        T: Send,
+    {
+    }
+
     #[test]
     fn get_tick_count_64_does_not_block() {
         let start = Instant::now();
@@ -729,5 +746,10 @@ mod test {
         assert!(elapsed < Duration::from_millis(1));
 
         dbg!(memory_status);
+    }
+
+    #[test]
+    fn cache_context_is_send() {
+        assert_impl_send::<CacheContext>();
     }
 }

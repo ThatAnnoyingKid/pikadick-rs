@@ -241,6 +241,12 @@ mod test {
     use super::*;
     use std::time::Instant;
 
+    fn assert_impl_send<T>()
+    where
+        T: Send,
+    {
+    }
+
     #[test]
     fn sysinfo_does_not_block() {
         let start = Instant::now();
@@ -266,5 +272,10 @@ mod test {
         let start = Instant::now();
         let _utsname = uname().expect("failed to get utsname");
         assert!(start.elapsed() < Duration::from_millis(1));
+    }
+
+    #[test]
+    fn cache_context_is_send() {
+        assert_impl_send::<CacheContext>();
     }
 }

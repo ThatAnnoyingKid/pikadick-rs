@@ -70,8 +70,10 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     };
 
     // End Legacy data gathering
+    let cache_context = pikadick_system_info::CacheContext::new();
 
-    let boot_time = match pikadick_system_info::get_boot_time()
+    let boot_time = match cache_context
+        .get_boot_time()
         .context("failed to get boot time")
         .map(time::OffsetDateTime::from)
         .and_then(|boot_time| {
@@ -86,7 +88,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         }
     };
 
-    let uptime = match pikadick_system_info::get_uptime().context("failed to get uptime") {
+    let uptime = match cache_context.get_uptime().context("failed to get uptime") {
         Ok(uptime) => Some(uptime),
         Err(e) => {
             warn!("{:?}", e);
@@ -94,7 +96,10 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         }
     };
 
-    let hostname = match pikadick_system_info::get_hostname().context("failed to get hostname") {
+    let hostname = match cache_context
+        .get_hostname()
+        .context("failed to get hostname")
+    {
         Ok(hostname) => Some(hostname),
         Err(e) => {
             warn!("{:?}", e);
@@ -102,47 +107,56 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         }
     };
 
-    let architecture =
-        match pikadick_system_info::get_architecture().context("failed to get architecture") {
-            Ok(architecture) => Some(
-                architecture
-                    .map(|architecture| architecture.as_str())
-                    .unwrap_or("unknown"),
-            ),
-            Err(e) => {
-                warn!("{:?}", e);
-                None
-            }
-        };
+    let architecture = match cache_context
+        .get_architecture()
+        .context("failed to get architecture")
+    {
+        Ok(architecture) => Some(
+            architecture
+                .map(|architecture| architecture.as_str())
+                .unwrap_or("unknown"),
+        ),
+        Err(e) => {
+            warn!("{:?}", e);
+            None
+        }
+    };
 
-    let system_name =
-        match pikadick_system_info::get_system_name().context("failed to get system name") {
-            Ok(system_name) => system_name,
-            Err(e) => {
-                warn!("{:?}", e);
-                None
-            }
-        };
+    let system_name = match cache_context
+        .get_system_name()
+        .context("failed to get system name")
+    {
+        Ok(system_name) => system_name,
+        Err(e) => {
+            warn!("{:?}", e);
+            None
+        }
+    };
 
-    let system_version =
-        match pikadick_system_info::get_system_version().context("failed to get system version") {
-            Ok(system_name) => Some(system_name),
-            Err(e) => {
-                warn!("{:?}", e);
-                None
-            }
-        };
+    let system_version = match cache_context
+        .get_system_version()
+        .context("failed to get system version")
+    {
+        Ok(system_name) => Some(system_name),
+        Err(e) => {
+            warn!("{:?}", e);
+            None
+        }
+    };
 
-    let total_memory =
-        match pikadick_system_info::get_total_memory().context("failed to get total memory") {
-            Ok(memory) => Some(memory),
-            Err(e) => {
-                warn!("{:?}", e);
-                None
-            }
-        };
+    let total_memory = match cache_context
+        .get_total_memory()
+        .context("failed to get total memory")
+    {
+        Ok(memory) => Some(memory),
+        Err(e) => {
+            warn!("{:?}", e);
+            None
+        }
+    };
 
-    let available_memory = match pikadick_system_info::get_available_memory()
+    let available_memory = match cache_context
+        .get_available_memory()
         .context("failed to get available memory")
     {
         Ok(memory) => Some(memory),
@@ -152,23 +166,27 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         }
     };
 
-    let total_swap =
-        match pikadick_system_info::get_total_swap().context("failed to get total swap") {
-            Ok(memory) => Some(memory),
-            Err(e) => {
-                warn!("{:?}", e);
-                None
-            }
-        };
+    let total_swap = match cache_context
+        .get_total_swap()
+        .context("failed to get total swap")
+    {
+        Ok(memory) => Some(memory),
+        Err(e) => {
+            warn!("{:?}", e);
+            None
+        }
+    };
 
-    let available_swap =
-        match pikadick_system_info::get_available_swap().context("failed to get available swap") {
-            Ok(memory) => Some(memory),
-            Err(e) => {
-                warn!("{:?}", e);
-                None
-            }
-        };
+    let available_swap = match cache_context
+        .get_available_swap()
+        .context("failed to get available swap")
+    {
+        Ok(memory) => Some(memory),
+        Err(e) => {
+            warn!("{:?}", e);
+            None
+        }
+    };
 
     let cpu_frequency = match heim::cpu::frequency().await {
         Ok(cpu_frequency) => Some(cpu_frequency),
