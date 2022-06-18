@@ -2,7 +2,7 @@
     unused_qualifications,
     unused_qualifications,
     unused_import_braces,
-    // unused_lifetimes, // TODO: Enable. Seems buggy?
+    unused_lifetimes,
     unreachable_pub,
     trivial_numeric_casts,
     missing_debug_implementations,
@@ -27,7 +27,8 @@
     clippy::unnested_or_patterns
 )]
 #![allow(rustdoc::missing_doc_code_examples)] // TODO: Document everything properly
-// default_trait_access
+// clippy::default_trait_access
+// clippy::use_self
 
 //! # Pikadick
 
