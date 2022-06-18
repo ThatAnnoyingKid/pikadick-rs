@@ -24,17 +24,7 @@
     clippy::macro_use_imports
 )]
 #![warn(
-    clippy::inefficient_to_string,
-    clippy::rc_buffer,
-    clippy::try_err,
-    clippy::unnecessary_join,
-    clippy::unnested_or_patterns,
     clippy::borrow_as_ptr,
-    clippy::large_types_passed_by_value,
-    clippy::ref_binding_to_reference,
-    clippy::ref_option_ref,
-    clippy::transmute_ptr_to_ptr,
-    clippy::trivially_copy_pass_by_ref,
     clippy::case_sensitive_file_extension_comparisons,
     clippy::cast_ptr_alignment,
     clippy::cloned_instead_of_copied,
@@ -43,9 +33,11 @@
     clippy::fn_params_excessive_bools,
     clippy::from_iter_instead_of_collect,
     clippy::implicit_clone,
+    clippy::inefficient_to_string,
     clippy::inconsistent_struct_constructor,
     clippy::items_after_statements,
     clippy::large_stack_arrays,
+    clippy::large_types_passed_by_value,
     clippy::let_underscore_drop,
     clippy::linkedlist,
     clippy::lossy_float_literal,
@@ -58,12 +50,22 @@
     clippy::needless_for_each,
     clippy::nonstandard_macro_braces,
     clippy::path_buf_push_overwrite,
+    clippy::rc_buffer,
     clippy::rc_mutex,
     clippy::redundant_else,
+    clippy::ref_binding_to_reference,
+    clippy::ref_option_ref,
     clippy::semicolon_if_nothing_returned,
     clippy::suboptimal_flops,
     clippy::todo,
-    // clippy::too_many_lines
+    clippy::transmute_ptr_to_ptr,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::try_err,
+    clippy::type_repetition_in_bounds,
+    clippy::unicode_not_nfc,
+    clippy::unnecessary_join,
+    clippy::unnested_or_patterns,
+    clippy::zero_sized_map_values
 )]
 #![allow(rustdoc::missing_doc_code_examples)]
 // TODO: Document everything properly
@@ -77,6 +79,7 @@
 // clippy::cast_sign_loss
 // clippy::fn_to_numeric_cast_any
 // clippy::redundant_closure_for_method_calls
+// clippy::too_many_lines
 
 //! # Pikadick
 
