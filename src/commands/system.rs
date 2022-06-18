@@ -34,7 +34,7 @@ use uom::{
 
 const BYTES_IN_GB_F64: f64 = 1_000_000_000_f64;
 
-fn fmt_cpu_frequency(freq: &Frequency) -> String {
+fn fmt_cpu_frequency(freq: Frequency) -> String {
     let fmt_args = FrequencyF32::format_args(gigahertz, DisplayStyle::Abbreviation);
     let freq = FrequencyF32::new::<hertz>(freq.get::<hertz>() as f32);
 
@@ -319,18 +319,14 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
                 // Currently reports incorrectly on Windows
                 if let Some(cpu_frequency) = cpu_frequency {
-                    e.field(
-                        "Cpu Freq",
-                        fmt_cpu_frequency(&cpu_frequency.current()),
-                        true,
-                    );
+                    e.field("Cpu Freq", fmt_cpu_frequency(cpu_frequency.current()), true);
 
                     if let Some(min_cpu_frequency) = cpu_frequency.min() {
-                        e.field("Min Cpu Freq", fmt_cpu_frequency(&min_cpu_frequency), true);
+                        e.field("Min Cpu Freq", fmt_cpu_frequency(min_cpu_frequency), true);
                     }
 
                     if let Some(max_cpu_frequency) = cpu_frequency.max() {
-                        e.field("Max Cpu Freq", fmt_cpu_frequency(&max_cpu_frequency), true);
+                        e.field("Max Cpu Freq", fmt_cpu_frequency(max_cpu_frequency), true);
                     }
                 }
 
@@ -338,21 +334,17 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                     (Some(logical_count), Some(physical_count)) => {
                         e.field(
                             "Cpu Core Count",
-                            &format!("{} logical, {} physical", logical_count, physical_count),
+                            format!("{} logical, {} physical", logical_count, physical_count),
                             true,
                         );
                     }
                     (Some(logical_count), None) => {
-                        e.field(
-                            "Cpu Core Count",
-                            &format!("{} logical", logical_count),
-                            true,
-                        );
+                        e.field("Cpu Core Count", format!("{} logical", logical_count), true);
                     }
                     (None, Some(physical_count)) => {
                         e.field(
                             "Cpu Core Count",
-                            &format!("{} physical", physical_count),
+                            format!("{} physical", physical_count),
                             true,
                         );
                     }
@@ -394,7 +386,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 if let (Some(cpu_usage), Some(cpu_logical_count)) = (cpu_usage, cpu_logical_count) {
                     e.field(
                         "Cpu Usage",
-                        &format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),
+                        format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),
                         true,
                     );
                 }
@@ -407,7 +399,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 // TODO: This can probably be replaced with temprature readings from heim.
                 // It doesn't support Windows, but this never worked there anyways as Windows has no simple way to get temps
                 if let Some(cpu_temp) = cpu_temp {
-                    e.field("Cpu Temp", &format!("{} °C", cpu_temp), true);
+                    e.field("Cpu Temp", format!("{} °C", cpu_temp), true);
                 }
 
                 e.footer(|f| {

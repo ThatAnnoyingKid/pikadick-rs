@@ -17,14 +17,20 @@
     rustdoc::all,
     clippy::all,
     clippy::filter_map_next,
-    clippy::ptr_as_ptr,
+    clippy::ptr_as_ptr
 )]
 #![warn(
     clippy::inefficient_to_string,
     clippy::rc_buffer,
     clippy::try_err,
     clippy::unnecessary_join,
-    clippy::unnested_or_patterns
+    clippy::unnested_or_patterns,
+    clippy::borrow_as_ptr,
+    clippy::large_types_passed_by_value,
+    clippy::ref_binding_to_reference,
+    clippy::ref_option_ref,
+    clippy::transmute_ptr_to_ptr,
+    clippy::trivially_copy_pass_by_ref
 )]
 #![allow(rustdoc::missing_doc_code_examples)] // TODO: Document everything properly
 // clippy::default_trait_access
