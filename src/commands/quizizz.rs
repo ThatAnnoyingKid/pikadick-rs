@@ -210,7 +210,7 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
                         cache.push(code_str);
                     }
                 }
-                Ok(None) | Ok(Some(_)) => {
+                Ok(None | Some(_)) => {
                     // Pass
                     // room data is missing / room is not running
                 }

@@ -1,12 +1,10 @@
 #![deny(
     unused_qualifications,
-    clippy::all,
     unused_qualifications,
     unused_import_braces,
     // unused_lifetimes, // TODO: Enable. Seems buggy?
     unreachable_pub,
     trivial_numeric_casts,
-    rustdoc::all,
     missing_debug_implementations,
     missing_copy_implementations,
     deprecated_in_future,
@@ -15,9 +13,21 @@
     rust_2018_compatibility,
     rust_2018_idioms,
     future_incompatible,
-    nonstandard_style
+    nonstandard_style,
+    rustdoc::all,
+    clippy::all,
+    clippy::filter_map_next,
+    clippy::ptr_as_ptr,
+)]
+#![warn(
+    clippy::inefficient_to_string,
+    clippy::rc_buffer,
+    clippy::try_err,
+    clippy::unnecessary_join,
+    clippy::unnested_or_patterns
 )]
 #![allow(rustdoc::missing_doc_code_examples)] // TODO: Document everything properly
+// default_trait_access
 
 //! # Pikadick
 

@@ -34,7 +34,7 @@ const MAX_PARALLEL_RENDER_LIMIT: usize = 4;
 #[derive(Debug, Clone)]
 pub(crate) struct Renderer {
     background_pixmap: Arc<Pixmap>,
-    number_paths: Arc<Vec<Path>>,
+    number_paths: Arc<[Path]>,
 
     render_semaphore: Arc<Semaphore>,
 }
@@ -89,7 +89,7 @@ impl Renderer {
 
         Ok(Self {
             background_pixmap: Arc::new(background_pixmap),
-            number_paths: Arc::new(number_paths),
+            number_paths: Arc::from(number_paths),
             render_semaphore: Arc::new(Semaphore::new(MAX_PARALLEL_RENDER_LIMIT)),
         })
     }
