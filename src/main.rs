@@ -17,7 +17,8 @@
     rustdoc::all,
     clippy::all,
     clippy::filter_map_next,
-    clippy::ptr_as_ptr
+    clippy::ptr_as_ptr,
+    clippy::cast_lossless
 )]
 #![warn(
     clippy::inefficient_to_string,
@@ -30,11 +31,16 @@
     clippy::ref_binding_to_reference,
     clippy::ref_option_ref,
     clippy::transmute_ptr_to_ptr,
-    clippy::trivially_copy_pass_by_ref
+    clippy::trivially_copy_pass_by_ref,
+    clippy::case_sensitive_file_extension_comparisons
 )]
-#![allow(rustdoc::missing_doc_code_examples)] // TODO: Document everything properly
+#![allow(rustdoc::missing_doc_code_examples)]
+// TODO: Document everything properly
 // clippy::default_trait_access
 // clippy::use_self
+// clippy::undocumented_unsafe_blocks
+// clippy::allow_attributes_without_reason
+// clippy::as_underscore
 
 //! # Pikadick
 

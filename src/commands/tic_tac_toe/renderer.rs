@@ -53,8 +53,9 @@ impl Renderer {
             for j in 0..3 {
                 let x = i * SQUARE_SIZE;
                 let y = j * SQUARE_SIZE;
-                let square = Rect::from_xywh(x as f32, y as f32, SQUARE_SIZE_F32, SQUARE_SIZE_F32)
-                    .context("failed to make square")?;
+                let square =
+                    Rect::from_xywh(f32::from(x), f32::from(y), SQUARE_SIZE_F32, SQUARE_SIZE_F32)
+                        .context("failed to make square")?;
 
                 if (j * 3 + i) % 2 == 0 {
                     paint.set_color_rgba8(255, 0, 0, 255);
@@ -110,8 +111,8 @@ impl Renderer {
 
         for (i, team) in board.iter() {
             let transform = Transform::from_translate(
-                ((u16::from(i) % 3) * SQUARE_SIZE) as f32,
-                ((u16::from(i) / 3) * SQUARE_SIZE) as f32,
+                f32::from((u16::from(i) % 3) * SQUARE_SIZE),
+                f32::from((u16::from(i) / 3) * SQUARE_SIZE),
             );
 
             if let Some(team) = team {
@@ -151,7 +152,7 @@ impl Renderer {
                 let path = &self.number_paths[usize::from(i) + 1];
                 let bounds = path.bounds();
 
-                let ratio = ((SQUARE_SIZE / 2) as f32) / bounds.height().max(bounds.width());
+                let ratio = f32::from(SQUARE_SIZE / 2) / bounds.height().max(bounds.width());
                 let transform = transform.pre_scale(ratio, ratio).post_translate(
                     (SQUARE_SIZE_F32 / 2.0) - (ratio * bounds.width() / 2.0),
                     (SQUARE_SIZE_F32 / 2.0) - (ratio * bounds.height() / 2.0),
