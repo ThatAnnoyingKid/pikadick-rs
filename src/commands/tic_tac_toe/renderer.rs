@@ -164,62 +164,18 @@ impl Renderer {
 
         // Draw winning line
         if let Some(winner_info) = board.get_winner_info() {
-            stroke.width = 10.0;
-            paint.set_color_rgba8(48, 48, 48, 255);
-
-            let start_index = winner_info.start_tile_index();
-            let start = usize::from(start_index);
-            let mut start_x = ((start % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
-            let mut start_y = ((start / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
-
-            let end_index = winner_info.end_tile_index();
-            let end = usize::from(end_index);
-            let mut end_x = ((end % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
-            let mut end_y = ((end / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
-
-            match winner_info.win_type {
-                tic_tac_toe::WinType::Horizontal => {
-                    start_x -= SQUARE_SIZE_F32 / 4.0;
-                    end_x += SQUARE_SIZE_F32 / 4.0;
-                }
-                tic_tac_toe::WinType::Vertical => {
-                    start_y -= SQUARE_SIZE_F32 / 4.0;
-                    end_y += SQUARE_SIZE_F32 / 4.0;
-                }
-                tic_tac_toe::WinType::Diagonal => {
-                    start_x -= SQUARE_SIZE_F32 / 4.0;
-                    start_y -= SQUARE_SIZE_F32 / 4.0;
-                    end_x += SQUARE_SIZE_F32 / 4.0;
-                    end_y += SQUARE_SIZE_F32 / 4.0;
-                }
-                tic_tac_toe::WinType::AntiDiagonal => {
-                    start_x += SQUARE_SIZE_F32 / 4.0;
-                    start_y -= SQUARE_SIZE_F32 / 4.0;
-                    end_x -= SQUARE_SIZE_F32 / 4.0;
-                    end_y += SQUARE_SIZE_F32 / 4.0;
-                }
-            }
-
-            let mut path_builder = PathBuilder::new();
-            path_builder.move_to(start_x, start_y);
-            path_builder.line_to(end_x, end_y);
-            let path = path_builder
-                .finish()
+            draw_winning_line(&mut pixmap, stroke, paint, winner_info)
                 .context("failed to draw winning line")?;
-
-            pixmap
-                .stroke_path(&path, &paint, &stroke, Transform::identity(), None)
-                .context("failed to draw path for winning line")?;
         }
 
         let draw_end = Instant::now();
-        info!("Board draw time: {:?}", draw_end - draw_start);
+        info!("board draw time: {:?}", draw_end - draw_start);
 
         let encode_start = Instant::now();
         let img = pixmap.encode_png().context("failed to encode board")?;
         let encode_end = Instant::now();
 
-        info!("Board png encode time: {:?}", encode_end - encode_start);
+        info!("board png encode time: {:?}", encode_end - encode_start);
 
         Ok(img)
     }
@@ -234,6 +190,63 @@ impl Renderer {
         let self_clone = self.clone();
         tokio::task::spawn_blocking(move || self_clone.render_board(board)).await?
     }
+}
+
+/// Draw the winning line
+fn draw_winning_line(
+    pixmap: &mut Pixmap,
+    mut stroke: Stroke,
+    mut paint: Paint<'_>,
+    winner_info: tic_tac_toe::WinnerInfo,
+) -> anyhow::Result<()> {
+    stroke.width = 10.0;
+    paint.set_color_rgba8(48, 48, 48, 255);
+
+    let start_index = winner_info.start_tile_index();
+    let start = usize::from(start_index);
+    let mut start_x = ((start % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+    let mut start_y = ((start / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+
+    let end_index = winner_info.end_tile_index();
+    let end = usize::from(end_index);
+    let mut end_x = ((end % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+    let mut end_y = ((end / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+
+    match winner_info.win_type {
+        tic_tac_toe::WinType::Horizontal => {
+            start_x -= SQUARE_SIZE_F32 / 4.0;
+            end_x += SQUARE_SIZE_F32 / 4.0;
+        }
+        tic_tac_toe::WinType::Vertical => {
+            start_y -= SQUARE_SIZE_F32 / 4.0;
+            end_y += SQUARE_SIZE_F32 / 4.0;
+        }
+        tic_tac_toe::WinType::Diagonal => {
+            start_x -= SQUARE_SIZE_F32 / 4.0;
+            start_y -= SQUARE_SIZE_F32 / 4.0;
+            end_x += SQUARE_SIZE_F32 / 4.0;
+            end_y += SQUARE_SIZE_F32 / 4.0;
+        }
+        tic_tac_toe::WinType::AntiDiagonal => {
+            start_x += SQUARE_SIZE_F32 / 4.0;
+            start_y -= SQUARE_SIZE_F32 / 4.0;
+            end_x -= SQUARE_SIZE_F32 / 4.0;
+            end_y += SQUARE_SIZE_F32 / 4.0;
+        }
+    }
+
+    let mut path_builder = PathBuilder::new();
+    path_builder.move_to(start_x, start_y);
+    path_builder.line_to(end_x, end_y);
+    let path = path_builder
+        .finish()
+        .context("failed to draw winning line")?;
+
+    pixmap
+        .stroke_path(&path, &paint, &stroke, Transform::identity(), None)
+        .context("failed to draw path for winning line")?;
+
+    Ok(())
 }
 
 /// Utility to draw a font glyph to a path.

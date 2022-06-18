@@ -63,7 +63,7 @@
     clippy::semicolon_if_nothing_returned,
     clippy::suboptimal_flops,
     clippy::todo,
-    //clippy::too_many_lines
+    // clippy::too_many_lines
 )]
 #![allow(rustdoc::missing_doc_code_examples)]
 // TODO: Document everything properly
