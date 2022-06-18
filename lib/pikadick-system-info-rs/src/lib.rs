@@ -163,6 +163,7 @@ mod tests {
 
     #[test]
     fn boot_time() {
+        let cache_context = CacheContext::new();
         let offset = match time::UtcOffset::current_local_offset() {
             Ok(offset) => offset,
             Err(error) => {
@@ -172,7 +173,7 @@ mod tests {
         };
 
         let start = Instant::now();
-        let boot_time = CacheContext::new()
+        let boot_time = cache_context
             .get_boot_time()
             .expect("failed to get boot time");
         let elapsed = start.elapsed();
@@ -186,10 +187,9 @@ mod tests {
 
     #[test]
     fn uptime() {
+        let cache_context = CacheContext::new();
         let start = Instant::now();
-        let uptime = CacheContext::new()
-            .get_uptime()
-            .expect("failed to get uptime");
+        let uptime = cache_context.get_uptime().expect("failed to get uptime");
         let elapsed = start.elapsed();
 
         println!("Uptime: {:?}\nTime: {:?}", uptime, elapsed);
@@ -197,8 +197,9 @@ mod tests {
 
     #[test]
     fn hostname() {
+        let cache_context = CacheContext::new();
         let start = Instant::now();
-        let hostname = CacheContext::new()
+        let hostname = cache_context
             .get_hostname()
             .expect("failed to get hostname");
         let elapsed = start.elapsed();
@@ -208,8 +209,9 @@ mod tests {
 
     #[test]
     fn architecture() {
+        let cache_context = CacheContext::new();
         let start = Instant::now();
-        let arch = CacheContext::new()
+        let arch = cache_context
             .get_architecture()
             .expect("failed to get arch");
         let elapsed = start.elapsed();
@@ -223,8 +225,9 @@ mod tests {
 
     #[test]
     fn system_name() {
+        let cache_context = CacheContext::new();
         let start = Instant::now();
-        let system_name = CacheContext::new()
+        let system_name = cache_context
             .get_system_name()
             .expect("failed to get system name");
         let elapsed = start.elapsed();
@@ -234,8 +237,9 @@ mod tests {
 
     #[test]
     fn system_version() {
+        let cache_context = CacheContext::new();
         let start = Instant::now();
-        let system_version = CacheContext::new()
+        let system_version = cache_context
             .get_system_version()
             .expect("failed to get system version");
         let elapsed = start.elapsed();
@@ -245,8 +249,9 @@ mod tests {
 
     #[test]
     fn total_memory() {
+        let cache_context = CacheContext::new();
         let start = Instant::now();
-        let total_memory = CacheContext::new()
+        let total_memory = cache_context
             .get_total_memory()
             .expect("failed to get total memory");
         let elapsed = start.elapsed();
@@ -256,8 +261,9 @@ mod tests {
 
     #[test]
     fn available_memory() {
+        let cache_context = CacheContext::new();
         let start = Instant::now();
-        let available_memory = CacheContext::new()
+        let available_memory = cache_context
             .get_available_memory()
             .expect("failed to get available memory");
         let elapsed = start.elapsed();
@@ -270,8 +276,9 @@ mod tests {
 
     #[test]
     fn total_swap() {
+        let cache_context = CacheContext::new();
         let start = Instant::now();
-        let total_swap = CacheContext::new()
+        let total_swap = cache_context
             .get_total_swap()
             .expect("failed to get total swap");
         let elapsed = start.elapsed();
@@ -281,8 +288,9 @@ mod tests {
 
     #[test]
     fn available_swap() {
+        let cache_context = CacheContext::new();
         let start = Instant::now();
-        let available_swap = CacheContext::new()
+        let available_swap = cache_context
             .get_available_swap()
             .expect("failed to get available swap memory");
         let elapsed = start.elapsed();
@@ -292,8 +300,9 @@ mod tests {
 
     #[test]
     fn logical_cpus() {
+        let cache_context = CacheContext::new();
         let start = Instant::now();
-        let logical_cpus = CacheContext::new()
+        let logical_cpus = cache_context
             .count_logical_cpus()
             .expect("failed to get count logical cpus");
         let elapsed = start.elapsed();
