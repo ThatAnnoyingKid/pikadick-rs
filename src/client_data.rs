@@ -198,7 +198,7 @@ impl ClientData {
     /// but not returned to the user as it is assumed that they don't matter in the middle of a shutdown.
     pub async fn shutdown(&self) {
         if let Err(e) = self.encoder_task.shutdown().await {
-            error!("{:?}", e)
+            error!("{:?}", e);
         }
     }
 }

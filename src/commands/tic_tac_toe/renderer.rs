@@ -99,10 +99,10 @@ impl Renderer {
     // Author might add more fields
     #[allow(clippy::field_reassign_with_default)]
     pub(crate) fn render_board(&self, board: tic_tac_toe::Board) -> anyhow::Result<Vec<u8>> {
+        const PIECE_WIDTH: u16 = 4;
+
         let draw_start = Instant::now();
         let mut pixmap = self.background_pixmap.as_ref().as_ref().to_owned();
-
-        const PIECE_WIDTH: u16 = 4;
 
         let mut paint = Paint::default();
         let mut stroke = Stroke::default();

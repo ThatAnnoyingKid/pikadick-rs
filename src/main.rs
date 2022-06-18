@@ -18,7 +18,10 @@
     clippy::all,
     clippy::filter_map_next,
     clippy::ptr_as_ptr,
-    clippy::cast_lossless
+    clippy::cast_lossless,
+    clippy::exit,
+    clippy::filetype_is_file,
+    clippy::macro_use_imports
 )]
 #![warn(
     clippy::inefficient_to_string,
@@ -32,7 +35,32 @@
     clippy::ref_option_ref,
     clippy::transmute_ptr_to_ptr,
     clippy::trivially_copy_pass_by_ref,
-    clippy::case_sensitive_file_extension_comparisons
+    clippy::case_sensitive_file_extension_comparisons,
+    clippy::cast_ptr_alignment,
+    clippy::cloned_instead_of_copied,
+    clippy::filter_map_next,
+    clippy::flat_map_option,
+    clippy::fn_params_excessive_bools,
+    clippy::from_iter_instead_of_collect,
+    clippy::implicit_clone,
+    clippy::inconsistent_struct_constructor,
+    clippy::items_after_statements,
+    clippy::large_stack_arrays,
+    clippy::let_underscore_drop,
+    clippy::linkedlist,
+    clippy::lossy_float_literal,
+    clippy::manual_ok_or,
+    clippy::match_bool,
+    clippy::match_same_arms,
+    clippy::mut_mut,
+    clippy::mutex_atomic,
+    clippy::mutex_integer,
+    clippy::needless_for_each,
+    clippy::nonstandard_macro_braces,
+    clippy::path_buf_push_overwrite,
+    clippy::rc_mutex,
+    clippy::redundant_else,
+    clippy::semicolon_if_nothing_returned
 )]
 #![allow(rustdoc::missing_doc_code_examples)]
 // TODO: Document everything properly
@@ -41,6 +69,11 @@
 // clippy::undocumented_unsafe_blocks
 // clippy::allow_attributes_without_reason
 // clippy::as_underscore
+// clippy::cast_possible_truncation
+// clippy::cast_possible_wrap
+// clippy::cast_sign_loss
+// clippy::fn_to_numeric_cast_any
+// clippy::redundant_closure_for_method_calls
 
 //! # Pikadick
 
