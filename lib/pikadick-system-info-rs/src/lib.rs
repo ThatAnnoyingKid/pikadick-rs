@@ -34,6 +34,10 @@ pub enum Error {
     /// Invalid Utf8 OsStr
     #[error("invalid utf8 os str")]
     InvalidUtf8OsStr,
+
+    /// The value is missing for some reason
+    #[error("missing value")]
+    MissingValue,
 }
 
 /// A context for caching data related to information queries.
@@ -135,6 +139,14 @@ impl CacheContext {
     /// This is NOT blocking.
     pub fn get_available_swap(&self) -> Result<u64, Error> {
         self.inner.get_available_swap()
+    }
+
+    /// Get the number of logical cpu cores.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn count_logical_cpus(&self) -> Result<usize, Error> {
+        self.inner.count_logical_cpus()
     }
 }
 
@@ -276,5 +288,16 @@ mod tests {
         let elapsed = start.elapsed();
 
         println!("Available Swap: {}\nTime: {:?}", available_swap, elapsed);
+    }
+
+    #[test]
+    fn logical_cpus() {
+        let start = Instant::now();
+        let logical_cpus = CacheContext::new()
+            .count_logical_cpus()
+            .expect("failed to get count logical cpus");
+        let elapsed = start.elapsed();
+
+        println!("Logical Cpus: {}\nTime: {:?}", logical_cpus, elapsed);
     }
 }

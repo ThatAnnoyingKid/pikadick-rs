@@ -2435,6 +2435,7 @@ version = "0.0.0"
 dependencies = [
  "bitflags",
  "cfg-if",
+ "libc",
  "nix 0.24.1",
  "once_cell",
  "platforms",

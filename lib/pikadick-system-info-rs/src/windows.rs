@@ -48,6 +48,7 @@ use windows_sys::Win32::{
             VER_NT_WORKSTATION,
             VER_SUITE_WH_SERVER,
         },
+        Threading::GetActiveProcessorCount,
         WindowsProgramming::{
             uaw_wcslen,
             MAX_COMPUTERNAME_LENGTH,
@@ -195,6 +196,13 @@ impl CacheContext {
     pub fn get_available_swap(&self) -> Result<u64, Error> {
         let memory_info_ex = self.get_memory_status_ex()?;
         Ok(memory_info_ex.available_page_file() - memory_info_ex.available_physical())
+    }
+
+    /// Get the number of logical cpu cores.
+    pub fn count_logical_cpus(&self) -> Result<usize, Error> {
+        Ok(get_active_processor_count(u16::MAX)?
+            .try_into()
+            .expect("windows is 16 bit"))
     }
 }
 
@@ -373,7 +381,7 @@ impl OsVersionInfoEx {
         }
     }
 
-    /// Get additional info about they system.
+    /// Get additional info about the system.
     pub fn product_type(&self) -> Result<ProductType, u8> {
         let product_type = self.0.wProductType;
         match u32::from(product_type) {
@@ -586,6 +594,20 @@ fn global_memory_status_ex() -> Result<MemoryStatusEx, Error> {
     Ok(MemoryStatusEx(unsafe { memory_status_ex.assume_init() }))
 }
 
+/// A wrapper for `GetActiveProcessorCount`.
+///
+/// Use `u16::MAX` to get all processor groups.
+///
+/// See `https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getactiveprocessorcount`.
+pub fn get_active_processor_count(group_number: u16) -> Result<u32, Error> {
+    let code = unsafe { GetActiveProcessorCount(group_number) };
+    if code == 0 {
+        return Err(Error::Io(std::io::Error::last_os_error()));
+    }
+
+    Ok(code)
+}
+
 /*
 /// A wrapper for `GetLastError`.
 ///
@@ -646,6 +668,14 @@ mod test {
         assert!(elapsed < Duration::from_millis(1));
 
         dbg!(memory_status);
+    }
+
+    #[test]
+    fn get_active_processor_count_does_not_block() {
+        let start = Instant::now();
+        let _logical_cpus = get_active_processor_count(u16::MAX);
+        let elapsed = start.elapsed();
+        assert!(elapsed < Duration::from_millis(1));
     }
 
     #[test]

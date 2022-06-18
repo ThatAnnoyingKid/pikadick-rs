@@ -142,6 +142,32 @@ impl CacheContext {
         let sysinfo = self.get_sysinfo()?;
         Ok(sysinfo.swap_free())
     }
+
+    /// Get the number of logical cpu cores.
+    pub fn count_logical_cpus(&self) -> Result<usize, Error> {
+        Ok(sysconf_n_processors_onln()
+            .map_err(|error| Error::Io(std::io::Error::from(error)))?
+            .ok_or(Error::MissingValue)?
+            .try_into()
+            .expect("the number of cores cannot fit in a `usize`"))
+    }
+}
+
+/// A wrapper for `sysconf(SysconfVar::N_PROCESSORS_ONLN)` from `nix` since it is missing that constant.
+fn sysconf_n_processors_onln() -> Result<Option<libc::c_long>, nix::errno::Errno> {
+    let raw = unsafe {
+        nix::errno::Errno::clear();
+        libc::sysconf(libc::_SC_NPROCESSORS_ONLN)
+    };
+    if raw == -1 {
+        if nix::errno::errno() == 0 {
+            Ok(None)
+        } else {
+            Err(nix::errno::Errno::last())
+        }
+    } else {
+        Ok(Some(raw))
+    }
 }
 
 #[cfg(test)]
@@ -179,6 +205,13 @@ mod test {
     fn uname_does_not_block() {
         let start = Instant::now();
         let _utsname = uname().expect("failed to get utsname");
+        assert!(start.elapsed() < Duration::from_millis(1));
+    }
+
+    #[test]
+    fn sysconf_sc_n_processors_onln_does_not_block() {
+        let start = Instant::now();
+        let _logical_cpus = sysconf_n_processors_onln().expect("failed to get logical cpus");
         assert!(start.elapsed() < Duration::from_millis(1));
     }
 
