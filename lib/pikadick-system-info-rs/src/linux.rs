@@ -91,8 +91,8 @@ impl CacheContext {
         // * https://en.wikipedia.org/wiki/Uname
         // * https://stackoverflow.com/questions/45125516/possible-values-for-uname-m
         match utsname.machine().to_str().ok_or(Error::InvalidUtf8OsStr)? {
-            "i386" | "i586" | "i686" => Ok(Some(Arch::X86)),
-            "x86_64" | "amd64" | "x86" => Ok(Some(Arch::X86_64)),
+            "x86" | "i386" | "i586" | "i686" => Ok(Some(Arch::X86)),
+            "x86_64" | "amd64" => Ok(Some(Arch::X86_64)),
             "arm" | "armv6l" | "armv7" | "armv7l" => Ok(Some(Arch::Arm)),
             "aarch64_be" | "aarch64" | "armv8b" | "armv8l" => Ok(Some(Arch::AArch64)),
             "ppc" => Ok(Some(Arch::PowerPc)),
