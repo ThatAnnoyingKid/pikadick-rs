@@ -70,13 +70,13 @@ skip = [
     { name = "sct", version = "0.6.1" },
     
     # Blocked on ring updating their version of spin to 0.9
-    { name = "spin", version = "0.9.2" },
+    { name = "spin", version = "0.5.2" },
     
     # Blocked on serenity-voice-model moving away from enum_primitive
     { name = "num-traits", version = "0.1.43" },
     
     # Blocked on cssparser moving to version 1.
-    # { name = "itoa", version = "0.4.8" },
+    { name = "itoa", version = "0.4.8" },
     
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.8.0" },
