@@ -60,7 +60,10 @@
     clippy::path_buf_push_overwrite,
     clippy::rc_mutex,
     clippy::redundant_else,
-    clippy::semicolon_if_nothing_returned
+    clippy::semicolon_if_nothing_returned,
+    clippy::suboptimal_flops,
+    clippy::todo,
+    //clippy::too_many_lines
 )]
 #![allow(rustdoc::missing_doc_code_examples)]
 // TODO: Document everything properly
