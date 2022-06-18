@@ -75,8 +75,8 @@ skip = [
     # Blocked on serenity-voice-model moving away from enum_primitive
     { name = "num-traits", version = "0.1.43" },
     
-    # Blocked on a lot of crates moving to version 1. Re-evaluate in like a month or two. 12/7/2021.
-    { name = "itoa", version = "0.4.8" },
+    # Blocked on cssparser moving to version 1.
+    # { name = "itoa", version = "0.4.8" },
     
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.8.0" },
@@ -94,7 +94,7 @@ skip = [
     { name = "phf", version = "0.8.0" },
     { name = "phf_codegen", version = "0.8.0" },
     
-    # Blocked on many crates moving to hashbrown 12
+    # Blocked on `hashlink` and `publicsuffix` moving to hashbrown 12
     { name = "hashbrown", version = "0.11.2" },
     
     # Blocked on removing heim
