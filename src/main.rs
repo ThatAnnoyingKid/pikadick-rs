@@ -134,6 +134,7 @@ use serenity::{
         StandardFramework,
     },
     futures::future::BoxFuture,
+    gateway::ActivityData,
     model::{
         application::interaction::Interaction,
         prelude::*,
@@ -184,14 +185,29 @@ impl EventHandler for Handler {
         if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
             match kind {
                 ActivityKind::Listening => {
-                    ctx.set_activity(Activity::listening(status)).await;
-                }
-                ActivityKind::Streaming => {
-                    ctx.set_activity(Activity::streaming(status, config.status_url().unwrap()))
+                    ctx.set_activity(Some(ActivityData::listening(status)))
                         .await;
                 }
+                ActivityKind::Streaming => {
+                    let result: Result<_, anyhow::Error> = async {
+                        let activity = ActivityData::streaming(
+                            status,
+                            config.status_url().context("failed to get status url")?,
+                        )
+                        .context("failed to create activity")?;
+
+                        ctx.set_activity(Some(activity)).await;
+
+                        Ok(())
+                    }
+                    .await;
+
+                    if let Err(e) = result.context("failed to set activity") {
+                        error!("{:?}", e);
+                    }
+                }
                 ActivityKind::Playing => {
-                    ctx.set_activity(Activity::playing(status)).await;
+                    ctx.set_activity(Some(ActivityData::playing(status))).await;
                 }
             }
         }

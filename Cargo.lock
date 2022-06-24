@@ -569,7 +569,7 @@ dependencies = [
 [[package]]
 name = "command_attr"
 version = "0.4.0"
-source = "git+https://github.com/adumbidiot/serenity?branch=next#013cfbfec5322fe017be74c2fe04c4f32f607de2"
+source = "git+https://github.com/adumbidiot/serenity?branch=next#3c103b8dd4aacd4121355d3683b1dc8a4d9bc594"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -762,9 +762,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-utils"
-version = "0.8.9"
+version = "0.8.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ff1f980957787286a554052d03c7aee98d99cc32e09f6d45f0a814133c87978"
+checksum = "7d82ee10ce34d7bc12c2122495e7593a9c41347ecdd64185af4ecf72cb1a7f83"
 dependencies = [
  "cfg-if",
  "once_cell",
@@ -3430,7 +3430,7 @@ dependencies = [
 [[package]]
 name = "serenity"
 version = "0.11.2"
-source = "git+https://github.com/adumbidiot/serenity?branch=next#013cfbfec5322fe017be74c2fe04c4f32f607de2"
+source = "git+https://github.com/adumbidiot/serenity?branch=next#3c103b8dd4aacd4121355d3683b1dc8a4d9bc594"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3463,7 +3463,7 @@ dependencies = [
 [[package]]
 name = "serenity-voice-model"
 version = "0.1.1"
-source = "git+https://github.com/serenity-rs/serenity?branch=next#85138319b15d625213da2d7331e5afa6d26e3b46"
+source = "git+https://github.com/serenity-rs/serenity?branch=next#3c103b8dd4aacd4121355d3683b1dc8a4d9bc594"
 dependencies = [
  "bitflags",
  "enum_primitive",
@@ -3583,7 +3583,7 @@ dependencies = [
 [[package]]
 name = "songbird"
 version = "0.2.2"
-source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#e39d32521cf85e70016b8b3071d5508b289d8325"
+source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#049ee6bac72173e861088e87858b8f3929a7c126"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3869,9 +3869,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.10"
+version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82501a4c1c0330d640a6e176a3d6a204f5ec5237aca029029d21864a902e27b0"
+checksum = "72c91f41dcb2f096c05f0873d667dceec1087ce5bcf984ec8ffb19acddbb3217"
 dependencies = [
  "itoa 1.0.2",
  "libc",
@@ -3888,9 +3888,9 @@ checksum = "42657b1a6f4d817cda8e7a0ace261fe0cc946cf3a80314390b22cc61ae080792"
 
 [[package]]
 name = "tiny-skia"
-version = "0.6.5"
+version = "0.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78b3e1db967020dd509b49cecc024025beba2b1b6cf204618610ba266269d6b9"
+checksum = "d049bfef0eaa2521e75d9ffb5ce86ad54480932ae19b85f78bec6f52c4d30d78"
 dependencies = [
  "arrayref",
  "arrayvec 0.5.2",
@@ -4186,9 +4186,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-core"
-version = "0.1.27"
+version = "0.1.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7709595b8878a4965ce5e87ebf880a7d39c9afc6837721b21a5a816a8117d921"
+checksum = "7b7358be39f2f274f322d2aaed611acc57f382e8eb1e5b48cb9ae30933495ce7"
 dependencies = [
  "once_cell",
  "valuable",

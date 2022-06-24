@@ -444,17 +444,7 @@ impl Database {
         self.access_db(move |db| {
             let ret = db
                 .prepare_cached(GET_TOP_TIC_TAC_TOE_SCORES_SQL)?
-                .query_map([guild_id], |row| {
-                    let player: i64 = row.get(1)?;
-                    Ok(TicTacToeTopPlayerScore {
-                        score: row.get(0)?,
-                        player: UserId(player as u64),
-                        wins: row.get(2)?,
-                        losses: row.get(3)?,
-                        ties: row.get(4)?,
-                        concedes: row.get(5)?,
-                    })
-                })?
+                .query_map([guild_id], TicTacToeTopPlayerScore::from_row)?
                 .collect::<Result<Vec<_>, _>>()?;
 
             Ok(ret)
