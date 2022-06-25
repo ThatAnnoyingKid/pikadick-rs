@@ -151,7 +151,7 @@ allow-registry = [ "https://github.com/rust-lang/crates.io-index" ]
 allow-git = [
     "https://github.com/adumbidiot/zalgo-rs",
     "https://github.com/adumbidiot/shift-client-rs",
-    "https://github.com/adumbidiot/reddit-rs",
+    "https://github.com/nathaniel-daniel/reddit-rs",
     # "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
     "https://github.com/serenity-rs/serenity",
