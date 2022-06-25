@@ -10,18 +10,16 @@ use nix::{
             UtsName,
         },
     },
-    unistd::{
-        gethostname,
-        sysconf,
-        SysconfVar,
-    },
-    NixPath,
+    unistd::gethostname,
 };
 use once_cell::sync::OnceCell;
 use platforms::Arch;
-use std::time::{
-    Duration,
-    SystemTime,
+use std::{
+    os::unix::ffi::OsStringExt,
+    time::{
+        Duration,
+        SystemTime,
+    },
 };
 
 /// A cache for system data
@@ -64,23 +62,8 @@ impl CacheContext {
 
     /// Get the hostname
     pub fn get_hostname(&self) -> Result<String, Error> {
-        let hostname_len: usize = sysconf(SysconfVar::HOST_NAME_MAX)
-            .map(|len| usize::try_from(len?).ok())
-            .map_err(std::io::Error::from)?
-            .unwrap_or(255usize)
-            + 1usize;
-
-        let mut buffer = vec![std::mem::MaybeUninit::uninit(); hostname_len];
-        let hostname_c_str = gethostname(&mut buffer).map_err(std::io::Error::from)?;
-        let len = hostname_c_str.len();
-        buffer.truncate(len);
-
-        let initialized_buffer = unsafe {
-            let mut buffer = std::mem::ManuallyDrop::new(buffer);
-            Vec::from_raw_parts(buffer.as_mut_ptr().cast(), buffer.len(), buffer.capacity())
-        };
-
-        String::from_utf8(initialized_buffer).map_err(Error::InvalidUtf8String)
+        let buffer = gethostname().map_err(std::io::Error::from)?.into_vec();
+        String::from_utf8(buffer).map_err(Error::InvalidUtf8String)
     }
 
     /// Get the architecture.
@@ -191,13 +174,7 @@ mod test {
     #[test]
     fn gethostname_does_not_block() {
         let start = Instant::now();
-        let hostname_len: usize = sysconf(SysconfVar::HOST_NAME_MAX)
-            .expect("failed to get hostname len")
-            .unwrap_or(255)
-            .try_into()
-            .expect("failed to convert to usize");
-        let mut buffer = vec![std::mem::MaybeUninit::uninit(); hostname_len];
-        let _hostname = gethostname(&mut buffer).expect("failed to get hostname");
+        let _hostname = gethostname().expect("failed to get hostname");
         assert!(start.elapsed() < Duration::from_millis(1));
     }
 

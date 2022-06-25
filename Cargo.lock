@@ -1932,7 +1932,7 @@ dependencies = [
 [[package]]
 name = "nix"
 version = "0.24.1"
-source = "git+https://github.com/nathaniel-daniel/nix?branch=maybeuninit-gethostname#b47686ee0e2ef91b7e7c1e1e856850b01098a05f"
+source = "git+https://github.com/nathaniel-daniel/nix?branch=maybeuninit-gethostname#571e5179c57d06378669d9d705c3b4e5d141ceef"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -3463,7 +3463,7 @@ dependencies = [
 [[package]]
 name = "serenity-voice-model"
 version = "0.1.1"
-source = "git+https://github.com/serenity-rs/serenity?branch=next#3c103b8dd4aacd4121355d3683b1dc8a4d9bc594"
+source = "git+https://github.com/serenity-rs/serenity?branch=next#527f341ca4e95aa4a0aa6f6c31db3e100c06b952"
 dependencies = [
  "bitflags",
  "enum_primitive",
@@ -3548,9 +3548,9 @@ checksum = "eb703cfe953bccee95685111adeedb76fabe4e97549a58d16f03ea7b9367bb32"
 
 [[package]]
 name = "smallvec"
-version = "1.8.0"
+version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2dd574626839106c320a323308629dcb1acfc96e32a8cba364ddc61ac23ee83"
+checksum = "cc88c725d61fc6c3132893370cac4a0200e3fedf5da8331c570664b1987f5ca2"
 
 [[package]]
 name = "smol"
@@ -3583,7 +3583,7 @@ dependencies = [
 [[package]]
 name = "songbird"
 version = "0.2.2"
-source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#049ee6bac72173e861088e87858b8f3929a7c126"
+source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#7a42abfc2b883e4ee3e3d89bdb479c183af083ad"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4326,9 +4326,9 @@ checksum = "5bd2fe26506023ed7b5e1e315add59d6f584c621d037f9368fea9cfb988f368c"
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.19"
+version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d54590932941a9e9266f0832deed84ebe1bf2e4c9e4a3554d393d18f5e854bf9"
+checksum = "81dee68f85cab8cf68dec42158baf3a79a1cdc065a8b103025965d6ccb7f6cbd"
 dependencies = [
  "tinyvec",
 ]
