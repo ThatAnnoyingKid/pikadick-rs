@@ -682,7 +682,7 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
 
     eprintln!("creating lockfile...");
     let lock_file_path = config.data_dir.join("pikadick.lock");
-    let lock_file = AsyncLockFile::open_blocking(lock_file_path.as_std_path())
+    let lock_file = AsyncLockFile::blocking_open(lock_file_path.as_std_path())
         .context("failed to open lockfile")?;
     let lock_file_locked = lock_file
         .try_lock_with_pid_blocking()
@@ -758,7 +758,7 @@ fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
     info!("unlocking lockfile...");
     setup_data
         .lock_file
-        .unlock_blocking()
+        .blocking_unlock()
         .context("failed to unlock lockfile")?;
 
     info!("successful shutdown");
