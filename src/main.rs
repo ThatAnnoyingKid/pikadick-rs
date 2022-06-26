@@ -1,12 +1,10 @@
 #![deny(
     unused_qualifications,
-    clippy::all,
     unused_qualifications,
     unused_import_braces,
-    // unused_lifetimes, // TODO: Enable. Seems buggy?
+    unused_lifetimes,
     unreachable_pub,
     trivial_numeric_casts,
-    rustdoc::all,
     missing_debug_implementations,
     missing_copy_implementations,
     deprecated_in_future,
@@ -15,9 +13,73 @@
     rust_2018_compatibility,
     rust_2018_idioms,
     future_incompatible,
-    nonstandard_style
+    nonstandard_style,
+    rustdoc::all,
+    clippy::all,
+    clippy::filter_map_next,
+    clippy::ptr_as_ptr,
+    clippy::cast_lossless,
+    clippy::exit,
+    clippy::filetype_is_file,
+    clippy::macro_use_imports
 )]
-#![allow(rustdoc::missing_doc_code_examples)] // TODO: Document everything properly
+#![warn(
+    clippy::borrow_as_ptr,
+    clippy::case_sensitive_file_extension_comparisons,
+    clippy::cast_ptr_alignment,
+    clippy::cloned_instead_of_copied,
+    clippy::filter_map_next,
+    clippy::flat_map_option,
+    clippy::fn_params_excessive_bools,
+    clippy::from_iter_instead_of_collect,
+    clippy::implicit_clone,
+    clippy::inefficient_to_string,
+    clippy::inconsistent_struct_constructor,
+    clippy::items_after_statements,
+    clippy::large_stack_arrays,
+    clippy::large_types_passed_by_value,
+    clippy::let_underscore_drop,
+    clippy::linkedlist,
+    clippy::lossy_float_literal,
+    clippy::manual_ok_or,
+    clippy::match_bool,
+    clippy::match_same_arms,
+    clippy::mut_mut,
+    clippy::mutex_atomic,
+    clippy::mutex_integer,
+    clippy::needless_for_each,
+    clippy::nonstandard_macro_braces,
+    clippy::path_buf_push_overwrite,
+    clippy::rc_buffer,
+    clippy::rc_mutex,
+    clippy::redundant_else,
+    clippy::ref_binding_to_reference,
+    clippy::ref_option_ref,
+    clippy::semicolon_if_nothing_returned,
+    clippy::suboptimal_flops,
+    clippy::todo,
+    clippy::transmute_ptr_to_ptr,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::try_err,
+    clippy::type_repetition_in_bounds,
+    clippy::unicode_not_nfc,
+    clippy::unnecessary_join,
+    clippy::unnested_or_patterns,
+    clippy::zero_sized_map_values
+)]
+#![allow(rustdoc::missing_doc_code_examples)]
+// TODO: Document everything properly
+// clippy::default_trait_access
+// clippy::use_self
+// clippy::undocumented_unsafe_blocks
+// clippy::allow_attributes_without_reason
+// clippy::as_underscore
+// clippy::cast_possible_truncation
+// clippy::cast_possible_wrap
+// clippy::cast_sign_loss
+// clippy::fn_to_numeric_cast_any
+// clippy::redundant_closure_for_method_calls
+// clippy::too_many_lines
 
 //! # Pikadick
 
@@ -72,6 +134,7 @@ use serenity::{
         StandardFramework,
     },
     futures::future::BoxFuture,
+    gateway::ActivityData,
     model::{
         application::interaction::Interaction,
         prelude::*,
@@ -122,14 +185,29 @@ impl EventHandler for Handler {
         if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
             match kind {
                 ActivityKind::Listening => {
-                    ctx.set_activity(Activity::listening(status)).await;
-                }
-                ActivityKind::Streaming => {
-                    ctx.set_activity(Activity::streaming(status, config.status_url().unwrap()))
+                    ctx.set_activity(Some(ActivityData::listening(status)))
                         .await;
                 }
+                ActivityKind::Streaming => {
+                    let result: Result<_, anyhow::Error> = async {
+                        let activity = ActivityData::streaming(
+                            status,
+                            config.status_url().context("failed to get status url")?,
+                        )
+                        .context("failed to create activity")?;
+
+                        ctx.set_activity(Some(activity)).await;
+
+                        Ok(())
+                    }
+                    .await;
+
+                    if let Err(e) = result.context("failed to set activity") {
+                        error!("{:?}", e);
+                    }
+                }
                 ActivityKind::Playing => {
-                    ctx.set_activity(Activity::playing(status)).await;
+                    ctx.set_activity(Some(ActivityData::playing(status))).await;
                 }
             }
         }

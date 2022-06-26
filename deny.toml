@@ -14,9 +14,6 @@ notice = "deny"
 ignore = [    
     # Blocked on criterion moving away from "serde_cbor". This is fine as criterion is a dev-dependency.
     "RUSTSEC-2021-0127",
-    
-    # Blocked on removing chrono
-    "RUSTSEC-2020-0071",
 ]
 
 [licenses]
@@ -55,10 +52,7 @@ license-files = [
 [bans]
 multiple-versions = "deny"
 highlight = "all"
-skip = [    
-    # Blocked on chrono, systemstat, and xml5ever bumping time to 0.2.16
-    { name = "time", version = "0.1.43" },
-    
+skip = [
     # Blocked on rand updating getrandom to 0.2.x 
     { name = "getrandom", version = "0.1.15" },
     
@@ -76,22 +70,16 @@ skip = [
     { name = "sct", version = "0.6.1" },
     
     # Blocked on ring updating their version of spin to 0.9
-    { name = "spin", version = "0.9.2" },
+    { name = "spin", version = "0.5.2" },
     
     # Blocked on serenity-voice-model moving away from enum_primitive
     { name = "num-traits", version = "0.1.43" },
     
-    # Blocked on time getting updated from a lot of crates 
-    { name = "time", version = "0.2.27" },  
-    
-    # Blocked on a lot of crates moving to version 1. Re-evaluate in like a month or two. 12/7/2021.
+    # Blocked on cssparser moving to version 1.
     { name = "itoa", version = "0.4.8" },
     
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.8.0" },
-    
-    # Blocked on cookie updating to time 0.3
-    { name = "time-macros", version = "0.1.1" },
     
     # Blocked on h2 updating tokio-util to v 7
     { name = "tokio-util", version = "0.6.9" },
@@ -106,8 +94,11 @@ skip = [
     { name = "phf", version = "0.8.0" },
     { name = "phf_codegen", version = "0.8.0" },
     
-    # Blocked on many crates moving to hashbrown 12
+    # Blocked on `hashlink` and `publicsuffix` moving to hashbrown 12
     { name = "hashbrown", version = "0.11.2" },
+    
+    # Blocked on removing heim
+    { name = "nix", version = "0.23.1" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -160,7 +151,7 @@ allow-registry = [ "https://github.com/rust-lang/crates.io-index" ]
 allow-git = [
     "https://github.com/adumbidiot/zalgo-rs",
     "https://github.com/adumbidiot/shift-client-rs",
-    "https://github.com/adumbidiot/reddit-rs",
+    "https://github.com/nathaniel-daniel/reddit-rs",
     # "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
     "https://github.com/serenity-rs/serenity",
@@ -168,5 +159,7 @@ allow-git = [
     "https://github.com/FelixMcFelix/songbird",
     "https://github.com/adumbidiot/fslock",
     "https://github.com/adumbidiot/serenity",
-    "https://github.com/nathaniel-daniel/raspberry-pi-rs",
+    # "https://github.com/nathaniel-daniel/raspberry-pi-rs",
+    "https://github.com/nathaniel-daniel/nix",
+    "https://github.com/FelixMcFelix/Symphonia",
 ]

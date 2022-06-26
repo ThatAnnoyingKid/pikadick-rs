@@ -15,8 +15,25 @@ use serenity::{
 };
 use std::{
     borrow::Cow,
+    num::NonZeroU64,
     str::FromStr,
 };
+
+/// A wrapper for a serenity user id
+struct DatabaseUserId(UserId);
+
+impl FromSql for DatabaseUserId {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let value = value
+            .as_i64()
+            .map(i64::to_ne_bytes)
+            .map(u64::from_ne_bytes)
+            .map(NonZeroU64::new)?
+            .ok_or(FromSqlError::OutOfRange(0))?;
+
+        Ok(Self(UserId(value)))
+    }
+}
 
 /// A Tic-Tac-Toe game
 #[derive(Debug, Copy, Clone)]
@@ -160,7 +177,7 @@ impl FromStr for TicTacToePlayer {
         if input.eq_ignore_ascii_case("computer") {
             Ok(Self::Computer)
         } else if let Some(user_id) = parse_username(input) {
-            Ok(Self::User(UserId(user_id)))
+            Ok(Self::User(user_id))
         } else {
             Ok(Self::User(UserId(
                 input.parse().map_err(TicTacToePlayerParseError)?,
@@ -187,7 +204,11 @@ impl ToSql for TicTacToePlayer {
 impl FromSql for TicTacToePlayer {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         match value {
-            ValueRef::Integer(int) => Ok(Self::User(UserId(int as u64))),
+            ValueRef::Integer(int) => {
+                let int_u64 = u64::from_ne_bytes(int.to_ne_bytes());
+                let user_id = UserId(NonZeroU64::new(int_u64).ok_or(FromSqlError::OutOfRange(0))?);
+                Ok(Self::User(user_id))
+            }
             ValueRef::Null => Ok(Self::Computer),
             _ => Err(FromSqlError::InvalidType),
         }
@@ -220,7 +241,7 @@ impl ToSql for MaybeGuildString {
 impl FromSql for MaybeGuildString {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         let text = value.as_str()?;
-        match text.parse::<u64>() {
+        match text.parse::<NonZeroU64>() {
             Ok(guild_id) => Ok(MaybeGuildString {
                 guild_id: Some(GuildId(guild_id)),
             }),
@@ -263,6 +284,40 @@ pub struct TicTacToeTopPlayerScore {
     pub ties: u64,
     /// The number of times the player has conceded
     pub concedes: u64,
+}
+
+impl TicTacToeTopPlayerScore {
+    /// Parse this from a rusqlite row.
+    ///
+    /// Data must be in the following order:
+    /// 1. score
+    /// 2. player
+    /// 3. wins
+    /// 4. losses
+    /// 5. ties
+    /// 6. concedes
+    pub(crate) fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Self> {
+        let score = row.get(0)?;
+
+        let player = row.get::<_, DatabaseUserId>(1)?.0;
+
+        let wins = row.get(2)?;
+
+        let losses = row.get(3)?;
+
+        let ties = row.get(4)?;
+
+        let concedes = row.get(5)?;
+
+        Ok(TicTacToeTopPlayerScore {
+            score,
+            player,
+            wins,
+            losses,
+            ties,
+            concedes,
+        })
+    }
 }
 
 bitflags! {

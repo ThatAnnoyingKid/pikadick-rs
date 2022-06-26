@@ -14,14 +14,13 @@ async-rusqlite = { path = "./lib/async-rusqlite-rs", features = [ "bundled" ] }
 bincode = "1.3.3"
 bitflags = "1.3.2"
 bytes = "1.1.0"
-camino = { version = "1.0.9", features = ["serde1"] }
-chrono = "0.4.19"
+camino = { version = "1.0.9", features = [ "serde1" ] }
 crossbeam = "0.8.1"
 dashmap = "5.3.4"
 deviantart = { path = "./lib/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
 futures = { version = "0.3.21", features = [ "std" ], default-features = false }
-heim = { version = "0.1.0-rc.1", features = [ "host", "cpu", "virt", "memory" ] }
+heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
 indexmap = "1.8.2"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }
@@ -34,11 +33,12 @@ opentelemetry-otlp = { version = "0.10.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.12.1"
 pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
 pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "download_to_file", "arc_anyhow_error", "async_lock_file", "drop_remove_file" ] }
+pikadick-system-info = { path = "./lib/pikadick-system-info-rs" }
 quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "rustls-tls" ] }
 r6stats = { path = "./lib/r6stats-rs", default-features = false, features = [ "rustls-tls" ] }
 r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = [ "rustls-tls" ] }
 rand = "0.8.5"
-reddit = { git = "https://github.com/adumbidiot/reddit-rs", features = [ "force-rustls-tls" ] }
+reddit = { git = "https://github.com/nathaniel-daniel/reddit-rs", features = [ "force-rustls-tls" ] }
 reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls-tls" ] }
 regex = "1.5.6"
 reqwest = { version = "0.11.10", default-features = false }
@@ -54,6 +54,7 @@ systemstat = "0.1.11"
 thiserror = "1.0.31"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiktok = { path = "lib/tiktok-rs" }
+time = "0.3.9"
 tiny-skia = { version = "0.6.3", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.19.2", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
@@ -93,6 +94,9 @@ servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca146
 # songbird requires serenity:next
 serenity = { git = "https://github.com/adumbidiot/serenity", branch = "next" }
 songbird = { git = "https://github.com/FelixMcFelix/songbird", branch = "symphonia" }
+
+# Faster gethostname
+nix = { git = "https://github.com/nathaniel-daniel/nix", branch = "maybeuninit-gethostname" }
 
 [patch.'https://github.com/serenity-rs/serenity']
 serenity = { git = "https://github.com/adumbidiot/serenity", branch = "next" }
@@ -161,7 +165,8 @@ members = [
     "lib/pikadick-slash-framework-derive-rs",
     "lib/rpi-deploy-rs",
     "lib/tokio-ffmpeg-cli-rs",
-    "lib/pikadick-util-rs"
+    "lib/pikadick-util-rs",
+    "lib/pikadick-system-info-rs",
 ]
 
 [package.metadata.deb]

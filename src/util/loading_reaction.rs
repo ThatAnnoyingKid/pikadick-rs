@@ -50,7 +50,11 @@ impl LoadingReaction {
         ret
     }
 
-    pub fn send_reaction<T: Into<ReactionType>>(&self, reaction: T) {
+    /// Send a reaction.
+    pub fn send_reaction<T>(&self, reaction: T)
+    where
+        T: Into<ReactionType>,
+    {
         {
             let msg_id = self.msg_id;
             let channel_id = self.channel_id;
@@ -58,18 +62,20 @@ impl LoadingReaction {
             let reaction = reaction.into();
 
             tokio::spawn(async move {
-                http.create_reaction(channel_id.0, msg_id.0, &reaction)
+                http.create_reaction(channel_id.into(), msg_id.into(), &reaction)
                     .await
                     .ok();
             });
         }
     }
 
+    /// Send the `Ok` reaction
     pub fn send_ok(&mut self) {
         self.send_reaction(OK_EMOJI);
         self.sent_reaction = true;
     }
 
+    /// Send the `Fail` reaction
     pub fn send_fail(&mut self) {
         self.send_reaction(ERR_EMOJI);
         self.sent_reaction = true;

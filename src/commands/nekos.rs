@@ -73,15 +73,18 @@ impl Cache {
 
     /// Add a url to the cache
     pub fn add(&self, uri: Url) {
-        let _ = self.0.primary.push(uri.clone());
+        let _ = self.0.primary.push(uri.clone()).is_ok();
         self.0.secondary.write().insert(uri);
     }
 
     /// Add many urls to the cache
-    pub fn add_many<I: Iterator<Item = Url>>(&self, iter: I) {
+    pub fn add_many<I>(&self, iter: I)
+    where
+        I: Iterator<Item = Url>,
+    {
         let mut secondary = self.0.secondary.write();
         for uri in iter {
-            let _ = self.0.primary.push(uri.clone());
+            let _ = self.0.primary.push(uri.clone()).is_ok();
             secondary.insert(uri);
         }
     }

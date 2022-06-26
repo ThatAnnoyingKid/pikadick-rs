@@ -1,4 +1,5 @@
 use anyhow::Context;
+use once_cell::sync::Lazy;
 use std::{
     sync::Arc,
     time::Instant,
@@ -14,13 +15,12 @@ use tiny_skia::{
 };
 use tokio::sync::Semaphore;
 use tracing::info;
-use ttf_parser::{
-    Face,
-    OutlineBuilder,
-};
+use ttf_parser::OutlineBuilder;
 
 const FONT_BYTES: &[u8] =
     include_bytes!("../../../assets/Averia_Serif_Libre/AveriaSerifLibre-Light.ttf");
+static FONT_FACE: Lazy<ttf_parser::Face<'static>> =
+    Lazy::new(|| ttf_parser::Face::from_slice(FONT_BYTES, 0).expect("failed to load `FONT_BYTES`"));
 
 const RENDERED_SIZE: u16 = 300;
 const SQUARE_SIZE: u16 = RENDERED_SIZE / 3;
@@ -34,7 +34,7 @@ const MAX_PARALLEL_RENDER_LIMIT: usize = 4;
 #[derive(Debug, Clone)]
 pub(crate) struct Renderer {
     background_pixmap: Arc<Pixmap>,
-    number_paths: Arc<Vec<Path>>,
+    number_paths: Arc<[Path]>,
 
     render_semaphore: Arc<Semaphore>,
 }
@@ -43,8 +43,6 @@ pub(crate) struct Renderer {
 impl Renderer {
     /// Make a new [`Renderer`].
     pub(crate) fn new() -> anyhow::Result<Self> {
-        let font_face = Face::from_slice(FONT_BYTES, 0).context("invalid font")?;
-
         let mut background_pixmap = Pixmap::new(RENDERED_SIZE.into(), RENDERED_SIZE.into())
             .context("failed to create background pixmap")?;
 
@@ -53,8 +51,9 @@ impl Renderer {
             for j in 0..3 {
                 let x = i * SQUARE_SIZE;
                 let y = j * SQUARE_SIZE;
-                let square = Rect::from_xywh(x as f32, y as f32, SQUARE_SIZE_F32, SQUARE_SIZE_F32)
-                    .context("failed to make square")?;
+                let square =
+                    Rect::from_xywh(f32::from(x), f32::from(y), SQUARE_SIZE_F32, SQUARE_SIZE_F32)
+                        .context("failed to make square")?;
 
                 if (j * 3 + i) % 2 == 0 {
                     paint.set_color_rgba8(255, 0, 0, 255);
@@ -72,12 +71,12 @@ impl Renderer {
         let mut paint = Paint::default();
         paint.set_color_rgba8(255, 255, 255, 255);
         for i in b'0'..=b'9' {
-            let glyph_id = font_face
+            let glyph_id = FONT_FACE
                 .glyph_index(char::from(i))
                 .with_context(|| format!("missing glyph for '{}'", char::from(i)))?;
 
             let mut builder = SkiaBuilder::new();
-            let _bb = font_face
+            let _bb = FONT_FACE
                 .outline_glyph(glyph_id, &mut builder)
                 .with_context(|| format!("missing glyph bounds for '{}'", char::from(i)))?;
             let path = builder.into_path().with_context(|| {
@@ -89,7 +88,7 @@ impl Renderer {
 
         Ok(Self {
             background_pixmap: Arc::new(background_pixmap),
-            number_paths: Arc::new(number_paths),
+            number_paths: Arc::from(number_paths),
             render_semaphore: Arc::new(Semaphore::new(MAX_PARALLEL_RENDER_LIMIT)),
         })
     }
@@ -98,10 +97,10 @@ impl Renderer {
     // Author might add more fields
     #[allow(clippy::field_reassign_with_default)]
     pub(crate) fn render_board(&self, board: tic_tac_toe::Board) -> anyhow::Result<Vec<u8>> {
+        const PIECE_WIDTH: u16 = 4;
+
         let draw_start = Instant::now();
         let mut pixmap = self.background_pixmap.as_ref().as_ref().to_owned();
-
-        const PIECE_WIDTH: u16 = 4;
 
         let mut paint = Paint::default();
         let mut stroke = Stroke::default();
@@ -110,8 +109,8 @@ impl Renderer {
 
         for (i, team) in board.iter() {
             let transform = Transform::from_translate(
-                ((u16::from(i) % 3) * SQUARE_SIZE) as f32,
-                ((u16::from(i) / 3) * SQUARE_SIZE) as f32,
+                f32::from((u16::from(i) % 3) * SQUARE_SIZE),
+                f32::from((u16::from(i) / 3) * SQUARE_SIZE),
             );
 
             if let Some(team) = team {
@@ -151,7 +150,7 @@ impl Renderer {
                 let path = &self.number_paths[usize::from(i) + 1];
                 let bounds = path.bounds();
 
-                let ratio = ((SQUARE_SIZE / 2) as f32) / bounds.height().max(bounds.width());
+                let ratio = f32::from(SQUARE_SIZE / 2) / bounds.height().max(bounds.width());
                 let transform = transform.pre_scale(ratio, ratio).post_translate(
                     (SQUARE_SIZE_F32 / 2.0) - (ratio * bounds.width() / 2.0),
                     (SQUARE_SIZE_F32 / 2.0) - (ratio * bounds.height() / 2.0),
@@ -165,62 +164,18 @@ impl Renderer {
 
         // Draw winning line
         if let Some(winner_info) = board.get_winner_info() {
-            stroke.width = 10.0;
-            paint.set_color_rgba8(48, 48, 48, 255);
-
-            let start_index = winner_info.start_tile_index();
-            let start = usize::from(start_index);
-            let mut start_x = ((start % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
-            let mut start_y = ((start / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
-
-            let end_index = winner_info.end_tile_index();
-            let end = usize::from(end_index);
-            let mut end_x = ((end % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
-            let mut end_y = ((end / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
-
-            match winner_info.win_type {
-                tic_tac_toe::WinType::Horizontal => {
-                    start_x -= SQUARE_SIZE_F32 / 4.0;
-                    end_x += SQUARE_SIZE_F32 / 4.0;
-                }
-                tic_tac_toe::WinType::Vertical => {
-                    start_y -= SQUARE_SIZE_F32 / 4.0;
-                    end_y += SQUARE_SIZE_F32 / 4.0;
-                }
-                tic_tac_toe::WinType::Diagonal => {
-                    start_x -= SQUARE_SIZE_F32 / 4.0;
-                    start_y -= SQUARE_SIZE_F32 / 4.0;
-                    end_x += SQUARE_SIZE_F32 / 4.0;
-                    end_y += SQUARE_SIZE_F32 / 4.0;
-                }
-                tic_tac_toe::WinType::AntiDiagonal => {
-                    start_x += SQUARE_SIZE_F32 / 4.0;
-                    start_y -= SQUARE_SIZE_F32 / 4.0;
-                    end_x -= SQUARE_SIZE_F32 / 4.0;
-                    end_y += SQUARE_SIZE_F32 / 4.0;
-                }
-            }
-
-            let mut path_builder = PathBuilder::new();
-            path_builder.move_to(start_x, start_y);
-            path_builder.line_to(end_x, end_y);
-            let path = path_builder
-                .finish()
+            draw_winning_line(&mut pixmap, stroke, paint, winner_info)
                 .context("failed to draw winning line")?;
-
-            pixmap
-                .stroke_path(&path, &paint, &stroke, Transform::identity(), None)
-                .context("failed to draw path for winning line")?;
         }
 
         let draw_end = Instant::now();
-        info!("Board draw time: {:?}", draw_end - draw_start);
+        info!("board draw time: {:?}", draw_end - draw_start);
 
         let encode_start = Instant::now();
         let img = pixmap.encode_png().context("failed to encode board")?;
         let encode_end = Instant::now();
 
-        info!("Board png encode time: {:?}", encode_end - encode_start);
+        info!("board png encode time: {:?}", encode_end - encode_start);
 
         Ok(img)
     }
@@ -235,6 +190,63 @@ impl Renderer {
         let self_clone = self.clone();
         tokio::task::spawn_blocking(move || self_clone.render_board(board)).await?
     }
+}
+
+/// Draw the winning line
+fn draw_winning_line(
+    pixmap: &mut Pixmap,
+    mut stroke: Stroke,
+    mut paint: Paint<'_>,
+    winner_info: tic_tac_toe::WinnerInfo,
+) -> anyhow::Result<()> {
+    stroke.width = 10.0;
+    paint.set_color_rgba8(48, 48, 48, 255);
+
+    let start_index = winner_info.start_tile_index();
+    let start = usize::from(start_index);
+    let mut start_x = ((start % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+    let mut start_y = ((start / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+
+    let end_index = winner_info.end_tile_index();
+    let end = usize::from(end_index);
+    let mut end_x = ((end % 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+    let mut end_y = ((end / 3) * SQUARE_SIZE_USIZE + (SQUARE_SIZE_USIZE / 2)) as f32;
+
+    match winner_info.win_type {
+        tic_tac_toe::WinType::Horizontal => {
+            start_x -= SQUARE_SIZE_F32 / 4.0;
+            end_x += SQUARE_SIZE_F32 / 4.0;
+        }
+        tic_tac_toe::WinType::Vertical => {
+            start_y -= SQUARE_SIZE_F32 / 4.0;
+            end_y += SQUARE_SIZE_F32 / 4.0;
+        }
+        tic_tac_toe::WinType::Diagonal => {
+            start_x -= SQUARE_SIZE_F32 / 4.0;
+            start_y -= SQUARE_SIZE_F32 / 4.0;
+            end_x += SQUARE_SIZE_F32 / 4.0;
+            end_y += SQUARE_SIZE_F32 / 4.0;
+        }
+        tic_tac_toe::WinType::AntiDiagonal => {
+            start_x += SQUARE_SIZE_F32 / 4.0;
+            start_y -= SQUARE_SIZE_F32 / 4.0;
+            end_x -= SQUARE_SIZE_F32 / 4.0;
+            end_y += SQUARE_SIZE_F32 / 4.0;
+        }
+    }
+
+    let mut path_builder = PathBuilder::new();
+    path_builder.move_to(start_x, start_y);
+    path_builder.line_to(end_x, end_y);
+    let path = path_builder
+        .finish()
+        .context("failed to draw winning line")?;
+
+    pixmap
+        .stroke_path(&path, &paint, &stroke, Transform::identity(), None)
+        .context("failed to draw path for winning line")?;
+
+    Ok(())
 }
 
 /// Utility to draw a font glyph to a path.

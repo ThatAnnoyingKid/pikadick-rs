@@ -29,6 +29,10 @@ key = "4dccf019bdfac"
 # The deviantart password
 # password = "[DEVIANT_PASSWORD]"
 
+# The sauce nao api key
+# [sauce_nao]
+# api_key = "[SAUCE_NAO_API_KEY]"
+
 # This section is optional
 [log]
 # Logging directives. These are the suggested defaults.
