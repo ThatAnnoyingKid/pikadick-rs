@@ -17,7 +17,7 @@ pub struct ImageList {
 }
 
 /// Neko images
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Image {
     /// Image id
     pub id: String,
@@ -45,10 +45,6 @@ pub struct Image {
     /// created date
     #[serde(rename = "createdAt")]
     pub created_at: String,
-
-    /// Unknown data
-    #[serde(flatten)]
-    pub unknown: HashMap<String, serde_json::Value>,
 }
 
 impl Image {
@@ -60,18 +56,13 @@ impl Image {
 }
 
 /// A user with only small amounts of info
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ShortUser {
     /// User ID
     pub id: String,
 
     /// User name
     pub username: String,
-
-    /// Unknown info
-    #[serde(flatten)]
-    pub unknown: HashMap<String, serde_json::Value>,
 }
 
 #[cfg(test)]
