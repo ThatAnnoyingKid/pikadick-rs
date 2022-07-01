@@ -71,7 +71,7 @@ uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs", default-features = false, features = [ "rustls-tls" ] }
 url = "2.2.2"
 xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls-tls" ] }
-zalgo = { git = "https://github.com/adumbidiot/zalgo-rs" }
+zalgo = { git = "https://github.com/adumbidiot/zalgo-rs", default-features = false }
 
 # Optional
 openssl = { version = "0.10.40", optional = true, features = [ "vendored" ] }
