@@ -60,10 +60,12 @@ impl Image {
 }
 
 /// A user with only small amounts of info
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ShortUser {
     /// User ID
     pub id: String,
+
     /// User name
     pub username: String,
 
