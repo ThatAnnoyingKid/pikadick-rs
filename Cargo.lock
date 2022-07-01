@@ -87,9 +87,9 @@ checksum = "bb07d2053ccdbe10e2af2995a2f116c1330396493dc1269f6a91d0ae82e19704"
 
 [[package]]
 name = "argh"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbb41d85d92dfab96cb95ab023c265c5e4261bb956c0fb49ca06d90c570f1958"
+checksum = "a7e7e4aa7e40747e023c0761dafcb42333a9517575bbf1241747f68dd3177a62"
 dependencies = [
  "argh_derive",
  "argh_shared",
@@ -97,9 +97,9 @@ dependencies = [
 
 [[package]]
 name = "argh_derive"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be69f70ef5497dd6ab331a50bd95c6ac6b8f7f17a7967838332743fbd58dc3b5"
+checksum = "69f2bd7ff6ed6414f4e5521bd509bae46454bbd513801767ced3f21a751ab4bc"
 dependencies = [
  "argh_shared",
  "heck",
@@ -110,9 +110,9 @@ dependencies = [
 
 [[package]]
 name = "argh_shared"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6f8c380fa28aa1b36107cd97f0196474bb7241bb95a453c5c01a15ac74b2eac"
+checksum = "47253b98986dafc7a3e1cf3259194f1f47ac61abb57a57f46ec09e48d004ecda"
 
 [[package]]
 name = "arrayref"
@@ -483,9 +483,9 @@ dependencies = [
 
 [[package]]
 name = "cargo_metadata"
-version = "0.14.2"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4acbb09d9ee8e23699b9634375c72795d095bf268439da88562cf9b501f181fa"
+checksum = "3abb7553d5b9b8421c6de7cb02606ff15e0c6eea7d8eadd75ef013fd636bec36"
 dependencies = [
  "camino",
  "cargo-platform",
@@ -569,7 +569,7 @@ dependencies = [
 [[package]]
 name = "command_attr"
 version = "0.4.0"
-source = "git+https://github.com/adumbidiot/serenity?branch=next#3c103b8dd4aacd4121355d3683b1dc8a4d9bc594"
+source = "git+https://github.com/adumbidiot/serenity?branch=next#829f9073d8a400ebd5e52af831b8b8dd9aeff81a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -971,9 +971,9 @@ checksum = "3a68a4904193147e0a8dec3314640e6db742afd5f6e634f428a6af230d9b3591"
 
 [[package]]
 name = "either"
-version = "1.6.1"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
+checksum = "3f107b87b6afc2a64fd13cac55fe06d6c8859f12d4b14cbcdd2c67d0976781be"
 
 [[package]]
 name = "encode_unicode"
@@ -1932,8 +1932,9 @@ dependencies = [
 [[package]]
 name = "nix"
 version = "0.24.1"
-source = "git+https://github.com/nathaniel-daniel/nix?branch=maybeuninit-gethostname#571e5179c57d06378669d9d705c3b4e5d141ceef"
+source = "git+https://github.com/nathaniel-daniel/nix?branch=maybeuninit-gethostname#22c4ba8bc0f7f9de703cf64007f5d0ef1ebdd943"
 dependencies = [
+ "autocfg",
  "bitflags",
  "cfg-if",
  "libc",
@@ -2881,7 +2882,7 @@ dependencies = [
 [[package]]
 name = "reddit"
 version = "0.0.0"
-source = "git+https://github.com/nathaniel-daniel/reddit-rs#0cf4f053da21f16aefbd67d8757abd1da32e8df5"
+source = "git+https://github.com/nathaniel-daniel/reddit-rs#5b4a0f74c16f65a6d323ed691f6093443a1d985d"
 dependencies = [
  "reqwest",
  "serde",
@@ -3346,9 +3347,9 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.10"
+version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a41d061efea015927ac527063765e73601444cdc344ba855bc7bd44578b25e1c"
+checksum = "a2333e6df6d6598f2b1974829f853c2b4c5f4a6e503c10af918081aa6f8564e1"
 dependencies = [
  "serde",
 ]
@@ -3360,6 +3361,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61ea8d54c77f8315140a05f4c7237403bf38b72704d031543aa1d16abbf517d1"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-aux"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0a77223b653fa95f3f9864f3eb25b93e4ed170687eb42d85b6b98af21d5e1de"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3395,9 +3407,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.81"
+version = "1.0.82"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b7ce2b32a1aed03c558dc61a5cd328f15aff2dbc17daad8fb8af04d2100e15c"
+checksum = "82c2c1fdcd807d1098552c5b9a36e425e42e9fbd7c6a37a8425f390f781f7fa7"
 dependencies = [
  "itoa 1.0.2",
  "ryu",
@@ -3430,7 +3442,7 @@ dependencies = [
 [[package]]
 name = "serenity"
 version = "0.11.2"
-source = "git+https://github.com/adumbidiot/serenity?branch=next#3c103b8dd4aacd4121355d3683b1dc8a4d9bc594"
+source = "git+https://github.com/adumbidiot/serenity?branch=next#829f9073d8a400ebd5e52af831b8b8dd9aeff81a"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3463,7 +3475,7 @@ dependencies = [
 [[package]]
 name = "serenity-voice-model"
 version = "0.1.1"
-source = "git+https://github.com/serenity-rs/serenity?branch=next#527f341ca4e95aa4a0aa6f6c31db3e100c06b952"
+source = "git+https://github.com/serenity-rs/serenity?branch=next#829f9073d8a400ebd5e52af831b8b8dd9aeff81a"
 dependencies = [
  "bitflags",
  "enum_primitive",
@@ -3504,7 +3516,7 @@ dependencies = [
 [[package]]
 name = "shift-orcz"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/shift-client-rs#4baa3e8e76d4256ee3e30a102e001021e25cad1c"
+source = "git+https://github.com/adumbidiot/shift-client-rs#060ed4b3c9a405389cce7c93cebe411cf8f1fd54"
 dependencies = [
  "logos",
  "once_cell",
@@ -3548,9 +3560,9 @@ checksum = "eb703cfe953bccee95685111adeedb76fabe4e97549a58d16f03ea7b9367bb32"
 
 [[package]]
 name = "smallvec"
-version = "1.8.1"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc88c725d61fc6c3132893370cac4a0200e3fedf5da8331c570664b1987f5ca2"
+checksum = "2fd0db749597d91ff862fd1d55ea87f7855a744a8425a64695b6fca237d1dad1"
 
 [[package]]
 name = "smol"
@@ -3583,7 +3595,7 @@ dependencies = [
 [[package]]
 name = "songbird"
 version = "0.2.2"
-source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#7a42abfc2b883e4ee3e3d89bdb479c183af083ad"
+source = "git+https://github.com/FelixMcFelix/songbird?branch=symphonia#82b29eafd4c26cfa85a97ce6d8674db13a86219e"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3595,6 +3607,7 @@ dependencies = [
  "flume",
  "futures",
  "lazy_static",
+ "once_cell",
  "parking_lot 0.12.1",
  "pin-project",
  "rand 0.8.5",
@@ -3603,6 +3616,7 @@ dependencies = [
  "rubato",
  "rusty_pool",
  "serde",
+ "serde-aux",
  "serde_json",
  "serenity",
  "serenity-voice-model",
@@ -4708,8 +4722,8 @@ dependencies = [
 
 [[package]]
 name = "zalgo"
-version = "0.0.1"
-source = "git+https://github.com/adumbidiot/zalgo-rs#847e0adfc1f1bf6b9a5903b39bf8ca5b9a19c84c"
+version = "0.0.0"
+source = "git+https://github.com/nathaniel-daniel/zalgo-rs#36a46ae894c7db406bf935694371746258e4ab43"
 dependencies = [
  "rand 0.8.5",
 ]
