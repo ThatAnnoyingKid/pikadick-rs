@@ -88,7 +88,8 @@ impl reqwest::cookie::CookieStore for CookieJar {
         let mut val = String::new();
         let cookie_jar = self.0.read().expect("cookie jar poisoned");
 
-        for (name, value) in cookie_jar.get_request_values(url) {
+        let iter = cookie_jar.get_request_values(url);
+        for (name, value) in iter {
             val.reserve(name.len() + value.len() + 1 + 1);
             write!(&mut val, "{}={}; ", name, value).ok()?;
         }

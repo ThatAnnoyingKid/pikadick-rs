@@ -5,12 +5,12 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-anyhow = { version = "1.0.57", optional = true }
+anyhow = { version = "1.0.58", optional = true }
 # fslock = { version = "0.2.1", optional = true }
 fslock = { git = "https://github.com/adumbidiot/fslock", optional = true }
-reqwest = { version = "0.11.10", default-features = false, optional = true }
+reqwest = { version = "0.11.11", default-features = false, optional = true }
 tokio = { version = "1.19.2", default-features = false, optional = true }
-tracing = { version = "0.1.34", optional = true }
+tracing = { version = "0.1.35", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.19.2", features = [ "macros" ] }
