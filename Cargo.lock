@@ -674,7 +674,8 @@ dependencies = [
 [[package]]
 name = "criterion"
 version = "0.3.6"
-source = "git+https://github.com/bheisler/criterion.rs#045dbfaa36ccd34e5158859ed72a1ff6f726c01e"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b01d6de93b2b6c65e17c634a26653a29d107b3c98c607c765bf38d041531cd8f"
 dependencies = [
  "atty",
  "cast 0.3.0",
@@ -699,7 +700,8 @@ dependencies = [
 [[package]]
 name = "criterion-plot"
 version = "0.4.4"
-source = "git+https://github.com/bheisler/criterion.rs#045dbfaa36ccd34e5158859ed72a1ff6f726c01e"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d00996de9f2f7559f7f4dc286073197f83e92256a59ed395f9aac01fe717da57"
 dependencies = [
  "cast 0.2.7",
  "itertools",

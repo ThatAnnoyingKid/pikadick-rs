@@ -99,6 +99,9 @@ skip = [
     
     # Blocked on removing heim
     { name = "nix", version = "0.23.1" },
+    
+    # Blocked on `criterion-plot` updating `cast` to `0.3.0`
+    { name = "cast", version = "0.2.7" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -162,4 +165,5 @@ allow-git = [
     # "https://github.com/nathaniel-daniel/raspberry-pi-rs",
     "https://github.com/nathaniel-daniel/nix",
     "https://github.com/FelixMcFelix/Symphonia",
+    # "https://github.com/bheisler/criterion.rs",
 ]
