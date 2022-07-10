@@ -1,0 +1,20 @@
+[package]
+name = "yodaspeak"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+once_cell = "1.13.0"
+reqwest = { version = "0.11.11", default-features = false }
+scraper = { version = "0.13.0", default-features = false}
+thiserror = "1.0.31"
+tokio = { version = "1.19.2", features = [ "rt" ] }
+
+[dev-dependencies]
+tokio = { version = "1.19.2", features = [ "macros" ] }
+
+[features]
+default = [ "rustls-tls" ]
+
+native-tls = [ "reqwest/native-tls" ]
+rustls-tls = [ "reqwest/rustls-tls" ]
