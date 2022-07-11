@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1.0.58"
 argh = "0.1.8"
 cargo_metadata = "0.15.0"
-serde = { version = "1.0.137", features = [ "derive" ] }
+serde = { version = "1.0.139", features = [ "derive" ] }
 serde_json = "1.0.82"
 ssh2 = { version = "0.9.3", features = [ "vendored-openssl", "openssl-on-win32" ] }
 toml = "0.5.9"
