@@ -50,6 +50,9 @@ pub struct Builder {
 
     /// The output format
     pub output_format: Option<String>,
+    
+    /// The pass # for two pass
+    pub pass: Option<u8>,
 
     /// The # of video frames to read from the input
     pub video_frames: Option<u64>,
@@ -75,6 +78,8 @@ impl Builder {
 
             input: None,
             output: None,
+            
+            pass: None,
 
             input_format: None,
             output_format: None,
@@ -148,6 +153,12 @@ impl Builder {
         self.preset = Some(preset.into());
         self
     }
+    
+    /// The pass # for 2 pass
+    pub fn pass(&mut self, pass: u8) -> &mut Self {
+        self.pass = Some(pass);
+        self
+    }
 
     /// Set whether the output should be overwritten
     pub fn overwrite(&mut self, overwrite: bool) -> &mut Self {
@@ -177,6 +188,7 @@ impl Builder {
         let video_profile = self.video_profile.take();
 
         let preset = self.preset.take();
+        let pass = self.pass.take();
 
         let overwrite = std::mem::take(&mut self.overwrite);
 
@@ -214,6 +226,10 @@ impl Builder {
 
         if let Some(preset) = preset.as_deref() {
             command.args(["-preset", preset]);
+        }
+        
+        if let Some(pass) = pass {
+            command.args(["-pass", &pass.to_string()]);
         }
 
         command.args(["-progress", "-"]);
