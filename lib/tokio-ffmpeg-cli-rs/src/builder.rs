@@ -226,11 +226,7 @@ impl Builder {
         let output = output.ok_or(Error::MissingOutput)?;
         command.arg(output.as_os_str());
 
-        command
-            .kill_on_drop(true)
-            .stdout(Stdio::piped())
-            .stdin(Stdio::null())
-            .stderr(Stdio::piped());
+        command.kill_on_drop(true);
 
         Ok(command)
     }
@@ -252,6 +248,10 @@ impl Builder {
     /// Spawn the stream
     pub fn spawn(&mut self) -> Result<impl Stream<Item = Result<Event, Error>> + Unpin, Error> {
         let mut command = self.build_command()?;
+        command
+            .stdout(Stdio::piped())
+            .stdin(Stdio::null())
+            .stderr(Stdio::piped());
 
         trace!("built ffmpeg command for spawning: {:?}", command);
 
