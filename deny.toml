@@ -11,7 +11,7 @@ targets = [
 vulnerability = "deny"
 unmaintained = "deny"
 notice = "deny"
-ignore = [    
+ignore = [
     # Blocked on criterion moving away from "serde_cbor". This is fine as criterion is a dev-dependency.
     "RUSTSEC-2021-0127",
 ]
@@ -23,7 +23,7 @@ allow-osi-fsf-free = "neither"
 confidence-threshold = 0.93
 default = "deny"
 private = { ignore = true }
-allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0" ]
+allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0", "Unicode-DFS-2016" ]
 exceptions = [
     { name = "ring", allow = [ "MIT", "ISC", "OpenSSL" ] },
 ]
@@ -99,9 +99,6 @@ skip = [
     
     # Blocked on removing heim
     { name = "nix", version = "0.23.1" },
-    
-    # Blocked on `criterion-plot` updating `cast` to `0.3.0`
-    { name = "cast", version = "0.2.7" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
