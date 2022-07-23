@@ -11,7 +11,7 @@ targets = [
 vulnerability = "deny"
 unmaintained = "deny"
 notice = "deny"
-ignore = [    
+ignore = [
     # Blocked on criterion moving away from "serde_cbor". This is fine as criterion is a dev-dependency.
     "RUSTSEC-2021-0127",
 ]
@@ -23,7 +23,7 @@ allow-osi-fsf-free = "neither"
 confidence-threshold = 0.93
 default = "deny"
 private = { ignore = true }
-allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0" ]
+allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0", "Unicode-DFS-2016" ]
 exceptions = [
     { name = "ring", allow = [ "MIT", "ISC", "OpenSSL" ] },
 ]
@@ -162,4 +162,5 @@ allow-git = [
     # "https://github.com/nathaniel-daniel/raspberry-pi-rs",
     "https://github.com/nathaniel-daniel/nix",
     "https://github.com/FelixMcFelix/Symphonia",
+    # "https://github.com/bheisler/criterion.rs",
 ]
