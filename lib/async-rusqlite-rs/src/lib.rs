@@ -36,7 +36,7 @@ pub enum Error {
 
     /// Bad thread join
     #[error("failed to join thread")]
-    ThreadJoin,
+    ThreadJoin(SyncWrapper<Box<dyn std::any::Any + Send>>),
 
     /// Setup failed to run
     #[error("init func failed")]
