@@ -60,7 +60,7 @@ tokio = { version = "1.20.0", features = [ "rt-multi-thread", "signal", "sync", 
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
 tokio-stream = "0.1.9"
 toml = "0.5.9"
-tonic = "0.6.2"
+tonic = "0.8.0"
 tracing = "0.1.35"
 tracing-appender = "0.2.2"
 tracing-log = "0.1.3"
