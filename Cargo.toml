@@ -8,7 +8,7 @@ description = "yet another discord bot"
 authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 
 [dependencies]
-anyhow = "1.0.58"
+anyhow = "1.0.62"
 argh = "0.1.8"
 async-rusqlite = { path = "./lib/async-rusqlite-rs", features = [ "bundled" ] }
 bincode = "1.3.3"
