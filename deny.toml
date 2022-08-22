@@ -160,7 +160,7 @@ allow-git = [
     "https://github.com/adumbidiot/fslock",
     "https://github.com/adumbidiot/serenity",
     # "https://github.com/nathaniel-daniel/raspberry-pi-rs",
-    "https://github.com/nathaniel-daniel/nix",
+    # "https://github.com/nathaniel-daniel/nix",
     "https://github.com/FelixMcFelix/Symphonia",
     # "https://github.com/bheisler/criterion.rs",
 ]
