@@ -14,6 +14,9 @@ notice = "deny"
 ignore = [
     # Blocked on criterion moving away from "serde_cbor". This is fine as criterion is a dev-dependency.
     "RUSTSEC-2021-0127",
+    
+    # Blocked on tracing selecting a replacement for ansi-term
+    "RUSTSEC-2021-0139",
 ]
 
 [licenses]
@@ -93,9 +96,6 @@ skip = [
     # Blocked on cssparser updating phf
     { name = "phf", version = "0.8.0" },
     { name = "phf_codegen", version = "0.8.0" },
-    
-    # Blocked on `hashlink` and `publicsuffix` moving to hashbrown 12
-    { name = "hashbrown", version = "0.11.2" },
     
     # Blocked on removing heim
     { name = "nix", version = "0.23.1" },
