@@ -11,21 +11,21 @@ required-features = [ "cli" ]
 
 [dependencies]
 reqwest = { version = "0.11.11", default-features = false, features = [ "json", "stream", "multipart" ] }
-serde = { version = "1.0.140", features = [ "derive" ] }
-serde_json = "1.0.82"
-thiserror = "1.0.31"
-tokio = { version = "1.20.0", features = [ "fs" ] }
+serde = { version = "1.0.144", features = [ "derive" ] }
+serde_json = "1.0.85"
+thiserror = "1.0.32"
+tokio = { version = "1.20.1", features = [ "fs" ] }
 tokio-util = { version = "0.7.3", features = ["codec"] }
 url = { version = "2.2.2", features = [ "serde" ] }
 
 # Optional
-anyhow = { version = "1.0.58", optional = true }
+anyhow = { version = "1.0.62", optional = true }
 argh = { version = "0.1.8", optional = true }
 dirs-next = { version = "2.0.0", optional = true }
 toml = { version = "0.5.9", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.20.0", features = [ "macros" ] }
+tokio = { version = "1.20.1", features = [ "macros" ] }
 
 [features]
 default = [ "reqwest/default-tls" ]
