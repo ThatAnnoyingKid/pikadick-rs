@@ -8,7 +8,6 @@ use crate::{
         TimedCacheEntry,
     },
     BotContext,
-    ClientDataKey,
 };
 use anyhow::Context as _;
 use pikadick_slash_framework::ClientData;
@@ -123,7 +122,8 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 }
                 Ok(None) => {
                     info!("no results");
-                    response_data = response_data.content(format!("No results for '{}'", query_str))
+                    response_data =
+                        response_data.content(format!("No results for '{}'", query_str));
                 }
                 Err(e) => {
                     error!("{e:?}");

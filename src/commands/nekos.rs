@@ -4,7 +4,6 @@ use crate::{
         CacheStatsProvider,
     },
     BotContext,
-    ClientDataKey,
 };
 use anyhow::Context as _;
 use crossbeam::queue::ArrayQueue;

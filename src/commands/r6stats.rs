@@ -8,7 +8,6 @@ use crate::{
         TimedCacheEntry,
     },
     BotContext,
-    ClientDataKey,
 };
 use anyhow::Context as _;
 use pikadick_slash_framework::ClientData;
@@ -138,7 +137,7 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 info!("getting r6 stats for '{name}' using r6stats");
 
                 let result = client
-                    .get_stats(&name)
+                    .get_stats(name)
                     .await
                     .with_context(|| format!("failed to get stats for '{name}' using r6stats"));
 

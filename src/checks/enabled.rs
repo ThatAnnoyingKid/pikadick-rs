@@ -18,10 +18,7 @@ use serenity::{
         CommandOptions,
         Reason,
     },
-    model::{
-        application::interaction::application_command::ApplicationCommandInteraction,
-        prelude::*,
-    },
+    model::prelude::*,
 };
 use std::{
     collections::HashMap,
@@ -191,7 +188,7 @@ pub async fn enabled_check(
 /// Check if a command is enabled via slash framework
 pub fn create_slash_check<'a>(
     client_data: &'a BotContext,
-    interaction: &'a Interaction,
+    _interaction: &'a Interaction,
     command_data: &'a CommandData,
     command: &'a Command<BotContext>,
 ) -> BoxFuture<'a, Result<(), SlashReason>> {

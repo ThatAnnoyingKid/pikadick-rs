@@ -13,7 +13,6 @@ use crate::{
         TimedCacheEntry,
     },
     BotContext,
-    ClientDataKey,
     LoadingReaction,
     TikTokEmbedFlags,
 };
@@ -490,7 +489,7 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
             |client_data, interaction, args: TikTokEmbedOptions| async move {
                 let database = client_data.inner.database.clone();
                 let interaction_client = client_data.interaction_client();
-                let mut response_data = InteractionResponseDataBuilder::new();
+                let response_data = InteractionResponseDataBuilder::new();
 
                 let guild_id = match interaction.guild_id {
                     Some(id) => id,

@@ -139,10 +139,7 @@ use serenity::{
         StandardFramework,
     },
     futures::future::BoxFuture,
-    model::{
-        application::interaction::Interaction,
-        prelude::*,
-    },
+    model::prelude::*,
     prelude::*,
     FutureExt,
 };
@@ -675,30 +672,6 @@ fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
 
 /// The async entry
 async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<()> {
-    // TODO: See if it is possible to start serenity without a network
-    info!("setting up client...");
-    let mut client = setup_client(config.clone())
-        .await
-        .context("failed to set up client")?;
-
-    let client_data = ClientData::init(
-        client.shard_manager.clone(),
-        config.clone(),
-        database.clone(),
-    )
-    .await
-    .context("client data initialization failed")?;
-
-    // Add all post-init client data changes here
-    {
-        client_data.enabled_check_data.add_groups(&[&GENERAL_GROUP]);
-    }
-
-    {
-        let mut data = client.data.write().await;
-        data.insert::<ClientDataKey>(client_data);
-    }
-
     // Setup slash framework
     let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
         .check(self::checks::enabled::create_slash_check)
@@ -782,18 +755,6 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
         tokio::spawn(handle_event(shard_id, event, bot_context.clone()));
     }
     info!("shard cluster is down");
-
-    info!("logging in...");
-    client.start().await.context("failed to run client")?;
-    let client_data = {
-        let mut data = client.data.write().await;
-        data.remove::<ClientDataKey>().expect("missing client data")
-    };
-    drop(client);
-
-    info!("running shutdown routine for client data");
-    client_data.shutdown().await;
-    drop(client_data);
 
     info!("closing database...");
     database.close().await.context("failed to close database")?;

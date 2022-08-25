@@ -28,9 +28,7 @@ use twilight_model::{
     },
     id::{
         marker::{
-            ChannelMarker,
             GuildMarker,
-            InteractionMarker,
             UserMarker,
         },
         Id,

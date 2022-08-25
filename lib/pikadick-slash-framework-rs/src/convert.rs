@@ -2,13 +2,9 @@ use crate::{
     ArgumentParam,
     BuilderError,
 };
-use twilight_model::application::interaction::{
-    application_command::{
-        CommandData,
-        CommandDataOption,
-        CommandOptionValue,
-    },
-    Interaction as TwilightInteraction,
+use twilight_model::application::interaction::application_command::{
+    CommandDataOption,
+    CommandOptionValue,
 };
 
 /// Error while converting from an interaction

@@ -12,10 +12,7 @@ use serenity::{
         CommandOptions,
         Reason,
     },
-    model::{
-        application::interaction::application_command::ApplicationCommandInteraction,
-        prelude::*,
-    },
+    model::prelude::*,
 };
 use tracing::{
     error,
@@ -84,9 +81,9 @@ pub async fn admin_check(
 
 /// Ensure a user is admin
 pub fn create_slash_check<'a>(
-    client_data: &'a BotContext,
+    _client_data: &'a BotContext,
     interaction: &'a Interaction,
-    command_data: &'a CommandData,
+    _command_data: &'a CommandData,
     _command: &'a Command<BotContext>,
 ) -> BoxFuture<'a, Result<(), SlashReason>> {
     Box::pin(async move {

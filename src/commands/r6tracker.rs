@@ -8,11 +8,9 @@ use crate::{
         TimedCacheEntry,
     },
     BotContext,
-    ClientDataKey,
 };
 use anyhow::Context as _;
 use pikadick_slash_framework::ClientData;
-use serenity::builder::CreateEmbed;
 use std::sync::Arc;
 use tracing::{
     error,
