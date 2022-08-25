@@ -105,6 +105,10 @@ use crate::{
         model::TikTokEmbedFlags,
         Database,
     },
+    nekos::NekosClient,
+    r6stats::R6StatsClient,
+    r6tracker::R6TrackerClient,
+    rule34::Rule34Client,
     util::{
         AsyncLockFile,
         LoadingReaction,
@@ -115,10 +119,11 @@ use anyhow::{
     ensure,
     Context as _,
 };
+use futures::StreamExt;
 use once_cell::sync::Lazy;
+use pikadick_slash_framework::ClientData as _;
 use regex::Regex;
 use serenity::{
-    client::bridge::gateway::ShardManager,
     framework::standard::{
         help_commands,
         macros::{
@@ -134,7 +139,6 @@ use serenity::{
         StandardFramework,
     },
     futures::future::BoxFuture,
-    gateway::ActivityData,
     model::{
         application::interaction::Interaction,
         prelude::*,
@@ -153,11 +157,27 @@ use std::{
 };
 use tokio::runtime::Builder as RuntimeBuilder;
 use tracing::{
+    debug,
     error,
     info,
     warn,
 };
 use tracing_appender::non_blocking::WorkerGuard;
+use twilight_cache_inmemory::{
+    InMemoryCache,
+    ResourceType,
+};
+use twilight_gateway::cluster::ClusterBuilder;
+use twilight_http::client::InteractionClient;
+use twilight_model::gateway::{
+    payload::outgoing::update_presence::UpdatePresencePayload,
+    presence::{
+        ActivityType,
+        MinimalActivity,
+        Status,
+    },
+    Intents,
+};
 use url::Url;
 
 const TOKIO_RT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
@@ -170,66 +190,6 @@ struct Handler;
 
 #[serenity::async_trait]
 impl EventHandler for Handler {
-    async fn ready(&self, ctx: Context, ready: Ready) {
-        let data_lock = ctx.data.read().await;
-        let client_data = data_lock
-            .get::<ClientDataKey>()
-            .expect("missing client data");
-        let slash_framework = data_lock
-            .get::<SlashFrameworkKey>()
-            .expect("missing slash framework")
-            .clone();
-        let config = client_data.config.clone();
-        drop(data_lock);
-
-        if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
-            match kind {
-                ActivityKind::Listening => {
-                    ctx.set_activity(Some(ActivityData::listening(status)))
-                        .await;
-                }
-                ActivityKind::Streaming => {
-                    let result: Result<_, anyhow::Error> = async {
-                        let activity = ActivityData::streaming(
-                            status,
-                            config.status_url().context("failed to get status url")?,
-                        )
-                        .context("failed to create activity")?;
-
-                        ctx.set_activity(Some(activity)).await;
-
-                        Ok(())
-                    }
-                    .await;
-
-                    if let Err(e) = result.context("failed to set activity") {
-                        error!("{:?}", e);
-                    }
-                }
-                ActivityKind::Playing => {
-                    ctx.set_activity(Some(ActivityData::playing(status))).await;
-                }
-            }
-        }
-
-        info!("logged in as '{}'", ready.user.name);
-
-        // TODO: Consider shutting down the bot. It might be possible to use old data though.
-        if let Err(e) = slash_framework
-            .register(ctx.clone(), config.test_guild)
-            .await
-            .context("failed to register slash commands")
-        {
-            error!("{:?}", e);
-        }
-
-        info!("registered slash commands");
-    }
-
-    async fn resume(&self, _ctx: Context, resumed: ResumedEvent) {
-        warn!("resumed connection. trace: {:?}", resumed.trace);
-    }
-
     #[tracing::instrument(skip(self, ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
     async fn message(&self, ctx: Context, msg: Message) {
         let data_lock = ctx.data.read().await;
@@ -357,17 +317,6 @@ impl EventHandler for Handler {
             tiktok_data.post_page_cache.trim();
         }
     }
-
-    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        let data_lock = ctx.data.read().await;
-        let framework = data_lock
-            .get::<SlashFrameworkKey>()
-            .expect("missing slash framework")
-            .clone();
-        drop(data_lock);
-
-        framework.process_interaction_create(ctx, interaction).await;
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -375,13 +324,6 @@ pub struct ClientDataKey;
 
 impl TypeMapKey for ClientDataKey {
     type Value = ClientData;
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct SlashFrameworkKey;
-
-impl TypeMapKey for SlashFrameworkKey {
-    type Value = pikadick_slash_framework::Framework;
 }
 
 #[help]
@@ -431,20 +373,6 @@ async fn help(
     sauce_nao
 )]
 struct General;
-
-async fn handle_ctrl_c(shard_manager: Arc<Mutex<ShardManager>>) {
-    match tokio::signal::ctrl_c().await {
-        Ok(_) => {
-            info!("shutting down...");
-            info!("stopping client...");
-            shard_manager.lock().await.shutdown_all().await;
-        }
-        Err(e) => {
-            warn!("failed to set ctrl-c handler: {}", e);
-            // The default "kill everything" handler is probably still installed, so this isn't a problem?
-        }
-    };
-}
 
 #[tracing::instrument(skip(_ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
 fn before_handler<'fut>(
@@ -562,18 +490,6 @@ async fn process_dispatch_error_future<'fut>(
 
 /// Set up a serenity client
 async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
-    // Setup slash framework
-    let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
-        .check(self::checks::enabled::create_slash_check)
-        .help_command(create_slash_help_command()?)
-        .command(self::commands::nekos::create_slash_command()?)
-        .command(self::commands::ping::create_slash_command()?)
-        .command(self::commands::r6stats::create_slash_command()?)
-        .command(self::commands::r6tracker::create_slash_command()?)
-        .command(self::commands::rule34::create_slash_command()?)
-        .command(self::commands::tiktok_embed::create_slash_command()?)
-        .build()?;
-
     // Create second prefix that is uppercase so we are case-insensitive
     let config_prefix = config.prefix.clone();
     let uppercase_prefix = config_prefix.to_uppercase();
@@ -609,27 +525,15 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     // Build the client
     let config_token = config.token.clone();
     let client = Client::builder(
-        config_token,
+        config_token.clone(),
         GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
     )
     .event_handler(Handler)
-    .application_id(config.application_id)
+    .application_id(config.application_id.into())
     .framework(framework)
     .register_songbird()
     .await
     .context("failed to create client")?;
-
-    {
-        client
-            .data
-            .write()
-            .await
-            .insert::<SlashFrameworkKey>(slash_framework);
-    }
-
-    // TODO: Spawn a task for this earlier?
-    // Spawn the ctrl-c handler
-    tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
 
     Ok(client)
 }
@@ -777,9 +681,13 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
         .await
         .context("failed to set up client")?;
 
-    let client_data = ClientData::init(client.shard_manager.clone(), config, database.clone())
-        .await
-        .context("client data initialization failed")?;
+    let client_data = ClientData::init(
+        client.shard_manager.clone(),
+        config.clone(),
+        database.clone(),
+    )
+    .await
+    .context("client data initialization failed")?;
 
     // Add all post-init client data changes here
     {
@@ -790,6 +698,90 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
         let mut data = client.data.write().await;
         data.insert::<ClientDataKey>(client_data);
     }
+
+    // Setup slash framework
+    let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
+        .check(self::checks::enabled::create_slash_check)
+        .help_command(create_slash_help_command()?)
+        .command(self::commands::nekos::create_slash_command()?)
+        .command(self::commands::ping::create_slash_command()?)
+        .command(self::commands::r6stats::create_slash_command()?)
+        .command(self::commands::r6tracker::create_slash_command()?)
+        .command(self::commands::rule34::create_slash_command()?)
+        .command(self::commands::tiktok_embed::create_slash_command()?)
+        .build()?;
+
+    info!("starting shard cluster...");
+    let mut cluster_builder = ClusterBuilder::new(
+        config.token.clone(),
+        Intents::GUILD_MESSAGES | Intents::MESSAGE_CONTENT | Intents::DIRECT_MESSAGES,
+    );
+
+    // Set activity in cluster builder if in config
+    if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
+        let activity = match kind {
+            ActivityKind::Listening => MinimalActivity {
+                kind: ActivityType::Listening,
+                name: status.to_string(),
+                url: None,
+            },
+            ActivityKind::Streaming => MinimalActivity {
+                kind: ActivityType::Streaming,
+                name: status.to_string(),
+                url: config.status_url().map(|s| s.to_string()),
+            },
+            ActivityKind::Playing => MinimalActivity {
+                kind: ActivityType::Playing,
+                name: status.to_string(),
+                url: None,
+            },
+        };
+        let payload =
+            UpdatePresencePayload::new(vec![activity.into()], false, None, Status::Online)?;
+        cluster_builder = cluster_builder.presence(payload);
+    }
+    let (cluster, mut events) = cluster_builder
+        .build()
+        .await
+        .context("failed to create shard cluster")?;
+    let cluster = Arc::new(cluster);
+    let http = twilight_http::Client::new(config.token.clone());
+    let cache = InMemoryCache::builder()
+        .resource_types(
+            ResourceType::MESSAGE
+                | ResourceType::CHANNEL
+                | ResourceType::VOICE_STATE
+                | ResourceType::USER_CURRENT
+                | ResourceType::ROLE
+                | ResourceType::GUILD
+                | ResourceType::MEMBER,
+        )
+        .build();
+
+    {
+        let cluster = cluster.clone();
+        tokio::spawn(async move {
+            if let Err(e) = tokio::signal::ctrl_c()
+                .await
+                .context("failed to register ctrl+c handler")
+            {
+                error!("{:?}", e);
+            }
+
+            info!("got ctrl+c, shutting down...");
+            cluster.down();
+        });
+    }
+
+    cluster.up().await;
+    info!("shard cluster is up");
+
+    let bot_context = BotContext::new(http, config, slash_framework, database.clone());
+    while let Some((shard_id, event)) = events.next().await {
+        cache.update(&event);
+        tokio::spawn(handle_event(shard_id, event, bot_context.clone()));
+    }
+    info!("shard cluster is down");
 
     info!("logging in...");
     client.start().await.context("failed to run client")?;
@@ -807,4 +799,132 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
     database.close().await.context("failed to close database")?;
 
     Ok(())
+}
+
+#[derive(Debug, Clone)]
+pub struct BotContext {
+    inner: Arc<BotContextInner>,
+}
+
+impl BotContext {
+    /// Make a new BotContext
+    pub fn new(
+        http: twilight_http::Client,
+        config: Arc<Config>,
+        slash_framework: pikadick_slash_framework::Framework<Self>,
+        database: Database,
+    ) -> Self {
+        Self {
+            inner: Arc::new(BotContextInner {
+                http,
+                config,
+                slash_framework,
+                database,
+
+                nekos_client: NekosClient::new(),
+                r6tracker_client: R6TrackerClient::new(),
+                r6stats_client: R6StatsClient::new(),
+                rule34_client: Rule34Client::new(),
+            }),
+        }
+    }
+}
+
+/// The inner bot context.
+///
+/// The objects here shouldn't implement clone but should internally synchronize if needed.
+#[derive(Debug)]
+pub struct BotContextInner {
+    /// The twilight http client
+    pub http: twilight_http::Client,
+
+    /// The bot config
+    pub config: Arc<Config>,
+
+    /// The slash_framework
+    slash_framework: pikadick_slash_framework::Framework<BotContext>,
+
+    /// The database
+    pub database: Database,
+
+    /// The nekos client
+    pub nekos_client: NekosClient,
+
+    /// R6Tracker client
+    pub r6tracker_client: R6TrackerClient,
+
+    /// R6Stats client
+    pub r6stats_client: R6StatsClient,
+
+    /// The rule34 client
+    pub rule34_client: Rule34Client,
+}
+
+impl pikadick_slash_framework::ClientData for BotContext {
+    /// Get an interaction client
+    fn interaction_client(&self) -> InteractionClient<'_> {
+        self.inner
+            .http
+            .interaction(self.inner.config.application_id.into())
+    }
+}
+
+async fn handle_event(shard_id: u64, event: twilight_gateway::Event, bot_context: BotContext) {
+    debug!(shard_id = shard_id, "got event kind {:?}", event.kind());
+
+    match event {
+        twilight_gateway::Event::ShardConnecting(_) => {
+            info!(shard_id = shard_id, "shard connecting");
+        }
+        twilight_gateway::Event::ShardConnected(_) => {
+            info!(shard_id = shard_id, "shard connected");
+        }
+        twilight_gateway::Event::ShardDisconnected(_) => {
+            info!(shard_id = shard_id, "shard disconnected");
+        }
+        twilight_gateway::Event::ShardIdentifying(_) => {
+            info!(shard_id = shard_id, "shard identifying");
+        }
+        twilight_gateway::Event::ShardReconnecting(_) => {
+            info!(shard_id = shard_id, "shard reconnecting");
+        }
+        twilight_gateway::Event::ShardResuming(_) => {
+            info!(shard_id = shard_id, "shard resuming");
+        }
+        twilight_gateway::Event::Ready(ready) => {
+            info!(shard_id = shard_id, "shard ready");
+
+            info!("logged in as '{}'", ready.user.name);
+
+            // Attempt to register slash commands
+            let interaction_client = bot_context.interaction_client();
+
+            // TODO: Consider shutting down the bot. It might be possible to use old data though.
+            if let Err(e) = bot_context
+                .inner
+                .slash_framework
+                .register(
+                    interaction_client,
+                    bot_context.inner.config.test_guild.map(|id| id.into()),
+                )
+                .await
+                .context("failed to register slash commands")
+            {
+                error!("{:?}", e);
+            }
+            info!("registered slash commands");
+        }
+        twilight_gateway::Event::Resumed => {
+            info!(shard_id = shard_id, "shard resumed");
+        }
+        twilight_gateway::Event::MessageCreate(_message_create) => {}
+        twilight_gateway::Event::InteractionCreate(interaction_create) => {
+            bot_context
+                .inner
+                .slash_framework
+                .process_interaction_create(bot_context.clone(), interaction_create)
+                .await;
+        }
+        _ => {}
+    }
 }

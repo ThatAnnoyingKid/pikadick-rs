@@ -51,8 +51,23 @@ pub use crate::commands::{
     xkcd::XKCD_COMMAND,
     zalgo::ZALGO_COMMAND,
 };
+use crate::BotContext;
 use anyhow::Context;
-use pikadick_slash_framework::FromOptions;
+use pikadick_slash_framework::{
+    ClientData,
+    FromOptions,
+};
+use twilight_model::http::interaction::{
+    InteractionResponse,
+    InteractionResponseType,
+};
+use twilight_util::builder::{
+    embed::{
+        EmbedBuilder,
+        EmbedFieldBuilder,
+    },
+    InteractionResponseDataBuilder,
+};
 
 /// Help Options
 #[derive(Debug, FromOptions)]
@@ -62,8 +77,9 @@ pub struct HelpCommandOptions {
 }
 
 /// Create a slash help command
-pub fn create_slash_help_command() -> anyhow::Result<pikadick_slash_framework::HelpCommand> {
-    pikadick_slash_framework::HelpCommandBuilder::new()
+pub fn create_slash_help_command(
+) -> anyhow::Result<pikadick_slash_framework::HelpCommand<BotContext>> {
+    pikadick_slash_framework::HelpCommandBuilder::<BotContext>::new()
         .description("Get information about commands and their use")
         .argument(
             pikadick_slash_framework::ArgumentParamBuilder::new()
@@ -73,60 +89,62 @@ pub fn create_slash_help_command() -> anyhow::Result<pikadick_slash_framework::H
                 .build()?,
         )
         .on_process(
-            |ctx, interaction, map, args: HelpCommandOptions| async move {
-                interaction
-                    .create_interaction_response(&ctx.http, |res| {
-                        res.interaction_response_data(|res| {
-                            res.embed(|embed| {
-                                embed.color(0xF4D665_u32);
+            |client_data, interaction, map, args: HelpCommandOptions| async move {
+                let interaction_client = client_data.interaction_client();
+                let mut embed = EmbedBuilder::new().color(0xF4D665_u32);
+                if let Some(command) = args.command {
+                    let maybe_command = map.get(command.as_str());
+                    match maybe_command {
+                        Some(command) => {
+                            embed = embed
+                                .title(command.name())
+                                .description(command.description());
 
-                                if let Some(command) = args.command {
-                                    let maybe_command = map.get(command.as_str());
+                            if !command.arguments().is_empty() {
+                                let mut arguments = String::with_capacity(256);
+                                for argument in command.arguments().iter() {
+                                    arguments.push_str("**");
+                                    arguments.push_str(argument.name());
+                                    arguments.push_str("**");
 
-                                    match maybe_command {
-                                        Some(command) => {
-                                            embed
-                                                .title(command.name())
-                                                .description(command.description());
-
-                                            if !command.arguments().is_empty() {
-                                                let mut arguments = String::with_capacity(256);
-                                                for argument in command.arguments().iter() {
-                                                    arguments.push_str("**");
-                                                    arguments.push_str(argument.name());
-                                                    arguments.push_str("**");
-
-                                                    arguments.push_str(": ");
-                                                    arguments.push_str(argument.description());
-                                                }
-                                                embed.field("Arguments", &arguments, false);
-                                            }
-                                        }
-                                        None => {
-                                            embed.title("Unknown Command").description(format!(
-                                                "Command `{}` was not found.",
-                                                command
-                                            ));
-                                        }
-                                    }
-                                } else {
-                                    embed.title("Help");
-
-                                    let mut description = String::with_capacity(256);
-                                    for name in map.keys() {
-                                        description.push('`');
-                                        description.push_str(name);
-                                        description.push('`');
-                                        description.push('\n');
-                                    }
-
-                                    embed.description(description);
+                                    arguments.push_str(": ");
+                                    arguments.push_str(argument.description());
                                 }
+                                embed =
+                                    embed.field(EmbedFieldBuilder::new("Arguments", &arguments));
+                            }
+                        }
+                        None => {
+                            embed = embed
+                                .title("Unknown Command")
+                                .description(format!("Command `{}` was not found.", command));
+                        }
+                    }
+                } else {
+                    embed = embed.title("Help");
 
-                                embed
-                            })
-                        })
-                    })
+                    let mut description = String::with_capacity(256);
+                    for name in map.keys() {
+                        description.push('`');
+                        description.push_str(name);
+                        description.push('`');
+                        description.push('\n');
+                    }
+
+                    embed = embed.description(description);
+                }
+
+                let response_data = InteractionResponseDataBuilder::new()
+                    .embeds(std::iter::once(embed.build()))
+                    .build();
+                let response = InteractionResponse {
+                    kind: InteractionResponseType::ChannelMessageWithSource,
+                    data: Some(response_data),
+                };
+
+                interaction_client
+                    .create_response(interaction.id, &interaction.token, &response)
+                    .exec()
                     .await?;
 
                 Ok(())

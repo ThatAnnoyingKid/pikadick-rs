@@ -7,13 +7,11 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use serenity::{
-    model::prelude::GuildId,
-    utils::validate_token,
-};
+use serenity::utils::validate_token;
 use std::{
     borrow::Cow,
     collections::HashMap,
+    num::NonZeroU64,
 };
 
 fn default_prefix() -> String {
@@ -27,7 +25,7 @@ pub struct Config {
     pub token: String,
 
     /// The application id
-    pub application_id: u64,
+    pub application_id: NonZeroU64,
 
     /// Prefix for the bot
     #[serde(default = "default_prefix")]
@@ -40,7 +38,7 @@ pub struct Config {
     pub data_dir: Utf8PathBuf,
 
     /// The test guild
-    pub test_guild: Option<GuildId>,
+    pub test_guild: Option<NonZeroU64>,
 
     /// FML config
     pub fml: FmlConfig,

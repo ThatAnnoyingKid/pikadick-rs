@@ -2,15 +2,16 @@ use crate::{
     BoxFuture,
     Command,
 };
-use serenity::{
-    client::Context,
-    model::application::interaction::application_command::ApplicationCommandInteraction,
+use twilight_model::application::interaction::{
+    application_command::CommandData,
+    Interaction,
 };
 
-pub type CheckFn = for<'a> fn(
-    &'a Context,
-    &'a ApplicationCommandInteraction,
-    &'a Command,
+pub type CheckFn<D> = for<'a> fn(
+    &'a D,
+    &'a Interaction,
+    &'a CommandData,
+    &'a Command<D>,
 ) -> BoxFuture<'a, Result<(), Reason>>;
 
 /// the reason a check failed

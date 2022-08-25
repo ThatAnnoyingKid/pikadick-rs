@@ -3,6 +3,7 @@ mod check;
 mod command;
 mod convert;
 mod framework;
+mod util;
 
 pub use self::{
     argument::{
@@ -31,18 +32,22 @@ pub use self::{
     },
 };
 pub use crate::convert::FromOptions;
+pub(crate) use crate::util::{
+    BoxError,
+    WrapBoxError,
+};
 pub use pikadick_slash_framework_derive::FromOptions;
 use std::{
     future::Future,
     pin::Pin,
 };
+use twilight_http::client::InteractionClient;
 
 // Compat alias
 // TODO: Deprecate
 pub type ArgumentKind = DataType;
 
 pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
-pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub type BoxResult<T> = Result<T, BoxError>;
 
 /// Builder Error
@@ -55,4 +60,10 @@ pub enum BuilderError {
     /// Something was duplicated
     #[error("duplicate for key '{0}'")]
     Duplicate(Box<str>),
+}
+
+/// The client data for the framework
+pub trait ClientData: Send + 'static {
+    /// Get the interaction client
+    fn interaction_client(&self) -> InteractionClient<'_>;
 }

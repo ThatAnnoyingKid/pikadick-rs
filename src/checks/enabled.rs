@@ -1,4 +1,7 @@
-use crate::ClientDataKey;
+use crate::{
+    BotContext,
+    ClientDataKey,
+};
 use parking_lot::Mutex;
 use pikadick_slash_framework::{
     BoxFuture,
@@ -25,6 +28,10 @@ use std::{
     sync::Arc,
 };
 use tracing::error;
+use twilight_model::application::interaction::{
+    application_command::CommandData,
+    Interaction,
+};
 
 type MutexGuard<'a, T> = parking_lot::lock_api::MutexGuard<'a, parking_lot::RawMutex, T>;
 
@@ -183,12 +190,13 @@ pub async fn enabled_check(
 
 /// Check if a command is enabled via slash framework
 pub fn create_slash_check<'a>(
-    ctx: &'a Context,
-    interaction: &'a ApplicationCommandInteraction,
-    command: &'a Command,
+    client_data: &'a BotContext,
+    interaction: &'a Interaction,
+    command_data: &'a CommandData,
+    command: &'a Command<BotContext>,
 ) -> BoxFuture<'a, Result<(), SlashReason>> {
     Box::pin(async move {
-        let guild_id = match interaction.guild_id {
+        let guild_id = match command_data.guild_id {
             Some(id) => id,
             None => {
                 // Let's not care about dms for now.
@@ -199,16 +207,14 @@ pub fn create_slash_check<'a>(
             }
         };
 
-        let data_lock = ctx.data.read().await;
-        let client_data = data_lock
-            .get::<ClientDataKey>()
-            .expect("missing client data");
-        let db = client_data.db.clone();
-        drop(data_lock);
-
         let command_name = command.name();
 
-        match db.is_command_disabled(guild_id, command_name).await {
+        match client_data
+            .inner
+            .database
+            .is_command_disabled(guild_id.into_nonzero().into(), command_name)
+            .await
+        {
             Ok(true) => Err(SlashReason::new_user("Command Disabled.".to_string())),
             Ok(false) => Ok(()),
             Err(e) => {

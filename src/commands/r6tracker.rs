@@ -7,14 +7,31 @@ use crate::{
         TimedCache,
         TimedCacheEntry,
     },
+    BotContext,
     ClientDataKey,
 };
 use anyhow::Context as _;
+use pikadick_slash_framework::ClientData;
 use serenity::builder::CreateEmbed;
 use std::sync::Arc;
 use tracing::{
     error,
     info,
+};
+use twilight_model::{
+    channel::embed::Embed,
+    http::interaction::{
+        InteractionResponse,
+        InteractionResponseType,
+    },
+};
+use twilight_util::builder::{
+    embed::{
+        EmbedBuilder,
+        EmbedFieldBuilder,
+        ImageSource,
+    },
+    InteractionResponseDataBuilder,
 };
 
 /// R6Tracker stats for a user
@@ -25,46 +42,70 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn populate_embed<'a>(&self, e: &'a mut CreateEmbed) -> &'a mut CreateEmbed {
+    /// Create an embed
+    pub fn create_embed(&self) -> anyhow::Result<Embed> {
+        let mut embed_builder = EmbedBuilder::new();
         // We mix overwolf and non-overwolf data to get what we want.
 
         // New Overwolf Api
-        e.title(self.overwolf_player.name.as_str())
-            .image(self.overwolf_player.avatar.as_str());
+        embed_builder = embed_builder
+            .title(self.overwolf_player.name.as_str())
+            .image(ImageSource::url(self.overwolf_player.avatar.as_str())?);
 
         if let Some(season) = self.overwolf_player.current_season_best_region.as_ref() {
-            e.field("Current Rank", &season.rank_name, true)
-                .field("Current MMR", itoa::Buffer::new().format(season.mmr), true)
-                .field("Seasonal Ranked K/D", format!("{:.2}", season.kd), true)
+            embed_builder = embed_builder
+                .field(EmbedFieldBuilder::new("Current Rank", &season.rank_name).inline())
                 .field(
-                    "Seasonal Ranked Win %",
-                    ryu::Buffer::new().format(season.win_pct),
-                    true,
+                    EmbedFieldBuilder::new("Current MMR", itoa::Buffer::new().format(season.mmr))
+                        .inline(),
                 )
                 .field(
-                    "Seasonal # of Ranked Matches",
-                    itoa::Buffer::new().format(season.matches),
-                    true,
+                    EmbedFieldBuilder::new("Seasonal Ranked K/D", format!("{:.2}", season.kd))
+                        .inline(),
+                )
+                .field(
+                    EmbedFieldBuilder::new(
+                        "Seasonal Ranked Win %",
+                        ryu::Buffer::new().format(season.win_pct),
+                    )
+                    .inline(),
+                )
+                .field(
+                    EmbedFieldBuilder::new(
+                        "Seasonal # of Ranked Matches",
+                        itoa::Buffer::new().format(season.matches),
+                    )
+                    .inline(),
                 );
         }
 
         if let Some(season) = self.overwolf_player.get_current_casual_season() {
-            e.field("Current Casual Rank", &season.rank_name, true)
+            embed_builder = embed_builder
+                .field(EmbedFieldBuilder::new("Current Casual Rank", &season.rank_name).inline())
                 .field(
-                    "Current Casual MMR",
-                    itoa::Buffer::new().format(season.mmr),
-                    true,
-                )
-                .field("Seasonal Casual K/D", format!("{:.2}", season.kd), true)
-                .field(
-                    "Seasonal Casual Win %",
-                    ryu::Buffer::new().format(season.win_pct),
-                    true,
+                    EmbedFieldBuilder::new(
+                        "Current Casual MMR",
+                        itoa::Buffer::new().format(season.mmr),
+                    )
+                    .inline(),
                 )
                 .field(
-                    "Seasonal # of Casual Matches",
-                    itoa::Buffer::new().format(season.matches),
-                    true,
+                    EmbedFieldBuilder::new("Seasonal Casual K/D", format!("{:.2}", season.kd))
+                        .inline(),
+                )
+                .field(
+                    EmbedFieldBuilder::new(
+                        "Seasonal Casual Win %",
+                        ryu::Buffer::new().format(season.win_pct),
+                    )
+                    .inline(),
+                )
+                .field(
+                    EmbedFieldBuilder::new(
+                        "Seasonal # of Casual Matches",
+                        itoa::Buffer::new().format(season.matches),
+                    )
+                    .inline(),
                 );
         }
 
@@ -91,53 +132,62 @@ impl Stats {
             .or_else(|| overwolf_best_mmr.map(|best_mmr| best_mmr.name.as_str()));
 
         if let Some(max_mmr) = max_mmr {
-            e.field("Best MMR", itoa::Buffer::new().format(max_mmr), true);
+            embed_builder = embed_builder.field(
+                EmbedFieldBuilder::new("Best MMR", itoa::Buffer::new().format(max_mmr)).inline(),
+            );
         }
 
         if let Some(max_rank) = max_rank {
-            e.field("Best Rank", max_rank, true);
+            embed_builder =
+                embed_builder.field(EmbedFieldBuilder::new("Best Rank", max_rank).inline());
         }
 
         if let Some(lifetime_ranked_kd) = self.overwolf_player.get_lifetime_ranked_kd() {
-            e.field(
-                "Lifetime Ranked K/D",
-                format!("{:.2}", lifetime_ranked_kd),
-                true,
+            embed_builder = embed_builder.field(
+                EmbedFieldBuilder::new("Lifetime Ranked K/D", format!("{:.2}", lifetime_ranked_kd))
+                    .inline(),
             );
         }
 
         if let Some(lifetime_ranked_win_pct) = self.overwolf_player.get_lifetime_ranked_win_pct() {
-            e.field(
-                "Lifetime Ranked Win %",
-                format!("{:.2}", lifetime_ranked_win_pct),
-                true,
+            embed_builder = embed_builder.field(
+                EmbedFieldBuilder::new(
+                    "Lifetime Ranked Win %",
+                    format!("{:.2}", lifetime_ranked_win_pct),
+                )
+                .inline(),
             );
         }
 
-        e.field(
-            "Lifetime K/D",
-            ryu::Buffer::new().format(self.overwolf_player.lifetime_stats.kd),
-            true,
-        )
-        .field(
-            "Lifetime Win %",
-            ryu::Buffer::new().format(self.overwolf_player.lifetime_stats.win_pct),
-            true,
-        );
+        embed_builder = embed_builder
+            .field(
+                EmbedFieldBuilder::new(
+                    "Lifetime K/D",
+                    ryu::Buffer::new().format(self.overwolf_player.lifetime_stats.kd),
+                )
+                .inline(),
+            )
+            .field(
+                EmbedFieldBuilder::new(
+                    "Lifetime Win %",
+                    ryu::Buffer::new().format(self.overwolf_player.lifetime_stats.win_pct),
+                )
+                .inline(),
+            );
 
         // Old Non-Overwolf API
 
         // Overwolf API does not send season colors
         if let Some(c) = self.profile.season_color_u32() {
-            e.color(c);
+            embed_builder = embed_builder.color(c);
         }
 
         // Overwolf API does not send non-svg rank thumbnails
         if let Some(thumb) = self.profile.current_mmr_image() {
-            e.thumbnail(thumb.as_str());
+            embed_builder = embed_builder.thumbnail(ImageSource::url(thumb.as_str())?);
         }
 
-        e
+        Ok(embed_builder.build())
     }
 }
 
@@ -244,8 +294,8 @@ struct R6TrackerOptions {
 }
 
 /// Create a slash command
-pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
-    pikadick_slash_framework::CommandBuilder::new()
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
+    pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("r6tracker")
         .description("Get r6 stats for a user from r6tracker")
         .argument(
@@ -256,40 +306,47 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 .required(true)
                 .build()?,
         )
-        .on_process(|ctx, interaction, args: R6TrackerOptions| async move {
-            let data_lock = ctx.data.read().await;
-            let client_data = data_lock
-                .get::<ClientDataKey>()
-                .expect("missing client data");
-            let client = client_data.r6tracker_client.clone();
-            drop(data_lock);
+        .on_process(
+            |client_data, interaction, args: R6TrackerOptions| async move {
+                let client = client_data.inner.r6tracker_client.clone();
+                let name = args.name.as_str();
+                info!("getting r6 stats for '{name}' using r6tracker");
 
-            info!("Getting r6 stats for '{}' using R6Tracker", args.name);
+                let result = client
+                    .get_stats(name)
+                    .await
+                    .with_context(|| format!("failed to get r6tracker stats for '{name}'"));
 
-            let result = client
-                .get_stats(&args.name)
-                .await
-                .with_context(|| format!("failed to get r6tracker stats for '{}'", args.name));
+                let interaction_client = client_data.interaction_client();
+                let mut response_data = InteractionResponseDataBuilder::new();
+                match result.map(|entry| entry.data().as_ref().map(|stats| stats.create_embed())) {
+                    Ok(Some(Ok(embed))) => {
+                        response_data = response_data.embeds(std::iter::once(embed));
+                    }
+                    Ok(None) => {
+                        response_data = response_data.content("No Results");
+                    }
+                    Err(e) | Ok(Some(Err(e))) => {
+                        error!("{e:?}");
+                        response_data = response_data.content(format!("{e:?}"));
+                    }
+                }
+                let response_data = response_data.build();
+                let response = InteractionResponse {
+                    kind: InteractionResponseType::ChannelMessageWithSource,
+                    data: Some(response_data),
+                };
 
-            interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| {
-                        match result.as_ref().map(|entry| entry.data()) {
-                            Ok(Some(stats)) => res.embed(|e| stats.populate_embed(e)),
-                            Ok(None) => res.content("No Results"),
-                            Err(e) => {
-                                error!("{:?}", e);
-                                res.content(format!("{:?}", e))
-                            }
-                        }
-                    })
-                })
-                .await?;
+                interaction_client
+                    .create_response(interaction.id, &interaction.token, &response)
+                    .exec()
+                    .await?;
 
-            client.search_cache.trim();
+                client.search_cache.trim();
 
-            Ok(())
-        })
+                Ok(())
+            },
+        )
         .build()
         .context("failed to build r6tracker command")
 }

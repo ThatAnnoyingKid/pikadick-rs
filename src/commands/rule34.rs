@@ -7,15 +7,22 @@ use crate::{
         TimedCache,
         TimedCacheEntry,
     },
+    BotContext,
     ClientDataKey,
 };
 use anyhow::Context as _;
+use pikadick_slash_framework::ClientData;
 use rand::seq::SliceRandom;
 use std::sync::Arc;
 use tracing::{
     error,
     info,
 };
+use twilight_model::http::interaction::{
+    InteractionResponse,
+    InteractionResponseType,
+};
+use twilight_util::builder::InteractionResponseDataBuilder;
 
 /// A caching rule34 client
 #[derive(Clone, Default, Debug)]
@@ -74,8 +81,8 @@ pub struct Rule34Options {
 }
 
 /// Create a slash command
-pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
-    pikadick_slash_framework::CommandBuilder::new()
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
+    pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("rule34")
         .description("Look up rule34 for almost anything")
         .argument(
@@ -86,49 +93,52 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 .required(true)
                 .build()?,
         )
-        .on_process(|ctx, interaction, args: Rule34Options| async move {
-            let data_lock = ctx.data.read().await;
-            let client_data = data_lock
-                .get::<ClientDataKey>()
-                .expect("missing client data");
-            let client = client_data.rule34_client.clone();
-            drop(data_lock);
+        .on_process(|client_data, interaction, args: Rule34Options| async move {
+            let client = client_data.inner.rule34_client.clone();
 
             let query_str = rule34::SearchQueryBuilder::new()
                 .add_tag_iter(args.query.split(' '))
                 .take_query_string();
 
-            info!("searching rule34 for '{}'", query_str);
+            info!("searching rule34 for '{query_str}'");
 
             let result = client
                 .list(&query_str)
                 .await
                 .context("failed to get search results");
 
-            interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| match result {
-                        Ok(list_results) => {
-                            let maybe_list_result: Option<String> = list_results
-                                .data()
-                                .posts
-                                .choose(&mut rand::thread_rng())
-                                .map(|list_result| list_result.file_url.to_string());
+            let interaction_client = client_data.interaction_client();
+            let mut response_data = InteractionResponseDataBuilder::new();
 
-                            if let Some(file_url) = maybe_list_result {
-                                info!("sending {}", file_url);
-                                res.content(file_url)
-                            } else {
-                                info!("no results");
-                                res.content(format!("No results for '{}'", query_str))
-                            }
-                        }
-                        Err(e) => {
-                            error!("{:?}", e);
-                            res.content(format!("{:?}", e))
-                        }
-                    })
-                })
+            match result.map(|list_results| {
+                list_results
+                    .data()
+                    .posts
+                    .choose(&mut rand::thread_rng())
+                    .map(|list_result| list_result.file_url.to_string())
+            }) {
+                Ok(Some(file_url)) => {
+                    info!("sending {file_url}");
+                    response_data = response_data.content(file_url);
+                }
+                Ok(None) => {
+                    info!("no results");
+                    response_data = response_data.content(format!("No results for '{}'", query_str))
+                }
+                Err(e) => {
+                    error!("{e:?}");
+                    response_data = response_data.content(format!("{e:?}"));
+                }
+            }
+            let response_data = response_data.build();
+            let response = InteractionResponse {
+                kind: InteractionResponseType::ChannelMessageWithSource,
+                data: Some(response_data),
+            };
+
+            interaction_client
+                .create_response(interaction.id, &interaction.token, &response)
+                .exec()
                 .await?;
 
             client.list_cache.trim();

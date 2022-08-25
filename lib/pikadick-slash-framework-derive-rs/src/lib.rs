@@ -29,7 +29,7 @@ pub fn derive_from_options(input: proc_macro::TokenStream) -> proc_macro::TokenS
             let expanded = quote! {
                 impl ::pikadick_slash_framework::FromOptions for #name {
                     fn from_options(
-                        interaction: &::serenity::model::application::interaction::application_command::ApplicationCommandInteraction
+                        options: &[::twilight_model::application::interaction::application_command::CommandDataOption],
                     ) -> ::std::result::Result<Self, ::pikadick_slash_framework::ConvertError> {
                         #from_options_impl
                     }
@@ -222,7 +222,7 @@ fn gen_from_options_impl(fields: &[Field]) -> Result<TokenStream> {
                 #name = Some(
                     <#ty as ::pikadick_slash_framework::FromOptionValue>::from_option_value(
                         #name_lit,
-                        option.resolved.as_ref()
+                        &option.value
                     )?
                 );
             }
@@ -253,7 +253,7 @@ fn gen_from_options_impl(fields: &[Field]) -> Result<TokenStream> {
     Ok(quote! {
         #(#optional_field_recurse)*
 
-        for option in interaction.data.options.iter() {
+        for option in options.iter() {
             match option.name.as_str() {
                 #(#match_recurse)*
                 _ => {}

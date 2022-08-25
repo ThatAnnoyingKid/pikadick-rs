@@ -2,9 +2,13 @@ use crate::{
     ArgumentParam,
     BuilderError,
 };
-use serenity::model::application::interaction::application_command::{
-    ApplicationCommandInteraction,
-    CommandDataOptionValue,
+use twilight_model::application::interaction::{
+    application_command::{
+        CommandData,
+        CommandDataOption,
+        CommandOptionValue,
+    },
+    Interaction as TwilightInteraction,
 };
 
 /// Error while converting from an interaction
@@ -38,8 +42,8 @@ pub trait FromOptions: std::fmt::Debug + Send
 where
     Self: Sized,
 {
-    /// Make arguments from a [`ApplicationCommandInteraction`]
-    fn from_options(interaction: &ApplicationCommandInteraction) -> Result<Self, ConvertError>;
+    /// Make arguments from a slice of [`&CommandDataOption`]
+    fn from_options(command_data: &[CommandDataOption]) -> Result<Self, ConvertError>;
 
     /// Get the argument paramss of this object
     fn get_argument_params() -> Result<Vec<ArgumentParam>, BuilderError> {
@@ -49,7 +53,7 @@ where
 
 // Allow the user to fill values while developing, or use a command with no arguments
 impl FromOptions for () {
-    fn from_options(_interaction: &ApplicationCommandInteraction) -> Result<Self, ConvertError> {
+    fn from_options(_interaction: &[CommandDataOption]) -> Result<Self, ConvertError> {
         Ok(())
     }
 }
@@ -77,14 +81,14 @@ impl DataType {
         }
     }
 
-    /// Get the type of a [`CommandDataOptionValue`].
+    /// Get the type of a [`CommandOptionValue`].
     ///
     /// This returns an option as [`DataType`] does not encode the concept of an unknown data type.
-    pub fn from_data_option_value(v: &CommandDataOptionValue) -> Option<Self> {
+    pub fn from_data_option_value(v: &CommandOptionValue) -> Option<Self> {
         match v {
-            CommandDataOptionValue::String(_) => Some(DataType::String),
-            CommandDataOptionValue::Integer(_) => Some(DataType::Integer),
-            CommandDataOptionValue::Boolean(_) => Some(DataType::Boolean),
+            CommandOptionValue::String(_) => Some(DataType::String),
+            CommandOptionValue::Integer(_) => Some(DataType::Integer),
+            CommandOptionValue::Boolean(_) => Some(DataType::Boolean),
             _ => None,
         }
     }
@@ -101,7 +105,7 @@ pub trait FromOptionValue: Sized {
     /// Parse from an option value
     fn from_option_value(
         name: &'static str,
-        option: Option<&CommandDataOptionValue>,
+        option: &CommandOptionValue,
     ) -> Result<Self, ConvertError>;
 
     /// The expected data type
@@ -119,19 +123,12 @@ pub trait FromOptionValue: Sized {
 impl FromOptionValue for bool {
     fn from_option_value(
         name: &'static str,
-        option: Option<&CommandDataOptionValue>,
+        option: &CommandOptionValue,
     ) -> Result<Self, ConvertError> {
         let expected = Self::get_expected_data_type();
 
-        let option = match option {
-            Some(option) => option,
-            None => {
-                return Err(ConvertError::MissingRequiredField { name, expected });
-            }
-        };
-
         match option {
-            CommandDataOptionValue::Boolean(b) => Ok(*b),
+            CommandOptionValue::Boolean(b) => Ok(*b),
             t => Err(ConvertError::UnexpectedType {
                 name,
                 expected,
@@ -148,19 +145,12 @@ impl FromOptionValue for bool {
 impl FromOptionValue for String {
     fn from_option_value(
         name: &'static str,
-        option: Option<&CommandDataOptionValue>,
+        option: &CommandOptionValue,
     ) -> Result<Self, ConvertError> {
         let expected = Self::get_expected_data_type();
 
-        let option = match option {
-            Some(option) => option,
-            None => {
-                return Err(ConvertError::MissingRequiredField { name, expected });
-            }
-        };
-
         match option {
-            CommandDataOptionValue::String(s) => Ok(s.clone()),
+            CommandOptionValue::String(s) => Ok(s.clone()),
             t => Err(ConvertError::UnexpectedType {
                 name,
                 expected,
@@ -180,12 +170,8 @@ where
 {
     fn from_option_value(
         name: &'static str,
-        option: Option<&CommandDataOptionValue>,
+        option: &CommandOptionValue,
     ) -> Result<Self, ConvertError> {
-        if option.is_none() {
-            return Ok(None);
-        }
-
         T::from_option_value(name, option).map(Some)
     }
 
