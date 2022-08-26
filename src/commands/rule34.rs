@@ -10,7 +10,10 @@ use crate::{
     BotContext,
 };
 use anyhow::Context as _;
-use pikadick_slash_framework::ClientData;
+use pikadick_slash_framework::{
+    ClientData,
+    FromOptions,
+};
 use rand::seq::SliceRandom;
 use std::sync::Arc;
 use tracing::{
@@ -76,6 +79,7 @@ impl CacheStatsProvider for Rule34Client {
 #[derive(Debug, pikadick_slash_framework::FromOptions)]
 pub struct Rule34Options {
     // The search query
+    #[pikadick_slash_framework(description = "The search query")]
     query: String,
 }
 
@@ -84,14 +88,7 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
     pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("rule34")
         .description("Look up rule34 for almost anything")
-        .argument(
-            pikadick_slash_framework::ArgumentParamBuilder::new()
-                .name("query")
-                .description("The search query")
-                .kind(pikadick_slash_framework::ArgumentKind::String)
-                .required(true)
-                .build()?,
-        )
+        .arguments(Rule34Options::get_argument_params()?.into_iter())
         .on_process(|client_data, interaction, args: Rule34Options| async move {
             let client = client_data.inner.rule34_client.clone();
 
@@ -122,8 +119,7 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 }
                 Ok(None) => {
                     info!("no results");
-                    response_data =
-                        response_data.content(format!("No results for '{}'", query_str));
+                    response_data = response_data.content(format!("No results for '{query_str}'"));
                 }
                 Err(e) => {
                     error!("{e:?}");

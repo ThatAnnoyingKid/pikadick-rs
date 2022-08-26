@@ -279,6 +279,7 @@ fn gen_get_argument_params_impl(fields: &[Field]) -> Result<TokenStream> {
                     .name(#name_lit)
                     .description(#description)
                     .kind(<#ty as ::pikadick_slash_framework::FromOptionValue>::get_expected_data_type())
+                    .required(<#ty as ::pikadick_slash_framework::FromOptionValue>::is_required())
                     .build()?
             );
         }

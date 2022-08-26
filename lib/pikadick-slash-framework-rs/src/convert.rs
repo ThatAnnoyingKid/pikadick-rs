@@ -114,6 +114,11 @@ pub trait FromOptionValue: Sized {
     fn get_missing_default() -> Option<Self> {
         None
     }
+
+    /// Whether this is required
+    fn is_required() -> bool {
+        true
+    }
 }
 
 impl FromOptionValue for bool {
@@ -177,5 +182,9 @@ where
 
     fn get_expected_data_type() -> DataType {
         T::get_expected_data_type()
+    }
+
+    fn is_required() -> bool {
+        false
     }
 }
