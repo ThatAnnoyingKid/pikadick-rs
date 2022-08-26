@@ -47,7 +47,7 @@ rusqlite = { version = "0.28.0", features = [ "bundled", "blob", "trace" ] }
 ryu = "1.0.11"
 sauce-nao = { path = "./lib/sauce-nao-rs", default-features = false, features = [ "rustls-tls" ] }
 serde = { version = "1.0.144", features = [ "derive" ] }
-serenity = { version = "0.11.2", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
+serenity = { version = "0.11.2", features = [ "client", "standard_framework", "voice", "cache" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
 songbird = "0.2.2"
 systemstat = "0.2.0"

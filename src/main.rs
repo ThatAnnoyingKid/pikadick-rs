@@ -125,16 +125,9 @@ use pikadick_slash_framework::ClientData as _;
 use regex::Regex;
 use serenity::{
     framework::standard::{
-        help_commands,
-        macros::{
-            group,
-            help,
-        },
-        Args,
-        CommandGroup,
+        macros::group,
         CommandResult,
         DispatchError,
-        HelpOptions,
         Reason,
         StandardFramework,
     },
@@ -145,7 +138,6 @@ use serenity::{
 };
 use songbird::SerenityInit;
 use std::{
-    collections::HashSet,
     sync::Arc,
     time::{
         Duration,
@@ -187,27 +179,6 @@ pub struct ClientDataKey;
 
 impl TypeMapKey for ClientDataKey {
     type Value = ClientData;
-}
-
-#[help]
-async fn help(
-    ctx: &Context,
-    msg: &Message,
-    args: Args,
-    help_options: &'static HelpOptions,
-    groups: &[&'static CommandGroup],
-    owners: HashSet<UserId>,
-) -> CommandResult {
-    match help_commands::with_embeds(ctx, msg, args, help_options, groups, owners)
-        .await
-        .context("failed to send help")
-    {
-        Ok(_) => {}
-        Err(e) => {
-            error!("{:?}", e);
-        }
-    }
-    Ok(())
 }
 
 #[group]
@@ -364,7 +335,6 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
             c.prefixes(&[&config_prefix, &uppercase_prefix])
                 .case_insensitivity(true)
         })
-        .help(&HELP)
         .group(&GENERAL_GROUP)
         .bucket("r6stats", |b| b.delay(7))
         .await
@@ -457,7 +427,6 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
     std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
     std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
 
-    // TODO: Init db
     eprintln!("opening database...");
     let database_path = config.data_dir.join("pikadick.sqlite");
 
@@ -602,7 +571,7 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
                 .await
                 .context("failed to register ctrl+c handler")
             {
-                error!("{:?}", e);
+                error!("{e:?}");
             }
 
             info!("got ctrl+c, shutting down...");
@@ -808,7 +777,7 @@ async fn handle_event(shard_id: u64, event: twilight_gateway::Event, bot_context
                             .await
                             .context("failed to generate tiktok embed")
                         {
-                            error!("{:?}", e);
+                            error!("{e:?}");
                         }
                     }
                 }
