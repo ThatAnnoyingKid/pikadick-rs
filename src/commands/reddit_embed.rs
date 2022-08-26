@@ -8,10 +8,11 @@ use crate::{
         CacheStatsProvider,
     },
     util::{
-        LoadingReaction,
         TimedCache,
         TimedCacheEntry,
+        TwilightLoadingReaction,
     },
+    BotContext,
     ClientDataKey,
 };
 use anyhow::{
@@ -45,6 +46,7 @@ use tracing::{
     info,
     warn,
 };
+use twilight_model::gateway::payload::incoming::MessageCreate;
 use url::Url;
 
 type SubReddit = String;
@@ -167,11 +169,11 @@ impl RedditEmbedData {
         let maybe_url = self
             .get_video_data_cached(url)
             .await
-            .with_context(|| format!("failed to get reddit video info for '{}'", url))
+            .with_context(|| format!("failed to get reddit video info for '{url}'"))
             .map(|video_data| video_data.data().url.clone());
 
         if let Err(e) = maybe_url.as_ref() {
-            warn!("{:?}", e);
+            warn!("{e:?}");
         }
 
         maybe_url
@@ -186,7 +188,7 @@ impl RedditEmbedData {
             .await
             .context("failed to get reddit post")
             .map_err(|e| {
-                warn!("{:?}", e);
+                warn!("{e:?}");
                 e
             })?;
 
@@ -202,10 +204,10 @@ impl RedditEmbedData {
     /// Try to embed a url
     pub async fn try_embed_url(
         &self,
-        ctx: &Context,
-        msg: &Message,
+        bot_context: &BotContext,
+        message_create: &MessageCreate,
         url: &Url,
-        loading_reaction: &mut Option<LoadingReaction>,
+        loading_reaction: &mut Option<TwilightLoadingReaction<BotContext>>,
     ) -> anyhow::Result<()> {
         // This is sometimes TOO smart and finds data for invalid urls...
         // TODO: Consider making parsing stricter
@@ -227,7 +229,13 @@ impl RedditEmbedData {
                     .insert((subreddit.into(), post_id.into()), data.clone());
 
                 // TODO: Consider downloading and reposting?
-                msg.channel_id.say(&ctx.http, data).await?;
+                bot_context
+                    .inner
+                    .http
+                    .create_message(message_create.0.channel_id)
+                    .content(&data)?
+                    .exec()
+                    .await?;
                 if let Some(mut loading_reaction) = loading_reaction.take() {
                     loading_reaction.send_ok();
                 }
@@ -256,7 +264,7 @@ impl RedditEmbedData {
             }
         }
 
-        info!("fetching reddit posts for '{}'", subreddit);
+        info!("fetching reddit posts for '{subreddit}'");
         let mut maybe_url = None;
         let list = self.reddit_client.get_subreddit(subreddit, 100).await?;
         if let Some(listing) = list.data.into_listing() {

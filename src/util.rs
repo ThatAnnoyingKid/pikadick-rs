@@ -3,6 +3,7 @@ mod encoder_task;
 mod loading_reaction;
 mod request_map;
 mod timed_cache;
+pub mod twilight_loading_reaction;
 
 pub use self::{
     ascii_table::AsciiTable,
@@ -13,6 +14,7 @@ pub use self::{
         TimedCache,
         TimedCacheEntry,
     },
+    twilight_loading_reaction::TwilightLoadingReaction,
 };
 pub use pikadick_util::{
     download_to_file,
@@ -22,3 +24,16 @@ pub use pikadick_util::{
     DropRemoveFile,
     DropRemovePath,
 };
+
+/// Check if a host is a reddit host
+pub fn is_reddit_host(url_host: &url::Host<&str>) -> bool {
+    matches!(url_host, url::Host::Domain("www.reddit.com" | "reddit.com"))
+}
+
+/// Check if a url host is a tiktok host
+pub fn is_tiktok_host(url_host: &url::Host<&str>) -> bool {
+    matches!(
+        url_host,
+        url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")
+    )
+}

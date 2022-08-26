@@ -83,6 +83,7 @@
 
 //! # Pikadick
 
+pub mod bot_context;
 pub mod checks;
 pub mod cli_options;
 pub mod client_data;
@@ -93,6 +94,7 @@ pub mod logger;
 pub mod setup;
 pub mod util;
 
+pub use crate::bot_context::BotContext;
 use crate::{
     cli_options::CliOptions,
     client_data::ClientData,
@@ -105,13 +107,11 @@ use crate::{
         model::TikTokEmbedFlags,
         Database,
     },
-    nekos::NekosClient,
-    r6stats::R6StatsClient,
-    r6tracker::R6TrackerClient,
-    rule34::Rule34Client,
     util::{
+        is_reddit_host,
+        is_tiktok_host,
         AsyncLockFile,
-        LoadingReaction,
+        TwilightLoadingReaction,
     },
 };
 use anyhow::{
@@ -165,7 +165,6 @@ use twilight_cache_inmemory::{
     ResourceType,
 };
 use twilight_gateway::cluster::ClusterBuilder;
-use twilight_http::client::InteractionClient;
 use twilight_model::gateway::{
     payload::outgoing::update_presence::UpdatePresencePayload,
     presence::{
@@ -182,139 +181,6 @@ const TOKIO_RT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
 /// Source: <https://urlregex.com/>
 static URL_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex"));
-
-struct Handler;
-
-#[serenity::async_trait]
-impl EventHandler for Handler {
-    #[tracing::instrument(skip(self, ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
-    async fn message(&self, ctx: Context, msg: Message) {
-        let data_lock = ctx.data.read().await;
-        let client_data = data_lock
-            .get::<ClientDataKey>()
-            .expect("missing client data");
-        let reddit_embed_data = client_data.reddit_embed_data.clone();
-        let tiktok_data = client_data.tiktok_data.clone();
-        let db = client_data.db.clone();
-        drop(data_lock);
-
-        // Process URL Embeds
-        {
-            // Only embed guild links
-            let guild_id = match msg.guild_id {
-                Some(id) => id,
-                None => {
-                    return;
-                }
-            };
-
-            // No Bots
-            if msg.author.bot {
-                return;
-            }
-
-            // Get enabled data for embeds
-            let reddit_embed_is_enabled_for_guild = db
-                .get_reddit_embed_enabled(guild_id)
-                .await
-                .with_context(|| {
-                    format!("failed to get reddit-embed server data for '{}'", guild_id)
-                })
-                .unwrap_or_else(|e| {
-                    error!("{:?}", e);
-                    false
-                });
-            let tiktok_embed_flags = db
-                .get_tiktok_embed_flags(guild_id)
-                .await
-                .with_context(|| {
-                    format!("failed to get tiktok-embed server data for '{}'", guild_id)
-                })
-                .unwrap_or_else(|e| {
-                    error!("{:?}", e);
-                    TikTokEmbedFlags::empty()
-                });
-
-            // Extract urls
-            // NOTE: Regex doesn't HAVE to be perfect.
-            // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
-            // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
-            let urls: Vec<Url> = URL_REGEX
-                .find_iter(&msg.content)
-                .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
-                .collect();
-
-            // Check to see if it we will even try to embed
-            let will_try_embedding = urls.iter().any(|url| {
-                let url_host = match url.host() {
-                    Some(host) => host,
-                    None => return false,
-                };
-
-                let reddit_url =
-                    matches!(url_host, url::Host::Domain("www.reddit.com" | "reddit.com"));
-
-                let tiktok_url = matches!(
-                    url_host,
-                    url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")
-                );
-
-                (reddit_url && reddit_embed_is_enabled_for_guild)
-                    || (tiktok_url && tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED))
-            });
-
-            // Return if we won't try embedding
-            if !will_try_embedding {
-                return;
-            }
-
-            let mut loading_reaction = Some(LoadingReaction::new(ctx.http.clone(), &msg));
-
-            // Embed for each url
-            // NOTE: we short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem,
-            // especially since serenity retries each req once
-            for url in urls.iter() {
-                match url.host() {
-                    Some(url::Host::Domain("www.reddit.com" | "reddit.com")) => {
-                        // Don't process if it isn't enabled
-                        if reddit_embed_is_enabled_for_guild {
-                            if let Err(e) = reddit_embed_data
-                                .try_embed_url(&ctx, &msg, url, &mut loading_reaction)
-                                .await
-                                .context("failed to generate reddit embed")
-                            {
-                                error!("{:?}", e);
-                            }
-                        }
-                    }
-                    Some(url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")) => {
-                        if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
-                            if let Err(e) = tiktok_data
-                                .try_embed_url(
-                                    &ctx,
-                                    &msg,
-                                    url,
-                                    &mut loading_reaction,
-                                    tiktok_embed_flags.contains(TikTokEmbedFlags::DELETE_LINK),
-                                )
-                                .await
-                                .context("failed to generate tiktok embed")
-                            {
-                                error!("{:?}", e);
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-            // Trim caches
-            reddit_embed_data.cache.trim();
-            reddit_embed_data.video_data_cache.trim();
-            tiktok_data.post_page_cache.trim();
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy)]
 pub struct ClientDataKey;
@@ -525,8 +391,6 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
         config_token.clone(),
         GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
     )
-    .event_handler(Handler)
-    .application_id(config.application_id.into())
     .framework(framework)
     .register_songbird()
     .await
@@ -749,85 +613,32 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
     cluster.up().await;
     info!("shard cluster is up");
 
-    let bot_context = BotContext::new(http, config, slash_framework, database.clone());
+    let bot_context = BotContext::new(http, config, slash_framework, database.clone())
+        .await
+        .context("failed to create bot context")?;
     while let Some((shard_id, event)) = events.next().await {
         cache.update(&event);
         tokio::spawn(handle_event(shard_id, event, bot_context.clone()));
     }
     info!("shard cluster is down");
 
+    info!("closing encoder task...");
+    if let Err(e) = bot_context
+        .inner
+        .encoder_task
+        .shutdown()
+        .await
+        .context("failed to shutdown encoder task")
+    {
+        error!("{e:?}");
+    }
+
     info!("closing database...");
-    database.close().await.context("failed to close database")?;
+    if let Err(e) = database.close().await.context("failed to close database") {
+        error!("{e:?}");
+    }
 
     Ok(())
-}
-
-#[derive(Debug, Clone)]
-pub struct BotContext {
-    inner: Arc<BotContextInner>,
-}
-
-impl BotContext {
-    /// Make a new BotContext
-    pub fn new(
-        http: twilight_http::Client,
-        config: Arc<Config>,
-        slash_framework: pikadick_slash_framework::Framework<Self>,
-        database: Database,
-    ) -> Self {
-        Self {
-            inner: Arc::new(BotContextInner {
-                http,
-                config,
-                slash_framework,
-                database,
-
-                nekos_client: NekosClient::new(),
-                r6tracker_client: R6TrackerClient::new(),
-                r6stats_client: R6StatsClient::new(),
-                rule34_client: Rule34Client::new(),
-            }),
-        }
-    }
-}
-
-/// The inner bot context.
-///
-/// The objects here shouldn't implement clone but should internally synchronize if needed.
-#[derive(Debug)]
-pub struct BotContextInner {
-    /// The twilight http client
-    pub http: twilight_http::Client,
-
-    /// The bot config
-    pub config: Arc<Config>,
-
-    /// The slash_framework
-    slash_framework: pikadick_slash_framework::Framework<BotContext>,
-
-    /// The database
-    pub database: Database,
-
-    /// The nekos client
-    pub nekos_client: NekosClient,
-
-    /// R6Tracker client
-    pub r6tracker_client: R6TrackerClient,
-
-    /// R6Stats client
-    pub r6stats_client: R6StatsClient,
-
-    /// The rule34 client
-    pub rule34_client: Rule34Client,
-}
-
-impl pikadick_slash_framework::ClientData for BotContext {
-    /// Get an interaction client
-    fn interaction_client(&self) -> InteractionClient<'_> {
-        self.inner
-            .http
-            .interaction(self.inner.config.application_id.into())
-    }
 }
 
 async fn handle_event(shard_id: u64, event: twilight_gateway::Event, bot_context: BotContext) {
@@ -871,14 +682,143 @@ async fn handle_event(shard_id: u64, event: twilight_gateway::Event, bot_context
                 .await
                 .context("failed to register slash commands")
             {
-                error!("{:?}", e);
+                error!("{e:?}");
             }
             info!("registered slash commands");
         }
         twilight_gateway::Event::Resumed => {
             info!(shard_id = shard_id, "shard resumed");
         }
-        twilight_gateway::Event::MessageCreate(_message_create) => {}
+        twilight_gateway::Event::MessageCreate(message_create) => {
+            // Process URL embeds
+
+            // Only embed guild links
+            let guild_id = match message_create.guild_id {
+                Some(id) => id,
+                None => {
+                    return;
+                }
+            };
+
+            // No Bots
+            if message_create.author.bot {
+                return;
+            }
+
+            // Get enabled data for embeds
+            let reddit_embed_is_enabled_for_guild = bot_context
+                .inner
+                .database
+                .get_reddit_embed_enabled(guild_id.into_nonzero().into())
+                .await
+                .with_context(|| format!("failed to get reddit-embed server data for '{guild_id}'"))
+                .unwrap_or_else(|e| {
+                    error!("{e:?}");
+                    false
+                });
+            let tiktok_embed_flags = bot_context
+                .inner
+                .database
+                .get_tiktok_embed_flags(guild_id.into_nonzero().into())
+                .await
+                .with_context(|| format!("failed to get tiktok-embed server data for '{guild_id}'"))
+                .unwrap_or_else(|e| {
+                    error!("{e:?}");
+                    TikTokEmbedFlags::empty()
+                });
+
+            // Extract urls
+            // NOTE: Regex doesn't HAVE to be perfect.
+            // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
+            //
+            // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
+            let urls: Vec<Url> = URL_REGEX
+                .find_iter(&message_create.content)
+                .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
+                .collect();
+
+            // Check to see if it we will even try to embed
+            let will_try_embedding = urls.iter().any(|url| {
+                let url_host = match url.host() {
+                    Some(host) => host,
+                    None => return false,
+                };
+
+                let is_reddit_url = is_reddit_host(&url_host);
+                let is_tiktok_url = is_tiktok_host(&url_host);
+
+                (is_reddit_url && reddit_embed_is_enabled_for_guild)
+                    || (is_tiktok_url && tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED))
+            });
+
+            // Return if we won't try embedding
+            if !will_try_embedding {
+                return;
+            }
+
+            // TODO: Port loadingreaction to twilight
+            let mut loading_reaction = Some(TwilightLoadingReaction::new(
+                bot_context.clone(),
+                message_create.0.channel_id,
+                message_create.0.id,
+            ));
+
+            // Embed for each url
+            // NOTE: we short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem.
+            for url in urls.iter() {
+                let url_host = match url.host() {
+                    Some(host) => host,
+                    None => continue,
+                };
+
+                let is_reddit_url = is_reddit_host(&url_host);
+                let is_tiktok_url = is_tiktok_host(&url_host);
+
+                if is_reddit_url {
+                    // Don't process if it isn't enabled
+                    if reddit_embed_is_enabled_for_guild {
+                        if let Err(e) = bot_context
+                            .inner
+                            .reddit_embed_data
+                            .try_embed_url(
+                                &bot_context,
+                                &message_create,
+                                url,
+                                &mut loading_reaction,
+                            )
+                            .await
+                            .context("failed to generate reddit embed")
+                        {
+                            error!("{e:?}");
+                        }
+                    }
+                } else if is_tiktok_url {
+                    // Don't process if it isn't enabled
+                    if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
+                        if let Err(e) = bot_context
+                            .inner
+                            .tiktok_data
+                            .try_embed_url(
+                                &bot_context,
+                                &message_create,
+                                url,
+                                &mut loading_reaction,
+                                tiktok_embed_flags.contains(TikTokEmbedFlags::DELETE_LINK),
+                            )
+                            .await
+                            .context("failed to generate tiktok embed")
+                        {
+                            error!("{:?}", e);
+                        }
+                    }
+                }
+            }
+
+            // Trim caches
+            bot_context.inner.reddit_embed_data.cache.trim();
+            bot_context.inner.reddit_embed_data.video_data_cache.trim();
+            bot_context.inner.tiktok_data.post_page_cache.trim();
+        }
         twilight_gateway::Event::InteractionCreate(interaction_create) => {
             bot_context
                 .inner

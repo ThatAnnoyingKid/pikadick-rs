@@ -11,9 +11,9 @@ use crate::{
         RequestMap,
         TimedCache,
         TimedCacheEntry,
+        TwilightLoadingReaction,
     },
     BotContext,
-    LoadingReaction,
     TikTokEmbedFlags,
 };
 use anyhow::{
@@ -25,19 +25,21 @@ use camino::{
     Utf8PathBuf,
 };
 use pikadick_slash_framework::ClientData;
-use serenity::{
-    model::prelude::*,
-    prelude::*,
-};
 use std::sync::Arc;
 use tokio_stream::StreamExt;
 use tracing::{
     info,
     warn,
 };
-use twilight_model::http::interaction::{
-    InteractionResponse,
-    InteractionResponseType,
+use twilight_model::{
+    gateway::payload::incoming::MessageCreate,
+    http::{
+        attachment::Attachment,
+        interaction::{
+            InteractionResponse,
+            InteractionResponseType,
+        },
+    },
 };
 use twilight_util::builder::{
     embed::{
@@ -402,10 +404,10 @@ impl TikTokData {
     /// Try embedding a url
     pub async fn try_embed_url(
         &self,
-        ctx: &Context,
-        msg: &Message,
+        client_data: &BotContext,
+        message_create: &MessageCreate,
         url: &Url,
-        loading_reaction: &mut Option<LoadingReaction>,
+        loading_reaction: &mut Option<TwilightLoadingReaction<BotContext>>,
         delete_link: bool,
     ) -> anyhow::Result<()> {
         let (video_url, video_id, video_format, video_duration) = {
@@ -432,16 +434,32 @@ impl TikTokData {
             )
             .await
             .context("failed to download tiktok video")?;
+        let video_file_name = video_path.file_name().context("missing video file name")?;
+        let video_bytes = tokio::fs::read(&*video_path)
+            .await
+            .context("failed to load file")?;
 
-        msg.channel_id
-            .send_message(&ctx.http, |m| m.add_file(video_path.as_std_path()))
+        client_data
+            .inner
+            .http
+            .create_message(message_create.0.channel_id)
+            .attachments(&[Attachment::from_bytes(
+                video_file_name.to_string(),
+                video_bytes,
+                0,
+            )])?
+            .exec()
             .await?;
 
         if let Some(mut loading_reaction) = loading_reaction.take() {
             loading_reaction.send_ok();
 
             if delete_link {
-                msg.delete(&ctx.http)
+                client_data
+                    .inner
+                    .http
+                    .delete_message(message_create.0.channel_id, message_create.0.id)
+                    .exec()
                     .await
                     .context("failed to delete original message")?;
             }
