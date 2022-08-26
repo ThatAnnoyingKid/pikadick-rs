@@ -189,7 +189,7 @@ impl NekosClient {
                     .await
                     .context("failed to get new nekos data")
                 {
-                    error!("{:?}", e);
+                    error!("{e:?}");
                 }
             });
         }
@@ -238,8 +238,9 @@ impl Default for NekosClient {
 
 /// Arguments for the nekos command
 #[derive(Debug, Copy, Clone, FromOptions)]
-pub struct NekosArguments {
+pub struct NekosOptions {
     /// Whether the command should look for nsfw pictures
+    #[pikadick_slash_framework(description = "Whether this should use nsfw results")]
     pub nsfw: Option<bool>,
 }
 
@@ -248,45 +249,37 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
     pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("nekos")
         .description("Get a random neko")
-        .argument(
-            pikadick_slash_framework::ArgumentParamBuilder::new()
-                .name("nsfw")
-                .kind(pikadick_slash_framework::ArgumentKind::Boolean)
-                .description("Whether this should use nsfw results")
-                .build()?,
-        )
-        .on_process(
-            |client_data, interaction, args: NekosArguments| async move {
-                let nekos_client = client_data.inner.nekos_client.clone();
+        .arguments(NekosOptions::get_argument_params()?.into_iter())
+        .on_process(|client_data, interaction, args: NekosOptions| async move {
+            let nekos_client = client_data.inner.nekos_client.clone();
 
-                let content = match nekos_client
-                    .get_rand(args.nsfw.unwrap_or(false))
-                    .await
-                    .context("failed to repopulate nekos caches")
-                {
-                    Ok(url) => url.into(),
-                    Err(e) => {
-                        error!("{:?}", e);
-                        format!("{:?}", e)
-                    }
-                };
-                let interaction_client = client_data.interaction_client();
-                let response_data = InteractionResponseDataBuilder::new()
-                    .content(content)
-                    .build();
-                let response = InteractionResponse {
-                    kind: InteractionResponseType::ChannelMessageWithSource,
-                    data: Some(response_data),
-                };
+            let content = match nekos_client
+                .get_rand(args.nsfw.unwrap_or(false))
+                .await
+                .context("failed to repopulate nekos caches")
+            {
+                Ok(url) => url.into(),
+                Err(e) => {
+                    error!("{e:?}");
+                    format!("{e:?}")
+                }
+            };
+            let interaction_client = client_data.interaction_client();
+            let response_data = InteractionResponseDataBuilder::new()
+                .content(content)
+                .build();
+            let response = InteractionResponse {
+                kind: InteractionResponseType::ChannelMessageWithSource,
+                data: Some(response_data),
+            };
 
-                interaction_client
-                    .create_response(interaction.id, &interaction.token, &response)
-                    .exec()
-                    .await?;
+            interaction_client
+                .create_response(interaction.id, &interaction.token, &response)
+                .exec()
+                .await?;
 
-                Ok(())
-            },
-        )
+            Ok(())
+        })
         .build()
         .context("failed to build command")
 }
