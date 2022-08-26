@@ -10,7 +10,10 @@ use crate::{
     BotContext,
 };
 use anyhow::Context as _;
-use pikadick_slash_framework::ClientData;
+use pikadick_slash_framework::{
+    ClientData,
+    FromOptions,
+};
 use std::sync::Arc;
 use tracing::{
     error,
@@ -161,7 +164,7 @@ impl Stats {
             .field(
                 EmbedFieldBuilder::new(
                     "Lifetime K/D",
-                    ryu::Buffer::new().format(self.overwolf_player.lifetime_stats.kd),
+                    format!("{:.2}", self.overwolf_player.lifetime_stats.kd),
                 )
                 .inline(),
             )
@@ -288,6 +291,7 @@ impl CacheStatsProvider for R6TrackerClient {
 #[derive(Debug, pikadick_slash_framework::FromOptions)]
 struct R6TrackerOptions {
     /// The user name
+    #[pikadick_slash_framework(description = "The name of the user")]
     name: String,
 }
 
@@ -296,14 +300,7 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
     pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("r6tracker")
         .description("Get r6 stats for a user from r6tracker")
-        .argument(
-            pikadick_slash_framework::ArgumentParamBuilder::new()
-                .name("name")
-                .description("The name of the user")
-                .kind(pikadick_slash_framework::ArgumentKind::String)
-                .required(true)
-                .build()?,
-        )
+        .arguments(R6TrackerOptions::get_argument_params()?.into_iter())
         .on_process(
             |client_data, interaction, args: R6TrackerOptions| async move {
                 let client = client_data.inner.r6tracker_client.clone();
@@ -317,14 +314,20 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
 
                 let interaction_client = client_data.interaction_client();
                 let mut response_data = InteractionResponseDataBuilder::new();
-                match result.map(|entry| entry.data().as_ref().map(|stats| stats.create_embed())) {
-                    Ok(Some(Ok(embed))) => {
+                match result.and_then(|entry| {
+                    entry
+                        .data()
+                        .as_ref()
+                        .map(|stats| stats.create_embed())
+                        .transpose()
+                }) {
+                    Ok(Some(embed)) => {
                         response_data = response_data.embeds(std::iter::once(embed));
                     }
                     Ok(None) => {
                         response_data = response_data.content("No Results");
                     }
-                    Err(e) | Ok(Some(Err(e))) => {
+                    Err(e) => {
                         error!("{e:?}");
                         response_data = response_data.content(format!("{e:?}"));
                     }
