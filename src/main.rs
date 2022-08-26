@@ -127,8 +127,6 @@ use serenity::{
     framework::standard::{
         macros::group,
         CommandResult,
-        DispatchError,
-        Reason,
         StandardFramework,
     },
     futures::future::BoxFuture,
@@ -208,16 +206,6 @@ impl TypeMapKey for ClientDataKey {
 )]
 struct General;
 
-#[tracing::instrument(skip(_ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
-fn before_handler<'fut>(
-    _ctx: &'fut Context,
-    msg: &'fut Message,
-    cmd_name: &'fut str,
-) -> BoxFuture<'fut, bool> {
-    info!("allowing command to process");
-    async move { true }.boxed()
-}
-
 fn after_handler<'fut>(
     _ctx: &'fut Context,
     _msg: &'fut Message,
@@ -252,76 +240,6 @@ fn unrecognised_command_handler<'fut>(
     .boxed()
 }
 
-fn process_dispatch_error<'fut>(
-    ctx: &'fut Context,
-    msg: &'fut Message,
-    error: DispatchError,
-    cmd_name: &'fut str,
-) -> BoxFuture<'fut, ()> {
-    process_dispatch_error_future(ctx, msg, error, cmd_name).boxed()
-}
-
-async fn process_dispatch_error_future<'fut>(
-    ctx: &'fut Context,
-    msg: &'fut Message,
-    error: DispatchError,
-    _cmd_name: &'fut str,
-) {
-    match error {
-        DispatchError::Ratelimited(s) => {
-            let _ = msg
-                .channel_id
-                .say(
-                    &ctx.http,
-                    format!("Wait {} seconds to use that command again", s.as_secs()),
-                )
-                .await
-                .is_ok();
-        }
-        DispatchError::NotEnoughArguments { min, given } => {
-            let _ = msg
-                .channel_id
-                .say(
-                    &ctx.http,
-                    format!(
-                        "Expected at least {} argument(s) for this command, but only got {}",
-                        min, given
-                    ),
-                )
-                .await
-                .is_ok();
-        }
-        DispatchError::TooManyArguments { max, given } => {
-            let response_str = format!("Expected no more than {} argument(s) for this command, but got {}. Try using quotation marks if your argument has spaces.",
-                max, given
-            );
-            let _ = msg.channel_id.say(&ctx.http, response_str).await.is_ok();
-        }
-        DispatchError::CheckFailed(check_name, reason) => match reason {
-            Reason::User(user_reason_str) => {
-                let _ = msg.channel_id.say(&ctx.http, user_reason_str).await.is_ok();
-            }
-            _ => {
-                let _ = msg
-                    .channel_id
-                    .say(
-                        &ctx.http,
-                        format!("{} check failed: {:#?}", check_name, reason),
-                    )
-                    .await
-                    .is_ok();
-            }
-        },
-        e => {
-            let _ = msg
-                .channel_id
-                .say(&ctx.http, format!("Unhandled Dispatch Error: {:?}", e))
-                .await
-                .is_ok();
-        }
-    };
-}
-
 /// Set up a serenity client
 async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     // Create second prefix that is uppercase so we are case-insensitive
@@ -350,10 +268,8 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
         .await
         .bucket("default", |b| b.delay(1))
         .await
-        .before(before_handler)
         .after(after_handler)
-        .unrecognised_command(unrecognised_command_handler)
-        .on_dispatch_error(process_dispatch_error);
+        .unrecognised_command(unrecognised_command_handler);
 
     // Build the client
     let config_token = config.token.clone();

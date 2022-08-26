@@ -123,7 +123,7 @@ where
         }
     }
 
-    #[tracing::instrument(skip(self, client_data, command_data), fields(id = %command_data.id, author = ?author_id, guild = ?command_data.guild_id, channel_id = ?interaction.channel_id))]
+    #[tracing::instrument(skip(self, client_data, interaction, command_data), fields(id = %command_data.id, author = ?author_id, guild = ?command_data.guild_id, channel_id = ?interaction.channel_id))]
     async fn process_interaction_create_application_command(
         &self,
         client_data: D,
