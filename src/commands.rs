@@ -117,7 +117,7 @@ pub fn create_slash_help_command(
                         None => {
                             embed = embed
                                 .title("Unknown Command")
-                                .description(format!("Command `{}` was not found.", command));
+                                .description(format!("Command `{command}` was not found."));
                         }
                     }
                 } else {

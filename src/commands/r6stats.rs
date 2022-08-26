@@ -10,7 +10,10 @@ use crate::{
     BotContext,
 };
 use anyhow::Context as _;
-use pikadick_slash_framework::ClientData;
+use pikadick_slash_framework::{
+    ClientData,
+    FromOptions,
+};
 use r6stats::UserData;
 use std::sync::Arc;
 use tracing::{
@@ -114,6 +117,7 @@ fn build_embed(user_data: &UserData) -> anyhow::Result<Embed> {
 #[derive(Debug, pikadick_slash_framework::FromOptions)]
 struct R6StatsOptions {
     /// The user name
+    #[pikadick_slash_framework(description = "The name of the user")]
     name: String,
 }
 
@@ -122,14 +126,7 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
     pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("r6stats")
         .description("Get r6 stats for a user from r6stats")
-        .argument(
-            pikadick_slash_framework::ArgumentParamBuilder::new()
-                .name("name")
-                .description("The name of the user")
-                .kind(pikadick_slash_framework::ArgumentKind::String)
-                .required(true)
-                .build()?,
-        )
+        .arguments(R6StatsOptions::get_argument_params()?.into_iter())
         .on_process(
             |client_data, interaction, args: R6StatsOptions| async move {
                 let client = client_data.inner.r6stats_client.clone();
@@ -144,14 +141,18 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 let interaction_client = client_data.interaction_client();
                 let mut response_data = InteractionResponseDataBuilder::new();
 
-                match result.map(|maybe_entry| maybe_entry.map(|entry| build_embed(entry.data()))) {
-                    Ok(Some(Ok(embed))) => {
+                match result.and_then(|maybe_entry| {
+                    maybe_entry
+                        .map(|entry| build_embed(entry.data()))
+                        .transpose()
+                }) {
+                    Ok(Some(embed)) => {
                         response_data = response_data.embeds(std::iter::once(embed));
                     }
                     Ok(None) => {
-                        response_data = response_data.content("No results");
+                        response_data = response_data.content("No Results.");
                     }
-                    Err(e) | Ok(Some(Err(e))) => {
+                    Err(e) => {
                         error!("{e:?}");
                         response_data = response_data.content(format!("{e:?}"));
                     }
