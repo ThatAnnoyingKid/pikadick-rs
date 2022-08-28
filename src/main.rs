@@ -200,9 +200,9 @@ impl TypeMapKey for ClientDataKey {
     tic_tac_toe,
     iqdb,
     reddit,
+    
     leave,
-    stop,
-    sauce_nao
+    stop
 )]
 struct General;
 
@@ -431,6 +431,7 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
         .command(self::commands::r6tracker::create_slash_command()?)
         .command(self::commands::rule34::create_slash_command()?)
         .command(self::commands::tiktok_embed::create_slash_command()?)
+        .command(self::commands::sauce_nao::create_slash_command()?)
         .build()?;
 
     info!("starting shard cluster...");

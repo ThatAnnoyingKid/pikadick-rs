@@ -5,6 +5,7 @@ use crate::{
         r6tracker::R6TrackerClient,
         reddit_embed::RedditEmbedData,
         rule34::Rule34Client,
+        sauce_nao::SauceNaoClient,
         tiktok_embed::TikTokData,
     },
     config::Config,
@@ -40,6 +41,7 @@ impl BotContext {
             .await
             .context("failed to init tiktok data")?;
         let reddit_embed_data = RedditEmbedData::new();
+        let sauce_nao_client = SauceNaoClient::new(config.sauce_nao.api_key.as_str());
 
         Ok(Self {
             inner: Arc::new(BotContextInner {
@@ -55,6 +57,7 @@ impl BotContext {
                 encoder_task,
                 tiktok_data,
                 reddit_embed_data,
+                sauce_nao_client,
             }),
         })
     }
@@ -97,6 +100,9 @@ pub struct BotContextInner {
 
     /// The reddit embed data
     pub reddit_embed_data: RedditEmbedData,
+
+    /// The sauce nao client
+    pub sauce_nao_client: SauceNaoClient,
 }
 
 impl pikadick_slash_framework::ClientData for BotContext {
