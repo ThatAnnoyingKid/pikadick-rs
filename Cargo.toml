@@ -45,7 +45,7 @@ reqwest = { version = "0.11.11", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
 rusqlite = { version = "0.28.0", features = [ "bundled", "blob", "trace" ] }
 ryu = "1.0.11"
-sauce-nao = { path = "./lib/sauce-nao-rs", default-features = false, features = [ "rustls-tls" ] }
+sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-features = false, features = [ "rustls-tls" ] }
 serde = { version = "1.0.144", features = [ "derive" ] }
 serenity = { version = "0.11.2", features = [ "client", "standard_framework", "voice", "cache" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
@@ -159,7 +159,6 @@ members = [
     "lib/tiktok-rs",
     "lib/open-graph-rs",
     "lib/iqdb-rs",
-    "lib/sauce-nao-rs",
     "lib/tic-tac-toe-rs",
     "lib/async-rusqlite-rs",
     "lib/across-rs",
