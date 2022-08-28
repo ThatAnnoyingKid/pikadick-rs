@@ -38,7 +38,6 @@ pub use crate::commands::{
     latency::LATENCY_COMMAND,
     leave::LEAVE_COMMAND,
     quizizz::QUIZIZZ_COMMAND,
-    reddit::REDDIT_COMMAND,
     reddit_embed::REDDIT_EMBED_COMMAND,
     shift::SHIFT_COMMAND,
     stop::STOP_COMMAND,

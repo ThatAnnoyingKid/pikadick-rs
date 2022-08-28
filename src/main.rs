@@ -199,8 +199,6 @@ impl TypeMapKey for ClientDataKey {
     xkcd,
     tic_tac_toe,
     iqdb,
-    reddit,
-    
     leave,
     stop
 )]
@@ -254,10 +252,6 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
                 .case_insensitivity(true)
         })
         .group(&GENERAL_GROUP)
-        .bucket("r6stats", |b| b.delay(7))
-        .await
-        .bucket("r6tracker", |b| b.delay(7))
-        .await
         .bucket("system", |b| b.delay(30))
         .await
         .bucket("quizizz", |b| b.delay(10))
@@ -432,6 +426,7 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
         .command(self::commands::rule34::create_slash_command()?)
         .command(self::commands::tiktok_embed::create_slash_command()?)
         .command(self::commands::sauce_nao::create_slash_command()?)
+        .command(self::commands::reddit::create_slash_command()?)
         .build()?;
 
     info!("starting shard cluster...");

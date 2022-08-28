@@ -1,54 +1,62 @@
-use crate::{
-    checks::ENABLED_CHECK,
-    util::LoadingReaction,
-    ClientDataKey,
-};
+use crate::BotContext;
 use anyhow::Context as _;
-use serenity::{
-    client::Context,
-    framework::standard::{
-        macros::*,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
+use pikadick_slash_framework::{
+    ClientData,
+    FromOptions,
 };
+use tracing::error;
+use twilight_model::http::interaction::{
+    InteractionResponse,
+    InteractionResponseType,
+};
+use twilight_util::builder::InteractionResponseDataBuilder;
 
-#[command]
-#[description("Get a random post from a subreddit")]
-#[bucket("default")]
-#[min_args(1)]
-#[max_args(1)]
-#[usage("<subreddit_name>")]
-#[example("dogpictures")]
-#[checks(Enabled)]
-async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let reddit_embed_data = client_data.reddit_embed_data.clone();
-    drop(data_lock);
+#[derive(Debug, pikadick_slash_framework::FromOptions)]
+struct RedditOptions {
+    subreddit: String,
+}
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
+    pikadick_slash_framework::CommandBuilder::<BotContext>::new()
+        .name("reddit")
+        .description("Get a random post from a subreddit")
+        .check(crate::checks::admin::create_slash_check)
+        .arguments(RedditOptions::get_argument_params()?.into_iter())
+        .on_process(|client_data, interaction, args: RedditOptions| async move {
+            let reddit_embed_data = client_data.inner.reddit_embed_data.clone();
+            let interaction_client = client_data.interaction_client();
+            let mut response_data = InteractionResponseDataBuilder::new();
 
-    let subreddit = args.single::<String>().expect("missing arg");
-    match reddit_embed_data
-        .get_random_post(&subreddit)
-        .await
-        .context("failed fetching posts")
-    {
-        Ok(Some(url)) => {
-            msg.channel_id.say(&ctx.http, url).await?;
-            loading.send_ok();
-        }
-        Ok(None) => {
-            msg.channel_id.say(&ctx.http, "No posts found").await?;
-        }
-        Err(e) => {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
-        }
-    }
+            let result = reddit_embed_data
+                .get_random_post(&args.subreddit)
+                .await
+                .context("failed fetching posts");
 
-    Ok(())
+            match result {
+                Ok(Some(url)) => {
+                    response_data = response_data.content(url);
+                }
+                Ok(None) => {
+                    response_data = response_data.content("No posts found");
+                }
+                Err(e) => {
+                    error!("{e:?}");
+                    response_data = response_data.content(format!("{e:?}"));
+                }
+            }
+            let response_data = response_data.build();
+            let response = InteractionResponse {
+                kind: InteractionResponseType::ChannelMessageWithSource,
+                data: Some(response_data),
+            };
+            interaction_client
+                .create_response(interaction.id, interaction.token.as_str(), &response)
+                .exec()
+                .await
+                .context("failed to send response")?;
+
+            Ok(())
+        })
+        .build()
+        .context("failed to build command")
 }
