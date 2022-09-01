@@ -12,7 +12,6 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
     pikadick_slash_framework::CommandBuilder::new()
         .name("xkcd")
         .description("Get a random comic from Xkcd")
-        .check(crate::checks::admin::create_slash_check)
         .on_process(|client_data, interaction, _args: ()| async move {
             let xkcd_client = client_data.inner.xkcd_client.clone();
             let interaction_client = client_data.interaction_client();

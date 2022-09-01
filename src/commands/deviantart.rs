@@ -147,7 +147,6 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
         .name("deviantart")
         .description("Get art from deviantart")
         .arguments(DeviantArtOptions::get_argument_params()?.into_iter())
-        .check(crate::checks::admin::create_slash_check)
         .on_process(
             |client_data, interaction, args: DeviantArtOptions| async move {
                 let deviantart_client = &client_data.inner.deviantart_client;
