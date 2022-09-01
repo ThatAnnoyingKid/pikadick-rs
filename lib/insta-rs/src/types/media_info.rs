@@ -1,5 +1,56 @@
-use std::collections::HashMap;
 use url::Url;
+
+/// Media Info
+#[derive(Debug, serde::Deserialize)]
+pub struct MediaInfo {
+    /// ?
+    pub num_results: u32,
+
+    /// Items
+    pub items: Vec<Item>,
+
+    /// ?
+    pub auto_load_more_enabled: bool,
+
+    /// ?
+    pub more_available: bool,
+}
+
+/// Media info items
+#[derive(Debug, serde::Deserialize)]
+pub struct Item {
+    /// The media type
+    pub media_type: MediaType,
+
+    /// Versions of a video post.
+    ///
+    /// Only present on video posts
+    pub video_versions: Option<Vec<VideoVersion>>,
+
+    /// Versions of an image post
+    pub image_versions2: Option<ImageVersions2>,
+
+    /// Carousel media
+    pub carousel_media: Option<Vec<CarouselMedia>>,
+
+    /// The post code
+    pub code: String,
+}
+
+impl Item {
+    /// Get the best image_versions2 candidate
+    pub fn get_best_image_versions2_candidate(&self) -> Option<&ImageVersions2Candidate> {
+        self.image_versions2.as_ref()?.get_best()
+    }
+
+    /// Get the best video version
+    pub fn get_best_video_version(&self) -> Option<&VideoVersion> {
+        self.video_versions
+            .as_ref()?
+            .iter()
+            .max_by_key(|video_version| video_version.height)
+    }
+}
 
 /// A u8 was not a valid media type
 #[derive(Debug)]
@@ -39,86 +90,24 @@ impl TryFrom<u8> for MediaType {
     }
 }
 
-/// AdditionalDataLoaded
-#[derive(Debug, serde::Deserialize)]
-pub struct AdditionalDataLoaded {
-    /// ?
-    pub num_results: u32,
-
-    /// ?
-    pub items: Vec<AdditionalDataLoadedItem>,
-
-    /// ?
-    pub auto_load_more_enabled: bool,
-
-    /// ?
-    pub more_available: bool,
-
-    /// Extra fields
-    #[serde(flatten)]
-    pub extra: HashMap<String, serde_json::Value>,
-}
-
-#[derive(Debug, serde::Deserialize)]
-pub struct AdditionalDataLoadedItem {
-    /// The media type
-    pub media_type: MediaType,
-
-    /// Versions of a video post.
-    ///
-    /// Only present on video posts
-    pub video_versions: Option<Vec<VideoVersion>>,
-
-    /// Versions of an image post
-    pub image_versions2: Option<ImageVersions2>,
-
-    /// Carousel media
-    pub carousel_media: Option<Vec<CarouselMediaItem>>,
-
-    /// The post code
-    pub code: String,
-
-    /// Extra fields
-    #[serde(flatten)]
-    pub extra: HashMap<String, serde_json::Value>,
-}
-
-impl AdditionalDataLoadedItem {
-    /// Get the best image_versions2 candidate
-    pub fn get_best_image_versions2_candidate(&self) -> Option<&ImageVersions2Candidate> {
-        self.image_versions2.as_ref()?.get_best()
-    }
-
-    /// Get the best video version
-    pub fn get_best_video_version(&self) -> Option<&VideoVersion> {
-        self.video_versions
-            .as_ref()?
-            .iter()
-            .max_by_key(|video_version| video_version.height)
-    }
-}
-
+/// A video version
 #[derive(Debug, serde::Deserialize)]
 pub struct VideoVersion {
-    /// The height in pixels
+    /// Height
     pub height: u32,
 
-    /// The width in pixels
+    /// Width
     pub width: u32,
 
-    /// ?
+    /// Video kind
     #[serde(rename = "type")]
     pub kind: u32,
 
-    /// the src url
+    /// Url
     pub url: Url,
 
-    /// ?
-    pub id: String,
-
-    /// Extra fields
-    #[serde(flatten)]
-    pub extra: HashMap<String, serde_json::Value>,
+    /// Id
+    pub id: Box<str>,
 }
 
 /// The image_versions2 field
@@ -126,10 +115,6 @@ pub struct VideoVersion {
 pub struct ImageVersions2 {
     /// Candidate images
     pub candidates: Vec<ImageVersions2Candidate>,
-
-    /// Extra fields
-    #[serde(flatten)]
-    pub extra: HashMap<String, serde_json::Value>,
 }
 
 impl ImageVersions2 {
@@ -152,29 +137,34 @@ pub struct ImageVersions2Candidate {
 
     /// The url
     pub url: Url,
-
-    /// Extra fields
-    #[serde(flatten)]
-    pub extra: HashMap<String, serde_json::Value>,
 }
 
 /// An item in carousel_media
 #[derive(Debug, serde::Deserialize)]
-pub struct CarouselMediaItem {
+pub struct CarouselMedia {
     /// The media type
     pub media_type: MediaType,
 
     /// Image versions
     pub image_versions2: Option<ImageVersions2>,
 
-    /// Extra fields
-    #[serde(flatten)]
-    pub extra: HashMap<String, serde_json::Value>,
+    /// Versions of a video post.
+    ///
+    /// Only present on video posts
+    pub video_versions: Option<Vec<VideoVersion>>,
 }
 
-impl CarouselMediaItem {
+impl CarouselMedia {
     /// Get the best image_versions2 candidate
     pub fn get_best_image_versions2_candidate(&self) -> Option<&ImageVersions2Candidate> {
         self.image_versions2.as_ref()?.get_best()
+    }
+
+    /// Get the best video version
+    pub fn get_best_video_version(&self) -> Option<&VideoVersion> {
+        self.video_versions
+            .as_ref()?
+            .iter()
+            .max_by_key(|video_version| video_version.height)
     }
 }

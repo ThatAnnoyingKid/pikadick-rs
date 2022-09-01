@@ -10,10 +10,6 @@ use insta::{
     MediaType,
 };
 use std::path::Path;
-use tokio::{
-    fs::File,
-    io::AsyncWriteExt,
-};
 use url::Url;
 
 #[derive(Debug, argh::FromArgs)]
@@ -242,21 +238,25 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
         }
         Subcommand::Download(options) => {
             let post_page = client
-                .get_post(&options.post)
+                .get_post_page(&options.post)
                 .await
-                .context("failed to get post")?;
+                .context("failed to get post page")?;
+            let media_info = client
+                .get_media_info(post_page.media_id)
+                .await
+                .context("failed to get media info")?;
 
-            let post_page_item = post_page.items.first().context("missing post item")?;
+            let media_item = media_info.items.first().context("missing post item")?;
 
-            match post_page_item.media_type {
+            match media_item.media_type {
                 MediaType::Photo => {
-                    let image_versions2_candidate = post_page_item
+                    let image_versions2_candidate = media_item
                         .get_best_image_versions2_candidate()
                         .context("failed to select an image_versions2_candidate")?;
 
                     let extension = get_extension_from_url(&image_versions2_candidate.url)
                         .context("missing image extension")?;
-                    let file_name = format!("{}.{}", post_page_item.code, extension);
+                    let file_name = format!("{}.{}", media_item.code, extension);
                     let mut file = tokio::fs::OpenOptions::new()
                         .create_new(true)
                         .write(true)
@@ -264,7 +264,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                         .await
                         .context("failed to open output file")?;
 
-                    download_to_file(
+                    pikadick_util::download_to_file(
                         &client.client,
                         image_versions2_candidate.url.as_str(),
                         &mut file,
@@ -273,13 +273,13 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     .context("failed to download")?;
                 }
                 MediaType::Video => {
-                    let video_version = post_page_item
+                    let video_version = media_item
                         .get_best_video_version()
                         .context("failed to get the best video version")?;
 
                     let extension =
                         get_extension_from_url(&video_version.url).context("missing extension")?;
-                    let file_name = format!("{}.{}", post_page_item.code, extension);
+                    let file_name = format!("{}.{}", media_item.code, extension);
                     let mut file = tokio::fs::OpenOptions::new()
                         .create_new(true)
                         .write(true)
@@ -287,12 +287,16 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                         .await
                         .context("failed to open output file")?;
 
-                    download_to_file(&client.client, video_version.url.as_str(), &mut file)
-                        .await
-                        .context("failed to download")?;
+                    pikadick_util::download_to_file(
+                        &client.client,
+                        video_version.url.as_str(),
+                        &mut file,
+                    )
+                    .await
+                    .context("failed to download")?;
                 }
                 MediaType::Carousel => {
-                    for (i, item) in post_page_item
+                    for (i, item) in media_item
                         .carousel_media
                         .as_ref()
                         .context("missing carousel media")?
@@ -309,7 +313,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                                     get_extension_from_url(&image_versions2_candidate.url)
                                         .context("missing image extension")?;
                                 let file_name =
-                                    format!("{}.{}.{}", post_page_item.code, i + 1, extension);
+                                    format!("{}.{}.{}", media_item.code, i + 1, extension);
                                 let mut file = tokio::fs::OpenOptions::new()
                                     .create_new(true)
                                     .write(true)
@@ -317,7 +321,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                                     .await
                                     .context("failed to open output file")?;
 
-                                download_to_file(
+                                pikadick_util::download_to_file(
                                     &client.client,
                                     image_versions2_candidate.url.as_str(),
                                     &mut file,
@@ -340,44 +344,4 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
 
 fn get_extension_from_url(url: &Url) -> Option<&str> {
     Some(url.path_segments()?.rev().next()?.rsplit_once('.')?.1)
-}
-
-/// Try to download a url to a file. This will NOT delete the file if it fails.
-pub(crate) async fn download_to_file(
-    client: &reqwest::Client,
-    url: &str,
-    file: &mut File,
-) -> anyhow::Result<()> {
-    // Start request
-    let mut response = client.get(url).send().await?.error_for_status()?;
-
-    // If there is a content-length, stash it and pre-allocate space in the file.
-    let maybe_content_length = response.content_length();
-    if let Some(content_length) = maybe_content_length {
-        file.set_len(content_length).await?;
-    }
-
-    // Perform the download, keeping track of the number of bytes written.
-    let mut actual_length = 0;
-    while let Some(chunk) = response.chunk().await? {
-        file.write_all(&chunk).await?;
-        actual_length += u64::try_from(chunk.len())?;
-    }
-
-    // If a pre-allocation occured and if the actual length differs from the reported content length,
-    // return an error.
-    if let Some(content_length) = maybe_content_length {
-        ensure!(
-            actual_length == content_length,
-            "reported content length ({}) is different from the actual length ({})",
-            content_length,
-            actual_length
-        );
-    }
-
-    // flush and sync the file contents and metadata to the disk
-    file.flush().await?;
-    file.sync_all().await?;
-
-    Ok(())
 }

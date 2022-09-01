@@ -1,12 +1,11 @@
+/// The [`MediaInfo`] type
+pub mod media_info;
 /// The [`PostPage`] type
-mod post_page;
-
-/// The [`AdditionalDataLoaded`] type
-mod additional_data_loaded;
+pub mod post_page;
 
 pub use self::{
-    additional_data_loaded::{
-        AdditionalDataLoaded,
+    media_info::{
+        MediaInfo,
         MediaType,
     },
     post_page::PostPage,
