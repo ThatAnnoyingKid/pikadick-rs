@@ -42,7 +42,6 @@ pub use crate::commands::{
     stop::STOP_COMMAND,
     system::SYSTEM_COMMAND,
     tic_tac_toe::TIC_TAC_TOE_COMMAND,
-    urban::URBAN_COMMAND,
     uwuify::UWUIFY_COMMAND,
     vaporwave::VAPORWAVE_COMMAND,
     zalgo::ZALGO_COMMAND,

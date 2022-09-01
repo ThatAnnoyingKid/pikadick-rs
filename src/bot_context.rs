@@ -8,6 +8,7 @@ use crate::{
         rule34::Rule34Client,
         sauce_nao::SauceNaoClient,
         tiktok_embed::TikTokData,
+        urban::UrbanClient,
     },
     config::Config,
     database::Database,
@@ -45,6 +46,7 @@ impl BotContext {
         let sauce_nao_client = SauceNaoClient::new(config.sauce_nao.api_key.as_str());
         let iqdb_client = IqdbClient::new();
         let xkcd_client = xkcd::Client::new();
+        let urban_client = UrbanClient::new();
 
         Ok(Self {
             inner: Arc::new(BotContextInner {
@@ -63,6 +65,7 @@ impl BotContext {
                 sauce_nao_client,
                 iqdb_client,
                 xkcd_client,
+                urban_client,
             }),
         })
     }
@@ -114,6 +117,9 @@ pub struct BotContextInner {
 
     /// The xkcd client
     pub xkcd_client: xkcd::Client,
+
+    /// The urban dictionary client
+    pub urban_client: UrbanClient,
 }
 
 impl pikadick_slash_framework::ClientData for BotContext {
