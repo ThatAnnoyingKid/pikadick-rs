@@ -1,5 +1,6 @@
 use crate::{
     commands::{
+        deviantart::DeviantartClient,
         iqdb::IqdbClient,
         nekos::NekosClient,
         r6stats::R6StatsClient,
@@ -47,6 +48,9 @@ impl BotContext {
         let iqdb_client = IqdbClient::new();
         let xkcd_client = xkcd::Client::new();
         let urban_client = UrbanClient::new();
+        let deviantart_client = DeviantartClient::new(&database)
+            .await
+            .context("failed to init deviantart client")?;
 
         Ok(Self {
             inner: Arc::new(BotContextInner {
@@ -66,6 +70,7 @@ impl BotContext {
                 iqdb_client,
                 xkcd_client,
                 urban_client,
+                deviantart_client,
             }),
         })
     }
@@ -120,6 +125,9 @@ pub struct BotContextInner {
 
     /// The urban dictionary client
     pub urban_client: UrbanClient,
+
+    /// The deviantart client
+    pub deviantart_client: DeviantartClient,
 }
 
 impl pikadick_slash_framework::ClientData for BotContext {
