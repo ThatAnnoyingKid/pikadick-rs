@@ -198,7 +198,6 @@ impl TypeMapKey for ClientDataKey {
     urban,
     xkcd,
     tic_tac_toe,
-    iqdb,
     leave,
     stop
 )]
@@ -427,6 +426,7 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
         .command(self::commands::tiktok_embed::create_slash_command()?)
         .command(self::commands::sauce_nao::create_slash_command()?)
         .command(self::commands::reddit::create_slash_command()?)
+        .command(self::commands::iqdb::create_slash_command()?)
         .build()?;
 
     info!("starting shard cluster...");
@@ -476,6 +476,7 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
         )
         .build();
 
+    // Set up ctrl+c handler
     {
         let cluster = cluster.clone();
         tokio::spawn(async move {

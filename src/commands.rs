@@ -34,7 +34,6 @@ pub use crate::commands::{
     fml::FML_COMMAND,
     insta_dl::INSTA_DL_COMMAND,
     invite::INVITE_COMMAND,
-    iqdb::IQDB_COMMAND,
     latency::LATENCY_COMMAND,
     leave::LEAVE_COMMAND,
     quizizz::QUIZIZZ_COMMAND,

@@ -1,5 +1,6 @@
 use crate::{
     commands::{
+        iqdb::IqdbClient,
         nekos::NekosClient,
         r6stats::R6StatsClient,
         r6tracker::R6TrackerClient,
@@ -42,6 +43,7 @@ impl BotContext {
             .context("failed to init tiktok data")?;
         let reddit_embed_data = RedditEmbedData::new();
         let sauce_nao_client = SauceNaoClient::new(config.sauce_nao.api_key.as_str());
+        let iqdb_client = IqdbClient::new();
 
         Ok(Self {
             inner: Arc::new(BotContextInner {
@@ -58,6 +60,7 @@ impl BotContext {
                 tiktok_data,
                 reddit_embed_data,
                 sauce_nao_client,
+                iqdb_client,
             }),
         })
     }
@@ -103,6 +106,9 @@ pub struct BotContextInner {
 
     /// The sauce nao client
     pub sauce_nao_client: SauceNaoClient,
+
+    /// The iqdb client
+    pub iqdb_client: IqdbClient,
 }
 
 impl pikadick_slash_framework::ClientData for BotContext {
