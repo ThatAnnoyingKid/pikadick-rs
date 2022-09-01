@@ -1,30 +1,18 @@
 use crate::{
-    checks::ENABLED_CHECK,
     client_data::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
     util::{
-        LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
     BotContext,
-    ClientDataKey,
 };
 use anyhow::Context as _;
 use pikadick_slash_framework::{
     ClientData,
     FromOptions,
-};
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
 };
 use std::sync::Arc;
 use tracing::error;

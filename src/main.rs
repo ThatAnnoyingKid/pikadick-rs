@@ -196,7 +196,6 @@ impl TypeMapKey for ClientDataKey {
     insta_dl,
     deviantart,
     urban,
-    xkcd,
     tic_tac_toe,
     leave,
     stop
@@ -427,6 +426,7 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
         .command(self::commands::sauce_nao::create_slash_command()?)
         .command(self::commands::reddit::create_slash_command()?)
         .command(self::commands::iqdb::create_slash_command()?)
+        .command(self::commands::xkcd::create_slash_command()?)
         .build()?;
 
     info!("starting shard cluster...");

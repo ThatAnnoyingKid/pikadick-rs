@@ -1,39 +1,51 @@
-use crate::{
-    checks::ENABLED_CHECK,
-    ClientDataKey,
-};
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
-};
+use crate::BotContext;
+use anyhow::Context;
+use pikadick_slash_framework::ClientData;
 use tracing::error;
+use twilight_model::http::interaction::{
+    InteractionResponse,
+    InteractionResponseType,
+};
+use twilight_util::builder::InteractionResponseDataBuilder;
 
-#[command]
-#[description("Get a random comic from Xkcd")]
-#[checks(Enabled)]
-#[bucket("default")]
-async fn xkcd(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let client = client_data.xkcd_client.clone();
-    drop(data_lock);
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
+    pikadick_slash_framework::CommandBuilder::new()
+        .name("xkcd")
+        .description("Get a random comic from Xkcd")
+        .check(crate::checks::admin::create_slash_check)
+        .on_process(|client_data, interaction, _args: ()| async move {
+            let xkcd_client = client_data.inner.xkcd_client.clone();
+            let interaction_client = client_data.interaction_client();
+            let mut response_data = InteractionResponseDataBuilder::new();
 
-    match client.get_random().await {
-        Ok(data) => {
-            msg.channel_id.say(&ctx.http, data).await?;
-        }
-        Err(e) => {
-            msg.channel_id
-                .say(&ctx.http, format!("Failed to get xkcd comic: {}", e))
-                .await?;
-            error!("Failed to get xkcd comic: {}", e);
-        }
-    }
+            let result = xkcd_client
+                .get_random()
+                .await
+                .context("failed to get xkcd comic");
 
-    Ok(())
+            match result {
+                Ok(data) => {
+                    response_data = response_data.content(data);
+                }
+                Err(e) => {
+                    error!("{e:?}");
+                    response_data = response_data.content(format!("{e:?}"));
+                }
+            }
+
+            let response_data = response_data.build();
+            let response = InteractionResponse {
+                kind: InteractionResponseType::ChannelMessageWithSource,
+                data: Some(response_data),
+            };
+            interaction_client
+                .create_response(interaction.id, interaction.token.as_str(), &response)
+                .exec()
+                .await
+                .context("failed to send response")?;
+
+            Ok(())
+        })
+        .build()
+        .context("failed to build command")
 }

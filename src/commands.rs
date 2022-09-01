@@ -45,7 +45,6 @@ pub use crate::commands::{
     urban::URBAN_COMMAND,
     uwuify::UWUIFY_COMMAND,
     vaporwave::VAPORWAVE_COMMAND,
-    xkcd::XKCD_COMMAND,
     zalgo::ZALGO_COMMAND,
 };
 use crate::BotContext;
