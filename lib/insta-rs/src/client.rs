@@ -1,4 +1,5 @@
 use crate::{
+    CollectionListing,
     Error,
     LoginResponse,
     MediaInfo,
@@ -122,7 +123,7 @@ impl Client {
     }
 
     /// List collections for this user
-    pub async fn list_collections(&self) -> Result<serde_json::Value, Error> {
+    pub async fn list_collections(&self) -> Result<CollectionListing, Error> {
         let collection_types =
             "[\"ALL_MEDIA_AUTO_COLLECTION\",\"MEDIA\",\"AUDIO_AUTO_COLLECTION\"]";
         let url = format!("https://i.instagram.com/api/v1/collections/list/?collection_types={collection_types}&include_public_only=0&get_cover_media_lists=true&max_id=");
@@ -131,12 +132,12 @@ impl Client {
     }
 
     /// Make a graphql query
-    pub async fn graphql(
-        &self,
-        query_hash: &str,
-        variables: &str,
-    ) -> Result<serde_json::Value, Error> {
-        // 2ce1d673055b99250e93b6f88f878fde
+    pub async fn graphql<V, R>(&self, query_hash: &str, variables: &V) -> Result<R, Error>
+    where
+        V: serde::Serialize,
+        R: serde::de::DeserializeOwned,
+    {
+        let variables = serde_json::to_string(&variables)?;
         let url = format!("https://www.instagram.com/graphql/query/?query_hash={query_hash}&variables={variables}");
         let response = self.get_response(&url).await?;
         Ok(response.json().await?)

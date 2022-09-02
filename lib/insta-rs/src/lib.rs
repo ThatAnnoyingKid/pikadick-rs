@@ -12,6 +12,7 @@ pub use self::{
         PostPage,
     },
 };
+pub use crate::types::CollectionListing;
 pub use cookie_store::CookieStore;
 pub use reqwest_cookie_store::CookieStoreMutex;
 
@@ -206,6 +207,19 @@ mod test {
             .list_collections()
             .await
             .expect("failed to list collections");
-        dbg!(collections);
+        dbg!(&collections);
+
+        let query_hash = "2ce1d673055b99250e93b6f88f878fde";
+        let user_id = "4358622258";
+        let variables = serde_json::json!({
+            "id": user_id,
+            "first": 12,
+            "after":"QVFCN1R5UFBQRll3djBCSWlyMkRhQWR1ME4wZGVQWG81WUhyNWJZbjdvc1VfRnVFcTh4WTNhazZwZnNKc2RjbHNqd0lfQzJCdlFfWU1wXzNSdHVFN1oxaw==",
+        });
+        let result: serde_json::Value = client
+            .graphql(query_hash, &variables)
+            .await
+            .expect("failed to run graphql query");
+        dbg!(&result);
     }
 }

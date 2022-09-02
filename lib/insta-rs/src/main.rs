@@ -181,7 +181,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
         ),
         None => {
             if let (Some(username), Some(password)) = (maybe_username, maybe_password) {
-                println!("Missing session file, logging in...");
+                println!("missing session file, logging in...");
                 let login_response = client
                     .login(username, password)
                     .await
@@ -207,7 +207,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 })
                 .await??;
             } else {
-                println!("Skipping log-in as username and password are not specified");
+                println!("skipping log-in as username and password are not specified");
             }
         }
     };
