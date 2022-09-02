@@ -9,7 +9,7 @@ use twilight_model::http::interaction::{
 use twilight_util::builder::InteractionResponseDataBuilder;
 
 pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
-    pikadick_slash_framework::CommandBuilder::new()
+    pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("xkcd")
         .description("Get a random comic from Xkcd")
         .on_process(|client_data, interaction, _args: ()| async move {

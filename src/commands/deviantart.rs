@@ -143,7 +143,7 @@ struct DeviantArtOptions {
 }
 
 pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
-    pikadick_slash_framework::CommandBuilder::new()
+    pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("deviantart")
         .description("Get art from deviantart")
         .arguments(DeviantArtOptions::get_argument_params()?.into_iter())
