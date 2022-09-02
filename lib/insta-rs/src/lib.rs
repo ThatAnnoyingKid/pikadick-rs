@@ -10,6 +10,7 @@ pub use self::{
         MediaInfo,
         MediaType,
         PostPage,
+        SavedPostsQueryResult,
     },
 };
 pub use crate::types::CollectionListing;
@@ -217,6 +218,6 @@ mod test {
             .get_saved_posts(12, None)
             .await
             .expect("failed to get saved posts");
-        dbg!(&result);
+        dbg!(&result.data.user);
     }
 }

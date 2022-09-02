@@ -4,6 +4,7 @@ use crate::{
     LoginResponse,
     MediaInfo,
     PostPage,
+    SavedPostsQueryResult,
     USER_AGENT_STR,
 };
 use reqwest_cookie_store::CookieStoreMutex;
@@ -148,7 +149,7 @@ impl Client {
         &self,
         first: u32,
         after: Option<&str>,
-    ) -> Result<serde_json::Value, Error> {
+    ) -> Result<SavedPostsQueryResult, Error> {
         const QUERY_HASH: &str = "2ce1d673055b99250e93b6f88f878fde";
 
         let user_id = self
