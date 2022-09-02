@@ -114,27 +114,15 @@ impl Config {
     }
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
+    // Run this first, as this will exit the process without running destructors on failure.
     let options = argh::from_env();
-    let code = match real_main(options) {
-        Ok(()) => 0,
-        Err(e) => {
-            eprintln!("Error: {:?}", e);
-            1
-        }
-    };
-
-    std::process::exit(code);
-}
-
-fn real_main(options: Options) -> anyhow::Result<()> {
     let tokio_rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .context("failed to build tokio runtime")?;
-
     tokio_rt.block_on(async_main(options))?;
-
+    
     Ok(())
 }
 
@@ -366,7 +354,7 @@ async fn download_to_path(
         .await
         .context("failed to open tmp file")?;
     let mut tmp_path = pikadick_util::DropRemovePath::new(tmp_path);
-    pikadick_util::download_to_file(&client, url, &mut tmp_file)
+    pikadick_util::download_to_file(client, url, &mut tmp_file)
         .await
         .context("failed to download to path")?;
     tokio::fs::rename(&tmp_path, &path)
