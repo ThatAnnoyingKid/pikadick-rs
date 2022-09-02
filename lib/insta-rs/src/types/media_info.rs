@@ -165,6 +165,6 @@ impl CarouselMedia {
         self.video_versions
             .as_ref()?
             .iter()
-            .max_by_key(|video_version| video_version.height)
+            .max_by_key(|video_version| video_version.width * video_version.height)
     }
 }

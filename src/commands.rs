@@ -31,7 +31,6 @@ pub use crate::commands::{
     cache_stats::CACHE_STATS_COMMAND,
     cmd::CMD_COMMAND,
     fml::FML_COMMAND,
-    insta_dl::INSTA_DL_COMMAND,
     invite::INVITE_COMMAND,
     latency::LATENCY_COMMAND,
     leave::LEAVE_COMMAND,

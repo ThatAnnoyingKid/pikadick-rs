@@ -51,6 +51,7 @@ impl BotContext {
         let deviantart_client = DeviantartClient::new(&database)
             .await
             .context("failed to init deviantart client")?;
+        let insta_client = insta::Client::new();
 
         Ok(Self {
             inner: Arc::new(BotContextInner {
@@ -71,6 +72,7 @@ impl BotContext {
                 xkcd_client,
                 urban_client,
                 deviantart_client,
+                insta_client,
             }),
         })
     }
@@ -128,6 +130,9 @@ pub struct BotContextInner {
 
     /// The deviantart client
     pub deviantart_client: DeviantartClient,
+
+    /// The insta client
+    pub insta_client: insta::Client,
 }
 
 impl pikadick_slash_framework::ClientData for BotContext {

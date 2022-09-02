@@ -193,7 +193,6 @@ impl TypeMapKey for ClientDataKey {
     latency,
     uwuify,
     cache_stats,
-    insta_dl,
     tic_tac_toe,
     leave,
     stop
@@ -427,6 +426,7 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
         .command(self::commands::xkcd::create_slash_command()?)
         .command(self::commands::urban::create_slash_command()?)
         .command(self::commands::deviantart::create_slash_command()?)
+        .command(self::commands::insta_dl::create_slash_command()?)
         .build()?;
 
     info!("starting shard cluster...");
