@@ -120,6 +120,19 @@ impl Client {
         let response = self.get_response(url.as_str()).await?;
         Ok(response.json().await?)
     }
+
+    /// List collections for this user
+    pub async fn list_collections(&self) -> Result<serde_json::Value, Error> {
+        let collection_types = "[\"ALL_MEDIA_AUTO_COLLECTION\",\"MEDIA\",\"AUDIO_AUTO_COLLECTION\"]";
+        let url = format!("https://i.instagram.com/api/v1/collections/list/?collection_types={collection_types}&include_public_only=0&get_cover_media_lists=true&max_id=");
+        let response = self.get_response(&url).await?;
+        Ok(response.json().await?)
+    }
+    
+    /// Make a graphql query
+    pub async fn graphql() {
+        
+    }
 }
 
 impl Default for Client {

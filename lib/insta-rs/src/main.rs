@@ -257,17 +257,11 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     let extension = get_extension_from_url(&image_versions2_candidate.url)
                         .context("missing image extension")?;
                     let file_name = format!("{}.{}", media_item.code, extension);
-                    let mut file = tokio::fs::OpenOptions::new()
-                        .create_new(true)
-                        .write(true)
-                        .open(file_name)
-                        .await
-                        .context("failed to open output file")?;
 
-                    pikadick_util::download_to_file(
+                    download_to_path(
                         &client.client,
                         image_versions2_candidate.url.as_str(),
-                        &mut file,
+                        file_name.as_ref(),
                     )
                     .await
                     .context("failed to download")?;
@@ -280,17 +274,11 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     let extension =
                         get_extension_from_url(&video_version.url).context("missing extension")?;
                     let file_name = format!("{}.{}", media_item.code, extension);
-                    let mut file = tokio::fs::OpenOptions::new()
-                        .create_new(true)
-                        .write(true)
-                        .open(file_name)
-                        .await
-                        .context("failed to open output file")?;
 
-                    pikadick_util::download_to_file(
+                    download_to_path(
                         &client.client,
                         video_version.url.as_str(),
-                        &mut file,
+                        file_name.as_ref(),
                     )
                     .await
                     .context("failed to download")?;
@@ -314,17 +302,11 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                                         .context("missing image extension")?;
                                 let file_name =
                                     format!("{}.{}.{}", media_item.code, i + 1, extension);
-                                let mut file = tokio::fs::OpenOptions::new()
-                                    .create_new(true)
-                                    .write(true)
-                                    .open(file_name)
-                                    .await
-                                    .context("failed to open output file")?;
 
-                                pikadick_util::download_to_file(
+                                download_to_path(
                                     &client.client,
                                     image_versions2_candidate.url.as_str(),
-                                    &mut file,
+                                    file_name.as_ref(),
                                 )
                                 .await
                                 .context("failed to download")?;
@@ -338,6 +320,26 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             }
         }
     }
+
+    Ok(())
+}
+
+async fn download_to_path(client: &reqwest::Client, url: &str, path: &Path) -> anyhow::Result<()> {
+    let tmp_path = pikadick_util::with_push_extension(path, "part");
+    let mut tmp_file = tokio::fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(&tmp_path)
+        .await
+        .context("failed to open tmp file")?;
+    let mut tmp_path = pikadick_util::DropRemovePath::new(tmp_path);
+    pikadick_util::download_to_file(&client, url, &mut tmp_file)
+        .await
+        .context("failed to download to path")?;
+    tokio::fs::rename(&tmp_path, &path)
+        .await
+        .context("failed to rename file")?;
+    tmp_path.persist();
 
     Ok(())
 }
