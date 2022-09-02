@@ -142,10 +142,49 @@ impl Client {
         let response = self.get_response(&url).await?;
         Ok(response.json().await?)
     }
+
+    /// Get saved posts.
+    pub async fn get_saved_posts(
+        &self,
+        first: u32,
+        after: Option<&str>,
+    ) -> Result<serde_json::Value, Error> {
+        const QUERY_HASH: &str = "2ce1d673055b99250e93b6f88f878fde";
+
+        let user_id = self
+            .cookie_store
+            .lock()
+            .expect("cookie store poisoned")
+            .get("instagram.com", "/", "ds_user_id")
+            .ok_or(Error::MissingCookie("ds_user_id"))?
+            .value()
+            .to_string();
+
+        let variables = SavedPostsGraphQlQuery {
+            id: &user_id,
+            first,
+            after,
+        };
+
+        self.graphql(QUERY_HASH, &variables).await
+    }
 }
 
 impl Default for Client {
     fn default() -> Self {
         Self::new()
     }
+}
+
+#[derive(Debug, serde::Serialize)]
+struct SavedPostsGraphQlQuery<'a, 'b> {
+    /// The user id
+    id: &'a str,
+
+    /// The # of results to return
+    first: u32,
+
+    /// ?
+    #[serde(default)]
+    after: Option<&'b str>,
 }

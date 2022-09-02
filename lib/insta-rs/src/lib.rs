@@ -37,6 +37,10 @@ pub enum Error {
     #[error("invalid post page")]
     InvalidPostPage(#[from] crate::types::post_page::FromHtmlError),
 
+    /// Missing a cookie
+    #[error("missing cookie by name `{0}`")]
+    MissingCookie(&'static str),
+
     /// Json
     #[error(transparent)]
     Json(#[from] serde_json::Error),
@@ -209,17 +213,10 @@ mod test {
             .expect("failed to list collections");
         dbg!(&collections);
 
-        let query_hash = "2ce1d673055b99250e93b6f88f878fde";
-        let user_id = "4358622258";
-        let variables = serde_json::json!({
-            "id": user_id,
-            "first": 12,
-            "after":"QVFCN1R5UFBQRll3djBCSWlyMkRhQWR1ME4wZGVQWG81WUhyNWJZbjdvc1VfRnVFcTh4WTNhazZwZnNKc2RjbHNqd0lfQzJCdlFfWU1wXzNSdHVFN1oxaw==",
-        });
-        let result: serde_json::Value = client
-            .graphql(query_hash, &variables)
+        let result = client
+            .get_saved_posts(12, None)
             .await
-            .expect("failed to run graphql query");
+            .expect("failed to get saved posts");
         dbg!(&result);
     }
 }
