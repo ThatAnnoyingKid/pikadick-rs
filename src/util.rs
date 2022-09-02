@@ -37,3 +37,8 @@ pub fn is_tiktok_host(url_host: &url::Host<&str>) -> bool {
         url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")
     )
 }
+
+/// Get the file extension from a url
+pub fn get_extension_from_url(url: &url::Url) -> Option<&str> {
+    Some(url.path_segments()?.rev().next()?.rsplit_once('.')?.1)
+}

@@ -1,6 +1,9 @@
 use crate::{
     checks::ENABLED_CHECK,
-    util::LoadingReaction,
+    util::{
+        get_extension_from_url,
+        LoadingReaction,
+    },
     ClientDataKey,
 };
 use anyhow::{
@@ -19,7 +22,6 @@ use serenity::{
     prelude::*,
 };
 use tracing::info;
-use url::Url;
 
 #[command("insta-dl")]
 #[description("Download an instagram video or photo")]
@@ -91,7 +93,7 @@ async fn download_post<'a>(
             &video_version.url
         }
         media_type => {
-            bail!("Unsupported media type `{:?}`", media_type);
+            bail!("unsupported media type `{:?}`", media_type);
         }
     };
 
@@ -107,9 +109,4 @@ async fn download_post<'a>(
         .await?;
 
     Ok((data, file_name))
-}
-
-/// Get the file extension from a url
-fn get_extension_from_url(url: &Url) -> Option<&str> {
-    Some(url.path_segments()?.rev().next()?.rsplit_once('.')?.1)
 }
