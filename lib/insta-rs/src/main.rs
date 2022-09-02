@@ -311,6 +311,23 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                                 .await
                                 .context("failed to download")?;
                             }
+                            MediaType::Video => {
+                                let video_version = item
+                                    .get_best_video_version()
+                                    .context("failed to get the best video version")?;
+
+                                let extension = get_extension_from_url(&video_version.url)
+                                    .context("missing extension")?;
+                                let file_name = format!("{}.{}", media_item.code, extension);
+
+                                download_to_path(
+                                    &client.client,
+                                    video_version.url.as_str(),
+                                    file_name.as_ref(),
+                                )
+                                .await
+                                .context("failed to download")?;
+                            }
                             _ => {
                                 bail!("Unsupported media_type `{:?}`", item.media_type);
                             }
@@ -324,7 +341,23 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn download_to_path(client: &reqwest::Client, url: &str, path: &Path) -> anyhow::Result<()> {
+async fn download_to_path(
+    client: &reqwest::Client,
+    url: &str,
+    path: &Path,
+) -> anyhow::Result<bool> {
+    match tokio::fs::metadata(path).await {
+        Ok(_metadata) => {
+            return Ok(false);
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            // Pass
+        }
+        Err(e) => {
+            return Err(e).context("failed to stat");
+        }
+    }
+
     let tmp_path = pikadick_util::with_push_extension(path, "part");
     let mut tmp_file = tokio::fs::OpenOptions::new()
         .create_new(true)
@@ -341,7 +374,7 @@ async fn download_to_path(client: &reqwest::Client, url: &str, path: &Path) -> a
         .context("failed to rename file")?;
     tmp_path.persist();
 
-    Ok(())
+    Ok(true)
 }
 
 fn get_extension_from_url(url: &Url) -> Option<&str> {

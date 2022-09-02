@@ -196,13 +196,16 @@ mod test {
             }
         }
     }
-    
+
     #[ignore]
     #[tokio::test]
     async fn collections_work() {
-         let client = get_client().await;
-         
-         let collections = client.list_collections().await.expect("failed to list collections");
-         dbg!(collections);
+        let client = get_client().await;
+
+        let collections = client
+            .list_collections()
+            .await
+            .expect("failed to list collections");
+        dbg!(collections);
     }
 }
