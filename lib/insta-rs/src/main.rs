@@ -122,7 +122,7 @@ fn main() -> anyhow::Result<()> {
         .build()
         .context("failed to build tokio runtime")?;
     tokio_rt.block_on(async_main(options))?;
-    
+
     Ok(())
 }
 
@@ -235,41 +235,32 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 .context("failed to get media info")?;
 
             let media_item = media_info.items.first().context("missing post item")?;
+            ensure!(media_info.items.len() == 1);
+
+            let mut download_items = Vec::with_capacity(4);
 
             match media_item.media_type {
                 MediaType::Photo => {
                     let image_versions2_candidate = media_item
                         .get_best_image_versions2_candidate()
                         .context("failed to select an image_versions2_candidate")?;
-
-                    let extension = get_extension_from_url(&image_versions2_candidate.url)
-                        .context("missing image extension")?;
+                    let url = &image_versions2_candidate.url;
+                    let extension =
+                        get_extension_from_url(url).context("missing image extension")?;
                     let file_name = format!("{}.{}", media_item.code, extension);
 
-                    download_to_path(
-                        &client.client,
-                        image_versions2_candidate.url.as_str(),
-                        file_name.as_ref(),
-                    )
-                    .await
-                    .context("failed to download")?;
+                    download_items.push((url, file_name));
                 }
                 MediaType::Video => {
                     let video_version = media_item
                         .get_best_video_version()
                         .context("failed to get the best video version")?;
+                    let url = &video_version.url;
 
-                    let extension =
-                        get_extension_from_url(&video_version.url).context("missing extension")?;
+                    let extension = get_extension_from_url(url).context("missing extension")?;
                     let file_name = format!("{}.{}", media_item.code, extension);
 
-                    download_to_path(
-                        &client.client,
-                        video_version.url.as_str(),
-                        file_name.as_ref(),
-                    )
-                    .await
-                    .context("failed to download")?;
+                    download_items.push((url, file_name));
                 }
                 MediaType::Carousel => {
                     for (i, item) in media_item
@@ -284,43 +275,43 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                                 let image_versions2_candidate = item
                                     .get_best_image_versions2_candidate()
                                     .context("failed to select an image_versions2_candidate")?;
+                                let url = &image_versions2_candidate.url;
 
-                                let extension =
-                                    get_extension_from_url(&image_versions2_candidate.url)
-                                        .context("missing image extension")?;
+                                let extension = get_extension_from_url(url)
+                                    .context("missing image extension")?;
                                 let file_name =
                                     format!("{}.{}.{}", media_item.code, i + 1, extension);
 
-                                download_to_path(
-                                    &client.client,
-                                    image_versions2_candidate.url.as_str(),
-                                    file_name.as_ref(),
-                                )
-                                .await
-                                .context("failed to download")?;
+                                download_items.push((url, file_name));
                             }
                             MediaType::Video => {
                                 let video_version = item
                                     .get_best_video_version()
                                     .context("failed to get the best video version")?;
+                                let url = &video_version.url;
 
-                                let extension = get_extension_from_url(&video_version.url)
-                                    .context("missing extension")?;
+                                let extension =
+                                    get_extension_from_url(url).context("missing extension")?;
                                 let file_name = format!("{}.{}", media_item.code, extension);
 
-                                download_to_path(
-                                    &client.client,
-                                    video_version.url.as_str(),
-                                    file_name.as_ref(),
-                                )
-                                .await
-                                .context("failed to download")?;
+                                download_items.push((url, file_name));
                             }
                             _ => {
                                 bail!("Unsupported media_type `{:?}`", item.media_type);
                             }
                         }
                     }
+                }
+            }
+
+            for (url, file_name) in download_items {
+                println!("downloading `{file_name}`...");
+                let downloaded = download_to_path(&client.client, url.as_str(), file_name.as_ref())
+                    .await
+                    .context("failed to download")?;
+
+                if !downloaded {
+                    println!("  skipped downloading as it already exists...");
                 }
             }
         }

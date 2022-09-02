@@ -131,7 +131,16 @@ impl Client {
     }
 
     /// Make a graphql query
-    pub async fn graphql() {}
+    pub async fn graphql(
+        &self,
+        query_hash: &str,
+        variables: &str,
+    ) -> Result<serde_json::Value, Error> {
+        // 2ce1d673055b99250e93b6f88f878fde
+        let url = format!("https://www.instagram.com/graphql/query/?query_hash={query_hash}&variables={variables}");
+        let response = self.get_response(&url).await?;
+        Ok(response.json().await?)
+    }
 }
 
 impl Default for Client {
