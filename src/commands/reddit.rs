@@ -20,7 +20,6 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
     pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("reddit")
         .description("Get a random post from a subreddit")
-        .check(crate::checks::admin::create_slash_check)
         .arguments(RedditOptions::get_argument_params()?.into_iter())
         .on_process(|client_data, interaction, args: RedditOptions| async move {
             let reddit_embed_data = client_data.inner.reddit_embed_data.clone();

@@ -85,7 +85,6 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
     pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("iqdb")
         .description("Search IQDB for an image at a url")
-        .check(crate::checks::admin::create_slash_check)
         .arguments(IqdbOptions::get_argument_params()?.into_iter())
         .on_process(|client_data, interaction, args: IqdbOptions| async move {
             let iqdb_client = client_data.inner.iqdb_client.clone();

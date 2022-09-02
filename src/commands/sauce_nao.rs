@@ -87,7 +87,6 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
     pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("sauce-nao")
         .description("Search SauceNao for an image at a url")
-        .check(crate::checks::admin::create_slash_check)
         .arguments(SauceNaoOptions::get_argument_params()?.into_iter())
         .on_process(
             |client_data, interaction, args: SauceNaoOptions| async move {

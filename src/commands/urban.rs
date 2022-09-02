@@ -153,7 +153,6 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
 
             Ok(())
         })
-        .check(crate::checks::admin::create_slash_check)
         .build()
         .context("failed to build command")
 }
