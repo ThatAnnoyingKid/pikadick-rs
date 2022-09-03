@@ -24,6 +24,7 @@ struct Options {
 enum Subcommand {
     Login(LoginOptions),
     Download(DownloadOptions),
+    GetSavedPosts(GetSavedPostsOptions),
 }
 
 #[derive(Debug, argh::FromArgs)]
@@ -45,6 +46,26 @@ struct LoginOptions {
 struct DownloadOptions {
     #[argh(positional, description = "the post url")]
     post: String,
+}
+
+#[derive(Debug, argh::FromArgs)]
+#[argh(
+    subcommand,
+    name = "get-saved-posts",
+    description = "Get saved posts for the current user"
+)]
+struct GetSavedPostsOptions {
+    #[argh(
+        option,
+        short = 'n',
+        long = "num-posts",
+        description = "the number of posts to retrieve",
+        default = "12"
+    )]
+    num_posts: u32,
+
+    #[argh(option, short = 'a', long = "after", description = "the after marker")]
+    after: Option<String>,
 }
 
 struct BoxError(Box<dyn std::error::Error + Send + Sync>);
@@ -161,11 +182,13 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             };
 
             match File::open(&session_file_path).map(BufReader::new) {
-                Ok(mut file) => Ok(Some(
-                    CookieStore::load_json(&mut file)
+                Ok(mut file) => {
+                    let cookie_store = CookieStore::load_json(&mut file)
                         .map_err(BoxError)
-                        .context("failed to load session")?,
-                )),
+                        .context("failed to load session")?;
+
+                    Ok(Some(cookie_store))
+                }
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
                 Err(e) => Err(e).context("failed to open session file"),
             }
@@ -313,6 +336,31 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 if !downloaded {
                     println!("  skipped downloading as it already exists...");
                 }
+            }
+        }
+        Subcommand::GetSavedPosts(options) => {
+            let saved_posts = client
+                .get_saved_posts(options.num_posts, options.after.as_deref())
+                .await
+                .context("failed to get saved posts")?;
+
+            let edge_saved_media = &saved_posts.data.user.edge_saved_media;
+            let num_posts = edge_saved_media.count;
+
+            println!("total # of saved posts: {num_posts}");
+            println!("# of posts retrieved: {}", edge_saved_media.edges.len());
+            println!("end cursor: {}", edge_saved_media.page_info.end_cursor);
+            println!(
+                "has next page: {}",
+                edge_saved_media.page_info.has_next_page
+            );
+            println!();
+
+            for node in edge_saved_media.edges.iter().map(|edge| &edge.node) {
+                println!("id: {}", node.id);
+                println!("shortcode: {}", node.shortcode);
+                println!("is video: {}", node.is_video);
+                println!();
             }
         }
     }
