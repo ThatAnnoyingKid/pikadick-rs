@@ -123,6 +123,13 @@ impl Client {
         Ok(response.json().await?)
     }
 
+    /// Unsave a saved post by media id
+    pub async fn unsave_post(&self, media_id: u64) -> Result<serde_json::Value, Error> {
+        let url = format!("https://i.instagram.com/api/v1/media/{media_id}/unsave/");
+        let response = self.client.post(url).send().await?.error_for_status()?;
+        Ok(response.json().await?)
+    }
+
     /// List collections for this user
     pub async fn list_collections(&self) -> Result<CollectionListing, Error> {
         let collection_types =

@@ -24,6 +24,8 @@ struct Options {
 enum Subcommand {
     Login(LoginOptions),
     Download(DownloadOptions),
+    Saved(SavedOptions),
+
     GetSavedPosts(GetSavedPostsOptions),
 }
 
@@ -46,6 +48,26 @@ struct LoginOptions {
 struct DownloadOptions {
     #[argh(positional, description = "the post url")]
     post: String,
+}
+
+#[derive(Debug, argh::FromArgs)]
+#[argh(subcommand, name = "saved", description = "interact with saved posts")]
+struct SavedOptions {
+    #[argh(subcommand)]
+    subcommand: SavedOptionsSubcommand,
+}
+
+#[derive(Debug, argh::FromArgs)]
+#[argh(subcommand)]
+enum SavedOptionsSubcommand {
+    Unsave(UnsaveOptions),
+}
+
+#[derive(Debug, argh::FromArgs)]
+#[argh(subcommand, name = "unsave", description = "unsave a saved post")]
+struct UnsaveOptions {
+    #[argh(positional, description = "the media id of the post to unsave")]
+    media_id: u64,
 }
 
 #[derive(Debug, argh::FromArgs)]
@@ -338,6 +360,12 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 }
             }
         }
+        Subcommand::Saved(options) => match options.subcommand {
+            SavedOptionsSubcommand::Unsave(options) => {
+                client.unsave_post(options.media_id).await?;
+                println!("unsaved post `{}`", options.media_id);
+            }
+        },
         Subcommand::GetSavedPosts(options) => {
             let saved_posts = client
                 .get_saved_posts(options.num_posts, options.after.as_deref())
