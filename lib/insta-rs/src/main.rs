@@ -391,10 +391,11 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     }
                     {
                         let edges = &node.edge_media_to_caption.edges;
-                        ensure!(edges.len() == 1);
+                        ensure!(edges.len() <= 1);
                         
-                        let caption = &edges.get(0).context("missing edge media to caption")?.node.text;
-                        println!("edge media to caption: {}", caption);
+                        if let Some(caption) = edges.get(0).map(|edge| &edge.node.text) {
+                            println!("edge media to caption: {}", caption);
+                        }
                     }
                     println!();
                 }
