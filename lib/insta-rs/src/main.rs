@@ -25,8 +25,6 @@ enum Subcommand {
     Login(LoginOptions),
     Download(DownloadOptions),
     Saved(SavedOptions),
-
-    GetSavedPosts(GetSavedPostsOptions),
 }
 
 #[derive(Debug, argh::FromArgs)]
@@ -61,10 +59,11 @@ struct SavedOptions {
 #[argh(subcommand)]
 enum SavedOptionsSubcommand {
     Unsave(UnsaveOptions),
+    Get(GetOptions),
 }
 
 #[derive(Debug, argh::FromArgs)]
-#[argh(subcommand, name = "unsave", description = "unsave a saved post")]
+#[argh(subcommand, name = "unsave", description = "Unsave a saved post")]
 struct UnsaveOptions {
     #[argh(positional, description = "the media id of the post to unsave")]
     media_id: u64,
@@ -73,10 +72,10 @@ struct UnsaveOptions {
 #[derive(Debug, argh::FromArgs)]
 #[argh(
     subcommand,
-    name = "get-saved-posts",
+    name = "get",
     description = "Get saved posts for the current user"
 )]
-struct GetSavedPostsOptions {
+struct GetOptions {
     #[argh(
         option,
         short = 'n',
@@ -365,35 +364,35 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 client.unsave_post(options.media_id).await?;
                 println!("unsaved post `{}`", options.media_id);
             }
-        },
-        Subcommand::GetSavedPosts(options) => {
-            let saved_posts = client
-                .get_saved_posts(options.num_posts, options.after.as_deref())
-                .await
-                .context("failed to get saved posts")?;
+            SavedOptionsSubcommand::Get(options) => {
+                let saved_posts = client
+                    .get_saved_posts(options.num_posts, options.after.as_deref())
+                    .await
+                    .context("failed to get saved posts")?;
 
-            let edge_saved_media = &saved_posts.data.user.edge_saved_media;
-            let num_posts = edge_saved_media.count;
+                let edge_saved_media = &saved_posts.data.user.edge_saved_media;
+                let num_posts = edge_saved_media.count;
 
-            println!("total # of saved posts: {num_posts}");
-            println!("# of posts retrieved: {}", edge_saved_media.edges.len());
-            println!("end cursor: {}", edge_saved_media.page_info.end_cursor);
-            println!(
-                "has next page: {}",
-                edge_saved_media.page_info.has_next_page
-            );
-            println!();
-
-            for node in edge_saved_media.edges.iter().map(|edge| &edge.node) {
-                println!("id: {}", node.id);
-                println!("shortcode: {}", node.shortcode);
-                println!("is video: {}", node.is_video);
-                if let Some(caption) = node.accessibility_caption.as_deref() {
-                    println!("caption: {caption}");
-                }
+                println!("total # of saved posts: {num_posts}");
+                println!("# of posts retrieved: {}", edge_saved_media.edges.len());
+                println!("end cursor: {}", edge_saved_media.page_info.end_cursor);
+                println!(
+                    "has next page: {}",
+                    edge_saved_media.page_info.has_next_page
+                );
                 println!();
+
+                for node in edge_saved_media.edges.iter().map(|edge| &edge.node) {
+                    println!("id: {}", node.id);
+                    println!("shortcode: {}", node.shortcode);
+                    println!("is video: {}", node.is_video);
+                    if let Some(caption) = node.accessibility_caption.as_deref() {
+                        println!("caption: {caption}");
+                    }
+                    println!();
+                }
             }
-        }
+        },
     }
 
     Ok(())
