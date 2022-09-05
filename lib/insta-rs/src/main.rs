@@ -360,6 +360,9 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 println!("id: {}", node.id);
                 println!("shortcode: {}", node.shortcode);
                 println!("is video: {}", node.is_video);
+                if let Some(caption) = node.accessibility_caption.as_deref() {
+                    println!("caption: {caption}");
+                }
                 println!();
             }
         }
