@@ -122,7 +122,7 @@ pub struct Node {
     pub edge_media_preview_like: serde_json::Value,
 
     /// ?
-    pub edge_media_to_caption: serde_json::Value,
+    pub edge_media_to_caption: EdgeMediaToCaption,
 
     /// ?
     pub edge_media_to_comment: serde_json::Value,
@@ -148,6 +148,25 @@ pub struct Node {
     /// ?
     #[serde(rename = "__typename")]
     pub typename: Box<str>,
+}
+
+/// The edge_media_to_caption field
+#[derive(Debug, serde::Deserialize)]
+pub struct EdgeMediaToCaption {
+    pub edges: Vec<EdgeMediaToCaptionEdge>,
+}
+
+/// A member of the edges field
+#[derive(Debug, serde::Deserialize)]
+pub struct EdgeMediaToCaptionEdge {
+    pub node: EdgeMediaToCaptionEdgeNode,
+}
+
+/// The node field
+#[derive(Debug, serde::Deserialize)]
+pub struct EdgeMediaToCaptionEdgeNode {
+    /// caption?
+    pub text: Box<str>,
 }
 
 /// The page info

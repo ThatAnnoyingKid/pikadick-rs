@@ -386,8 +386,15 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     println!("id: {}", node.id);
                     println!("shortcode: {}", node.shortcode);
                     println!("is video: {}", node.is_video);
-                    if let Some(caption) = node.accessibility_caption.as_deref() {
-                        println!("caption: {caption}");
+                    if let Some(accessibility_caption) = node.accessibility_caption.as_deref() {
+                        println!("accessibility caption: {accessibility_caption}");
+                    }
+                    {
+                        let edges = &node.edge_media_to_caption.edges;
+                        ensure!(edges.len() == 1);
+                        
+                        let caption = &edges.get(0).context("missing edge media to caption")?.node.text;
+                        println!("edge media to caption: {}", caption);
                     }
                     println!();
                 }
