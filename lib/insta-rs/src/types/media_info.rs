@@ -35,6 +35,9 @@ pub struct Item {
 
     /// The post code
     pub code: String,
+
+    /// Info about the poster
+    pub user: ItemUser,
 }
 
 impl Item {
@@ -167,4 +170,20 @@ impl CarouselMedia {
             .iter()
             .max_by_key(|video_version| video_version.width * video_version.height)
     }
+}
+
+/// The user field
+#[derive(Debug, serde::Deserialize)]
+pub struct ItemUser {
+    /// ?
+    pub pk: u64,
+
+    /// username
+    pub username: Box<str>,
+
+    /// the user's real name
+    pub full_name: Box<str>,
+
+    /// ?
+    pub is_private: bool,
 }

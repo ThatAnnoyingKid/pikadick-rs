@@ -25,6 +25,7 @@ enum Subcommand {
     Login(LoginOptions),
     Download(DownloadOptions),
     Saved(SavedOptions),
+    GetMediaInfo(GetMediaInfoOptions),
 }
 
 #[derive(Debug, argh::FromArgs)]
@@ -87,6 +88,17 @@ struct GetOptions {
 
     #[argh(option, short = 'a', long = "after", description = "the after marker")]
     after: Option<String>,
+}
+
+#[derive(Debug, argh::FromArgs)]
+#[argh(
+    subcommand,
+    name = "get-media-info",
+    description = "Get the media info for the post with the given media id"
+)]
+struct GetMediaInfoOptions {
+    #[argh(positional, description = "the media id")]
+    media_id: u64,
 }
 
 struct BoxError(Box<dyn std::error::Error + Send + Sync>);
@@ -392,15 +404,27 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     {
                         let edges = &node.edge_media_to_caption.edges;
                         ensure!(edges.len() <= 1);
-                        
+
                         if let Some(caption) = edges.get(0).map(|edge| &edge.node.text) {
-                            println!("edge media to caption: {}", caption);
+                            println!("edge media to caption: {caption}");
                         }
                     }
                     println!();
                 }
             }
         },
+        Subcommand::GetMediaInfo(options) => {
+            let media_info = client
+                .get_media_info(options.media_id)
+                .await
+                .context("failed to get media info")?;
+            let media_item = media_info.items.first().context("missing post item")?;
+            ensure!(media_info.items.len() == 1);
+
+            println!("Username: {}", media_item.user.username);
+            println!("User Id: {}", media_item.user.pk);
+            println!("User Full Name: {}", media_item.user.full_name);
+        }
     }
 
     Ok(())
