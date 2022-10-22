@@ -86,6 +86,7 @@ impl<'a, 'b> ArgumentParamBuilder<'a, 'b> {
         let name = self.name.ok_or(BuilderError::MissingField("name"))?;
         #[allow(clippy::or_fun_call)]
         let kind = self.kind.ok_or(BuilderError::MissingField("kind"))?;
+        #[allow(clippy::or_fun_call)]
         let description = self
             .description
             .ok_or(BuilderError::MissingField("description"))?;
