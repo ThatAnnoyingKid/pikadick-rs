@@ -88,13 +88,11 @@ impl Client {
         W: AsyncWrite + Unpin,
     {
         let url = if object.is_video() {
-            let url = object
+            object
                 .video_url
                 .as_ref()
                 .ok_or(ClientError::MissingVideoUrl)?
-                .as_str();
-
-            url
+                .as_str()
         } else if object.is_image() {
             object.image.as_str()
         } else {
