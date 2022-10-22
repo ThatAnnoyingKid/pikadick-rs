@@ -582,7 +582,7 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     info!("using prefix '{}'", &config_prefix);
     let framework = StandardFramework::new()
         .configure(|c| {
-            c.prefixes(&[&config_prefix, &uppercase_prefix])
+            c.prefixes(&[config_prefix, uppercase_prefix])
                 .case_insensitivity(true)
         })
         .help(&HELP)
