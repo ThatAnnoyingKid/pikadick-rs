@@ -24,6 +24,8 @@ struct DatabaseUserId(UserId);
 
 impl FromSql for DatabaseUserId {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        // This is not heavy
+        #[allow(clippy::or_fun_call)]
         let value = value
             .as_i64()
             .map(i64::to_ne_bytes)
