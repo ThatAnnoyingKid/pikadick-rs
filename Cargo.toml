@@ -17,7 +17,7 @@ bytes = "1.2.0"
 camino = { version = "1.0.9", features = [ "serde1" ] }
 crossbeam = "0.8.1"
 dashmap = "5.3.4"
-deviantart = { path = "./lib/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
+deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
 futures = { version = "0.3.21", features = [ "std" ], default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
@@ -117,9 +117,10 @@ opt-level = 3
 [profile.dev.package.crc32fast]
 opt-level = 3
 
-# To make image encoding times sane
-[profile.dev.package.deflate]
-opt-level = 3
+# Causes build warning? "profile package spec `deflate` in profile `dev` did not match any packages"
+# # To make image encoding times sane
+# [profile.dev.package.deflate]
+# opt-level = 3
 
 [profile.release]
 lto = "fat"

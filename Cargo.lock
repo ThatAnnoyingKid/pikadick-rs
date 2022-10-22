@@ -917,22 +917,17 @@ dependencies = [
 [[package]]
 name = "deviantart"
 version = "0.0.0"
+source = "git+https://github.com/adumbidiot/deviantart-rs#2ee3b19d92b24769becc3f2478f67df938e48b29"
 dependencies = [
- "anyhow",
- "argh",
- "bytes",
- "cookie",
- "cookie_store",
- "directories-next",
  "itoa 1.0.4",
  "once_cell",
  "regex",
  "reqwest",
+ "reqwest_cookie_store",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
- "toml",
  "url",
 ]
 
@@ -3096,9 +3091,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest_cookie_store"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fc7d9a4063adcdfbb061aa3011b813cce95d3a8990f9ccb5ea85017916a1b0b"
+checksum = "0568e27f107b933735a07b3f8cb985ecfe3d3ce2f2225f82f10b3750f5981263"
 dependencies = [
  "bytes",
  "cookie",
@@ -4182,7 +4177,6 @@ version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d82e1a7758622a465f8cee077614c73484dac5b836c02ff6a40d5d1010324d7"
 dependencies = [
- "indexmap",
  "serde",
 ]
 
