@@ -208,6 +208,8 @@ impl FromSql for TicTacToePlayer {
         match value {
             ValueRef::Integer(int) => {
                 let int_u64 = u64::from_ne_bytes(int.to_ne_bytes());
+                // This is not heavy
+                #[allow(clippy::or_fun_call)]
                 let user_id = UserId(NonZeroU64::new(int_u64).ok_or(FromSqlError::OutOfRange(0))?);
                 Ok(Self::User(user_id))
             }
