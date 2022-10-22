@@ -143,30 +143,7 @@ strip = false
 
 [workspace]
 members = [ 
-    "lib/fml-rs",
-    "lib/nekos-rs", 
-    "lib/quizizz-rs",
-    "lib/r6stats-rs", 
-    "lib/r6tracker-rs", 
-    "lib/reddit-tube-rs",
-    "lib/rule34-rs",
-    "lib/insta-rs",
-    "lib/deviantart-rs",
-    "lib/urban-dictionary-rs",
-    "lib/xkcd-rs",
-    "lib/tiktok-rs",
-    "lib/open-graph-rs",
-    "lib/iqdb-rs",
-    "lib/sauce-nao-rs",
-    "lib/tic-tac-toe-rs",
-    "lib/async-rusqlite-rs",
-    "lib/across-rs",
-    "lib/pikadick-slash-framework-rs",
-    "lib/pikadick-slash-framework-derive-rs",
-    "lib/rpi-deploy-rs",
-    "lib/tokio-ffmpeg-cli-rs",
-    "lib/pikadick-util-rs",
-    "lib/pikadick-system-info-rs",
+    "lib/*"
 ]
 
 [package.metadata.deb]
