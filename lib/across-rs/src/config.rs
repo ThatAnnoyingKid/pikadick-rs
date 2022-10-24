@@ -32,7 +32,7 @@ pub struct ConfigTarget {
 impl Config {
     /// Load a config from a path
     pub fn load_from_path(config_path: &Path) -> anyhow::Result<Self> {
-        let config_str = std::fs::read_to_string(&config_path).context("failed to read config")?;
+        let config_str = std::fs::read_to_string(config_path).context("failed to read config")?;
         toml::from_str(&config_str).context("failed to parse config")
     }
 }

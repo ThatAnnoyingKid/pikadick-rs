@@ -94,11 +94,18 @@ skip = [
     { name = "phf", version = "0.8.0" },
     { name = "phf_codegen", version = "0.8.0" },
     
-    # Blocked on `hashlink` and `publicsuffix` moving to hashbrown 12
-    { name = "hashbrown", version = "0.11.2" },
-    
     # Blocked on removing heim
     { name = "nix", version = "0.23.1" },
+    
+    # Blocked on many crates moving to the next version of `windows`
+    { name = "windows_x86_64_msvc", version = "0.36.1" },
+    { name = "windows-sys", version = "0.36.1" },
+    
+    # Blocked on prost updating heck
+    { name = "heck", version = "0.3.3" },
+    
+    # Blocked on cookie-store moving to idna 0.3
+    { name = "idna", version = "0.2.3" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -163,4 +170,6 @@ allow-git = [
     "https://github.com/nathaniel-daniel/nix",
     "https://github.com/FelixMcFelix/Symphonia",
     # "https://github.com/bheisler/criterion.rs",
+    "https://github.com/adumbidiot/sauce-nao-rs",
+    "https://github.com/adumbidiot/deviantart-rs",
 ]

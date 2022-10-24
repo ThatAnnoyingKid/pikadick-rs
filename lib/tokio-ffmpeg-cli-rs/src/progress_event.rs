@@ -96,7 +96,7 @@ pub struct ProgressEvent {
 
 impl ProgressEvent {
     /// Try to make a [`ProgressEvent`] from optional parts.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::or_fun_call)]
     pub(crate) fn try_from_optional_parts(
         frame: Option<u64>,
         fps: Option<f64>,

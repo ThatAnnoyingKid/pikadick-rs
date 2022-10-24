@@ -13,7 +13,7 @@ use crate::{
     Database,
 };
 use anyhow::Context as _;
-use deviantart::SearchResults;
+use deviantart::Deviation;
 use rand::seq::IteratorRandom;
 use serenity::{
     framework::standard::{
@@ -40,7 +40,7 @@ const COOKIE_KEY: &str = "cookie-store";
 #[derive(Clone, Debug)]
 pub struct DeviantartClient {
     client: deviantart::Client,
-    search_cache: TimedCache<String, SearchResults>,
+    search_cache: TimedCache<String, Vec<Deviation>>,
 }
 
 impl DeviantartClient {
@@ -58,8 +58,8 @@ impl DeviantartClient {
         match cookie_data {
             Some(cookie_data) => {
                 client
-                    .cookie_store
-                    .load_json(BufReader::new(cookie_data.as_slice()))?;
+                    .load_json_cookies(BufReader::new(std::io::Cursor::new(cookie_data)))
+                    .await?;
             }
             None => {
                 info!("could not load cookie data");
@@ -73,7 +73,7 @@ impl DeviantartClient {
     }
 
     /// Signs in if necessary
-    pub async fn signin(
+    pub async fn sign_in(
         &self,
         db: &Database,
         username: &str,
@@ -81,13 +81,17 @@ impl DeviantartClient {
     ) -> anyhow::Result<()> {
         if !self.client.is_logged_in_online().await? {
             info!("re-signing in");
-            self.client.signin(username, password).await?;
+            self.client.sign_in(username, password).await?;
 
             // Store the new cookies
             let cookie_store = self.client.cookie_store.clone();
             let cookie_data = tokio::task::spawn_blocking(move || {
                 let mut cookie_data = Vec::with_capacity(1_000_000); // 1 MB
-                cookie_store.save_json(&mut cookie_data)?;
+                cookie_store
+                    .lock()
+                    .expect("cookie store is poisoned")
+                    .save_json(&mut cookie_data)
+                    .map_err(deviantart::WrapBoxError)?;
                 anyhow::Result::<_>::Ok(cookie_data)
             })
             .await??;
@@ -105,21 +109,24 @@ impl DeviantartClient {
         username: &str,
         password: &str,
         query: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<SearchResults>>> {
+    ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<Deviation>>>> {
         if let Some(entry) = self.search_cache.get_if_fresh(query) {
             return Ok(entry);
         }
 
         let start = Instant::now();
-        self.signin(db, username, password)
+        self.sign_in(db, username, password)
             .await
             .context("failed to log in to deviantart")?;
-
-        let list = self
-            .client
-            .search(query, 1)
+        let mut search_cursor = self.client.search(query, None);
+        search_cursor
+            .next_page()
             .await
             .context("failed to search")?;
+        let list = search_cursor
+            .take_current_deviations()
+            .expect("missing page")
+            .context("failed to process results")?;
         let ret = self.search_cache.insert_and_get(String::from(query), list);
 
         info!("searched deviantart in {:?}", start.elapsed());
@@ -174,7 +181,6 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         Ok(entry) => {
             let data = entry.data();
             let choice = data
-                .deviations
                 .iter()
                 .filter_map(|deviation| {
                     if deviation.is_image() {

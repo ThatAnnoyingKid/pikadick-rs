@@ -17,7 +17,7 @@ bytes = "1.2.0"
 camino = { version = "1.0.9", features = [ "serde1" ] }
 crossbeam = "0.8.1"
 dashmap = "5.3.4"
-deviantart = { path = "./lib/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
+deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
 futures = { version = "0.3.21", features = [ "std" ], default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
@@ -45,7 +45,7 @@ reqwest = { version = "0.11.11", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
 rusqlite = { version = "0.28.0", features = [ "bundled", "blob", "trace" ] }
 ryu = "1.0.10"
-sauce-nao = { path = "./lib/sauce-nao-rs", default-features = false, features = [ "rustls-tls" ] }
+sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-features = false, features = [ "rustls-tls" ] }
 serde = { version = "1.0.140", features = [ "derive" ] }
 serenity = { version = "0.11.2", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
@@ -117,9 +117,10 @@ opt-level = 3
 [profile.dev.package.crc32fast]
 opt-level = 3
 
-# To make image encoding times sane
-[profile.dev.package.deflate]
-opt-level = 3
+# Causes build warning? "profile package spec `deflate` in profile `dev` did not match any packages"
+# # To make image encoding times sane
+# [profile.dev.package.deflate]
+# opt-level = 3
 
 [profile.release]
 lto = "fat"
@@ -143,30 +144,7 @@ strip = false
 
 [workspace]
 members = [ 
-    "lib/fml-rs",
-    "lib/nekos-rs", 
-    "lib/quizizz-rs",
-    "lib/r6stats-rs", 
-    "lib/r6tracker-rs", 
-    "lib/reddit-tube-rs",
-    "lib/rule34-rs",
-    "lib/insta-rs",
-    "lib/deviantart-rs",
-    "lib/urban-dictionary-rs",
-    "lib/xkcd-rs",
-    "lib/tiktok-rs",
-    "lib/open-graph-rs",
-    "lib/iqdb-rs",
-    "lib/sauce-nao-rs",
-    "lib/tic-tac-toe-rs",
-    "lib/async-rusqlite-rs",
-    "lib/across-rs",
-    "lib/pikadick-slash-framework-rs",
-    "lib/pikadick-slash-framework-derive-rs",
-    "lib/rpi-deploy-rs",
-    "lib/tokio-ffmpeg-cli-rs",
-    "lib/pikadick-util-rs",
-    "lib/pikadick-system-info-rs",
+    "lib/*"
 ]
 
 [package.metadata.deb]
