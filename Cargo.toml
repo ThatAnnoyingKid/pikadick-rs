@@ -29,7 +29,7 @@ lazy_static = "1.4.0"
 nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls-tls" ] }
 once_cell = "1.13.0"
 opentelemetry = { version = "0.17.0", features = [ "rt-tokio" ] }
-opentelemetry-otlp = { version = "0.10.0", features = [ "tls", "tls-roots" ] }
+opentelemetry-otlp = { version = "0.11.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.12.1"
 pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
 pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "download_to_file", "arc_anyhow_error", "async_lock_file", "drop_remove_file" ] }
