@@ -637,6 +637,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "cookie_store"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8b224f141ecbc952e57b58dae7677899c722a1abdb8c60b68b62bf4d4435bd7"
+dependencies = [
+ "cookie",
+ "idna 0.2.3",
+ "log",
+ "publicsuffix",
+ "serde",
+ "serde_json",
+ "time",
+ "url",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1631,7 +1647,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "argh",
- "cookie_store",
+ "cookie_store 0.17.0",
  "directories-next",
  "once_cell",
  "regex",
@@ -3051,7 +3067,7 @@ dependencies = [
  "base64",
  "bytes",
  "cookie",
- "cookie_store",
+ "cookie_store 0.16.1",
  "encoding_rs",
  "futures-core",
  "futures-util",
@@ -3097,7 +3113,7 @@ checksum = "0568e27f107b933735a07b3f8cb985ecfe3d3ce2f2225f82f10b3750f5981263"
 dependencies = [
  "bytes",
  "cookie",
- "cookie_store",
+ "cookie_store 0.16.1",
  "reqwest",
  "url",
 ]
