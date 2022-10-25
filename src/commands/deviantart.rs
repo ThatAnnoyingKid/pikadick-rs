@@ -11,11 +11,11 @@ use crate::{
     Database,
 };
 use anyhow::Context as _;
+use deviantart::Deviation;
 use pikadick_slash_framework::{
     ClientData,
     FromOptions,
 };
-use deviantart::Deviation;
 use rand::seq::IteratorRandom;
 use std::{
     sync::Arc,
@@ -176,8 +176,7 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                     .with_context(|| format!("failed to search '{query}' on deviantart"));
 
                 match result.as_ref().map(|entry| entry.data()).map(|data| {
-                    data
-                        .iter()
+                    data.iter()
                         .filter_map(|deviation| {
                             if deviation.is_image() {
                                 Some(
