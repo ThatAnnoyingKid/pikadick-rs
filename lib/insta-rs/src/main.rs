@@ -398,6 +398,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     println!("id: {}", node.id);
                     println!("shortcode: {}", node.shortcode);
                     println!("is video: {}", node.is_video);
+                    println!("owner id: {}", node.owner.id);
                     if let Some(accessibility_caption) = node.accessibility_caption.as_deref() {
                         println!("accessibility caption: {accessibility_caption}");
                     }
@@ -421,9 +422,9 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             let media_item = media_info.items.first().context("missing post item")?;
             ensure!(media_info.items.len() == 1);
 
-            println!("Username: {}", media_item.user.username);
-            println!("User Id: {}", media_item.user.pk);
-            println!("User Full Name: {}", media_item.user.full_name);
+            println!("username: {}", media_item.user.username);
+            println!("user id: {}", media_item.user.pk);
+            println!("user full name: {}", media_item.user.full_name);
         }
     }
 

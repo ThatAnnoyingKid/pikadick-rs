@@ -134,7 +134,7 @@ pub struct Node {
     pub is_video: bool,
 
     /// Poster?
-    pub owner: serde_json::Value,
+    pub owner: NodeOwner,
 
     /// The shortcode
     pub shortcode: Box<str>,
@@ -177,4 +177,11 @@ pub struct PageInfo {
 
     /// Whether this has a next page
     pub has_next_page: bool,
+}
+
+/// The owner field
+#[derive(Debug, serde::Deserialize)]
+pub struct NodeOwner {
+    /// The owner id
+    pub id: Box<str>,
 }
