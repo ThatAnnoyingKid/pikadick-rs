@@ -28,15 +28,6 @@ use tracing::{
 // Setup
 const SETUP_TABLES_SQL: &str = include_str!("../sql/setup_tables.sql");
 
-static LOGGER_INIT: Lazy<Result<(), Arc<rusqlite::Error>>> = Lazy::new(|| {
-    // Safety:
-    // 1. `sqlite_logger_func` is threadsafe.
-    // 2. This is called only once.
-    // 3. This is called before any sqlite functions are used
-    // 4. sqlite functions cannot be used until the logger initializes.
-    unsafe { rusqlite::trace::config_log(Some(sqlite_logger_func)).map_err(Arc::new) }
-});
-
 fn sqlite_logger_func(error_code: c_int, msg: &str) {
     warn!("sqlite error code ({}): {}", error_code, msg);
 }
@@ -70,6 +61,16 @@ impl Database {
     where
         P: AsRef<Utf8Path>,
     {
+        // This is inside this function to prevent any others from accessing it, as this is unsafe.
+        static LOGGER_INIT: Lazy<Result<(), Arc<rusqlite::Error>>> = Lazy::new(|| {
+            // Safety:
+            // 1. `sqlite_logger_func` is threadsafe.
+            // 2. This is called only once.
+            // WARNING: 3. This is called before any sqlite functions are used (this MUST be proven by function that wraps this one.)
+            // 4. sqlite functions cannot be used until the logger initializes.
+            unsafe { rusqlite::trace::config_log(Some(sqlite_logger_func)).map_err(Arc::new) }
+        });
+
         LOGGER_INIT
             .clone()
             .context("failed to init sqlite logger")?;
