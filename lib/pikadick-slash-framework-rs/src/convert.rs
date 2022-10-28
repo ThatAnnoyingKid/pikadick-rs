@@ -2,6 +2,7 @@ use crate::{
     ArgumentParam,
     BuilderError,
 };
+use std::num::TryFromIntError;
 use twilight_model::application::interaction::application_command::{
     CommandDataOption,
     CommandOptionValue,
@@ -30,6 +31,17 @@ pub enum ConvertError {
         name: &'static str,
         /// The expected datatype
         expected: DataType,
+    },
+
+    /// Failed to convert an integer type
+    #[error("failed to convert '{name}' into an integer")]
+    IntegerConvert {
+        /// the name of the field that failed to convert
+        name: &'static str,
+
+        /// The error
+        #[source]
+        error: TryFromIntError,
     },
 }
 
@@ -162,6 +174,31 @@ impl FromOptionValue for String {
 
     fn get_expected_data_type() -> DataType {
         DataType::String
+    }
+}
+
+impl FromOptionValue for usize {
+    fn from_option_value(
+        name: &'static str,
+        option: &CommandOptionValue,
+    ) -> Result<Self, ConvertError> {
+        let expected = Self::get_expected_data_type();
+
+        match option {
+            CommandOptionValue::Integer(i) => {
+                Ok(Self::try_from(*i)
+                    .map_err(|error| ConvertError::IntegerConvert { name, error })?)
+            }
+            t => Err(ConvertError::UnexpectedType {
+                name,
+                expected,
+                actual: DataType::from_data_option_value(t),
+            }),
+        }
+    }
+
+    fn get_expected_data_type() -> DataType {
+        DataType::Integer
     }
 }
 

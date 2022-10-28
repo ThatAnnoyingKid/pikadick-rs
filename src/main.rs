@@ -184,7 +184,6 @@ impl TypeMapKey for ClientDataKey {
     system,
     quizizz,
     fml,
-    zalgo,
     shift,
     reddit_embed,
     invite,
@@ -427,6 +426,7 @@ async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<(
         .command(self::commands::cache_stats::create_slash_command()?)
         .command(self::commands::uwuify::create_slash_command()?)
         .command(self::commands::vaporwave::create_slash_command()?)
+        .command(self::commands::zalgo::create_slash_command()?)
         .build()?;
 
     info!("starting shard cluster...");
