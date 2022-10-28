@@ -1,5 +1,5 @@
 use crate::{
-    client_data::{
+    bot_context::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
@@ -279,11 +279,7 @@ impl R6TrackerClient {
 
 impl CacheStatsProvider for R6TrackerClient {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat(
-            "r6tracker",
-            "search_cache",
-            self.search_cache.len() as f32,
-        );
+        cache_stats_builder.publish_stat("r6tracker", "search_cache", self.search_cache.len());
     }
 }
 

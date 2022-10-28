@@ -1,11 +1,11 @@
 use crate::{
+    bot_context::{
+        CacheStatsBuilder,
+        CacheStatsProvider,
+    },
     checks::{
         ADMIN_CHECK,
         ENABLED_CHECK,
-    },
-    client_data::{
-        CacheStatsBuilder,
-        CacheStatsProvider,
     },
     util::{
         TimedCache,
@@ -319,11 +319,11 @@ impl RedditEmbedData {
 
 impl CacheStatsProvider for RedditEmbedData {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("reddit_embed", "link_cache", self.cache.len() as f32);
+        cache_stats_builder.publish_stat("reddit_embed", "link_cache", self.cache.len());
         cache_stats_builder.publish_stat(
             "reddit_embed",
             "video_data_cache",
-            self.video_data_cache.len() as f32,
+            self.video_data_cache.len(),
         );
         cache_stats_builder.publish_stat(
             "reddit_embed",
@@ -331,7 +331,7 @@ impl CacheStatsProvider for RedditEmbedData {
             self.random_post_cache
                 .iter()
                 .map(|v| v.value().1.len())
-                .sum::<usize>() as f32,
+                .sum::<usize>(),
         );
     }
 }

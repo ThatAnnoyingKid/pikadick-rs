@@ -16,8 +16,48 @@ use crate::{
     util::EncoderTask,
 };
 use anyhow::Context;
-use std::sync::Arc;
+use std::{
+    collections::BTreeMap,
+    sync::Arc,
+};
 use twilight_http::client::InteractionClient;
+
+/// A tool to build cache stats
+#[derive(Debug)]
+pub struct CacheStatsBuilder {
+    stats: BTreeMap<&'static str, BTreeMap<&'static str, usize>>,
+}
+
+impl CacheStatsBuilder {
+    /// Make a new [`CacheStatsBuilder`].
+    pub fn new() -> Self {
+        Self {
+            stats: BTreeMap::new(),
+        }
+    }
+
+    /// Publish a stat to a section
+    pub fn publish_stat(&mut self, section: &'static str, name: &'static str, value: usize) {
+        self.stats.entry(section).or_default().insert(name, value);
+    }
+
+    /// Get the inner stats
+    pub fn into_inner(self) -> BTreeMap<&'static str, BTreeMap<&'static str, usize>> {
+        self.stats
+    }
+}
+
+impl Default for CacheStatsBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A type that can provide cache stats
+pub trait CacheStatsProvider {
+    /// Publish stats to the provided [`CacheStatsBuilder`].
+    fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder);
+}
 
 #[derive(Debug, Clone)]
 pub struct BotContext {
@@ -76,6 +116,14 @@ impl BotContext {
             }),
         })
     }
+
+    /// Generate cache stats
+    ///
+    /// Currently, In order for something to show up in cache-stats it must be added here.
+    /// More automation is desirable in the future.
+    pub fn generate_cache_stats(&self) -> BTreeMap<&'static str, BTreeMap<&'static str, usize>> {
+        self.inner.generate_cache_stats()
+    }
 }
 
 /// The inner bot context.
@@ -133,6 +181,35 @@ pub struct BotContextInner {
 
     /// The insta client
     pub insta_client: insta::Client,
+}
+
+impl BotContextInner {
+    /// Generate cache stats
+    ///
+    /// Currently, In order for something to show up in cache-stats it must be added here.
+    /// More automation is desirable in the future.
+    fn generate_cache_stats(&self) -> BTreeMap<&'static str, BTreeMap<&'static str, usize>> {
+        let mut stat_builder = CacheStatsBuilder::new();
+
+        let cache_stat_providers: &[&dyn CacheStatsProvider] = &[
+            // &self.fml_client,
+            &self.nekos_client,
+            &self.r6stats_client,
+            &self.r6tracker_client,
+            &self.reddit_embed_data,
+            &self.rule34_client,
+            // &self.shift_client,
+            &self.deviantart_client,
+            &self.urban_client,
+            &self.iqdb_client,
+        ];
+
+        for cache_stat_provider in cache_stat_providers {
+            cache_stat_provider.publish_cache_stats(&mut stat_builder);
+        }
+
+        stat_builder.into_inner()
+    }
 }
 
 impl pikadick_slash_framework::ClientData for BotContext {

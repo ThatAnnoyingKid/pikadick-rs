@@ -28,7 +28,6 @@ pub mod xkcd;
 pub mod zalgo;
 
 pub use crate::commands::{
-    cache_stats::CACHE_STATS_COMMAND,
     cmd::CMD_COMMAND,
     fml::FML_COMMAND,
     invite::INVITE_COMMAND,

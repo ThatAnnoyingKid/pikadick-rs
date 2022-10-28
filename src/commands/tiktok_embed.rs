@@ -1,5 +1,5 @@
 use crate::{
-    client_data::{
+    bot_context::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
@@ -474,7 +474,7 @@ impl CacheStatsProvider for TikTokData {
         cache_stats_builder.publish_stat(
             "tiktok_data",
             "post_page_cache",
-            self.post_page_cache.len() as f32,
+            self.post_page_cache.len(),
         );
     }
 }

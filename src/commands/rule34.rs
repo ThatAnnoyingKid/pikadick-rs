@@ -1,5 +1,5 @@
 use crate::{
-    client_data::{
+    bot_context::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
@@ -71,7 +71,7 @@ impl Rule34Client {
 
 impl CacheStatsProvider for Rule34Client {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("rule34", "list_cache", self.list_cache.len() as f32);
+        cache_stats_builder.publish_stat("rule34", "list_cache", self.list_cache.len());
     }
 }
 

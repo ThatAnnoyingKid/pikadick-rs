@@ -1,5 +1,5 @@
 use crate::{
-    client_data::{
+    bot_context::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
@@ -212,17 +212,13 @@ impl CacheStatsProvider for NekosClient {
         let cache = self.get_cache(false);
         let nsfw_cache = self.get_cache(true);
 
-        cache_stats_builder.publish_stat("nekos", "primary_cache", cache.primary_len() as f32);
-        cache_stats_builder.publish_stat(
-            "nekos",
-            "primary_nsfw_cache",
-            nsfw_cache.primary_len() as f32,
-        );
-        cache_stats_builder.publish_stat("nekos", "secondary_cache", cache.secondary_len() as f32);
+        cache_stats_builder.publish_stat("nekos", "primary_cache", cache.primary_len());
+        cache_stats_builder.publish_stat("nekos", "primary_nsfw_cache", nsfw_cache.primary_len());
+        cache_stats_builder.publish_stat("nekos", "secondary_cache", cache.secondary_len());
         cache_stats_builder.publish_stat(
             "nekos",
             "secondary_nsfw_cache",
-            nsfw_cache.secondary_len() as f32,
+            nsfw_cache.secondary_len(),
         );
     }
 }
