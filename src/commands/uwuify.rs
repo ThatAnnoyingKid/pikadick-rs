@@ -25,7 +25,7 @@ struct UwuifyOptions {
 pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
     pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("uwuify")
-        .description("UwUify as phrase")
+        .description("UwUify a phrase")
         .arguments(UwuifyOptions::get_argument_params()?.into_iter())
         .on_process(|client_data, interaction, args: UwuifyOptions| async move {
             let interaction_client = client_data.interaction_client();
