@@ -19,7 +19,7 @@ crossbeam = "0.8.2"
 dashmap = "5.4.0"
 deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
-futures = { version = "0.3.21", features = [ "std" ], default-features = false }
+futures = { version = "0.3.25", features = [ "std" ], default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
 indexmap = "1.9.1"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
