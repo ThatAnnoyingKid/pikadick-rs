@@ -2011,8 +2011,9 @@ dependencies = [
 
 [[package]]
 name = "nix"
-version = "0.24.1"
-source = "git+https://github.com/nathaniel-daniel/nix?branch=maybeuninit-gethostname#22c4ba8bc0f7f9de703cf64007f5d0ef1ebdd943"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e322c04a9e3440c327fca7b6c8a63e6890a32fa2ad689db972425f07e0d22abb"
 dependencies = [
  "autocfg",
  "bitflags",
@@ -2539,7 +2540,7 @@ dependencies = [
  "bitflags",
  "cfg-if",
  "libc",
- "nix 0.24.1",
+ "nix 0.25.0",
  "once_cell",
  "platforms",
  "thiserror",
