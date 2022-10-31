@@ -20,7 +20,7 @@ use ttf_parser::OutlineBuilder;
 const FONT_BYTES: &[u8] =
     include_bytes!("../../../assets/Averia_Serif_Libre/AveriaSerifLibre-Light.ttf");
 static FONT_FACE: Lazy<ttf_parser::Face<'static>> =
-    Lazy::new(|| ttf_parser::Face::from_slice(FONT_BYTES, 0).expect("failed to load `FONT_BYTES`"));
+    Lazy::new(|| ttf_parser::Face::parse(FONT_BYTES, 0).expect("failed to load `FONT_BYTES`"));
 
 const RENDERED_SIZE: u16 = 300;
 const SQUARE_SIZE: u16 = RENDERED_SIZE / 3;
