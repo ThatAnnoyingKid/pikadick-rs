@@ -9,11 +9,11 @@ anyhow = { version = "1.0.58", optional = true }
 # fslock = { version = "0.2.1", optional = true }
 fslock = { git = "https://github.com/adumbidiot/fslock", optional = true }
 reqwest = { version = "0.11.11", default-features = false, optional = true }
-tokio = { version = "1.20.0", default-features = false, optional = true }
+tokio = { version = "1.21.2", default-features = false, optional = true }
 tracing = { version = "0.1.35", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.20.0", features = [ "macros" ] }
+tokio = { version = "1.21.2", features = [ "macros" ] }
 
 [features]
 download_to_file = [
