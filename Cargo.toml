@@ -27,7 +27,7 @@ iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-
 itoa = "1.0.2"
 lazy_static = "1.4.0"
 nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls-tls" ] }
-once_cell = "1.13.0"
+once_cell = "1.16.0"
 opentelemetry = { version = "0.17.0", features = [ "rt-tokio" ] }
 opentelemetry-otlp = { version = "0.10.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.12.1"
