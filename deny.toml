@@ -59,14 +59,6 @@ skip = [
     { name = "rand_core", version = "0.5.1" },
     { name = "rand_chacha", version = "0.2.2" },
     
-    # Blocked on reqwest updating webpki
-    { name = "webpki", version = "0.21.4" },
-    
-    # Blocked on async-tungstenite and tonic updating tokio-rustls to 0.23.1 and rustls to 0.20.x
-    { name = "tokio-rustls", version = "0.22.0" },
-    { name = "rustls", version = "0.19.1" },
-    { name = "sct", version = "0.6.1" },
-    
     # Blocked on ring updating their version of spin to 0.9
     { name = "spin", version = "0.5.2" },
     
@@ -78,9 +70,6 @@ skip = [
     
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.8.0" },
-    
-    # Blocked on h2 updating tokio-util to v 7
-    { name = "tokio-util", version = "0.6.9" },
     
     # Blocked on markup5ever updating phf_codegen
     { name = "phf_generator", version = "0.8.0" },
@@ -95,9 +84,6 @@ skip = [
     # Blocked on many crates moving to the next version of `windows`
     { name = "windows_x86_64_msvc", version = "0.36.1" },
     { name = "windows-sys", version = "0.36.1" },
-    
-    # Blocked on prost updating heck
-    { name = "heck", version = "0.3.3" },
     
     # Blocked on cookie-store moving to idna 0.3
     { name = "idna", version = "0.2.3" },
