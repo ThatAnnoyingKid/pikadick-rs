@@ -24,7 +24,7 @@ heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
 indexmap = "1.9.1"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }
-itoa = "1.0.2"
+itoa = "1.0.4"
 lazy_static = "1.4.0"
 nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls-tls" ] }
 once_cell = "1.16.0"
