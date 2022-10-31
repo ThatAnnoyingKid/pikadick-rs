@@ -85,9 +85,6 @@ skip = [
     # Blocked on markup5ever updating phf_codegen
     { name = "phf_generator", version = "0.8.0" },
     
-    # Blocked on updates to tiny-skia
-    { name = "arrayvec", version = "0.5.2" },
-    
     # Blocked on cssparser updating phf
     { name = "phf", version = "0.8.0" },
     { name = "phf_codegen", version = "0.8.0" },
