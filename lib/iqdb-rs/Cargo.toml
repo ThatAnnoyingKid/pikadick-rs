@@ -16,7 +16,7 @@ scraper = { version = "0.13.0", default-features = false }
 thiserror = "1.0.31"
 tokio = { version = "1.20.0", features = [ "fs", "rt" ] }
 tokio-util = { version = "0.7.3", features = ["codec"] }
-url = "2.2.2"
+url = "2.3.1"
 
 # Optional
 anyhow = { version = "1.0.58", optional = true }

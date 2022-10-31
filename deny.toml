@@ -106,6 +106,9 @@ skip = [
     
     # Blocked on cookie-store moving to idna 0.3
     { name = "idna", version = "0.2.3" },
+    
+    # Blocked on multiple crates updating miniz_oxide
+    { name = "miniz_oxide", version = "0.5.4" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
