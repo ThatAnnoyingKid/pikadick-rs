@@ -12,8 +12,6 @@ vulnerability = "deny"
 unmaintained = "deny"
 notice = "deny"
 ignore = [
-    # Blocked on criterion moving away from "serde_cbor". This is fine as criterion is a dev-dependency.
-    "RUSTSEC-2021-0127",
 ]
 
 [licenses]
