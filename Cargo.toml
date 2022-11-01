@@ -95,6 +95,13 @@ servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca146
 serenity = { git = "https://github.com/adumbidiot/serenity", branch = "next" }
 songbird = { git = "https://github.com/FelixMcFelix/songbird", branch = "symphonia" }
 
+# Fix doc gen on stable
+opentelemetry-proto = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
+opentelemetry-otlp = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
+opentelemetry_sdk = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
+opentelemetry_api = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
+opentelemetry = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
+
 [patch.'https://github.com/serenity-rs/serenity']
 serenity = { git = "https://github.com/adumbidiot/serenity", branch = "next" }
 
