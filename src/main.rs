@@ -14,7 +14,6 @@
     rust_2018_idioms,
     future_incompatible,
     nonstandard_style,
-    rustdoc::all,
     clippy::all,
     clippy::filter_map_next,
     clippy::ptr_as_ptr,

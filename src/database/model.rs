@@ -221,7 +221,7 @@ impl FromSql for TicTacToePlayer {
 
 /// A String wrapper for a [`GuildId`]
 ///
-/// This is "<u64>.to_string()" if a guild, or "empty" if not.
+/// This is "[u64].to_string()" if a guild, or "empty" if not.
 #[derive(Debug, Copy, Clone)]
 pub struct MaybeGuildString {
     pub guild_id: Option<GuildId>,
