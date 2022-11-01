@@ -8,12 +8,12 @@ name: Rust
       - master
 
 jobs:
-  lint:
+  Lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         
       - name: Cache
         uses: actions/cache@v3
@@ -25,17 +25,9 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy 
-          override: true
       
-      - name: Fetch
-        uses: actions-rs/cargo@v1
-        with:
-          command: fetch
+      - name: Install Protobuf Compiler
+        run: sudo apt-get install -y protobuf-compiler
       
       - name: Clippy
         uses: actions-rs/cargo@v1
@@ -75,22 +67,22 @@ jobs:
           command: fmt
           args: '-- --check --color always'
           
-  cargo-deny:
+  Deny:
     name: Deny
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         
       - name: Deny
         uses: EmbarkStudios/cargo-deny-action@v1
         
-  build:
+  Build:
     name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         
       - name: Cache
         uses: actions/cache@v3
@@ -102,12 +94,6 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        
-      - name: Install Latest Stable Rust
-        uses: actions-rs/toolchain@v1
-        with:
-            profile: minimal
-            toolchain: stable
             
       - name: Run `apt-get update`
         run: sudo apt-get update
@@ -117,6 +103,9 @@ jobs:
             
       - name: Install FFMpeg
         run: sudo apt-get install -y ffmpeg
+        
+      - name: Install Protobuf Compiler
+        run: sudo apt-get install -y protobuf-compiler
         
       - name: Build Pikadick
         run: cargo build --verbose
