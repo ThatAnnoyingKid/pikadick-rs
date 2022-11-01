@@ -67,7 +67,6 @@
     clippy::unnested_or_patterns,
     clippy::zero_sized_map_values
 )]
-#![allow(rustdoc::missing_doc_code_examples)]
 // TODO: Document everything properly
 // clippy::default_trait_access
 // clippy::use_self
