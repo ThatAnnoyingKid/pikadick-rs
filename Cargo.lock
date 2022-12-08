@@ -2857,7 +2857,7 @@ dependencies = [
 
 [[package]]
 name = "r6tracker"
-version = "0.0.1"
+version = "0.0.0"
 dependencies = [
  "reqwest",
  "serde",
