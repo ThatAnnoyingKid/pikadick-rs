@@ -687,8 +687,8 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
         .context("failed to try to lock the lockfile")?;
     ensure!(lock_file_locked, "another process has locked the lockfile");
 
-    std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
-    std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
+    std::fs::create_dir_all(config.log_file_dir()).context("failed to create log file dir")?;
+    std::fs::create_dir_all(config.cache_dir()).context("failed to create cache dir")?;
 
     // TODO: Init db
     eprintln!("opening database...");
@@ -697,7 +697,7 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
     // Safety: This is called before any other sqlite functions.
     // TODO: Is there a good reason to not remake the db if it is missing?
     let database = unsafe {
-        Database::blocking_new(&database_path, true) // missing_data_dir
+        Database::blocking_new(database_path, true) // missing_data_dir
             .context("failed to open database")?
     };
 
