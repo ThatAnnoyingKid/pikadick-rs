@@ -33,9 +33,6 @@ pub struct Definition {
     /// The definition permalink
     pub permalink: Url,
 
-    /// ?
-    pub sound_urls: Vec<serde_json::Value>,
-
     /// # of thumbs down
     pub thumbs_down: u64,
 
