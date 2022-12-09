@@ -12,8 +12,9 @@ vulnerability = "deny"
 unmaintained = "deny"
 notice = "deny"
 ignore = [
-    # Blocked on criterion moving away from "serde_cbor". This is fine as criterion is a dev-dependency.
-    "RUSTSEC-2021-0127",
+    # Blocked on criterion moving away from atty.
+    # Not a big issue, as this is used only for benchmarking.
+    "RUSTSEC-2021-0145"
 ]
 
 [licenses]
@@ -61,14 +62,6 @@ skip = [
     { name = "rand_core", version = "0.5.1" },
     { name = "rand_chacha", version = "0.2.2" },
     
-    # Blocked on reqwest updating webpki
-    { name = "webpki", version = "0.21.4" },
-    
-    # Blocked on async-tungstenite and tonic updating tokio-rustls to 0.23.1 and rustls to 0.20.x
-    { name = "tokio-rustls", version = "0.22.0" },
-    { name = "rustls", version = "0.19.1" },
-    { name = "sct", version = "0.6.1" },
-    
     # Blocked on ring updating their version of spin to 0.9
     { name = "spin", version = "0.5.2" },
     
@@ -81,14 +74,8 @@ skip = [
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.8.0" },
     
-    # Blocked on h2 updating tokio-util to v 7
-    { name = "tokio-util", version = "0.6.9" },
-    
     # Blocked on markup5ever updating phf_codegen
     { name = "phf_generator", version = "0.8.0" },
-    
-    # Blocked on updates to tiny-skia
-    { name = "arrayvec", version = "0.5.2" },
     
     # Blocked on cssparser updating phf
     { name = "phf", version = "0.8.0" },
@@ -96,16 +83,17 @@ skip = [
     
     # Blocked on removing heim
     { name = "nix", version = "0.23.1" },
+    { name = "memoffset", version = "0.6.5" },
     
     # Blocked on many crates moving to the next version of `windows`
     { name = "windows_x86_64_msvc", version = "0.36.1" },
     { name = "windows-sys", version = "0.36.1" },
     
-    # Blocked on prost updating heck
-    { name = "heck", version = "0.3.3" },
-    
     # Blocked on cookie-store moving to idna 0.3
     { name = "idna", version = "0.2.3" },
+    
+    # Blocked on reqwest updating cookie-store to 0.19.x
+    { name = "cookie_store", version = "0.16.1" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -167,9 +155,9 @@ allow-git = [
     "https://github.com/adumbidiot/fslock",
     "https://github.com/adumbidiot/serenity",
     # "https://github.com/nathaniel-daniel/raspberry-pi-rs",
-    "https://github.com/nathaniel-daniel/nix",
     "https://github.com/FelixMcFelix/Symphonia",
-    # "https://github.com/bheisler/criterion.rs",
     "https://github.com/adumbidiot/sauce-nao-rs",
     "https://github.com/adumbidiot/deviantart-rs",
+    "https://github.com/open-telemetry/opentelemetry-rust",
+    "https://github.com/nathaniel-daniel/nd-util-rs",
 ]

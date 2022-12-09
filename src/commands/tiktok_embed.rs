@@ -173,10 +173,10 @@ impl TikTokData {
                 let encoder_task = self.encoder_task.clone();
 
                 let reencoded_file_name = format!("{id}-reencoded.mp4");
-                let reencoded_file_path = self.video_download_cache_path.join(&reencoded_file_name);
+                let reencoded_file_path = self.video_download_cache_path.join(reencoded_file_name);
 
                 let file_name = format!("{id}.{format}");
-                let file_path = self.video_download_cache_path.join(&file_name);
+                let file_path = self.video_download_cache_path.join(file_name);
 
                 let id = id.to_string();
                 let format = format.to_string();

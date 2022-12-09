@@ -69,7 +69,7 @@ impl Team {
         }
     }
 
-    /// Try to parse a [`TicTacToeTeam`] from a [`char`].
+    /// Try to parse a [`Team`] from a [`char`].
     pub fn from_char(c: char) -> Result<Self, InvalidCharError> {
         match c {
             'x' | 'X' => Ok(Self::X),

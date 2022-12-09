@@ -158,7 +158,11 @@ fn real_main(options: Options) -> anyhow::Result<()> {
             // Perform copy
             let metadata_len = local_package_file_metadata.len();
             let progress_bar = indicatif::ProgressBar::new(metadata_len);
-            progress_bar.set_style(indicatif::ProgressStyle::default_bar().template("[Time = {elapsed_precise} | ETA = {eta_precise} | Speed = {bytes_per_sec}] {wide_bar} {bytes}/{total_bytes}"));
+            let progress_bar_style_template = "[Time = {elapsed_precise} | ETA = {eta_precise} | Speed = {bytes_per_sec}] {wide_bar} {bytes}/{total_bytes}";
+            let progress_bar_style = indicatif::ProgressStyle::default_bar()
+                .template(progress_bar_style_template)
+                .expect("invalid progress bar style template");
+            progress_bar.set_style(progress_bar_style);
             // remote_package_file.set_len(metadata_len)?;
             let bytes_copied = std::io::copy(
                 &mut progress_bar.wrap_read(local_package_file),
