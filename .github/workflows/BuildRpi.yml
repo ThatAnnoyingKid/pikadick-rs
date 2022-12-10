@@ -35,6 +35,9 @@ jobs:
           
     - name: Install `cargo-deb`
       run: cargo install cargo-deb
+      
+    - name: Install `across`
+      run: cargo install ./lib/across-rs
 
     - name: Build
       run: make pkg-cli
