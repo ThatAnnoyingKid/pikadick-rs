@@ -1,9 +1,10 @@
 export DEPLOY_TARGET=
+export RPI_DEPLOY = cargo run -p rpi-deploy --
 
 .PHONY: pkg deploy
 
 pkg: 
-	cargo run -p rpi-deploy package
+	$(RPI_DEPLOY) package
 	
 deploy:
-	cargo run -p rpi-deploy deploy --name $(DEPLOY_TARGET)
+	$(RPI_DEPLOY) deploy --name $(DEPLOY_TARGET)
