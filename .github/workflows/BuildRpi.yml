@@ -37,7 +37,7 @@ jobs:
       run: cargo install cargo-deb
 
     - name: Build
-      run: make pkg
+      run: make pkg-cli
       
     - name: Upload Binary
       uses: actions/upload-artifact@v2
