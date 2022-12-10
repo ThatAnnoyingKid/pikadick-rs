@@ -114,9 +114,9 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                         .url(entry.permalink.as_str())
                         .field(EmbedFieldBuilder::new(
                             "Definition",
-                            &entry.get_raw_definition(),
+                            entry.get_raw_definition(),
                         ))
-                        .field(EmbedFieldBuilder::new("Example", &entry.get_raw_example()))
+                        .field(EmbedFieldBuilder::new("Example", entry.get_raw_example()))
                         .field(
                             EmbedFieldBuilder::new("👍", thumbs_up_buf.format(entry.thumbs_up))
                                 .inline(),
