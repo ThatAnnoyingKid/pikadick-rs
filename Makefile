@@ -7,7 +7,7 @@ pkg:
 	$(RPI_DEPLOY) package
 	
 pkg-ci:
-	$(RPI_DEPLOY) package --config cross-compile-info.ci.toml
+	$(RPI_DEPLOY) package --cross-config cross-compile-info.ci.toml
 	
 deploy:
 	$(RPI_DEPLOY) deploy --name $(DEPLOY_TARGET)

@@ -11,7 +11,10 @@ use anyhow::{
     ensure,
     Context as _,
 };
-use camino::Utf8PathBuf;
+use camino::{
+    Utf8Path,
+    Utf8PathBuf,
+};
 
 /// The Cli Context
 pub struct Context {
@@ -23,6 +26,8 @@ pub struct Context {
 
     metadata: cargo_metadata::Metadata,
     root_package: cargo_metadata::Package,
+
+    cross_config: Option<Utf8PathBuf>,
 }
 
 impl Context {
@@ -67,6 +72,8 @@ impl Context {
 
             metadata,
             root_package,
+
+            cross_config: None,
         })
     }
 
@@ -90,6 +97,14 @@ impl Context {
         ))
     }
 
+    /// Set the cross config path
+    pub fn set_cross_config<P>(&mut self, path: P)
+    where
+        P: AsRef<Utf8Path>,
+    {
+        self.cross_config = Some(path.as_ref().into());
+    }
+
     /// Package a target
     pub fn package_target(&self, target: &str) -> anyhow::Result<()> {
         println!("Packaging for `{}`...", target);
@@ -104,11 +119,12 @@ impl Context {
         // Building
         {
             println!("Building...");
-            let status = std::process::Command::new("across")
-                .args(["--target", target])
-                .arg("--release")
-                .status()
-                .context("failed to spawn build command")?;
+            let mut command = std::process::Command::new("across");
+            command.args(["--target", target]).arg("--release");
+            if let Some(cross_config) = self.cross_config.as_ref() {
+                command.arg("--config").arg(cross_config);
+            }
+            let status = command.status().context("failed to spawn build command")?;
             ensure!(status.success(), "build command failed");
             println!();
         }
