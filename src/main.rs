@@ -14,7 +14,6 @@
     rust_2018_idioms,
     future_incompatible,
     nonstandard_style,
-    rustdoc::all,
     clippy::all,
     clippy::filter_map_next,
     clippy::ptr_as_ptr,
@@ -67,7 +66,6 @@
     clippy::unnested_or_patterns,
     clippy::zero_sized_map_values
 )]
-#![allow(rustdoc::missing_doc_code_examples)]
 // TODO: Document everything properly
 // clippy::default_trait_access
 // clippy::use_self
@@ -325,8 +323,8 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
         .context("failed to try to lock the lockfile")?;
     ensure!(lock_file_locked, "another process has locked the lockfile");
 
-    std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
-    std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
+    std::fs::create_dir_all(config.log_file_dir()).context("failed to create log file dir")?;
+    std::fs::create_dir_all(config.cache_dir()).context("failed to create cache dir")?;
 
     eprintln!("opening database...");
     let database_path = config.data_dir.join("pikadick.sqlite");
@@ -334,7 +332,7 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
     // Safety: This is called before any other sqlite functions.
     // TODO: Is there a good reason to not remake the db if it is missing?
     let database = unsafe {
-        Database::blocking_new(&database_path, true) // missing_data_dir
+        Database::blocking_new(database_path, true) // missing_data_dir
             .context("failed to open database")?
     };
 

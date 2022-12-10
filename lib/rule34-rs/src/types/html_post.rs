@@ -108,7 +108,7 @@ pub struct HtmlPost {
 }
 
 impl HtmlPost {
-    /// Try to make a [`Post`] from [`Html`].
+    /// Try to make a [`HtmlPost`] from [`Html`].
     pub fn from_html(html: &Html) -> Result<Self, FromHtmlError> {
         lazy_static::lazy_static! {
             static ref STATS_SELECTOR: Selector = Selector::parse("#stats").expect("invalid stats selector");
