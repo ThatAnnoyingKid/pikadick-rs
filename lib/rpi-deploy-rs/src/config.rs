@@ -40,9 +40,20 @@ pub struct FileConfig {
 impl FileConfig {
     /// Load a file config
     pub fn new() -> anyhow::Result<Self> {
-        let config_str = std::fs::read_to_string(FILE_CONFIG_FILE_NAME).with_context(|| {
-            format!("failed to read file config at `{}`", FILE_CONFIG_FILE_NAME)
-        })?;
+        let config_str = match std::fs::read_to_string(FILE_CONFIG_FILE_NAME) {
+            Ok(config_str) => config_str,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                return Ok(Self {
+                    machines: HashMap::new(),
+                })
+            }
+            Err(e) => {
+                return Err(e).with_context(|| {
+                    format!("failed to read file config at `{}`", FILE_CONFIG_FILE_NAME)
+                })?;
+            }
+        };
+
         toml::from_str(&config_str).context("failed to parse file config")
     }
 
