@@ -40,7 +40,7 @@ jobs:
       run: cargo install ./lib/across-rs
 
     - name: Build
-      run: make pkg-cli
+      run: make pkg-ci
       
     - name: Upload Binary
       uses: actions/upload-artifact@v2
