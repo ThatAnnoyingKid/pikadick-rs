@@ -4390,9 +4390,9 @@ checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 
 [[package]]
 name = "ttf-parser"
-version = "0.17.1"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "375812fa44dab6df41c195cd2f7fecb488f6c09fbaafb62807488cefab642bff"
+checksum = "dbf554b6e535f9a160b2ed4ea83f99000f21cbc0a693df26e258eaf2c226a151"
 
 [[package]]
 name = "tungstenite"
