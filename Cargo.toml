@@ -51,7 +51,7 @@ serenity = { version = "0.11.2", features = [ "client", "standard_framework", "r
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
 songbird = "0.2.2"
 systemstat = "0.2.1"
-thiserror = "1.0.37"
+thiserror = "1.0.38"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiktok = { path = "lib/tiktok-rs" }
 time = "0.3.17"
