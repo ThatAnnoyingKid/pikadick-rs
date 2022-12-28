@@ -1679,7 +1679,7 @@ dependencies = [
  "argh",
  "lazy_static",
  "reqwest",
- "scraper",
+ "scraper 0.14.0",
  "thiserror",
  "tokio",
  "tokio-util",
@@ -2174,7 +2174,7 @@ dependencies = [
  "anyhow",
  "argh",
  "reqwest",
- "scraper",
+ "scraper 0.14.0",
  "thiserror",
  "tokio",
  "url",
@@ -3016,7 +3016,7 @@ version = "0.0.0"
 dependencies = [
  "lazy_static",
  "reqwest",
- "scraper",
+ "scraper 0.14.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -3202,7 +3202,7 @@ dependencies = [
  "lazy_static",
  "quick-xml",
  "reqwest",
- "scraper",
+ "scraper 0.14.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -3381,6 +3381,21 @@ name = "scraper"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5684396b456f3eb69ceeb34d1b5cb1a2f6acf7ca4452131efa3ba0ee2c2d0a70"
+dependencies = [
+ "cssparser",
+ "ego-tree",
+ "html5ever",
+ "matches",
+ "selectors",
+ "smallvec",
+ "tendril",
+]
+
+[[package]]
+name = "scraper"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc7cb4dae083699a22a65aa9d2699c27f525e35dffaec38b10801e958ed4cf27"
 dependencies = [
  "cssparser",
  "ego-tree",
@@ -3609,7 +3624,7 @@ dependencies = [
  "logos",
  "once_cell",
  "reqwest",
- "scraper",
+ "scraper 0.13.0",
  "thiserror",
  "time",
  "tokio",
@@ -3972,7 +3987,7 @@ dependencies = [
  "argh",
  "once_cell",
  "reqwest",
- "scraper",
+ "scraper 0.14.0",
  "serde",
  "serde_json",
  "thiserror",
