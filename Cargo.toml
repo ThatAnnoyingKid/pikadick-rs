@@ -38,7 +38,7 @@ quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "r
 r6stats = { path = "./lib/r6stats-rs", default-features = false, features = [ "rustls-tls" ] }
 r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = [ "rustls-tls" ] }
 rand = "0.8.5"
-reddit = { git = "https://github.com/nathaniel-daniel/reddit-rs", features = [ "force-rustls-tls" ] }
+reddit = { git = "https://github.com/nathaniel-daniel/reddit-rs", features = [ "rustls-tls", "force-rustls-tls" ], default-features = false }
 reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls-tls" ] }
 regex = "1.7.0"
 reqwest = { version = "0.11.13", default-features = false }
