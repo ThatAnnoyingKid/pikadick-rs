@@ -1,3 +1,4 @@
+use std::num::NonZeroU64;
 use url::Url;
 
 /// A list of posts
@@ -35,7 +36,7 @@ pub struct Post {
 
     /// The parent post id
     #[serde(alias = "@parent_id")]
-    pub parent_id: Option<u64>,
+    pub parent_id: Option<NonZeroU64>,
 
     /// The sample url
     #[serde(alias = "@sample_url")]
@@ -63,7 +64,7 @@ pub struct Post {
 
     /// The id the post
     #[serde(alias = "@id")]
-    pub id: u64,
+    pub id: NonZeroU64,
 
     /// image width
     #[serde(alias = "@width")]

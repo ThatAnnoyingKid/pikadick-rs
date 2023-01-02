@@ -3,6 +3,7 @@ use scraper::{
     Html,
     Selector,
 };
+use std::num::NonZeroU64;
 use url::Url;
 
 /// Error that may occur while parsing a [`Post`] from [`Html`].
@@ -69,7 +70,7 @@ pub enum FromHtmlError {
 #[derive(Debug)]
 pub struct HtmlPost {
     /// The post id
-    pub id: u64,
+    pub id: NonZeroU64,
 
     /// The post date
     pub date: String,
@@ -104,7 +105,7 @@ pub struct HtmlPost {
     pub has_child_posts: bool,
 
     /// Whether this post has a parent post
-    pub parent_post: Option<u64>,
+    pub parent_post: Option<NonZeroU64>,
 }
 
 impl HtmlPost {
@@ -273,7 +274,7 @@ impl HtmlPost {
                                         |(k, v)| {
                                             if k == "id" {
                                                 Some(
-                                                    v.parse::<u64>()
+                                                    v.parse()
                                                         .map_err(FromHtmlError::InvalidParentPost),
                                                 )
                                             } else {
@@ -308,7 +309,7 @@ impl HtmlPost {
 
     /// Try to get the image name.
     pub fn get_image_name(&self) -> Option<&str> {
-        self.image_url.path_segments()?.last()
+        self.image_url.path_segments()?.rev().next()
     }
 
     /// Get the post url for this post.

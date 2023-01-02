@@ -14,10 +14,7 @@ use reqwest::header::{
     HeaderValue,
 };
 use scraper::Html;
-use tokio::io::{
-    AsyncWrite,
-    AsyncWriteExt,
-};
+use std::num::NonZeroU64;
 use url::Url;
 
 // Default Header values
@@ -69,7 +66,7 @@ impl Client {
 
     /// Send a GET web request to a `uri` and get the result as [`Html`],
     /// then use the given func to process it.
-    pub async fn get_html<F, T>(&self, uri: &str, f: F) -> Result<T, Error>
+    async fn get_html<F, T>(&self, uri: &str, f: F) -> Result<T, Error>
     where
         F: FnOnce(Html) -> T + Send + 'static,
         T: Send + 'static,
@@ -81,7 +78,7 @@ impl Client {
     }
 
     /// Send a GET web request to a `uri` and get the result as xml, deserializing it to the given type.
-    pub async fn get_xml<T>(&self, uri: &str) -> Result<T, Error>
+    async fn get_xml<T>(&self, uri: &str) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned + Send + 'static,
     {
@@ -96,10 +93,7 @@ impl Client {
     }
 
     /// Get a [`HtmlPost`] by `id`.
-    pub async fn get_html_post(&self, id: u64) -> Result<HtmlPost, Error> {
-        if id == 0 {
-            return Err(Error::InvalidId);
-        }
+    pub async fn get_html_post(&self, id: NonZeroU64) -> Result<HtmlPost, Error> {
         let url = crate::post_id_to_html_post_url(id);
         let ret = self
             .get_html(url.as_str(), |html| HtmlPost::from_html(&html))
@@ -140,20 +134,6 @@ impl Client {
     /// Get a builder to list tags.
     pub fn list_tags(&self) -> TagListQueryBuilder {
         TagListQueryBuilder::new(self)
-    }
-
-    /// Send a GET web request to a `uri` and copy the result to the given async writer.
-    pub async fn get_to_writer<W>(&self, url: &str, mut writer: W) -> Result<(), Error>
-    where
-        W: AsyncWrite + Unpin,
-    {
-        let mut res = self.client.get(url).send().await?.error_for_status()?;
-
-        while let Some(chunk) = res.chunk().await? {
-            writer.write_all(&chunk).await?;
-        }
-
-        Ok(())
     }
 }
 

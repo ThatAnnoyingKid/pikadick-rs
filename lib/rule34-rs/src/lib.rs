@@ -18,6 +18,7 @@ pub use crate::{
     },
 };
 pub use scraper::Html;
+use std::num::NonZeroU64;
 pub use url::Url;
 
 /// The maximum number of responses per post list request
@@ -26,15 +27,15 @@ pub const POST_LIST_LIMIT_MAX: u16 = 1_000;
 pub const TAGS_LIST_LIMIT_MAX: u16 = 1_000;
 
 // URL constants
-const URL_INDEX: &str = "https://rule34.xxx/index.php";
+pub(crate) const URL_INDEX: &str = "https://rule34.xxx/index.php";
 
 /// Turn a post id into a post url
-fn post_id_to_html_post_url(id: u64) -> Url {
+fn post_id_to_html_post_url(id: NonZeroU64) -> Url {
     // It shouldn't be possible to make this function fail for any valid id.
     Url::parse_with_params(
         crate::URL_INDEX,
         &[
-            ("id", itoa::Buffer::new().format(id)),
+            ("id", itoa::Buffer::new().format(id.get())),
             ("page", "post"),
             ("s", "view"),
         ],
