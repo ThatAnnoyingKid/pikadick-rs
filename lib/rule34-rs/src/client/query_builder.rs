@@ -4,25 +4,32 @@ use crate::{
     PostList,
     TagList,
 };
+use std::num::NonZeroU64;
 use url::Url;
 
 /// A builder for list api queries
 #[derive(Debug)]
 pub struct PostListQueryBuilder<'a, 'b> {
-    /// The tags
+    /// The tags.
     pub tags: Option<&'b str>,
+
     /// The page #
+    ///
+    /// Starts at 0.
     pub pid: Option<u64>,
-    /// The post id
-    pub id: Option<u64>,
-    /// The limit
+
+    /// The post id.
+    pub id: Option<NonZeroU64>,
+
+    /// The limit.
     pub limit: Option<u16>,
 
+    /// The client ref.
     client: &'a Client,
 }
 
 impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
-    /// Make a new [`ListQueryBuilder`].
+    /// Make a new [`PostListQueryBuilder`].
     pub fn new(client: &'a Client) -> Self {
         Self {
             tags: None,
@@ -51,7 +58,7 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
     }
 
     /// Set the post id
-    pub fn id(&mut self, id: Option<u64>) -> &mut Self {
+    pub fn id(&mut self, id: Option<NonZeroU64>) -> &mut Self {
         self.id = id;
         self
     }
@@ -69,12 +76,12 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
     /// # Errors
     /// This fails if:
     /// 1. The generated url is invalid
-    /// 2. `id` is 0.
-    /// 3. `limit` is greater than `1000`
+    /// 2. `limit` is greater than `1000`
     pub fn get_url(&self) -> Result<Url, Error> {
         let mut pid_buffer = itoa::Buffer::new();
         let mut id_buffer = itoa::Buffer::new();
         let mut limit_buffer = itoa::Buffer::new();
+
         let mut url = Url::parse_with_params(
             crate::URL_INDEX,
             &[("page", "dapi"), ("s", "post"), ("q", "index")],
@@ -92,10 +99,7 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
             }
 
             if let Some(id) = self.id {
-                if id == 0 {
-                    return Err(Error::InvalidId);
-                }
-                query_pairs_mut.append_pair("id", id_buffer.format(id));
+                query_pairs_mut.append_pair("id", id_buffer.format(id.get()));
             }
 
             if let Some(limit) = self.limit {

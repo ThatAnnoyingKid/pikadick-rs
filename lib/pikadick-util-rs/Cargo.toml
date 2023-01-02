@@ -20,8 +20,6 @@ tokio = { version = "1.23.0", features = [ "macros" ] }
 reqwest = { version = "0.11.13", default-features = false, features = [ "default-tls" ] }
 
 [features]
-download_to_file = ["nd-util/download-to-file"]
 arc_anyhow_error = ["anyhow"]
 async_lock_file = ["anyhow", "fslock", "tokio", "tokio/sync", "tokio/rt"]
 drop_remove_file = ["tokio", "tokio/fs", "tokio/rt", "nd-util/drop-remove-path"]
-download_to_path = ["download_to_file", "nd-util/drop-remove-path", "tokio/fs", "anyhow", "reqwest", "cfg-if", "fd-lock"]
