@@ -899,7 +899,7 @@ dependencies = [
 [[package]]
 name = "deviantart"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/deviantart-rs#6e9e71e0f3da050c9014c020270b571794d0fef3"
+source = "git+https://github.com/adumbidiot/deviantart-rs#71846f3eba8334f2da82f718713445702486f0b1"
 dependencies = [
  "itoa 1.0.5",
  "once_cell",
