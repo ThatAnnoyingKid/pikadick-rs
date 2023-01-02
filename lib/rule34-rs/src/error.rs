@@ -5,7 +5,7 @@ pub type HtmlPostError = crate::types::html_post::FromHtmlError;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Reqwest HTTP Error
-    #[error("reqwest error")]
+    #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
 
     /// Invalid URL Error
@@ -13,18 +13,14 @@ pub enum Error {
     InvalidUrl(#[from] url::ParseError),
 
     /// Invalid json
-    #[error("invalid json")]
+    #[error(transparent)]
     InvalidJson(#[from] serde_json::Error),
 
-    /// IO Error
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
-
     /// Invalid Post
-    #[error("invalid post")]
+    #[error("invalid html post")]
     InvalidHtmlPost(#[from] HtmlPostError),
 
-    /// A tokio task failed to complete
+    /// A tokio task failed to join
     #[error("failed to join tokio task")]
     TokioJoin(#[from] tokio::task::JoinError),
 

@@ -4,16 +4,10 @@ use std::{
         HashSet,
         VecDeque,
     },
+    num::NonZeroU64,
     path::{
         Path,
         PathBuf,
-    },
-};
-use tokio::{
-    fs::File,
-    io::{
-        AsyncWriteExt,
-        BufWriter,
     },
 };
 
@@ -21,7 +15,7 @@ use tokio::{
 #[argh(subcommand, name = "download", description = "download a rule34 post")]
 pub struct Options {
     #[argh(positional, description = "the post id")]
-    id: u64,
+    id: NonZeroU64,
 
     #[argh(
         option,
@@ -77,7 +71,7 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
             .context("image extension is not valid unicode")?;
 
         let mut file_name_buffer = itoa::Buffer::new();
-        let file_name = file_name_buffer.format(options.id);
+        let file_name = file_name_buffer.format(options.id.get());
         let out_path = options
             .out_dir
             .join(format!("{}.{}", file_name, image_extension));
@@ -92,13 +86,8 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
             println!("Not saving since this is a dry run...")
         } else {
             println!("Downloading...");
-            let mut file = BufWriter::new(File::create(out_path).await?);
-            client
-                .get_to_writer(post.image_url.as_str(), &mut file)
-                .await
-                .context("failed to download image")?;
-
-            file.flush().await.context("failed to flush writer")?;
+            pikadick_util::download_to_path(&client.client, post.image_url.as_str(), &out_path)
+                .await?;
         }
 
         if options.download_parent {

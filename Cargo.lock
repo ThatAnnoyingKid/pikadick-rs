@@ -3198,6 +3198,7 @@ dependencies = [
  "argh",
  "itoa 1.0.5",
  "lazy_static",
+ "pikadick-util",
  "quick-xml",
  "reqwest",
  "scraper",
