@@ -2038,9 +2038,9 @@ checksum = "72ef4a56884ca558e5ddb05a1d1e7e1bfd9a68d9ed024c21704cc98872dae1bb"
 
 [[package]]
 name = "nom"
-version = "7.1.1"
+version = "7.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8903e5a29a317527874d0402f867152a3d21c908bb0b933e416c65e301d4c36"
+checksum = "e5507769c4919c998e69e49c839d9dc6e693ede4cc4290d6ad8b41d4f09c548c"
 dependencies = [
  "memchr",
  "minimal-lexical",
@@ -2236,7 +2236,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry"
 version = "0.18.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#a7263eed4e741e747a6f50f99b2d2c4e226e15c7"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#780dfb1e515e4fd3382e9458043612c5e8c96d88"
 dependencies = [
  "opentelemetry_api",
  "opentelemetry_sdk",
@@ -2245,7 +2245,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry-otlp"
 version = "0.11.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#a7263eed4e741e747a6f50f99b2d2c4e226e15c7"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#780dfb1e515e4fd3382e9458043612c5e8c96d88"
 dependencies = [
  "async-trait",
  "futures",
@@ -2262,7 +2262,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry-proto"
 version = "0.1.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#a7263eed4e741e747a6f50f99b2d2c4e226e15c7"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#780dfb1e515e4fd3382e9458043612c5e8c96d88"
 dependencies = [
  "futures",
  "futures-util",
@@ -2274,7 +2274,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry_api"
 version = "0.18.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#a7263eed4e741e747a6f50f99b2d2c4e226e15c7"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#780dfb1e515e4fd3382e9458043612c5e8c96d88"
 dependencies = [
  "fnv",
  "futures-channel",
@@ -2290,7 +2290,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry_sdk"
 version = "0.18.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#a7263eed4e741e747a6f50f99b2d2c4e226e15c7"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#780dfb1e515e4fd3382e9458043612c5e8c96d88"
 dependencies = [
  "async-trait",
  "crossbeam-channel",
@@ -2822,9 +2822,9 @@ dependencies = [
 
 [[package]]
 name = "quick-xml"
-version = "0.26.0"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f50b1c63b38611e7d4d7f68b82d3ad0cc71a2ad2e7f61fc10f1328d917c93cd"
+checksum = "ffc053f057dd768a56f62cd7e434c42c831d296968997e9ac1f76ea7c2d14c41"
 dependencies = [
  "memchr",
  "serde",
