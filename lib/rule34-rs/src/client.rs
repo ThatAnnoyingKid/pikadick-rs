@@ -203,7 +203,7 @@ mod test {
     async fn deleted_images_list() {
         let client = Client::new();
         let result = client
-            .list_deleted_images(Some(500_000)) // Just choose a high-ish post id here and update to keep the download limited
+            .list_deleted_images(Some(NonZeroU64::new(500_000).unwrap())) // Just choose a high-ish post id here and update to keep the download limited
             .await
             .expect("failed to get deleted images");
         dbg!(result);
@@ -212,12 +212,13 @@ mod test {
     #[tokio::test]
     async fn tags_list() {
         let client = Client::new();
-        let _result = client
+        let result = client
             .list_tags()
             .limit(Some(crate::TAGS_LIST_LIMIT_MAX))
             .execute()
             .await
             .expect("failed to list tags");
+        assert!(!result.tags.is_empty());
         // dbg!(result);
     }
 }
