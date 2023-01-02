@@ -105,11 +105,15 @@ impl Client {
     /// Get a list of deleted images.
     ///
     /// Only include ids over `last_id`. Use `None` for no limit.
-    /// Due to current technical limitations, this function is not very memory efficient depending on `last_id`.
+    ///
+    /// # Warning
+    /// Due to current technical limitations,
+    /// this function is not very memory efficient depending on `last_id`.
+    /// This will require buffering ~30MB into memory.
     /// You should probably limit its use with a semaphore or similar.
     pub async fn list_deleted_images(
         &self,
-        last_id: Option<u64>,
+        last_id: Option<NonZeroU64>,
     ) -> Result<DeletedImageList, Error> {
         let mut url = Url::parse_with_params(
             crate::URL_INDEX,
@@ -123,7 +127,7 @@ impl Client {
         if let Some(last_id) = last_id {
             let mut last_id_buf = itoa::Buffer::new();
             url.query_pairs_mut()
-                .append_pair("last_id", last_id_buf.format(last_id));
+                .append_pair("last_id", last_id_buf.format(last_id.get()));
         }
         // Parse on a threadpool since the full returned string is currently around 30 megabytes in size,
         // and we need to run in under a few milliseconds.

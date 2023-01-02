@@ -4,29 +4,32 @@ use crate::{
     PostList,
     TagList,
 };
-use url::Url;
 use std::num::NonZeroU64;
+use url::Url;
 
 /// A builder for list api queries
 #[derive(Debug)]
 pub struct PostListQueryBuilder<'a, 'b> {
-    /// The tags
+    /// The tags.
     pub tags: Option<&'b str>,
-    
+
     /// The page #
+    ///
+    /// Starts at 0.
     pub pid: Option<u64>,
-    
-    /// The post id
+
+    /// The post id.
     pub id: Option<NonZeroU64>,
-    
-    /// The limit
+
+    /// The limit.
     pub limit: Option<u16>,
 
+    /// The client ref.
     client: &'a Client,
 }
 
 impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
-    /// Make a new [`ListQueryBuilder`].
+    /// Make a new [`PostListQueryBuilder`].
     pub fn new(client: &'a Client) -> Self {
         Self {
             tags: None,
@@ -78,6 +81,7 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
         let mut pid_buffer = itoa::Buffer::new();
         let mut id_buffer = itoa::Buffer::new();
         let mut limit_buffer = itoa::Buffer::new();
+
         let mut url = Url::parse_with_params(
             crate::URL_INDEX,
             &[("page", "dapi"), ("s", "post"), ("q", "index")],
