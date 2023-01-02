@@ -86,8 +86,7 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
             println!("Not saving since this is a dry run...")
         } else {
             println!("Downloading...");
-            pikadick_util::download_to_path(&client.client, post.image_url.as_str(), &out_path)
-                .await?;
+            nd_util::download_to_path(&client.client, post.image_url.as_str(), &out_path).await?;
         }
 
         if options.download_parent {
