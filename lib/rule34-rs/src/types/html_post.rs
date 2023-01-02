@@ -1,3 +1,4 @@
+use once_cell::sync::Lazy;
 use scraper::{
     ElementRef,
     Html,
@@ -111,20 +112,21 @@ pub struct HtmlPost {
 impl HtmlPost {
     /// Try to make a [`HtmlPost`] from [`Html`].
     pub fn from_html(html: &Html) -> Result<Self, FromHtmlError> {
-        lazy_static::lazy_static! {
-            static ref STATS_SELECTOR: Selector = Selector::parse("#stats").expect("invalid stats selector");
-            static ref LI_SELECTOR: Selector = Selector::parse("li").expect("invalid li selector");
-
-            static ref OPTIONS_HEADER_SELECTOR: Selector = Selector::parse("div > h5").expect("invalid options header selector");
-
-            static ref THUMB_URL_SELECTOR: Selector = Selector::parse("#image").expect("invalid thumb_url selector");
-
-            static ref A_SELECTOR: Selector = Selector::parse("a[href]").expect("invalid a selector");
-
-            static ref SIDEBAR_SELECTOR: Selector = Selector::parse("#tag-sidebar").expect("invalid sidebar selector");
-
-            static ref STATUS_NOTICE_SELECTOR: Selector = Selector::parse(".status-notice").expect("invalid status notice selector");
-        }
+        static STATS_SELECTOR: Lazy<Selector> =
+            Lazy::new(|| Selector::parse("#stats").expect("invalid stats selector"));
+        static LI_SELECTOR: Lazy<Selector> =
+            Lazy::new(|| Selector::parse("li").expect("invalid li selector"));
+        static OPTIONS_HEADER_SELECTOR: Lazy<Selector> =
+            Lazy::new(|| Selector::parse("div > h5").expect("invalid options header selector"));
+        static THUMB_URL_SELECTOR: Lazy<Selector> =
+            Lazy::new(|| Selector::parse("#image").expect("invalid thumb_url selector"));
+        static A_SELECTOR: Lazy<Selector> =
+            Lazy::new(|| Selector::parse("a[href]").expect("invalid a selector"));
+        static SIDEBAR_SELECTOR: Lazy<Selector> =
+            Lazy::new(|| Selector::parse("#tag-sidebar").expect("invalid sidebar selector"));
+        static STATUS_NOTICE_SELECTOR: Lazy<Selector> = Lazy::new(|| {
+            Selector::parse(".status-notice").expect("invalid status notice selector")
+        });
 
         let mut id_str = None;
         let mut date = None;

@@ -12,7 +12,7 @@ path = "src/cli/main.rs"
 
 [dependencies]
 itoa = "1.0.5"
-lazy_static = "1.4.0"
+once_cell = { version = "1.17.0", features = [ "std" ], default-features = false }
 quick-xml = { version = "0.27.1", features = [ "serialize" ] }
 reqwest = { version = "0.11.13", default-features = false, features = [ "json", "brotli" ] }
 scraper = { version = "0.14.0", default-features = false }
@@ -32,22 +32,16 @@ tokio = { version = "1.23.0", features = [ "macros" ] }
 
 [features]
 # Use reqwest's default by default.
-default = [ "default-tls" ]
+default = ["default-tls"]
 
 # Use the default TLS for this platform. 
 # This is reqwest's default.
-default-tls = [ "reqwest/default-tls" ]
+default-tls = ["reqwest/default-tls"]
 
 # Use native-tls for TLS
-native-tls = [ "reqwest/native-tls" ]
+native-tls = ["reqwest/native-tls"]
 
 # Use rustls for TLS
-rustls-tls = [ "reqwest/rustls-tls" ]
+rustls-tls = ["reqwest/rustls-tls"]
 
-cli = [
-    "argh",
-    "anyhow",
-    "tokio/rt-multi-thread",
-    "tokio/fs",
-    "nd-util",
-]
+cli = ["argh", "anyhow", "tokio/rt-multi-thread", "tokio/fs", "nd-util"]
