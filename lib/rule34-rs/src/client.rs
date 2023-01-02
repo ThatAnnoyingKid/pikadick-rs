@@ -20,6 +20,12 @@ use tokio::io::{
 };
 use url::Url;
 
+// Default Header values
+static USER_AGENT_VALUE: HeaderValue = HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4514.0 Safari/537.36");
+static REFERER_VALUE: HeaderValue = HeaderValue::from_static("https://rule34.xxx/");
+static ACCEPT_LANGUAGE_VALUE: HeaderValue = HeaderValue::from_static("en,en-US;q=0,5");
+static ACCEPT_VALUE: HeaderValue = HeaderValue::from_static("*/*");
+
 /// A Rule34 Client
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -33,30 +39,24 @@ impl Client {
     /// Make a new [`Client`]
     pub fn new() -> Self {
         let mut default_headers = HeaderMap::new();
+        default_headers.insert(reqwest::header::USER_AGENT, USER_AGENT_VALUE.clone());
         default_headers.insert(
             reqwest::header::ACCEPT_LANGUAGE,
-            HeaderValue::from_static(crate::ACCEPT_LANGUAGE_STR),
+            ACCEPT_LANGUAGE_VALUE.clone(),
         );
-        default_headers.insert(
-            reqwest::header::ACCEPT,
-            HeaderValue::from_static(crate::ACCEPT_STR),
-        );
-        default_headers.insert(
-            reqwest::header::REFERER,
-            HeaderValue::from_static(crate::REFERER_STR),
-        );
+        default_headers.insert(reqwest::header::ACCEPT, ACCEPT_VALUE.clone());
+        default_headers.insert(reqwest::header::REFERER, REFERER_VALUE.clone());
 
-        Client {
-            client: reqwest::Client::builder()
-                .user_agent(crate::USER_AGENT_STR)
-                .default_headers(default_headers)
-                .build()
-                .expect("failed to build rule34 client"),
-        }
+        let client = reqwest::Client::builder()
+            .default_headers(default_headers)
+            .build()
+            .expect("failed to build rule34 client");
+
+        Client { client }
     }
 
     /// Send a GET web request to a `url` and get the result as a [`String`].
-    pub async fn get_text(&self, url: &str) -> Result<String, Error> {
+    async fn get_text(&self, url: &str) -> Result<String, Error> {
         Ok(self
             .client
             .get(url)

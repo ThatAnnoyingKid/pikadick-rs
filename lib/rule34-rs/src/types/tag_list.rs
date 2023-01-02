@@ -4,7 +4,7 @@ pub struct TagList {
     /// The tag list kind?
     ///
     /// So far, this has only been "array"
-    #[serde(rename = "type")]
+    #[serde(rename = "type", alias = "@type")]
     pub kind: String,
 
     /// The list of tags
@@ -16,27 +16,25 @@ pub struct TagList {
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct Tag {
     /// The tag kind
-    #[serde(rename = "type")]
+    #[serde(rename = "type", alias = "@type")]
     pub kind: TagKind,
 
     /// The # of posts with this tag?
+    #[serde(alias = "@count")]
     pub count: u64,
 
     /// The tag name
+    #[serde(alias = "@name")]
     pub name: String,
 
     /// ?
+    #[serde(alias = "@ambiguous")]
     pub ambiguous: bool,
 
     /// The tag id
+    #[serde(alias = "@id")]
     pub id: u64,
 }
-
-// When adding more variants, make sure to update the Debug impl and and functions to test for it
-pub const TAG_KIND_GENERAL: TagKind = TagKind(0);
-pub const TAG_KIND_AUTHOR: TagKind = TagKind(1);
-pub const TAG_KIND_COPYRIGHT: TagKind = TagKind(3);
-pub const TAG_KIND_CHARACTER: TagKind = TagKind(4);
 
 /// The tag kind
 #[derive(Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -44,29 +42,45 @@ pub const TAG_KIND_CHARACTER: TagKind = TagKind(4);
 pub struct TagKind(pub u64);
 
 impl TagKind {
+    // When adding more variants, make sure to update the Debug impl and and functions to test for it
+    const GENERAL: Self = TagKind(0);
+    const AUTHOR: Self = TagKind(1);
+    const COPYRIGHT: Self = TagKind(3);
+    const CHARACTER: Self = TagKind(4);
+    const METADATA: Self = TagKind(5);
+
     /// Returns true if this tag kind is general
     pub fn is_general(self) -> bool {
-        self == TAG_KIND_GENERAL
+        self == Self::GENERAL
     }
 
     /// Returns true if this tag kind is an author
     pub fn is_author(self) -> bool {
-        self == TAG_KIND_AUTHOR
+        self == Self::AUTHOR
     }
 
     /// Retruns true if this tag is a copyright
     pub fn is_copyright(self) -> bool {
-        self == TAG_KIND_COPYRIGHT
+        self == Self::COPYRIGHT
     }
 
     /// Returns true if this tag kind is a character
     pub fn is_character(self) -> bool {
-        self == TAG_KIND_CHARACTER
+        self == Self::CHARACTER
+    }
+
+    /// Returns true if this tag kind is a metadata
+    pub fn is_metadata(self) -> bool {
+        self == Self::METADATA
     }
 
     /// Returns true if the tag kind is unknown
     pub fn is_unknown(self) -> bool {
-        !self.is_author() && !self.is_character() && !self.is_copyright()
+        !self.is_general()
+            && !self.is_author()
+            && !self.is_copyright()
+            && !self.is_character()
+            && !self.is_metadata()
     }
 }
 
