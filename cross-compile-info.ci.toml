@@ -11,4 +11,4 @@ set(CMAKE_C_FLAGS "-mcpu=cortex-a7 -mfpu=neon-vfpv4 -fPIC")
 # This is empty as the default env is fine.
 # The default perl does not need to be overridden.
 
-CMAKE_GENERATOR = "Ninja"
+# CMAKE_GENERATOR = "Ninja"
