@@ -25,7 +25,7 @@ serde_json = "1.0.91"
 # Optional
 argh = { version = "0.1.9", optional = true }
 anyhow = { version = "1.0.68", optional = true }
-pikadick-util = { path = "../pikadick-util-rs", features = [ "download_to_path" ], optional = true }
+nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path" ], optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.23.0", features = [ "macros" ] }
@@ -49,5 +49,5 @@ cli = [
     "anyhow",
     "tokio/rt-multi-thread",
     "tokio/fs",
-    "pikadick-util",
+    "nd-util",
 ]

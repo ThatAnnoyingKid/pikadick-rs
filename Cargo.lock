@@ -1970,9 +1970,11 @@ dependencies = [
 [[package]]
 name = "nd-util"
 version = "0.0.0"
-source = "git+https://github.com/nathaniel-daniel/nd-util-rs#c9e293f7741f70e191f28f03a3ff91d588a1fb90"
+source = "git+https://github.com/nathaniel-daniel/nd-util-rs#d3a87e5e9d9c0f374f109424432c954bf12bcdc4"
 dependencies = [
  "anyhow",
+ "cfg-if",
+ "fd-lock",
  "reqwest",
  "tokio",
  "tracing",
@@ -2503,6 +2505,7 @@ dependencies = [
  "iqdb",
  "itoa 1.0.5",
  "lazy_static",
+ "nd-util",
  "nekos",
  "once_cell",
  "openssl",
@@ -3198,7 +3201,7 @@ dependencies = [
  "argh",
  "itoa 1.0.5",
  "lazy_static",
- "pikadick-util",
+ "nd-util",
  "quick-xml",
  "reqwest",
  "scraper",
@@ -3341,7 +3344,7 @@ dependencies = [
 [[package]]
 name = "sauce-nao"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/sauce-nao-rs#596b33bb341c1ea361aea8dd9288a444ff799c26"
+source = "git+https://github.com/adumbidiot/sauce-nao-rs#1e1732b7f9481ec3b416882ea736aacc7da1eeff"
 dependencies = [
  "itoa 1.0.5",
  "reqwest",
