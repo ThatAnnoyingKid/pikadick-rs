@@ -8,7 +8,7 @@ set(CMAKE_C_FLAGS "-mcpu=cortex-a7 -mfpu=neon-vfpv4 -fPIC")
 """
 
 [armv7-unknown-linux-gnueabihf.env]
-# This is empty as the default env is fine.
-# The default perl does not need to be overridden.
+CC = "arm-linux-gnueabihf-gcc"
+CXX = "arm-linux-gnueabihf-g++"
 
 # CMAKE_GENERATOR = "Ninja"
