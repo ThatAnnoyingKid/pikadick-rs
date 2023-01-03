@@ -1,3 +1,5 @@
 **/test_data/*.html linguist-detectable=false
 **/test_data/*.js linguist-detectable=false
 **/test_data/*.json linguist-detectable=false
+
+*.rs text eol=lf
