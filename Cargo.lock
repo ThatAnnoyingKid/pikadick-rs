@@ -899,7 +899,7 @@ dependencies = [
 [[package]]
 name = "deviantart"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/deviantart-rs#71846f3eba8334f2da82f718713445702486f0b1"
+source = "git+https://github.com/adumbidiot/deviantart-rs#c5f9c815b958684a7594c7ff3ecca2edf8df42fc"
 dependencies = [
  "itoa 1.0.5",
  "once_cell",
@@ -2238,7 +2238,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry"
 version = "0.18.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#780dfb1e515e4fd3382e9458043612c5e8c96d88"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#c3b1056e0e947f1d0e44109dd401cdf3132bacd4"
 dependencies = [
  "opentelemetry_api",
  "opentelemetry_sdk",
@@ -2247,7 +2247,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry-otlp"
 version = "0.11.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#780dfb1e515e4fd3382e9458043612c5e8c96d88"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#c3b1056e0e947f1d0e44109dd401cdf3132bacd4"
 dependencies = [
  "async-trait",
  "futures",
@@ -2264,7 +2264,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry-proto"
 version = "0.1.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#780dfb1e515e4fd3382e9458043612c5e8c96d88"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#c3b1056e0e947f1d0e44109dd401cdf3132bacd4"
 dependencies = [
  "futures",
  "futures-util",
@@ -2276,7 +2276,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry_api"
 version = "0.18.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#780dfb1e515e4fd3382e9458043612c5e8c96d88"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#c3b1056e0e947f1d0e44109dd401cdf3132bacd4"
 dependencies = [
  "fnv",
  "futures-channel",
@@ -2292,7 +2292,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry_sdk"
 version = "0.18.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#780dfb1e515e4fd3382e9458043612c5e8c96d88"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#c3b1056e0e947f1d0e44109dd401cdf3132bacd4"
 dependencies = [
  "async-trait",
  "crossbeam-channel",
@@ -3606,7 +3606,7 @@ dependencies = [
 [[package]]
 name = "shift-orcz"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/shift-client-rs#c3d116b2f33be16946fd6973e90bb5b9c00759aa"
+source = "git+https://github.com/adumbidiot/shift-client-rs#ca78b26aee70204b5f567efab6493dbbd1aa70fd"
 dependencies = [
  "logos",
  "once_cell",
@@ -4053,9 +4053,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.23.0"
+version = "1.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eab6d665857cc6ca78d6e80303a02cea7a7851e85dfbd77cbdc09bd129f1ef46"
+checksum = "38a54aca0c15d014013256222ba0ebed095673f89345dd79119d912eb561b7a8"
 dependencies = [
  "autocfg",
  "bytes",
