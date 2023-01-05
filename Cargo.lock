@@ -899,7 +899,7 @@ dependencies = [
 [[package]]
 name = "deviantart"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/deviantart-rs#6e9e71e0f3da050c9014c020270b571794d0fef3"
+source = "git+https://github.com/adumbidiot/deviantart-rs#c5f9c815b958684a7594c7ff3ecca2edf8df42fc"
 dependencies = [
  "itoa 1.0.5",
  "once_cell",
@@ -4053,9 +4053,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.23.0"
+version = "1.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eab6d665857cc6ca78d6e80303a02cea7a7851e85dfbd77cbdc09bd129f1ef46"
+checksum = "38a54aca0c15d014013256222ba0ebed095673f89345dd79119d912eb561b7a8"
 dependencies = [
  "autocfg",
  "bytes",
