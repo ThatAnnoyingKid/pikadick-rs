@@ -26,7 +26,7 @@ pub enum Error {
 
 /// All tests are ignored as of 1/8/2023.
 ///
-/// If the website does not return in 1 month, 
+/// If the website does not return in 1 month,
 /// assume it is dead and archive library.
 #[cfg(test)]
 mod test {
