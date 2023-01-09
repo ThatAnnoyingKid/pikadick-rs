@@ -2,6 +2,7 @@ use crate::{
     types::ImageList,
     Error,
 };
+use std::time::Duration;
 use tokio::io::{
     AsyncWrite,
     AsyncWriteExt,
@@ -20,7 +21,12 @@ impl Client {
     /// Make a new client
     pub fn new() -> Self {
         Client {
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .connect_timeout(Duration::from_secs(5))
+                .timeout(Duration::from_secs(5))
+                .user_agent(DEFAULT_USER_AGENT)
+                .build()
+                .expect("failed to build client"),
         }
     }
 
@@ -38,7 +44,6 @@ impl Client {
         Ok(self
             .client
             .get(url.as_str())
-            .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT)
             .send()
             .await?
             .error_for_status()?

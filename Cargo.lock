@@ -489,9 +489,9 @@ checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 
 [[package]]
 name = "camino"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88ad0e1e3e88dd237a156ab9f571021b8a158caa0ae44b1968a241efb5144c1e"
+checksum = "c77df041dc383319cc661b428b6961a005db4d6808d5e12536931b1ca9556055"
 dependencies = [
  "serde",
 ]
@@ -1656,9 +1656,9 @@ dependencies = [
 
 [[package]]
 name = "ipnet"
-version = "2.7.0"
+version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11b0d96e660696543b251e58030cf9787df56da39dab19ad60eae7353040917e"
+checksum = "30e22bd8629359895450b59ea7a776c850561b96a3b1d31321c1949d9e6c9146"
 
 [[package]]
 name = "iqdb"
@@ -3344,7 +3344,7 @@ dependencies = [
 [[package]]
 name = "sauce-nao"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/sauce-nao-rs#899f73335c880953bfef1169bbc9317174e33bce"
+source = "git+https://github.com/adumbidiot/sauce-nao-rs#abdcabaecd10a17fba226c329feace29fc27833b"
 dependencies = [
  "itoa 1.0.5",
  "reqwest",
@@ -3565,7 +3565,7 @@ dependencies = [
 [[package]]
 name = "serenity-voice-model"
 version = "0.1.1"
-source = "git+https://github.com/serenity-rs/serenity?branch=next#72c76467dab136f50c2b1739e1945736e4a7ff39"
+source = "git+https://github.com/serenity-rs/serenity?branch=next#7cfb5076a40e04dd62d8faa173a52adea3a97ec7"
 dependencies = [
  "bitflags",
  "enum_primitive",
