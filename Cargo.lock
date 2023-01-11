@@ -899,7 +899,7 @@ dependencies = [
 [[package]]
 name = "deviantart"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/deviantart-rs#fcb3c32ba461ca6530805d99fb4aa67733c0e431"
+source = "git+https://github.com/adumbidiot/deviantart-rs#1a7082c493d61c12dee98e1fb199da51df1762f7"
 dependencies = [
  "itoa 1.0.5",
  "once_cell",
@@ -3047,9 +3047,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.7.0"
+version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e076559ef8e241f2ae3479e36f97bd5741c0330689e217ad51ce2c76808b868a"
+checksum = "48aaa5748ba571fb95cd2c85c09f629215d3a6ece942baa100950af03a34f733"
 dependencies = [
  "aho-corasick",
  "memchr",
