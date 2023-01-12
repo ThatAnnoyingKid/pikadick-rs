@@ -3,10 +3,6 @@ use crate::{
     Error,
 };
 use std::time::Duration;
-use tokio::io::{
-    AsyncWrite,
-    AsyncWriteExt,
-};
 use url::Url;
 
 const DEFAULT_USER_AGENT: &str = "nekos-rs";
@@ -14,7 +10,8 @@ const DEFAULT_USER_AGENT: &str = "nekos-rs";
 /// Client for nekos.moe
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client
+    pub client: reqwest::Client,
 }
 
 impl Client {
@@ -49,19 +46,6 @@ impl Client {
             .error_for_status()?
             .json()
             .await?)
-    }
-
-    /// Get a url and copy it to the given writer
-    pub async fn get_to_writer<W>(&self, url: &str, mut writer: W) -> Result<(), Error>
-    where
-        W: AsyncWrite + Unpin,
-    {
-        let mut res = self.client.get(url).send().await?.error_for_status()?;
-        while let Some(chunk) = res.chunk().await? {
-            writer.write_all(&chunk).await?;
-        }
-
-        Ok(())
     }
 }
 

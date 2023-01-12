@@ -1987,6 +1987,7 @@ dependencies = [
  "anyhow",
  "argh",
  "itoa 1.0.5",
+ "nd-util",
  "reqwest",
  "serde",
  "serde_json",

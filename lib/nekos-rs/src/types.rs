@@ -50,7 +50,7 @@ pub struct Image {
 impl Image {
     /// Get the url
     pub fn get_url(&self) -> Result<Url, url::ParseError> {
-        let base = Url::parse("https://nekos.moe/image/").expect("invalid image base url");
+        let base = Url::parse("https://nekos.moe/image/").unwrap();
         base.join(&self.id)
     }
 }
