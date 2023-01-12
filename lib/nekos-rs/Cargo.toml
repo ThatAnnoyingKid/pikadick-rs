@@ -1,7 +1,6 @@
 [package]
 name = "nekos"
-version = "0.0.1"
-authors = [ "ProfessionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
+version = "0.0.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
@@ -27,7 +26,7 @@ anyhow = { version = "1.0.68", optional = true }
 tokio = { version = "1.24.1", features = [ "macros" ] }
 
 [features]
-default = [ "reqwest/default-tls" ]
+default = [ "reqwest/rustls-tls" ]
 
 native-tls = [ "reqwest/native-tls" ]
 rustls-tls = [ "reqwest/rustls-tls" ]

@@ -22,8 +22,8 @@ impl Client {
     pub fn new() -> Self {
         Client {
             client: reqwest::Client::builder()
-                .connect_timeout(Duration::from_secs(5))
-                .timeout(Duration::from_secs(5))
+                .connect_timeout(Duration::from_secs(10))
+                .timeout(Duration::from_secs(10))
                 .user_agent(DEFAULT_USER_AGENT)
                 .build()
                 .expect("failed to build client"),

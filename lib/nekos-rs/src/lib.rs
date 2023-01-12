@@ -24,16 +24,11 @@ pub enum Error {
     Io(#[from] std::io::Error),
 }
 
-/// All tests are ignored as of 1/8/2023.
-///
-/// If the website does not return in 1 month,
-/// assume it is dead and archive library.
 #[cfg(test)]
 mod test {
     use super::*;
 
     #[tokio::test]
-    #[ignore]
     async fn it_works() {
         let client = Client::new();
         let image_list = client
@@ -54,7 +49,6 @@ mod test {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn get_nsfw() {
         let client = Client::new();
         let image_list = client
@@ -65,7 +59,6 @@ mod test {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn get_non_nsfw() {
         let client = Client::new();
         let image_list = client
@@ -76,7 +69,6 @@ mod test {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn get_100() {
         let client = Client::new();
         let image_list = client
