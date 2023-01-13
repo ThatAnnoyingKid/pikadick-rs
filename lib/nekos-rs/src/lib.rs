@@ -10,30 +10,23 @@ pub use crate::{
 };
 pub use url::Url;
 
-/// Nekos lib error
+/// Library Error
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Reqwest HTTP Error
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
+
     /// Invalid URL
     #[error(transparent)]
     InvalidUrl(#[from] url::ParseError),
-    /// Io Error
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
 }
 
-/// All tests are ignored as of 1/8/2023.
-///
-/// If the website does not return in 1 month,
-/// assume it is dead and archive library.
 #[cfg(test)]
 mod test {
     use super::*;
 
     #[tokio::test]
-    #[ignore]
     async fn it_works() {
         let client = Client::new();
         let image_list = client
@@ -46,15 +39,18 @@ mod test {
         let image_url = image_list.images[0]
             .get_url()
             .expect("missing first element");
-        let mut image = Vec::new();
-        client
-            .get_to_writer(image_url.as_str(), &mut image)
+        let _image = client
+            .client
+            .get(image_url.as_str())
+            .send()
             .await
-            .expect("failed to download");
+            .unwrap()
+            .bytes()
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
-    #[ignore]
     async fn get_nsfw() {
         let client = Client::new();
         let image_list = client
@@ -65,7 +61,6 @@ mod test {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn get_non_nsfw() {
         let client = Client::new();
         let image_list = client
@@ -76,7 +71,6 @@ mod test {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn get_100() {
         let client = Client::new();
         let image_list = client

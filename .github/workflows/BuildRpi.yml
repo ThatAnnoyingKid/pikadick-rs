@@ -22,7 +22,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Install GCC Cross Compilation Toolchain
-      run: sudo apt-get install gcc-arm-linux-gnueabihf
+      run: sudo apt-get install gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
       
     - name: Install Python Deps
       run: |

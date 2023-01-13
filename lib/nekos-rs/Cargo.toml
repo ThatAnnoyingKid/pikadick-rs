@@ -1,7 +1,6 @@
 [package]
 name = "nekos"
-version = "0.0.1"
-authors = [ "ProfessionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
+version = "0.0.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
@@ -22,18 +21,21 @@ url = "2.3.1"
 # Optional
 argh = { version = "0.1.9", optional = true }
 anyhow = { version = "1.0.68", optional = true }
+nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path" ], optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.24.1", features = [ "macros" ] }
 
 [features]
-default = [ "reqwest/default-tls" ]
+default = [ "reqwest/rustls-tls" ]
 
 native-tls = [ "reqwest/native-tls" ]
 rustls-tls = [ "reqwest/rustls-tls" ]
 
 cli = [
     "argh",
+    "anyhow",
+    "nd-util",
     "tokio/fs",
     "tokio/rt-multi-thread",
 ]

@@ -85,15 +85,14 @@ skip = [
     { name = "nix", version = "0.23.1" },
     { name = "memoffset", version = "0.6.5" },
     
-    # Blocked on many crates moving to the next version of `windows`
-    { name = "windows_x86_64_msvc", version = "0.36.1" },
-    { name = "windows-sys", version = "0.36.1" },
-    
     # Blocked on cookie-store moving to idna 0.3
     { name = "idna", version = "0.2.3" },
     
     # Blocked on reqwest updating cookie-store to 0.19.x
     { name = "cookie_store", version = "0.16.1" },
+    
+    # Blocked on ecosystem moving to base64 0.20 and above
+    { name = "base64", version = "0.13.1" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
