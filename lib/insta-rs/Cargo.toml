@@ -25,11 +25,11 @@ url = { version = "2.3.1", features = [ "serde" ] }
 argh = { version = "0.1.9", optional = true }
 anyhow = { version = "1.0.68", optional = true }
 directories-next = { version = "2.0.0", optional = true }
-tokio = { version = "1.24.1", optional = true }
+tokio = { version = "1.24.2", optional = true }
 toml_edit = { version = "0.17.1", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.24.1", features = [ "macros", "parking_lot" ] }
+tokio = { version = "1.24.2", features = [ "macros", "parking_lot" ] }
 
 [features]
 default = [ "reqwest/default-tls" ]
