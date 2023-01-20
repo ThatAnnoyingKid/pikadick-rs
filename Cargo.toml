@@ -42,7 +42,7 @@ rand = "0.8.5"
 reddit = { git = "https://github.com/nathaniel-daniel/reddit-rs", features = [ "rustls-tls", "force-rustls-tls" ], default-features = false }
 reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls-tls" ] }
 regex = "1.7.0"
-reqwest = { version = "0.11.13", default-features = false }
+reqwest = { version = "0.11.14", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
 rusqlite = { version = "0.28.0", features = [ "bundled", "blob", "trace" ] }
 ryu = "1.0.12"
