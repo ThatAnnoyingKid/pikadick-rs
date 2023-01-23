@@ -176,7 +176,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 io::BufReader,
             };
 
-            match File::open(&session_file_path).map(BufReader::new) {
+            match File::open(session_file_path).map(BufReader::new) {
                 Ok(mut file) => Ok(Some(
                     CookieStore::load_json(&mut file)
                         .map_err(BoxError)
