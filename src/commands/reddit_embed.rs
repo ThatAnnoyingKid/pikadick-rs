@@ -20,10 +20,7 @@ use anyhow::{
 };
 use dashmap::DashMap;
 use rand::seq::SliceRandom;
-use reddit_tube::{
-    types::get_video_response::GetVideoResponseOk,
-    GetVideoResponse,
-};
+use reddit_tube::types::get_video_response::GetVideoResponseOk;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -136,8 +133,7 @@ impl RedditEmbedData {
             .get_main_page()
             .await
             .context("failed to get main page")?;
-        self
-            .reddit_tube_client
+        self.reddit_tube_client
             .get_video(&main_page, url)
             .await
             .context("failed to get video data")?
