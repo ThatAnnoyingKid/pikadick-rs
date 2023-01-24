@@ -127,7 +127,7 @@ impl RedditEmbedData {
         }
     }
 
-    /// Get video data from reddit.tube. 
+    /// Get video data from reddit.tube.
     ///
     /// Takes a reddit url.
     pub async fn get_video_data(&self, url: &str) -> anyhow::Result<Box<GetVideoResponseOk>> {
