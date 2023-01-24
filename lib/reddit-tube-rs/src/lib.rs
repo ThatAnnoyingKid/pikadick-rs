@@ -40,7 +40,9 @@ mod test {
         let vid = client
             .get_video(&main_page, video_url)
             .await
-            .expect("failed to get video");
+            .expect("failed to get video")
+            .into_result()
+            .expect("invalid api response");
 
         dbg!(vid);
     }

@@ -12,26 +12,47 @@ pub enum GetVideoResponse {
     Error(GetVideoResponseError),
 }
 
+impl GetVideoResponse {
+    /// Transform this into a result
+    pub fn into_result(self) -> Result<Box<GetVideoResponseOk>, GetVideoResponseError> {
+        match self {
+            Self::Ok(ok) => Ok(ok),
+            Self::Error(err) => Err(err),
+        }
+    }
+}
+
 /// A good video response
 #[derive(Debug, serde::Deserialize)]
 pub struct GetVideoResponseOk {
-    pub affected: i64,
-    pub already_downloaded: bool,
-    pub file_hash: String,
-    pub meme: String,
-    pub meme_msg: String,
-    pub points: i64,
-    pub thumbnail_name: String,
-    pub share_url: Url,
-    pub short_id: String,
-    pub url: Url,
-    pub user_email: String,
-    pub user_hash: String,
-    pub video_data: Option<VideoData>,
-    pub video_size: String,
+    /// ?
+    pub affected: i32,
 
-    #[serde(flatten)]
-    pub extra: HashMap<String, serde_json::Value>,
+    /// ?
+    pub already_downloaded: bool,
+
+    /// The file hash?
+    pub file_hash: Box<str>,
+
+    /// ?
+    pub meme: Box<str>,
+    /// ?
+    pub meme_msg: Box<str>,
+    pub points: i64,
+    pub thumbnail_name: Box<str>,
+    pub share_url: Url,
+    pub short_id: Box<str>,
+    pub url: Url,
+    pub user_email: Box<str>,
+    pub user_hash: Box<str>,
+
+    /// The video data, if it exists.
+    pub video_data: Option<Box<VideoData>>,
+
+    /// The size of the video as a human-readable string
+    ///
+    /// Example: 614.25KB
+    pub video_size: Box<str>,
 }
 
 /// Video Data
@@ -50,18 +71,18 @@ pub struct VideoData {
 
     /// The post type?
     #[serde(rename = "type")]
-    pub kind: String,
+    pub kind: Box<str>,
 
     /// Whether the post is nsfw
     pub nsfw: bool,
     /// ?
-    pub provider_name: Option<String>,
+    pub provider_name: Option<Box<str>>,
     /// The subreddit
-    pub subreddit: String,
+    pub subreddit: Box<str>,
     /// The thumbnail url
     pub thumbnail: Url,
     /// The post title
-    pub title: String,
+    pub title: Box<str>,
     /// The post url?
     pub url: Url,
 
@@ -77,13 +98,9 @@ pub struct GetVideoResponseError {
     #[serde(rename = "errores")]
     pub errors: Option<HashMap<String, String>>,
     /// Meme
-    pub meme: Option<String>,
+    pub meme: Option<Box<str>>,
     /// Error message
-    pub msg: Option<String>,
-
-    /// Unknown data
-    #[serde(flatten)]
-    pub extra: HashMap<String, serde_json::Value>,
+    pub msg: Option<Box<str>>,
 }
 
 impl std::fmt::Display for GetVideoResponseError {
