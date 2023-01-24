@@ -136,16 +136,13 @@ impl RedditEmbedData {
             .get_main_page()
             .await
             .context("failed to get main page")?;
-        let video_data = self
+        self
             .reddit_tube_client
             .get_video(&main_page, url)
             .await
-            .context("failed to get video data")?;
-
-        match video_data {
-            GetVideoResponse::Ok(video_data) => Ok(video_data),
-            GetVideoResponse::Error(e) => Err(e).context("bad video response"),
-        }
+            .context("failed to get video data")?
+            .into_result()
+            .context("bad video response")
     }
 
     /// Get video data, but using a cache.
