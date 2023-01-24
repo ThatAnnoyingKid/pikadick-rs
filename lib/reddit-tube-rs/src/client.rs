@@ -35,7 +35,7 @@ impl Client {
     pub async fn get_main_page(&self) -> TubeResult<MainPage> {
         let body = self
             .client
-            .get("https://www.reddit.tube/")
+            .get("https://www.redd.tube/")
             .send()
             .await?
             .error_for_status()?
@@ -62,7 +62,7 @@ impl Client {
     pub async fn get_video(&self, main_page: &MainPage, url: &str) -> TubeResult<GetVideoResponse> {
         Ok(self
             .client
-            .post("https://www.reddit.tube/services/get_video")
+            .post("https://www.redd.tube/services/get_video")
             .form(&[
                 ("url", url),
                 ("zip", ""),
