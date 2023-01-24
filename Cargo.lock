@@ -335,9 +335,9 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "axum"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "678c5130a507ae3a7c797f9a17393c14849300b8440eac47cdb90a5bdcb3a543"
+checksum = "e5694b64066a2459918d8074c2ce0d5a88f409431994c2356617c8ae0c4721fc"
 dependencies = [
  "async-trait",
  "axum-core",
@@ -904,7 +904,7 @@ dependencies = [
 [[package]]
 name = "deviantart"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/deviantart-rs#8611162d50bcb558d0905a8791b5802276c0e444"
+source = "git+https://github.com/adumbidiot/deviantart-rs#944bb73da2961fcb143e3b25a73cfc1117fa5093"
 dependencies = [
  "itoa 1.0.5",
  "once_cell",
@@ -1060,9 +1060,9 @@ dependencies = [
 
 [[package]]
 name = "fd-lock"
-version = "3.0.8"
+version = "3.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb21c69b9fea5e15dbc1049e4b77145dd0ba1c84019c488102de0dc4ea4b0a27"
+checksum = "28c0190ff0bd3b28bfdd4d0cf9f92faa12880fb0b8ae2054723dd6c76a4efd42"
 dependencies = [
  "cfg-if",
  "rustix",
@@ -1969,7 +1969,7 @@ dependencies = [
 [[package]]
 name = "nd-util"
 version = "0.0.0"
-source = "git+https://github.com/nathaniel-daniel/nd-util-rs#6827555353ba63a7b55a1919dc96265f15f0be30"
+source = "git+https://github.com/nathaniel-daniel/nd-util-rs#63e03613b1ececd360c7da0125744b09c728637d"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -2238,7 +2238,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry"
 version = "0.18.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#a095a6aff2215637d32c7a078ec8b90141e03729"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#0ef87ad78a6b83a91c14a7926efae101a8b111c2"
 dependencies = [
  "opentelemetry_api",
  "opentelemetry_sdk",
@@ -2247,7 +2247,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry-otlp"
 version = "0.11.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#a095a6aff2215637d32c7a078ec8b90141e03729"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#0ef87ad78a6b83a91c14a7926efae101a8b111c2"
 dependencies = [
  "async-trait",
  "futures",
@@ -2264,7 +2264,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry-proto"
 version = "0.1.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#a095a6aff2215637d32c7a078ec8b90141e03729"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#0ef87ad78a6b83a91c14a7926efae101a8b111c2"
 dependencies = [
  "futures",
  "futures-util",
@@ -2276,7 +2276,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry_api"
 version = "0.18.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#a095a6aff2215637d32c7a078ec8b90141e03729"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#0ef87ad78a6b83a91c14a7926efae101a8b111c2"
 dependencies = [
  "fnv",
  "futures-channel",
@@ -2292,7 +2292,7 @@ dependencies = [
 [[package]]
 name = "opentelemetry_sdk"
 version = "0.18.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust#a095a6aff2215637d32c7a078ec8b90141e03729"
+source = "git+https://github.com/open-telemetry/opentelemetry-rust#0ef87ad78a6b83a91c14a7926efae101a8b111c2"
 dependencies = [
  "async-trait",
  "crossbeam-channel",
@@ -3002,7 +3002,7 @@ dependencies = [
 [[package]]
 name = "reddit"
 version = "0.0.0"
-source = "git+https://github.com/nathaniel-daniel/reddit-rs#44113fab5f6a85690d1a36dbbd13db8e46a45aea"
+source = "git+https://github.com/nathaniel-daniel/reddit-rs#bc0f3e9497c8a8efdec64afeb0d4712f06dd5091"
 dependencies = [
  "reqwest",
  "serde",
@@ -3344,7 +3344,7 @@ dependencies = [
 [[package]]
 name = "sauce-nao"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/sauce-nao-rs#0b1ef9d1ffded8733c2347ebf940eb70e9639e08"
+source = "git+https://github.com/adumbidiot/sauce-nao-rs#55df26566f5a99584a26d608ee9d7d87408f7a51"
 dependencies = [
  "itoa 1.0.5",
  "reqwest",
@@ -3404,9 +3404,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework"
-version = "2.8.0"
+version = "2.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "645926f31b250a2dca3c232496c2d898d91036e45ca0e97e0e2390c54e11be36"
+checksum = "7c4437699b6d34972de58652c68b98cb5b53a4199ab126db8e20ec8ded29a721"
 dependencies = [
  "bitflags",
  "core-foundation",
@@ -3605,7 +3605,7 @@ dependencies = [
 [[package]]
 name = "shift-orcz"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/shift-client-rs#40c920e4c1b6c6cb0d848b1f7d68225d5f7f5c61"
+source = "git+https://github.com/adumbidiot/shift-client-rs#6b1e2ab861a6cfb7d27c54e2f393a918a80166fe"
 dependencies = [
  "logos",
  "once_cell",
