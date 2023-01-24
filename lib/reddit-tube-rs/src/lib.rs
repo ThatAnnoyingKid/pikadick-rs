@@ -29,7 +29,11 @@ pub enum Error {
 mod test {
     use super::*;
 
+    /// The server appears to use cloudflare.
+    /// This server will block requests from github's CI with a 403 HTTP status code.
+    /// Therefore, only test this locally.
     #[tokio::test]
+    #[ignore]
     async fn it_works() {
         let video_url = "https://www.reddit.com/r/dankvideos/comments/h8p0py/pp_removal_time/?utm_source=share&utm_medium=web2x";
         let client = Client::new();
