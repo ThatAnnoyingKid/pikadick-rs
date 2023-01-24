@@ -74,7 +74,8 @@ pub struct VideoData {
 #[derive(Debug, serde::Deserialize)]
 pub struct GetVideoResponseError {
     /// Errors
-    pub errores: Option<HashMap<String, String>>,
+    #[serde(rename = "errores")]
+    pub errors: Option<HashMap<String, String>>,
     /// Meme
     pub meme: Option<String>,
     /// Error message
@@ -87,9 +88,15 @@ pub struct GetVideoResponseError {
 
 impl std::fmt::Display for GetVideoResponseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.msg {
-            Some(msg) => msg.fmt(f),
-            None => "failed to get video response".fmt(f),
+        match (&self.msg, &self.errors) {
+            (Some(msg), _) => msg.fmt(f),
+            (_, Some(errors)) => errors
+                .values()
+                .next()
+                .map(|s| s.as_str())
+                .unwrap_or("failed to get video response")
+                .fmt(f),
+            (None, None) => "failed to get video response".fmt(f),
         }
     }
 }
