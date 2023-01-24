@@ -3015,7 +3015,7 @@ dependencies = [
 name = "reddit-tube"
 version = "0.0.0"
 dependencies = [
- "lazy_static",
+ "once_cell",
  "reqwest",
  "scraper",
  "serde",

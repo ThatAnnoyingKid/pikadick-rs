@@ -5,6 +5,8 @@ use crate::{
 };
 use scraper::Html;
 
+const DEFAULT_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
+
 /// Client
 #[derive(Clone, Debug)]
 pub struct Client {
@@ -20,11 +22,7 @@ impl Client {
     pub fn new() -> Self {
         let client = reqwest::ClientBuilder::new()
             .cookie_store(true)
-            .user_agent(concat!(
-                env!("CARGO_PKG_NAME"),
-                "/",
-                env!("CARGO_PKG_VERSION")
-            ))
+            .user_agent(DEFAULT_USER_AGENT)
             .build()
             .expect("failed to build client");
 
