@@ -1,19 +1,17 @@
 mod client;
 pub mod types;
 
-pub use self::client::Client;
-pub use crate::types::{
-    GetVideoResponse,
-    MainPage,
+pub use crate::{
+    client::Client,
+    types::{
+        GetVideoResponse,
+        MainPage,
+    },
 };
-pub use reqwest::StatusCode;
-
-/// Result Type
-pub type TubeResult<T> = Result<T, TubeError>;
 
 /// Client Error
 #[derive(Debug, thiserror::Error)]
-pub enum TubeError {
+pub enum Error {
     /// HTTP Reqwest Error
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),

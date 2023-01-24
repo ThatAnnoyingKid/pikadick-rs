@@ -1,14 +1,15 @@
 use crate::{
+    Error,
     GetVideoResponse,
     MainPage,
-    TubeResult,
 };
 use scraper::Html;
 
 /// Client
 #[derive(Clone, Debug)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client
+    pub client: reqwest::Client,
 }
 
 impl Client {
@@ -36,7 +37,7 @@ impl Client {
     ///
     /// # Errors
     /// Returns an error if the [`MainPage`] could not be fetched.
-    pub async fn get_main_page(&self) -> TubeResult<MainPage> {
+    pub async fn get_main_page(&self) -> Result<MainPage, Error> {
         let body = self
             .client
             .get("https://www.redd.tube/")
@@ -63,7 +64,11 @@ impl Client {
     ///
     /// # Errors
     /// Returns an error if the video url could not be fetched.
-    pub async fn get_video(&self, main_page: &MainPage, url: &str) -> TubeResult<GetVideoResponse> {
+    pub async fn get_video(
+        &self,
+        main_page: &MainPage,
+        url: &str,
+    ) -> Result<GetVideoResponse, Error> {
         Ok(self
             .client
             .post("https://www.redd.tube/services/get_video")
