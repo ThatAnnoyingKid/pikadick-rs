@@ -26,6 +26,7 @@ pub enum FromHtmlError {
 /// A post page
 #[derive(Debug)]
 pub struct PostPage {
+    /// ?
     pub sigi_state: SigiState,
 }
 
@@ -148,7 +149,7 @@ pub struct ItemModulePostVideo {
     /// Video format
     pub format: String,
 
-    /// ?
+    /// A list of values that are empty strings or urls?
     #[serde(rename = "shareCover")]
     pub share_cover: Vec<serde_json::Value>,
 
@@ -160,9 +161,9 @@ pub struct ItemModulePostVideo {
     #[serde(rename = "encodedType")]
     pub encoded_type: String,
 
-    /// ?
+    /// A `Url` or an empty string?
     #[serde(rename = "reflowCover")]
-    pub reflow_cover: Url,
+    pub reflow_cover: String,
 
     /// ?
     #[serde(rename = "dynamicCover")]
@@ -175,4 +176,20 @@ pub struct ItemModulePostVideo {
     /// Unknown k/vs
     #[serde(flatten)]
     pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn parse_sigi_state() {
+        let data = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/test_data/",
+            "ZTRQsJaw1.json"
+        ));
+
+        let _data: SigiState = serde_json::from_str(data).expect("failed to parse");
+    }
 }

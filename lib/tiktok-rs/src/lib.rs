@@ -32,22 +32,27 @@ mod test {
     #[tokio::test]
     #[ignore]
     async fn download() {
-        let url = "https://vm.tiktok.com/TTPdrksrdc/";
-        let client = Client::new();
+        let urls = [
+            "https://vm.tiktok.com/TTPdrksrdc/",
+            "https://www.tiktok.com/t/ZTRQsJaw1/",
+        ];
+        for url in urls {
+            let client = Client::new();
 
-        let post = client.get_post(url).await.expect("failed to get post");
+            let post = client.get_post(url).await.expect("failed to get post");
 
-        // dbg!(&post);
-        dbg!(&post.get_video_download_url());
-        dbg!(
-            &post
-                .sigi_state
-                .item_module
-                .posts
-                .values()
-                .next()
-                .expect("missing post")
-                .video
-        );
+            // dbg!(&post);
+            dbg!(&post.get_video_download_url());
+            dbg!(
+                &post
+                    .sigi_state
+                    .item_module
+                    .posts
+                    .values()
+                    .next()
+                    .expect("missing post")
+                    .video
+            );
+        }
     }
 }

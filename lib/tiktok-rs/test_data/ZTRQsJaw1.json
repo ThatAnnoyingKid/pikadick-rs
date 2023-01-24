@@ -1,0 +1,722 @@
+{
+    "AppContext": {
+        "appContext": {
+            "isDowngradedToCSR": false,
+            "language": "en",
+            "region": "US",
+            "appId": 1233,
+            "appType": "m",
+            "wid": "7172768348701787690",
+            "nonce": "nBOXwVLMq5j_-Z4LS4_ae",
+            "botType": "others",
+            "requestId": "95457074674603825887",
+            "clusterRegion": "TTP",
+            "abTestVersion": {
+                "versionName": "70508271,70830115,70862838,70894022,70925326,70935397,70941820,70971375,70405643,70455309",
+                "parameters": {
+                    "xg_volume_test": {
+                        "vid": "v2"
+                    },
+                    "share_button_part1_test": {
+                        "vid": "v1"
+                    },
+                    "volume_normalize": {
+                        "vid": "v1"
+                    },
+                    "xgplayer_preload_test": {
+                        "vid": "v1"
+                    },
+                    "studio_web_eh_entrance": {
+                        "vid": "v2"
+                    },
+                    "mobile_search_test": {
+                        "vid": "v2"
+                    },
+                    "video_feed_redesign": {
+                        "vid": "v1"
+                    },
+                    "video_topic": {
+                        "vid": "V2"
+                    },
+                    "video_bitrate_adapt": {
+                        "vid": "v1"
+                    },
+                    "cta_test": {
+                        "vid": "v4"
+                    },
+                    "mobile_vodkit": {
+                        "vid": "v1"
+                    },
+                    "creator_center_test": {
+                        "vid": "v2"
+                    },
+                    "enhance_video_consumption_test": {
+                        "vid": "v3"
+                    },
+                    "increase_detail_page_cover_quantity_test": {
+                        "vid": "v3"
+                    },
+                    "live_abr_version": {
+                        "vid": "v7"
+                    },
+                    "live_end_improved_metrics": {
+                        "vid": "v2"
+                    },
+                    "live_golive_entrance": {
+                        "vid": "v2"
+                    },
+                    "live_lcp_perf_optimize": {
+                        "vid": "v3"
+                    },
+                    "live_room_age_restriction": {
+                        "vid": "v2"
+                    },
+                    "live_top_viewers": {
+                        "vid": "v2"
+                    },
+                    "optimise_browser_mode": {
+                        "vid": "v2"
+                    },
+                    "pumbaa_enable_test": {
+                        "vid": "v1"
+                    },
+                    "related_videos_video_detail_page": {
+                        "vid": "v2"
+                    },
+                    "search_video_lab": {
+                        "vid": "v3"
+                    },
+                    "share_button_embed_test": {
+                        "vid": "v2"
+                    },
+                    "ttlive_broadcast_topic_version_two": {
+                        "vid": "v2"
+                    },
+                    "webapp_recommend_language": {
+                        "vid": "v2"
+                    },
+                    "webapp_video_detail_page_related_mask": {
+                        "vid": "v1"
+                    },
+                    "xgplayer_preload_config": {
+                        "vid": "v2"
+                    }
+                }
+            },
+            "csrfToken": "C6rJFS3l-K3Y3xuf9n8tdgTQn0DFnQCzjxf4",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+            "encryptedWebid": "1%257CPBpM33myGAzX-Khj7dI5O6tHu53m1L20Dxdd46i_vGo%257C1674603813%257Cc43aaad46598119e86b386eb1eeb8324909b5263905704bd8fd7c52f8f3a6ab4",
+            "host": "www.tiktok.com",
+            "pnsRuntimeFrameworkConfig": {
+                "url": "https://sf16-website-login.neutral.ttwstatic.com/obj/tiktok_web_login_static/tiktok_privacy_protection_framework/loader/1.0.0.135/index.js",
+                "url_ttm": "https://lf16-fe.tiktokmusic.me/obj/anote-fe/pns_fe_infra/fe_pns_runtime_framework/loader_ttm/1.0.0.15/index.js",
+                "url_resso": "https://lf16-fe.resso.me/obj/anote-fe/pns_fe_infra/fe_pns_runtime_framework/loader_resso/1.0.0.17/index.js",
+                "enabled": false,
+                "useAsync": true
+            }
+        },
+        "initialized": true,
+        "lang": "en",
+        "sideNavActive": false,
+        "isDowngradedToCSR": false
+    },
+    "BizContext": {
+        "bizContext": {
+            "os": "windows",
+            "isMobile": false,
+            "isAndroid": false,
+            "isIOS": false,
+            "jumpType": "m",
+            "navList": [{
+                    "title": "Company",
+                    "children": [{
+                            "title": "About",
+                            "href": "https://www.tiktok.com/about?lang=en"
+                        }, {
+                            "title": "Newsroom",
+                            "href": "https://newsroom.tiktok.com/"
+                        }, {
+                            "title": "Contact",
+                            "href": "https://www.tiktok.com/about/contact?lang=en"
+                        }, {
+                            "title": "Careers",
+                            "href": "https://careers.tiktok.com"
+                        }, {
+                            "title": "ByteDance",
+                            "href": "https://www.bytedance.com/"
+                        }
+                    ]
+                }, {
+                    "title": "Programs",
+                    "children": [{
+                            "title": "TikTok for Good",
+                            "href": "https://www.tiktok.com/forgood"
+                        }, {
+                            "title": "Advertise",
+                            "href": "https://www.tiktok.com/business/?attr_source=tt_official_site&attr_medium=tt_official_site_guidance&refer=tiktok_web"
+                        }, {
+                            "title": "Developers",
+                            "href": "https://developers.tiktok.com/?refer=tiktok_web"
+                        }, {
+                            "title": "TikTok Rewards",
+                            "href": "https://www.tiktok.com/tiktok-rewards/en"
+                        }, {
+                            "title": "TikTok Browse",
+                            "href": "https://www.tiktok.com/browse"
+                        }, {
+                            "title": "TikTok Embeds",
+                            "href": "https://www.tiktok.com/embed"
+                        }
+                    ]
+                }, {
+                    "title": "Support",
+                    "children": [{
+                            "title": "Help Center",
+                            "href": "https://support.tiktok.com/en"
+                        }, {
+                            "title": "Safety Center",
+                            "href": "https://www.tiktok.com/safety?lang=en"
+                        }, {
+                            "title": "Creator Portal",
+                            "href": "https://www.tiktok.com/creators/creator-portal/en-us/"
+                        }, {
+                            "title": "Community Guidelines",
+                            "href": "https://www.tiktok.com/community-guidelines?lang=en"
+                        }, {
+                            "title": "Transparency",
+                            "href": "https://www.tiktok.com/transparency?lang=en"
+                        }, {
+                            "title": "Accessibility",
+                            "href": "https://www.tiktok.com/accessibility"
+                        }
+                    ]
+                }, {
+                    "title": "Legal",
+                    "children": [{
+                            "title": "Terms of Use",
+                            "key": "terms-of-service",
+                            "href": "https://www.tiktok.com/legal/terms-of-service?lang=en"
+                        }, {
+                            "title": "Privacy Policy",
+                            "key": "privacy-policy-row",
+                            "href": "https://www.tiktok.com/legal/privacy-policy-row?lang=en"
+                        }
+                    ]
+                }
+            ],
+            "config": {
+                "featureFlags": {
+                    "ftc": ["desktop", "mobile"],
+                    "feature_bar": false
+                },
+                "signUpOpen": true,
+                "cookieBanner": {
+                    "load_dynamically": true,
+                    "decline_btn_staged_rollout_area": ["ALL"],
+                    "resource": {
+                        "prefix": "/pns/tiktok-cookie-banner",
+                        "themes": ["default", "ttm"],
+                        "esm": "/pns/tiktok-cookie-banner/{{VERSION}}/default.esm.js",
+                        "nomodule": "/pns/tiktok-cookie-banner/{{VERSION}}/default.js",
+                        "version": "1.0.0.178"
+                    },
+                    "i18n": {
+                        "cookieBannerTitle": "cookie_title",
+                        "cookieBannerTitleNew": "cookie_title_new",
+                        "cookieBannerSubTitle": "cookie_subtitle",
+                        "cookieBannerSubTitleNew": "cookie_subtitle_new",
+                        "cookieBannerSubTitleV2": "cookie_subtitle_v3",
+                        "cookieBannerBtnManage": "cookie_btn_manage",
+                        "cookieBannerBtnAccept": "cookie_btn_accpet",
+                        "cookieBannerBtnDecline": "cookie_btn_decline",
+                        "cookiesBannerDetails": "cookies_banner_details",
+                        "cookiesBannerCookiesPolicy": "cookies_banner_cookies_policy",
+                        "cookiesBannerAccept": "cookies_banner_accept",
+                        "webDoNotSellSettingsSavedToast": "web_do_not_sell_settings_saved_toast",
+                        "cookieSettingManageYourCookieTitle": "cookie_banner_category_manage",
+                        "cookieSettingSave": "save_settings",
+                        "cookieSettingAnalyticsAndMarketing": "cookie_banner_subcategory_cookies",
+                        "cookieSettingNecessary": "cookie_setting_page_nc_title",
+                        "cookieSettingNecessarySubtitle": "cookie_setting_page_nc_subtitle",
+                        "cookieSettingNecessaryV2": "cookie_banner_subcategory_essential",
+                        "cookieSettingNecessarySubtitleV2": "cookies_essential_desc",
+                        "cookieSettingAnalyticsAndMarketingSubtitle": "cookie_setting_page_aam_subtitle",
+                        "cookieSettingAnalyticsAndMarketingSubtitleV2": "cookie_analytics_marketing_desc",
+                        "cookieManageTip": "cookie_manage_desc"
+                    }
+                },
+                "isGrayFilter": false,
+                "nickNameControlDay": "7"
+            },
+            "domains": {
+                "kind": "us",
+                "captcha": "//verification.us.tiktok.com",
+                "imApi": "https://im-api.us.tiktok.com",
+                "imFrontier": "wss://im-ws.us.tiktok.com/ws/v2",
+                "mTApi": "https://us.tiktok.com",
+                "rootApi": "https://us.tiktok.com",
+                "secSDK": "",
+                "slardar": "mon.us.tiktokv.com",
+                "starling": "https://starling.us.tiktokv.com/",
+                "tea": "https://mcs.us.tiktok.com",
+                "libraWebSDK": "https://vmweb.us.tiktok.com",
+                "webcastApi": "https://webcast.us.tiktok.com",
+                "webcastRootApi": "https://webcast.us.tiktok.com",
+                "tcc": "",
+                "search": "https://tx-search.tiktokd.net",
+                "aweme": "https://api.us.tiktok.com"
+            },
+            "downloadLink": {
+                "microsoft": {
+                    "visible": true,
+                    "normal": "https://www.microsoft.com/store/apps/9NH2GPH4JZS4"
+                },
+                "apple": {
+                    "visible": true,
+                    "normal": "https://www.tiktok.com/download-link/af/id835599320"
+                },
+                "amazon": {
+                    "visible": true,
+                    "normal": "https://www.amazon.com/dp/B0117U0G3M/"
+                },
+                "google": {
+                    "visible": true,
+                    "normal": "https://www.tiktok.com/download-link/af/com.zhiliaoapp.musically"
+                }
+            },
+            "deviceLimitRegisterExpired": true,
+            "subdivisions": ["Nevada"],
+            "geo": ["5509151"],
+            "geoCity": {
+                "City": "Washoe County",
+                "Subdivisions": "Nevada",
+                "SubdivisionsArr": ["Nevada"]
+            },
+            "isGoogleBot": false,
+            "isBingBot": false,
+            "isBot": false,
+            "isSearchEngineBot": false,
+            "isTTP": true,
+            "dateFmtLocale": {
+                "name": "en",
+                "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+                "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+                "weekdays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                "weekdaysShort": ["Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"],
+                "weekdaysMin": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+                "longDateFormat": {
+                    "LT": "h:mm A",
+                    "LTS": "h:mm:ss A",
+                    "L": "MM/DD/YYYY",
+                    "LL": "MMMM D, YYYY",
+                    "LLL": "MMMM D, YYYY HH:mm",
+                    "LLLL": "dddd MMMM D, YYYY HH:mm",
+                    "l": "M/D/YYYY",
+                    "ll": "MMM D, YYYY",
+                    "lll": "MMM D, YYYY h:mm A",
+                    "llll": "ddd MMM D, YYYY h:mm A",
+                    "LL-Y": "MMMM D"
+                },
+                "meridiem": {
+                    "am": "am",
+                    "pm": "pm",
+                    "AM": "AM",
+                    "PM": "PM"
+                }
+            },
+            "videoPlayerConfig": {
+                "fallback": false
+            },
+            "playbackNormalizePath": {
+                "path": ["/foryou", "/following"]
+            },
+            "bitrateConfig": {
+                "bitrateLower": 200000,
+                "bitrateRange": [200000, 2500000],
+                "bitrateUpper": 2000000,
+                "mode": "buffer-info",
+                "paramBf": 0.3,
+                "paramBp": 0.7,
+                "paramLower": 0.5,
+                "paramUpper": 1.4,
+                "paramUpperBl": 0.4,
+                "paramVl1": 0.7,
+                "paramVl2": 1,
+                "paramVlLower": 0.5,
+                "paramVlUpper": 0.8,
+                "slidingWindowCountThreshold": 10,
+                "slidingWindowExtraction": "weighted_median",
+                "slidingWindowType": "by_weight",
+                "slidingWindowWeight": "size",
+                "slidingWindowWeightThreshold": 10000000
+            },
+            "searchVideoForLoggedin": true,
+            "studioDownloadEntrance": {
+                "regions": ["BY", "TJ", "TM", "KZ", "GB", "DE", "ES", "FR", "UZ", "KG", "MD", "AC", "AD", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AS", "AU", "AW", "AX", "BA", "BB", "BD", "BF", "BG", "BI", "BJ", "BL", "BM", "BN", "BQ", "BS", "BT", "BV", "BW", "BZ", "CA", "CC", "CD", "CF", "CG", "CI", "CK", "CM", "CN", "CS", "CU", "CV", "CW", "CX", "CY", "DK", "DM", "DR", "EA", "EE", "EH", "EN", "ET", "FJ", "FK", "FM", "FO", "GA", "GD", "GE", "GF", "GG", "GH", "GI", "GL", "GN", "GP", "GQ", "GS", "GU", "GW", "GY", "HK", "HR", "HT", "IC", "IE", "IL", "IM", "IN", "IO", "IS", "JE", "KE", "KH", "KI", "KN", "KY", "LA", "LC", "LI", "LK", "LR", "LS", "LU", "LV", "MC", "ME", "MF", "MG", "MH", "MK", "ML", "MM", "MN", "MO", "MP", "MQ", "MS", "MT", "MU", "MV", "MW", "MZ", "NA", "NC", "NE", "NF", "NG", "NJ", "NO", "NR", "NU", "NZ", "PF", "PG", "PK", "PM", "PN", "PR", "PW", "QS", "RE", "RW", "SB", "SC", "SH", "SI", "SJ", "SL", "SM", "SN", "SR", "ST", "SX", "SZ", "TC", "TF", "TG", "TK", "TL", "TO", "TP", "TS", "TV", "TZ", "UG", "UM", "VA", "VC", "VG", "VI", "VU", "WF", "WS", "XA", "XB", "XK", "XX", "YJ", "YT", "ZA", "ZG", "ZM", "ZN", "ZW", "ZZ", "ES", "TR", "AZ", "MA", "LB", "DZ", "ER", "TN", "SS", "BR", "MX", "TH", "ID", "MY", "VN", "PH", "SG", "KR", "JP", "EG", "SY", "PS", "JO", "IQ", "DJ", "KM", "SO", "TD", "OM", "QA", "KW", "AE", "BH", "SA", "YE", "LY", "SD", "MR", "LT", "JM", "CH", "IR", "AN", "FI", "PY", "AR", "GR", "UY", "CR", "DO", "PE", "IT", "TT", "SV", "CZ", "BE", "CO", "TW", "HN", "EC", "SK", "NP", "RS", "NI", "SE", "GT", "CL", "NL", "RO", "HU", "VE", "AT", "PL", "PA", "BO", "GM", "PT"],
+                "userRegions": ["US", "AS", "GU", "MP", "PR", "VI", "UM"],
+                "allRegions": false
+            },
+            "liveSuggestConfig": {
+                "isBlockedArea": false,
+                "isRiskArea": true
+            },
+            "liveCenterConfig": {
+                "entrance": true,
+                "showCreatorHubRegion": ["GB", "IQ", "SA", "EG", "AE", "DZ", "MA", "JO", "KW", "LB", "TN", "QA", "OM", "LY", "SO", "YE", "BH", "PS", "MR", "DJ", "SS"]
+            },
+            "liveStudioEnable": false,
+            "xgplayerInitHost": {
+                "group1": ["v16-webapp.tiktok.com", "v16m-webapp.tiktokcdn-us.com"],
+                "group2": ["v16-webapp-prime.tiktok.com", "v16-webapp-prime.us.tiktok.com", "v19-webapp-prime.us.tiktok.com", "v19-webapp-prime.tiktok.com"]
+            },
+            "videoOrder": {
+                "videoOrder": [{
+                        "property": "QualityType",
+                        "detail": [10, 28, 30]
+                    }, {
+                        "property": "Bitrate",
+                        "order": "desc"
+                    }
+                ]
+            }
+        },
+        "initialized": true
+    },
+    "SEO": {
+        "metaParams": {
+            "title": "#tsunami #lizzo #earthquake | TikTok",
+            "keywords": "",
+            "description": "78 Likes, TikTok video from ChrisClipzhoes 👾 (@getclippedbychris): \"#tsunami #lizzo #earthquake\".  original sound - ChrisClipzhoes 👾.",
+            "canonicalHref": "https://www.tiktok.com/@getclippedbychris/video/7053898907989855535",
+            "robotsContent": "index, follow, max-image-preview:large",
+            "applicableDevice": "pc, mobile"
+        },
+        "jsonldList": [["BreadcrumbList", {
+                    "itemListElement": [{
+                            "@type": "ListItem",
+                            "position": 1,
+                            "item": {
+                                "@type": "Thing",
+                                "@id": "https://www.tiktok.com",
+                                "name": "TikTok"
+                            }
+                        }, {
+                            "@type": "ListItem",
+                            "position": 2,
+                            "item": {
+                                "@type": "Thing",
+                                "@id": "https://www.tiktok.com/@getclippedbychris",
+                                "name": "ChrisClipzhoes 👾 (@getclippedbychris) | TikTok"
+                            }
+                        }, {
+                            "@type": "ListItem",
+                            "position": 3,
+                            "item": {
+                                "@type": "Thing",
+                                "@id": "https://www.tiktok.com/@getclippedbychris/video/7053898907989855535",
+                                "name": "#tsunami #lizzo #earthquake | TikTok"
+                            }
+                        }
+                    ]
+                }
+            ], ["VideoObject", {}
+            ]],
+        "abtest": {
+            "pageId": "269055608384069919",
+            "vidList": [],
+            "parameters": {
+                "video_page_serp_compliance": {
+                    "vid": "v2"
+                }
+            }
+        },
+        "loading": false,
+        "canonical": "https://www.tiktok.com/@getclippedbychris/video/7053898907989855535",
+        "pageType": 999,
+        "launchMode": "reflow",
+        "directoryConfig": {
+            "type": "json",
+            "default": {
+                "kepDirectoryVersion1": {
+                    "isOpen": false,
+                    "itemNumber": 0,
+                    "hashSize": 8000,
+                    "upperLimitHash": 8000,
+                    "lowerLimitHash": 0
+                },
+                "kepDirectoryVersion2": {
+                    "isOpen": false,
+                    "itemNumber": 0,
+                    "hashSize": 160000,
+                    "bucketSize": 8000,
+                    "upperLimitHash": 160000,
+                    "lowerLimitHash": 0,
+                    "updatedFrequencyTimer": 21600
+                },
+                "userProfileDirectory": {
+                    "isOpen": false,
+                    "itemNumber": 400,
+                    "hashSize": 40000,
+                    "upperLimitHash": 200,
+                    "lowerLimitHash": 0
+                },
+                "recommendVideoDirectory": {
+                    "isOpen": false,
+                    "itemNumber": 400,
+                    "hashSize": 40000,
+                    "upperLimitHash": 200,
+                    "lowerLimitHash": 0
+                },
+                "userVideoDirectory": {
+                    "isOpen": false,
+                    "itemNumber": 200
+                },
+                "musicVideoDirectory": {
+                    "isOpen": false,
+                    "itemNumber": 200
+                },
+                "hashtagVideoDirectory": {
+                    "isOpen": false,
+                    "itemNumber": 200
+                }
+            }
+        }
+    },
+    "SharingMeta": {
+        "value": {
+            "al:ios:url": "snssdk1233://aweme/detail/7053898907989855535?_r=1&_d=secCgYIASAHKAESPgo8vwwipPKZ844cJWN9jsWUsrzVYhiymMZLQMzfXvgK6lzR9obxN799JT4r4gS8FIqk0mKYho9i1VaUrKKQGgA=&checksum=9a664a5b12836c0220212932057a5bc45243942b8a6772193901bbed13924dea&language=en&preview_pb=0&sec_user_id=MS4wLjABAAAAcxv-IgACmSyoEgxPl_HbxK71wndMFaBCr42wUVFDPf3yoCppOwW-0MiBPPbccGFv&share_app_id=1233&share_item_id=7053898907989855535&share_link_id=7364A2E1-ECFE-48A4-B0B7-3AD0825F15A2&source=h5_m&timestamp=1669022414&tt_from=copy&u_code=dadl6j1a1b64ik&ug_btm=b0,b2878&user_id=6784887732802110469&utm_campaign=client_share&utm_medium=ios&utm_source=copy",
+            "al:android:url": "snssdk1233://aweme/detail/7053898907989855535?_r=1&_d=secCgYIASAHKAESPgo8vwwipPKZ844cJWN9jsWUsrzVYhiymMZLQMzfXvgK6lzR9obxN799JT4r4gS8FIqk0mKYho9i1VaUrKKQGgA=&checksum=9a664a5b12836c0220212932057a5bc45243942b8a6772193901bbed13924dea&language=en&preview_pb=0&sec_user_id=MS4wLjABAAAAcxv-IgACmSyoEgxPl_HbxK71wndMFaBCr42wUVFDPf3yoCppOwW-0MiBPPbccGFv&share_app_id=1233&share_item_id=7053898907989855535&share_link_id=7364A2E1-ECFE-48A4-B0B7-3AD0825F15A2&source=h5_m&timestamp=1669022414&tt_from=copy&u_code=dadl6j1a1b64ik&ug_btm=b0,b2878&user_id=6784887732802110469&utm_campaign=client_share&utm_medium=ios&utm_source=copy",
+            "al:ios:app_store_id": "835599320",
+            "al:ios:app_name": "musical.ly",
+            "al:android:app_name": "musical.ly",
+            "al:android:package": "com.zhiliaoapp.musically",
+            "og:site_name": "TikTok",
+            "og:type": "website",
+            "og:title": "",
+            "og:description": "",
+            "fb:app_id": "597615686992125",
+            "twitter:app:id:iphone": "835599320",
+            "twitter:app:id:googleplay": "com.zhiliaoapp.musically",
+            "twitter:card": "summary",
+            "twitter:site": "TikTok",
+            "twitter:title": "",
+            "twitter:description": "",
+            "og:image": "",
+            "twitter:image": "",
+            "og:image:width": "undefined",
+            "og:image:height": "undefined"
+        }
+    },
+    "ItemList": {
+        "video": {
+            "list": ["7053898907989855535"],
+            "browserList": ["7053898907989855535"],
+            "loading": false,
+            "statusCode": 0,
+            "hasMore": true,
+            "cursor": "0",
+            "preloadList": [{
+                    "url": "https://v16-webapp-prime.us.tiktok.com/video/tos/useast5/tos-useast5-pve-0068-tx/8305d96edeeb43dda91d3912764b75ac/?a=1988&ch=0&cr=0&dr=0&lr=tiktok_m&cd=0%7C0%7C0%7C0&br=1622&bt=811&cs=0&ds=3&ft=4KJMyMzm8Zmo0e3fI64jVrnWdpWrKsdm&mime_type=video_mp4&qs=0&rc=OWczZmk5ZmY7NDZpOzs1aUBpMzR2ZTQ6Zjo6OjMzZzczNEA0XzMvMzEtNWIxYDI0LmEuYSNvaWFgcjQwamZgLS1kMS9zcw%3D%3D&expire=1674625466&l=202301242343452D9B962CB87CBAA7DE46&policy=2&signature=666863c7ba5508362506591b3cc39c8c&tk=tt_chain_token",
+                    "id": ""
+                }
+            ],
+            "keyword": "7053898907989855535"
+        }
+    },
+    "ItemModule": {
+        "7053898907989855535": {
+            "id": "7053898907989855535",
+            "desc": "#tsunami #lizzo #earthquake",
+            "createTime": "1642363824",
+            "scheduleTime": 0,
+            "video": {
+                "id": "",
+                "height": 936,
+                "width": 576,
+                "duration": 40,
+                "ratio": "720p",
+                "cover": "https://p16-sign.tiktokcdn-us.com/obj/tos-useast5-p-0068-tx/1d311403b0a440e29f122fa7ad38ce6f_1642363825?x-expires=1674622800&x-signature=GGgIyBt1LG1pt2bixKwdQLknuUE%3D",
+                "originCover": "https://p16-sign.tiktokcdn-us.com/obj/tos-useast5-p-0068-tx/15ac0bec51914a719d2e04092d4dfeec_1642363824?x-expires=1674622800&x-signature=g%2FWcM9L9vzepuCUZar%2FZgMORwtc%3D",
+                "dynamicCover": "https://p16-sign.tiktokcdn-us.com/obj/tos-useast5-p-0068-tx/d46ffd989f1743f480c0d158673ca270_1642363824?x-expires=1674622800&x-signature=5aQJC53wvrGaHCAAgfiHLThbilM%3D",
+                "playAddr": "https://v16-webapp-prime.us.tiktok.com/video/tos/useast5/tos-useast5-pve-0068-tx/8305d96edeeb43dda91d3912764b75ac/?a=1988&ch=0&cr=0&dr=0&lr=tiktok_m&cd=0%7C0%7C0%7C0&br=1622&bt=811&cs=0&ds=3&ft=4KJMyMzm8Zmo0e3fI64jVrnWdpWrKsdm&mime_type=video_mp4&qs=0&rc=OWczZmk5ZmY7NDZpOzs1aUBpMzR2ZTQ6Zjo6OjMzZzczNEA0XzMvMzEtNWIxYDI0LmEuYSNvaWFgcjQwamZgLS1kMS9zcw%3D%3D&expire=1674625466&l=202301242343452D9B962CB87CBAA7DE46&policy=2&signature=666863c7ba5508362506591b3cc39c8c&tk=tt_chain_token",
+                "downloadAddr": "https://v16-webapp-prime.us.tiktok.com/video/tos/useast5/tos-useast5-pve-0068-tx/8305d96edeeb43dda91d3912764b75ac/?a=1988&ch=0&cr=0&dr=0&lr=tiktok_m&cd=0%7C0%7C0%7C0&br=1622&bt=811&cs=0&ds=3&ft=4KJMyMzm8Zmo0e3fI64jVrnWdpWrKsdm&mime_type=video_mp4&qs=0&rc=OWczZmk5ZmY7NDZpOzs1aUBpMzR2ZTQ6Zjo6OjMzZzczNEA0XzMvMzEtNWIxYDI0LmEuYSNvaWFgcjQwamZgLS1kMS9zcw%3D%3D&expire=1674625466&l=202301242343452D9B962CB87CBAA7DE46&policy=2&signature=666863c7ba5508362506591b3cc39c8c&tk=tt_chain_token",
+                "shareCover": [""],
+                "reflowCover": "",
+                "bitrate": 831299,
+                "encodedType": "normal",
+                "format": "mp4",
+                "videoQuality": "normal",
+                "encodeUserTag": "",
+                "codecType": "h264",
+                "definition": "720p",
+                "subtitleInfos": [],
+                "zoomCover": {
+                    "240": "https://p19-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/1d311403b0a440e29f122fa7ad38ce6f_1642363825~tplv-r00ih4996s-1:240:240.jpeg?x-expires=1674622800&x-signature=dQyITLfIHo7xP1FYRvJifDDAYcM%3D",
+                    "480": "https://p16-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/1d311403b0a440e29f122fa7ad38ce6f_1642363825~tplv-r00ih4996s-1:480:480.jpeg?x-expires=1674622800&x-signature=Ry0PnCnlCVILcWJObPFnTrIKwys%3D",
+                    "720": "https://p16-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/1d311403b0a440e29f122fa7ad38ce6f_1642363825~tplv-r00ih4996s-1:720:720.jpeg?x-expires=1674622800&x-signature=A6ObFe08P31PO7U6bDfg9ugTtHU%3D",
+                    "960": "https://p19-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/1d311403b0a440e29f122fa7ad38ce6f_1642363825~tplv-r00ih4996s-1:960:960.jpeg?x-expires=1674622800&x-signature=q%2FaG8vH0ujvvnKE14dhBDHlFm4o%3D"
+                },
+                "volumeInfo": {
+                    "Loudness": -11.6,
+                    "Peak": 1
+                },
+                "bitrateInfo": [{
+                        "GearName": "normal_720_0",
+                        "Bitrate": 831299,
+                        "QualityType": 10,
+                        "PlayAddr": {
+                            "Uri": "v12044gd0000c7i7m73c77u1cbdsl1r0",
+                            "UrlList": ["https://v16-webapp-prime.us.tiktok.com/video/tos/useast5/tos-useast5-pve-0068-tx/8305d96edeeb43dda91d3912764b75ac/?a=1988&ch=0&cr=0&dr=0&lr=tiktok_m&cd=0%7C0%7C0%7C0&br=1622&bt=811&cs=0&ds=3&ft=4KJMyMzm8Zmo0e3fI64jVrnWdpWrKsdm&mime_type=video_mp4&qs=0&rc=OWczZmk5ZmY7NDZpOzs1aUBpMzR2ZTQ6Zjo6OjMzZzczNEA0XzMvMzEtNWIxYDI0LmEuYSNvaWFgcjQwamZgLS1kMS9zcw%3D%3D&expire=1674625466&l=202301242343452D9B962CB87CBAA7DE46&policy=2&signature=666863c7ba5508362506591b3cc39c8c&tk=tt_chain_token", "https://v19-webapp-prime.us.tiktok.com/video/tos/useast5/tos-useast5-pve-0068-tx/8305d96edeeb43dda91d3912764b75ac/?a=1988&ch=0&cr=0&dr=0&lr=tiktok_m&cd=0%7C0%7C0%7C0&br=1622&bt=811&cs=0&ds=3&ft=4KJMyMzm8Zmo0e3fI64jVrnWdpWrKsdm&mime_type=video_mp4&qs=0&rc=OWczZmk5ZmY7NDZpOzs1aUBpMzR2ZTQ6Zjo6OjMzZzczNEA0XzMvMzEtNWIxYDI0LmEuYSNvaWFgcjQwamZgLS1kMS9zcw%3D%3D&expire=1674625466&l=202301242343452D9B962CB87CBAA7DE46&policy=2&signature=666863c7ba5508362506591b3cc39c8c&tk=tt_chain_token"],
+                            "DataSize": "4171566",
+                            "UrlKey": "v12044gd0000c7i7m73c77u1cbdsl1r0_h264_720p_831299",
+                            "FileHash": "f0c11c37751266ca310979b428f2fd2e",
+                            "FileCs": "c:0-33788-6f60"
+                        },
+                        "CodecType": "h264"
+                    }
+                ]
+            },
+            "author": "getclippedbychris",
+            "music": {
+                "id": "7053898881801554735",
+                "title": "original sound",
+                "playUrl": "https://sf16.tiktokcdn-us.com/obj/ies-music-tx/7053898911727176495.mp3",
+                "coverLarge": "https://p19-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/20d9e416e5c252ab18e36a7578a982a3~c5_1080x1080.jpeg?x-expires=1674774000&x-signature=vES5slhVdQwSjLmHAjpz8VMIJEE%3D",
+                "coverMedium": "https://p16-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/20d9e416e5c252ab18e36a7578a982a3~c5_720x720.jpeg?x-expires=1674774000&x-signature=VFvsJfRikGEb53KwSBHhSRqkb6E%3D",
+                "coverThumb": "https://p19-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/20d9e416e5c252ab18e36a7578a982a3~c5_100x100.jpeg?x-expires=1674774000&x-signature=uuPTWUwLhvuMuw9zsWPuy7m9SJo%3D",
+                "authorName": "ChrisClipzhoes 👾",
+                "original": false,
+                "duration": 40,
+                "scheduleSearchTime": 0
+            },
+            "challenges": [{
+                    "id": "57157",
+                    "title": "earthquake",
+                    "desc": "",
+                    "profileLarger": "",
+                    "profileMedium": "",
+                    "profileThumb": "",
+                    "coverLarger": "",
+                    "coverMedium": "",
+                    "coverThumb": ""
+                }, {
+                    "id": "9046",
+                    "title": "tsunami",
+                    "desc": "",
+                    "profileLarger": "",
+                    "profileMedium": "",
+                    "profileThumb": "",
+                    "coverLarger": "",
+                    "coverMedium": "",
+                    "coverThumb": ""
+                }, {
+                    "id": "100781",
+                    "title": "lizzo",
+                    "desc": "",
+                    "profileLarger": "",
+                    "profileMedium": "",
+                    "profileThumb": "",
+                    "coverLarger": "",
+                    "coverMedium": "",
+                    "coverThumb": ""
+                }
+            ],
+            "stats": {
+                "diggCount": 78,
+                "shareCount": 17,
+                "commentCount": 11,
+                "playCount": 1338
+            },
+            "warnInfo": [],
+            "originalItem": false,
+            "officalItem": false,
+            "textExtra": [{
+                    "awemeId": "",
+                    "start": 0,
+                    "end": 8,
+                    "hashtagId": "9046",
+                    "hashtagName": "tsunami",
+                    "type": 1,
+                    "subType": 0,
+                    "isCommerce": false
+                }, {
+                    "awemeId": "",
+                    "start": 9,
+                    "end": 15,
+                    "hashtagId": "100781",
+                    "hashtagName": "lizzo",
+                    "type": 1,
+                    "subType": 0,
+                    "isCommerce": false
+                }, {
+                    "awemeId": "",
+                    "start": 16,
+                    "end": 27,
+                    "hashtagId": "57157",
+                    "hashtagName": "earthquake",
+                    "type": 1,
+                    "subType": 0,
+                    "isCommerce": false
+                }
+            ],
+            "secret": false,
+            "forFriend": false,
+            "digged": false,
+            "itemCommentStatus": 0,
+            "takeDown": 0,
+            "effectStickers": [],
+            "privateItem": false,
+            "duetEnabled": true,
+            "stitchEnabled": true,
+            "stickersOnItem": [],
+            "shareEnabled": true,
+            "comments": [],
+            "duetDisplay": 0,
+            "stitchDisplay": 0,
+            "indexEnabled": true,
+            "locationCreated": "US",
+            "nickname": "ChrisClipzhoes 👾",
+            "authorId": "6990832514471527430",
+            "authorSecId": "MS4wLjABAAAAr5ITa3kfay6JQEuVQiSI4bffsYWbh8Kzw2wMgP65aAwpgb11RGh3qRJ9DfJD6BTQ",
+            "avatarThumb": "https://p19-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/20d9e416e5c252ab18e36a7578a982a3~c5_100x100.jpeg?x-expires=1674774000&x-signature=uuPTWUwLhvuMuw9zsWPuy7m9SJo%3D",
+            "authorPrivate": false
+        }
+    },
+    "UserModule": {
+        "users": {
+            "getclippedbychris": {
+                "id": "6990832514471527430",
+                "shortId": "",
+                "uniqueId": "getclippedbychris",
+                "nickname": "ChrisClipzhoes 👾",
+                "avatarLarger": "https://p19-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/20d9e416e5c252ab18e36a7578a982a3~c5_1080x1080.jpeg?x-expires=1674774000&x-signature=vES5slhVdQwSjLmHAjpz8VMIJEE%3D",
+                "avatarMedium": "https://p16-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/20d9e416e5c252ab18e36a7578a982a3~c5_720x720.jpeg?x-expires=1674774000&x-signature=VFvsJfRikGEb53KwSBHhSRqkb6E%3D",
+                "avatarThumb": "https://p19-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/20d9e416e5c252ab18e36a7578a982a3~c5_100x100.jpeg?x-expires=1674774000&x-signature=uuPTWUwLhvuMuw9zsWPuy7m9SJo%3D",
+                "signature": "Emperor of flop tok 👑\nThanks for 6.3k !!!! 💘😫\nTwitter : thatopgagger",
+                "createTime": 0,
+                "verified": false,
+                "secUid": "MS4wLjABAAAAr5ITa3kfay6JQEuVQiSI4bffsYWbh8Kzw2wMgP65aAwpgb11RGh3qRJ9DfJD6BTQ",
+                "ftc": false,
+                "relation": 0,
+                "openFavorite": false,
+                "commentSetting": 0,
+                "duetSetting": 0,
+                "stitchSetting": 0,
+                "privateAccount": false,
+                "secret": false,
+                "isADVirtual": false,
+                "roomId": "",
+                "uniqueIdModifyTime": 0,
+                "ttSeller": false,
+                "recommendReason": "",
+                "nowInvitationCardUrl": "",
+                "nickNameModifyTime": 0,
+                "isEmbedBanned": false
+            }
+        },
+        "stats": {}
+    },
+    "VideoPage": {
+        "statusCode": 0
+    }
+}
