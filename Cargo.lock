@@ -3344,7 +3344,7 @@ dependencies = [
 [[package]]
 name = "sauce-nao"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/sauce-nao-rs#0b1ef9d1ffded8733c2347ebf940eb70e9639e08"
+source = "git+https://github.com/adumbidiot/sauce-nao-rs#55df26566f5a99584a26d608ee9d7d87408f7a51"
 dependencies = [
  "itoa 1.0.5",
  "reqwest",
