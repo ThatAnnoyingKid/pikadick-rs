@@ -161,7 +161,7 @@ impl TikTokData {
     /// Get video data, using the cache if needed
     pub async fn get_video_data_cached(
         &self,
-        id: &str,
+        id: u64,
         format: &str,
         url: &str,
         video_duration: u64,
@@ -404,7 +404,7 @@ impl TikTokData {
                 .context("missing item module post")?;
 
             let video_url = item_module_post.video.download_addr.clone();
-            let video_id = item_module_post.video.id.clone();
+            let video_id: u64 = item_module_post.id.parse().context("invalid video id")?;
             let video_format = item_module_post.video.format.clone();
             let video_duration = item_module_post.video.duration;
 
@@ -413,7 +413,7 @@ impl TikTokData {
 
         let video_path = self
             .get_video_data_cached(
-                video_id.as_str(),
+                video_id,
                 video_format.as_str(),
                 video_url.as_str(),
                 video_duration,
