@@ -58,6 +58,7 @@ mod test {
             */
 
             // dbg!(&post);
+            dbg!(item_id);
             dbg!(download_url.as_str());
             dbg!(
                 &post
