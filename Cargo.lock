@@ -3961,6 +3961,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "argh",
+ "itoa 1.0.5",
  "once_cell",
  "reqwest",
  "scraper",

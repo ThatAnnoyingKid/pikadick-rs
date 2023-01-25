@@ -10,7 +10,8 @@ required-features = [ "cli" ]
 path = "src/main.rs"
 
 [dependencies]
-reqwest = { version = "0.11.13", default-features = false, features = [ "cookies", "rustls-tls" ] } 
+itoa = "1.0.5"
+reqwest = { version = "0.11.13", default-features = false, features = [ "cookies", "rustls-tls", "brotli" ] } 
 thiserror = "1.0.38"
 tokio = "1.24.1"
 scraper = { version = "0.14.0", default-features = false }
@@ -29,9 +30,4 @@ tokio = { version = "1.24.1", features = [ "macros" ] }
 
 [features]
 default = []
-cli = [ 
-    "argh", 
-    "anyhow",
-    "tokio/rt-multi-thread",
-    "tokio/fs",
-]
+cli = ["argh", "anyhow", "tokio/rt-multi-thread", "tokio/fs"]

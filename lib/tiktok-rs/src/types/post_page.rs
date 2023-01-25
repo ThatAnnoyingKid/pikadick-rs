@@ -52,7 +52,17 @@ impl PostPage {
 
     /// Get the video download url for a post by id, if it exists
     pub fn get_video_download_url(&self) -> Option<&Url> {
-        Some(&self.get_item_module_post()?.video.download_addr)
+        let item_module_post = self.get_item_module_post()?;
+        let video = &item_module_post.video;
+
+        let download_addr = &video.download_addr;
+
+        // Urls to this host fail
+        if download_addr.host_str() != Some("v16-webapp-prime.us.tiktok.com") {
+            Some(download_addr)
+        } else {
+            Some(&video.play_addr)
+        }
     }
 }
 
@@ -83,6 +93,9 @@ pub struct ItemModule {
 /// ?
 #[derive(Debug, serde::Deserialize)]
 pub struct ItemModulePost {
+    /// The post id
+    pub id: String,
+
     /// Post author
     pub author: String,
 
