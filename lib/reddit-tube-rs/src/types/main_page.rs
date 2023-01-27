@@ -1,3 +1,4 @@
+use once_cell::sync::Lazy;
 use scraper::{
     Html,
     Selector,
@@ -28,10 +29,11 @@ pub struct MainPage {
 impl MainPage {
     /// Make a [`MainPage`] from [`Html`].
     pub(crate) fn from_html(html: &Html) -> Result<Self, FromHtmlError> {
-        lazy_static::lazy_static! {
-            static ref DOWNLOAD_FORM_SELECTOR: Selector = Selector::parse("#download-form").expect("invalid download form selector");
-            static ref CSRF_SELECTOR: Selector = Selector::parse("[name][value]").expect("invalid csrf selector");
-        }
+        static DOWNLOAD_FORM_SELECTOR: Lazy<Selector> = Lazy::new(|| {
+            Selector::parse("#download-form").expect("invalid download form selector")
+        });
+        static CSRF_SELECTOR: Lazy<Selector> =
+            Lazy::new(|| Selector::parse("[name][value]").expect("invalid csrf selector"));
 
         let download_form = html
             .select(&DOWNLOAD_FORM_SELECTOR)

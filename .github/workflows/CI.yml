@@ -90,9 +90,6 @@ jobs:
             
       - name: Run `apt-get update`
         run: sudo apt-get update
-        
-      - name: Run `apt-get upgrade`
-        run: sudo apt-get upgrade -y
             
       - name: Install FFMpeg
         run: sudo apt-get install -y ffmpeg

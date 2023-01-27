@@ -1,12 +1,11 @@
 [package]
 name = "reddit-tube"
 version = "0.0.0"
-authors = [ "professionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-lazy_static = "1.4.0"
+once_cell = "1.17.0"
 reqwest = { version = "0.11.13", default-features = false, features = [ "cookies", "json" ] }
 scraper = { version = "0.14.0", default-features = false }
 serde = { version = "1.0.152", features = [ "derive" ] } 
@@ -19,7 +18,7 @@ url = { version = "2.3.1", features = [ "serde" ] }
 tokio = { version = "1.24.1", features = [ "macros" ] }
 
 [features]
-default = [ "reqwest/default-tls" ]
+default = ["reqwest/default-tls"]
 
-native-tls = [ "reqwest/native-tls" ]
-rustls-tls = [ "reqwest/rustls-tls" ]
+native-tls = ["reqwest/native-tls"]
+rustls-tls = ["reqwest/rustls-tls"]
