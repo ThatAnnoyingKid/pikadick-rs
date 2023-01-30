@@ -60,7 +60,7 @@ tiny-skia = { version = "0.8.2", features = [ "std", "simd", "png-format" ], def
 tokio = { version = "1.24.1", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
 tokio-stream = "0.1.11"
-toml = "0.5.10"
+toml = "0.7.0"
 tonic = { version = "0.8.3", default-features = false }
 tracing = "0.1.37"
 tracing-appender = "0.2.2"
