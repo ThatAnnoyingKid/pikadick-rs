@@ -3605,7 +3605,7 @@ dependencies = [
 [[package]]
 name = "shift-orcz"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/shift-client-rs#6b1e2ab861a6cfb7d27c54e2f393a918a80166fe"
+source = "git+https://github.com/adumbidiot/shift-client-rs#e4f7d4b1cf801103c56a8642d4adeaa46e7eea72"
 dependencies = [
  "logos",
  "once_cell",
@@ -4053,9 +4053,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.24.2"
+version = "1.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "597a12a59981d9e3c38d216785b0c37399f6e415e8d0712047620f189371b0bb"
+checksum = "c8e00990ebabbe4c14c08aca901caed183ecd5c09562a12c824bb53d3c3fd3af"
 dependencies = [
  "autocfg",
  "bytes",
