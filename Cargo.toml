@@ -103,6 +103,8 @@ opentelemetry_sdk = { git = "https://github.com/open-telemetry/opentelemetry-rus
 opentelemetry_api = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
 opentelemetry = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
 
+ntapi3 = { version = "0.3.0", git = "https://github.com/MSxDOS/ntapi", rev = "2148881c30e8da6a3ff585efd1c7d8ad125ccd2c", package = "ntapi" }
+
 [patch.'https://github.com/serenity-rs/serenity']
 serenity = { git = "https://github.com/adumbidiot/serenity", branch = "next" }
 
