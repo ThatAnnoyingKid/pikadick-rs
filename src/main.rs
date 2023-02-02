@@ -37,7 +37,7 @@
     clippy::items_after_statements,
     clippy::large_stack_arrays,
     clippy::large_types_passed_by_value,
-    clippy::let_underscore_drop,
+    let_underscore_drop,
     clippy::linkedlist,
     clippy::lossy_float_literal,
     clippy::manual_ok_or,
@@ -64,8 +64,11 @@
     clippy::unicode_not_nfc,
     clippy::unnecessary_join,
     clippy::unnested_or_patterns,
-    clippy::zero_sized_map_values
+    clippy::zero_sized_map_values,
+    variant_size_differences
 )]
+// TODO: Consider if we want to deny this
+#![allow(clippy::uninlined_format_args)]
 // TODO: Document everything properly
 // clippy::default_trait_access
 // clippy::use_self
