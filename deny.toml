@@ -151,6 +151,8 @@ allow-git = [
     "https://github.com/FelixMcFelix/Symphonia",
     "https://github.com/open-telemetry/opentelemetry-rust",
     "https://github.com/MSxDOS/ntapi",
+    # "https://github.com/servo/rust-cssparser",
+    "https://github.com/causal-agent/scraper",
 ]
 
 [sources.allow-org]
