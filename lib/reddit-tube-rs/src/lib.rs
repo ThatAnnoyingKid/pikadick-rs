@@ -1,19 +1,17 @@
 mod client;
 pub mod types;
 
-pub use self::client::Client;
-pub use crate::types::{
-    GetVideoResponse,
-    MainPage,
+pub use crate::{
+    client::Client,
+    types::{
+        GetVideoResponse,
+        MainPage,
+    },
 };
-pub use reqwest::StatusCode;
-
-/// Result Type
-pub type TubeResult<T> = Result<T, TubeError>;
 
 /// Client Error
 #[derive(Debug, thiserror::Error)]
-pub enum TubeError {
+pub enum Error {
     /// HTTP Reqwest Error
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
@@ -31,6 +29,9 @@ pub enum TubeError {
 mod test {
     use super::*;
 
+    /// The server appears to use cloudflare.
+    /// This server will block requests from github's CI with a 403 HTTP status code.
+    /// Therefore, only test this locally.
     #[tokio::test]
     #[ignore]
     async fn it_works() {
@@ -43,7 +44,9 @@ mod test {
         let vid = client
             .get_video(&main_page, video_url)
             .await
-            .expect("failed to get video");
+            .expect("failed to get video")
+            .into_result()
+            .expect("invalid api response");
 
         dbg!(vid);
     }

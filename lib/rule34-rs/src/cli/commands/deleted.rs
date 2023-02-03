@@ -1,4 +1,5 @@
 use anyhow::Context;
+use std::num::NonZeroU64;
 
 #[derive(argh::FromArgs)]
 #[argh(
@@ -8,7 +9,7 @@ use anyhow::Context;
 )]
 pub struct Options {
     #[argh(positional, description = "the start id of the posts retrieved")]
-    last_id: Option<u64>,
+    last_id: Option<NonZeroU64>,
 }
 
 pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<()> {

@@ -8,13 +8,13 @@ description = "yet another discord bot"
 authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 
 [dependencies]
-anyhow = "1.0.66"
-argh = "0.1.9"
+anyhow = "1.0.68"
+argh = "0.1.10"
 async-rusqlite = { path = "./lib/async-rusqlite-rs", features = [ "bundled" ] }
 bincode = "1.3.3"
 bitflags = "1.3.2"
 bytes = "1.3.0"
-camino = { version = "1.1.1", features = [ "serde1" ] }
+camino = { version = "1.1.2", features = [ "serde1" ] }
 crossbeam = "0.8.2"
 dashmap = "5.4.0"
 deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
@@ -24,49 +24,50 @@ heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
 indexmap = "1.9.2"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }
-itoa = "1.0.4"
+itoa = "1.0.5"
 lazy_static = "1.4.0"
+nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path", "drop-remove-path" ] }
 nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls-tls" ] }
-once_cell = "1.16.0"
+once_cell = "1.17.0"
 opentelemetry = { version = "0.18.0", features = [ "rt-tokio" ] }
 opentelemetry-otlp = { version = "0.11.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.12.1"
 pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
-pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "download_to_file", "arc_anyhow_error", "async_lock_file", "drop_remove_file" ] }
+pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "arc_anyhow_error", "async_lock_file", "drop_remove_file" ] }
 pikadick-system-info = { path = "./lib/pikadick-system-info-rs" }
 quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "rustls-tls" ] }
 r6stats = { path = "./lib/r6stats-rs", default-features = false, features = [ "rustls-tls" ] }
 r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = [ "rustls-tls" ] }
 rand = "0.8.5"
-reddit = { git = "https://github.com/nathaniel-daniel/reddit-rs", features = [ "force-rustls-tls" ] }
+reddit = { git = "https://github.com/nathaniel-daniel/reddit-rs", features = [ "rustls-tls", "force-rustls-tls" ], default-features = false }
 reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls-tls" ] }
-regex = "1.7.0"
+regex = "1.7.1"
 reqwest = { version = "0.11.13", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
 rusqlite = { version = "0.28.0", features = [ "bundled", "blob", "trace" ] }
-ryu = "1.0.11"
+ryu = "1.0.12"
 sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-features = false, features = [ "rustls-tls" ] }
-serde = { version = "1.0.144", features = [ "derive" ] }
+serde = { version = "1.0.152", features = [ "derive" ] }
 serenity = { version = "0.11.2", features = [ "client", "standard_framework", "voice", "cache" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
 songbird = "0.2.2"
-systemstat = "0.2.1"
-thiserror = "1.0.37"
+systemstat = "0.2.2"
+thiserror = "1.0.38"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiktok = { path = "lib/tiktok-rs" }
 time = "0.3.17"
 tiny-skia = { version = "0.8.2", features = [ "std", "simd", "png-format" ], default-features = false }
-tokio = { version = "1.23.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tokio = { version = "1.24.1", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
 tokio-stream = "0.1.11"
-toml = "0.5.9"
-tonic = "0.8.3"
+toml = "0.5.10"
+tonic = { version = "0.8.3", default-features = false }
 tracing = "0.1.37"
 tracing-appender = "0.2.2"
 tracing-log = "0.1.3"
 tracing-opentelemetry = "0.18.0"
 tracing-subscriber = { version = "0.3.16", features = [ "env-filter", "fmt", "parking_lot" ] }
-ttf-parser = "0.17.1"
+ttf-parser = "0.18.1"
 twilight-cache-inmemory = "0.13.0"
 twilight-gateway = "0.13.0"
 twilight-http = "0.13.0"
@@ -79,7 +80,7 @@ xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls-tl
 zalgo = { git = "https://github.com/nathaniel-daniel/zalgo-rs", default-features = false }
 
 # Optional
-openssl = { version = "0.10.44", optional = true, features = [ "vendored" ] }
+openssl = { version = "0.10.45", optional = true, features = [ "vendored" ] }
 
 [features]
 # Note: This is needed for cross comp

@@ -85,18 +85,14 @@ skip = [
     { name = "nix", version = "0.23.1" },
     { name = "memoffset", version = "0.6.5" },
     
-    # Blocked on updating or removing opentelemetry
-    { name = "rustls-native-certs", version = "0.5.0" },
-    
-    # Blocked on many crates moving to the next version of `windows`
-    { name = "windows_x86_64_msvc", version = "0.36.1" },
-    { name = "windows-sys", version = "0.36.1" },
-    
     # Blocked on cookie-store moving to idna 0.3
     { name = "idna", version = "0.2.3" },
     
     # Blocked on reqwest updating cookie-store to 0.19.x
     { name = "cookie_store", version = "0.16.1" },
+    
+    # Blocked on ecosystem moving to base64 0.20 and above
+    { name = "base64", version = "0.13.1" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -147,21 +143,17 @@ unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = [ "https://github.com/rust-lang/crates.io-index" ]
 allow-git = [
-    "https://github.com/nathaniel-daniel/zalgo-rs",
-    "https://github.com/adumbidiot/shift-client-rs",
-    "https://github.com/nathaniel-daniel/reddit-rs",
     # "https://github.com/heim-rs/heim",
     "https://github.com/servo/servo",
     "https://github.com/serenity-rs/serenity",
     "https://github.com/vectordotdev/heim",
     "https://github.com/FelixMcFelix/songbird",
-    "https://github.com/adumbidiot/fslock",
-    "https://github.com/adumbidiot/serenity",
-    # "https://github.com/nathaniel-daniel/raspberry-pi-rs",
-    # "https://github.com/nathaniel-daniel/nix",
     "https://github.com/FelixMcFelix/Symphonia",
-    "https://github.com/adumbidiot/sauce-nao-rs",
-    "https://github.com/adumbidiot/deviantart-rs",
     "https://github.com/open-telemetry/opentelemetry-rust",
-    "https://github.com/nathaniel-daniel/nd-util-rs",
+]
+
+[sources.allow-org]
+github = [
+    "adumbidiot",
+    "nathaniel-daniel",
 ]

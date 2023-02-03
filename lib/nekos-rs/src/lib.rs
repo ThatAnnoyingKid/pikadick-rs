@@ -10,18 +10,16 @@ pub use crate::{
 };
 pub use url::Url;
 
-/// Nekos lib error
+/// Library Error
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Reqwest HTTP Error
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
+
     /// Invalid URL
     #[error(transparent)]
     InvalidUrl(#[from] url::ParseError),
-    /// Io Error
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
 }
 
 #[cfg(test)]
@@ -41,11 +39,15 @@ mod test {
         let image_url = image_list.images[0]
             .get_url()
             .expect("missing first element");
-        let mut image = Vec::new();
-        client
-            .get_to_writer(image_url.as_str(), &mut image)
+        let _image = client
+            .client
+            .get(image_url.as_str())
+            .send()
             .await
-            .expect("failed to download");
+            .unwrap()
+            .bytes()
+            .await
+            .unwrap();
     }
 
     #[tokio::test]

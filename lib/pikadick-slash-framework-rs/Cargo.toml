@@ -6,7 +6,7 @@ license = "MIT"
 
 [dependencies]
 pikadick-slash-framework-derive = { path = "../pikadick-slash-framework-derive-rs" }
-thiserror = "1.0.37"
+thiserror = "1.0.38"
 tracing = "0.1.37"
 twilight-http = { version = "0.13.0", default-features = false }
 twilight-model = { version = "0.13.0", default-features = false }

@@ -24,16 +24,13 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-lint-cargo-${{ hashFiles('**/Cargo.lock') }}
       
       - name: Install Protobuf Compiler
         run: sudo apt-get install -y protobuf-compiler
       
       - name: Clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: '--tests --all --all-features -- -D warnings'
+        run: cargo clippy --tests --all --all-features -- -D warnings
         
   # We use nightly options for formatting,
   # so split linting to add freedom to choose toolchains for the rest of the linting steps.       
@@ -42,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         
       - name: Cache
         uses: actions/cache@v3
@@ -53,19 +50,15 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        
-      - uses: actions-rs/toolchain@v1
+          key: ${{ runner.os }}-lint-rustfmt-cargo-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Install Nightly RustFmt
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
           components: rustfmt
-          override: true
           
       - name: RustFmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: '-- --check --color always'
+        run: cargo fmt -- --check --color always
           
   Deny:
     name: Deny
@@ -93,13 +86,10 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-build-cargo-${{ hashFiles('**/Cargo.lock') }}
             
       - name: Run `apt-get update`
         run: sudo apt-get update
-        
-      - name: Run `apt-get upgrade`
-        run: sudo apt-get upgrade -y
             
       - name: Install FFMpeg
         run: sudo apt-get install -y ffmpeg

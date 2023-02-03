@@ -16,13 +16,15 @@ pub use self::{
     },
     twilight_loading_reaction::TwilightLoadingReaction,
 };
-pub use pikadick_util::{
+pub use nd_util::{
     download_to_file,
     with_push_extension,
+    DropRemovePath,
+};
+pub use pikadick_util::{
     ArcAnyhowError,
     AsyncLockFile,
     DropRemoveFile,
-    DropRemovePath,
 };
 
 /// Check if a host is a reddit host

@@ -21,10 +21,7 @@ use anyhow::{
 };
 use dashmap::DashMap;
 use rand::seq::SliceRandom;
-use reddit_tube::{
-    types::get_video_response::GetVideoResponseOk,
-    GetVideoResponse,
-};
+use reddit_tube::types::get_video_response::GetVideoResponseOk;
 use serenity::{
     framework::standard::{
         macros::command,
@@ -129,23 +126,21 @@ impl RedditEmbedData {
         }
     }
 
-    /// Get video data from reddit.tube. Takes a reddit url.
+    /// Get video data from reddit.tube.
+    ///
+    /// Takes a reddit url.
     pub async fn get_video_data(&self, url: &str) -> anyhow::Result<Box<GetVideoResponseOk>> {
         let main_page = self
             .reddit_tube_client
             .get_main_page()
             .await
             .context("failed to get main page")?;
-        let video_data = self
-            .reddit_tube_client
+        self.reddit_tube_client
             .get_video(&main_page, url)
             .await
-            .context("failed to get video data")?;
-
-        match video_data {
-            GetVideoResponse::Ok(video_data) => Ok(video_data),
-            GetVideoResponse::Error(e) => Err(e).context("bad video response"),
-        }
+            .context("failed to get video data")?
+            .into_result()
+            .context("bad video response")
     }
 
     /// Get video data, but using a cache.
