@@ -448,21 +448,7 @@ async fn download_to_path(
         }
     }
 
-    let tmp_path = pikadick_util::with_push_extension(path, "part");
-    let mut tmp_file = tokio::fs::OpenOptions::new()
-        .create_new(true)
-        .write(true)
-        .open(&tmp_path)
-        .await
-        .context("failed to open tmp file")?;
-    let mut tmp_path = pikadick_util::DropRemovePath::new(tmp_path);
-    pikadick_util::download_to_file(client, url, &mut tmp_file)
-        .await
-        .context("failed to download to path")?;
-    tokio::fs::rename(&tmp_path, &path)
-        .await
-        .context("failed to rename file")?;
-    tmp_path.persist();
+    nd_util::download_to_path(client, url, path).await?;
 
     Ok(true)
 }
