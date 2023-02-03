@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 cfg_if::cfg_if! {
     if #[cfg(target_os = "windows")] {
         mod windows;

@@ -216,17 +216,12 @@ pub struct StatusConfig {
     pub extra: HashMap<String, toml::Value>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Deserialize, Serialize, Default)]
 pub enum ActivityKind {
     Listening,
+    #[default]
     Playing,
     Streaming,
-}
-
-impl Default for ActivityKind {
-    fn default() -> Self {
-        ActivityKind::Playing
-    }
 }
 
 #[derive(Debug)]

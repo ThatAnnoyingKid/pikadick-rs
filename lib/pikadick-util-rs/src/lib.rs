@@ -12,3 +12,8 @@ pub use self::async_lock_file::AsyncLockFile;
 mod drop_remove_file;
 #[cfg(feature = "drop_remove_file")]
 pub use self::drop_remove_file::DropRemoveFile;
+
+#[cfg(feature = "request_map")]
+mod request_map;
+#[cfg(feature = "request_map")]
+pub use self::request_map::RequestMap;
