@@ -48,7 +48,7 @@ rusqlite = { version = "0.28.0", features = [ "bundled", "blob", "trace" ] }
 ryu = "1.0.12"
 sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-features = false, features = [ "rustls-tls" ] }
 serde = { version = "1.0.152", features = [ "derive" ] }
-serenity = { version = "0.11.2", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
+serenity = { version = "0.11.2", features = [ "client", "standard_framework", "voice", "cache" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
 songbird = "0.2.2"
 systemstat = "0.2.2"
@@ -68,6 +68,11 @@ tracing-log = "0.1.3"
 tracing-opentelemetry = "0.18.0"
 tracing-subscriber = { version = "0.3.16", features = [ "env-filter", "fmt", "parking_lot" ] }
 ttf-parser = "0.18.1"
+twilight-cache-inmemory = "0.13.0"
+twilight-gateway = "0.13.0"
+twilight-http = "0.13.0"
+twilight-model = "0.13.0"
+twilight-util = { version = "0.13.0", features = [ "builder" ] }
 uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs", default-features = false, features = [ "rustls-tls" ] }
 url = "2.3.1"
@@ -158,7 +163,7 @@ strip = false
 
 [workspace]
 members = [ 
-    "lib/*"
+    "lib/*",
 ]
 
 [package.metadata.deb]

@@ -1,28 +1,33 @@
 use crate::{
-    checks::ENABLED_CHECK,
-    client_data::{
+    bot_context::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
     util::{
-        LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
-    ClientDataKey,
+    BotContext,
 };
 use anyhow::Context as _;
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
+use pikadick_slash_framework::{
+    ClientData,
+    FromOptions,
 };
 use std::sync::Arc;
 use tracing::error;
+use twilight_model::http::interaction::{
+    InteractionResponse,
+    InteractionResponseType,
+};
+use twilight_util::builder::{
+    embed::{
+        EmbedBuilder,
+        EmbedFieldBuilder,
+        ImageSource,
+    },
+    InteractionResponseDataBuilder,
+};
 
 #[derive(Clone, Debug)]
 pub struct SauceNaoClient {
@@ -64,83 +69,81 @@ impl SauceNaoClient {
 
 impl CacheStatsProvider for SauceNaoClient {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat(
-            "sauce-nao",
-            "search_cache",
-            self.search_cache.len() as f32,
-        );
+        cache_stats_builder.publish_stat("sauce-nao", "search_cache", self.search_cache.len());
     }
 }
 
-#[command("sauce-nao")]
-#[description("Search SauceNao for an image at a url")]
-#[usage("<img_url>")]
-#[example("https://konachan.com/image/5982d8946ae503351e960f097f84cd90/Konachan.com%20-%20330136%20animal%20nobody%20original%20signed%20yutaka_kana.jpg")]
-#[checks(Enabled)]
-#[min_args(1)]
-#[max_args(1)]
-async fn sauce_nao(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let client = client_data.sauce_nao_client.clone();
-    drop(data_lock);
+#[derive(Debug, pikadick_slash_framework::FromOptions)]
+struct SauceNaoOptions {
+    #[pikadick_slash_framework(description = "The image url")]
+    url: String,
+}
 
-    let query = args.trimmed().current().expect("missing query");
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
+    pikadick_slash_framework::CommandBuilder::<BotContext>::new()
+        .name("sauce-nao")
+        .description("Search SauceNao for an image at a url")
+        .arguments(SauceNaoOptions::get_argument_params()?.into_iter())
+        .on_process(
+            |client_data, interaction, args: SauceNaoOptions| async move {
+                let sauce_nao_client = client_data.inner.sauce_nao_client.clone();
+                let interaction_client = client_data.interaction_client();
+                let img_url = args.url.as_str();
+                let mut response_data = InteractionResponseDataBuilder::new();
+                let result = sauce_nao_client
+                    .search(img_url)
+                    .await
+                    .context("failed to search for image");
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
+                match result.as_ref().map(|entry| entry.data().results.get(0)) {
+                    Ok(Some(data)) => {
+                        let mut embed = EmbedBuilder::new()
+                            .title("SauceNao Best Match")
+                            .image(ImageSource::url(data.header.thumbnail.as_str())?);
 
-    match client
-        .search(query)
-        .await
-        .context("failed to search for image")
-    {
-        Ok(data) => {
-            let data = data.data();
-            match data.results.get(0) {
-                Some(data) => {
-                    msg.channel_id
-                        .send_message(&ctx.http, |m| {
-                            m.embed(|e| {
-                                e.title("SauceNao Best Match")
-                                    .image(data.header.thumbnail.as_str());
+                        if let Some(ext_url) = data.data.ext_urls.get(0) {
+                            embed = embed.description(ext_url.as_str()).url(ext_url.as_str());
+                        }
 
-                                if let Some(ext_url) = data.data.ext_urls.get(0) {
-                                    e.description(ext_url.as_str()).url(ext_url.as_str());
-                                }
+                        if let Some(source) = data.data.source.as_deref() {
+                            embed = embed.field(EmbedFieldBuilder::new("Source", source).inline());
+                        }
 
-                                if let Some(source) = data.data.source.as_deref() {
-                                    e.field("Source", source, true);
-                                }
+                        if let Some(eng_name) = data.data.eng_name.as_deref() {
+                            embed = embed
+                                .field(EmbedFieldBuilder::new("English Name", eng_name).inline());
+                        }
 
-                                if let Some(eng_name) = data.data.eng_name.as_deref() {
-                                    e.field("English Name", eng_name, true);
-                                }
+                        if let Some(jp_name) = data.data.jp_name.as_deref() {
+                            embed = embed
+                                .field(EmbedFieldBuilder::new("Japanese Name", jp_name).inline());
+                        }
 
-                                if let Some(jp_name) = data.data.jp_name.as_deref() {
-                                    e.field("Jap Name", jp_name, true);
-                                }
-
-                                e
-                            })
-                        })
-                        .await?;
-
-                    loading.send_ok();
+                        response_data = response_data.embeds(std::iter::once(embed.build()));
+                    }
+                    Ok(None) => {
+                        response_data = response_data
+                            .content(format!("No results on SauceNao for '{img_url}'"));
+                    }
+                    Err(e) => {
+                        error!("{e:?}");
+                        response_data = response_data.content(format!("{e:?}"));
+                    }
                 }
-                None => {
-                    msg.channel_id
-                        .say(&ctx.http, format!("No results on SauceNao for '{}'", query))
-                        .await?;
-                }
-            }
-        }
-        Err(e) => {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
-            error!("{:?}", e);
-        }
-    }
+                let response_data = response_data.build();
+                let response = InteractionResponse {
+                    kind: InteractionResponseType::ChannelMessageWithSource,
+                    data: Some(response_data),
+                };
+                interaction_client
+                    .create_response(interaction.id, interaction.token.as_str(), &response)
+                    .exec()
+                    .await
+                    .context("failed to send response")?;
 
-    Ok(())
+                Ok(())
+            },
+        )
+        .build()
+        .context("failed to build command")
 }

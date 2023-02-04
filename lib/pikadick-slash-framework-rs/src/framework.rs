@@ -1,22 +1,10 @@
 use crate::{
-    BoxError,
     BuilderError,
     CheckFn,
+    ClientData,
     Command,
     HelpCommand,
-};
-use serenity::{
-    client::Context,
-    model::{
-        application::{
-            command::Command as ApplicationCommand,
-            interaction::{
-                application_command::ApplicationCommandInteraction,
-                Interaction,
-            },
-        },
-        prelude::GuildId,
-    },
+    WrapBoxError,
 };
 use std::{
     collections::HashMap,
@@ -26,40 +14,37 @@ use tracing::{
     info,
     warn,
 };
+use twilight_http::client::InteractionClient;
+use twilight_model::{
+    application::interaction::{
+        application_command::CommandData,
+        Interaction as TwilightInteraction,
+        InteractionData,
+    },
+    gateway::payload::incoming::InteractionCreate,
+    http::interaction::{
+        InteractionResponse,
+        InteractionResponseType,
+    },
+    id::{
+        marker::{
+            GuildMarker,
+            UserMarker,
+        },
+        Id,
+    },
+};
+use twilight_util::builder::InteractionResponseDataBuilder;
 
-/// A wrapper for [`BoxError`] that impls error
-struct WrapBoxError(BoxError);
-
-impl WrapBoxError {
-    /// Make a new [`WrapBoxError`] from an error
-    fn new(e: BoxError) -> Self {
-        Self(e)
-    }
-}
-
-impl std::fmt::Debug for WrapBoxError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl std::fmt::Display for WrapBoxError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl std::error::Error for WrapBoxError {}
-
-struct FmtOptionsHelper<'a>(&'a ApplicationCommandInteraction);
+struct FmtOptionsHelper<'a>(&'a CommandData);
 
 impl std::fmt::Display for FmtOptionsHelper<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
-        let len = self.0.data.options.len();
-        for (i, option) in self.0.data.options.iter().enumerate() {
+        let len = self.0.options.len();
+        for (i, option) in self.0.options.iter().enumerate() {
             if i + 1 == len {
-                write!(f, "'{}'={:?}", option.name, option.resolved)?;
+                write!(f, "'{}'={:?}", option.name, option.value)?;
             }
         }
         write!(f, "]")?;
@@ -70,89 +55,98 @@ impl std::fmt::Display for FmtOptionsHelper<'_> {
 
 /// A framework
 #[derive(Clone)]
-pub struct Framework {
-    commands: Arc<HashMap<Box<str>, Command>>,
-    help_command: Option<Arc<HelpCommand>>,
-    checks: Arc<[CheckFn]>,
+pub struct Framework<D> {
+    commands: Arc<HashMap<Box<str>, Command<D>>>,
+    help_command: Option<Arc<HelpCommand<D>>>,
+    checks: Arc<[CheckFn<D>]>,
 }
 
-impl Framework {
+impl<D> Framework<D>
+where
+    D: ClientData,
+{
     /// Register the framework.
     ///
     /// `test_guild_id` is an optional guild where the commands will be registered as guild commands,
     /// so they update faster for testing purposes.
     pub async fn register(
         &self,
-        ctx: Context,
-        test_guild_id: Option<GuildId>,
-    ) -> Result<(), serenity::Error> {
-        for framework_command in self.commands.values() {
-            ApplicationCommand::create_global_application_command(&ctx.http, |command| {
-                framework_command.register(command);
+        interaction_client: InteractionClient<'_>,
+        test_guild_id: Option<Id<GuildMarker>>,
+    ) -> Result<(), twilight_http::Error> {
+        let mut commands = Vec::with_capacity(self.commands.len());
 
-                command
-            })
-            .await?;
+        for twilight_command in self
+            .commands
+            .values()
+            .map(|framework_command| framework_command.build_twilight_command())
+            .chain(
+                self.help_command
+                    .as_deref()
+                    .map(|framework_command| framework_command.build_twilight_command()),
+            )
+        {
+            commands.push(twilight_command);
         }
 
-        if let Some(framework_command) = self.help_command.as_deref() {
-            ApplicationCommand::create_global_application_command(&ctx.http, |command| {
-                framework_command.register(command);
-
-                command
-            })
+        interaction_client
+            .set_global_commands(&commands)
+            .exec()
             .await?;
-        }
 
         if let Some(guild_id) = test_guild_id {
-            GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
-                for framework_command in self.commands.values() {
-                    commands.create_application_command(|command| {
-                        framework_command.register(command);
-                        command
-                    });
-                }
-
-                if let Some(framework_command) = self.help_command.as_deref() {
-                    commands.create_application_command(|command| {
-                        framework_command.register(command);
-                        command
-                    });
-                }
-
-                commands
-            })
-            .await?;
+            interaction_client
+                .set_guild_commands(guild_id, &commands)
+                .exec()
+                .await?;
         }
 
         Ok(())
     }
 
     /// Process an interaction create event
-    pub async fn process_interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
-            self.process_interaction_create_application_command(ctx, command)
-                .await
+    pub async fn process_interaction_create(
+        &self,
+        client_data: D,
+        mut interaction: Box<InteractionCreate>,
+    ) {
+        if let Some(InteractionData::ApplicationCommand(command)) = interaction.0.data.take() {
+            // TODO: Can interaction.author_id ever return None?
+            let author_id = interaction.author_id();
+            self.process_interaction_create_application_command(
+                client_data,
+                interaction.0,
+                author_id,
+                command,
+            )
+            .await
         }
     }
 
-    #[tracing::instrument(skip(self, ctx, command), fields(id = %command.id, author = %command.user.id, guild = ?command.guild_id, channel_id = %command.channel_id))]
+    #[tracing::instrument(skip(self, client_data, interaction, command_data), fields(id = %command_data.id, author = ?author_id, guild = ?command_data.guild_id, channel_id = ?interaction.channel_id))]
     async fn process_interaction_create_application_command(
         &self,
-        ctx: Context,
-        command: ApplicationCommandInteraction,
+        client_data: D,
+        interaction: TwilightInteraction,
+        author_id: Option<Id<UserMarker>>,
+        command_data: Box<CommandData>,
     ) {
-        if command.data.name.as_str() == "help" {
+        if command_data.name.as_str() == "help" {
             // Keep comments
             #[allow(clippy::single_match)]
             match self.help_command.as_ref() {
                 Some(framework_command) => {
                     info!(
                         "processing help command, options={}",
-                        FmtOptionsHelper(&command)
+                        FmtOptionsHelper(&command_data)
                     );
                     if let Err(e) = framework_command
-                        .fire_on_process(ctx, command, self.commands.clone())
+                        .fire_on_process(
+                            client_data,
+                            interaction,
+                            command_data,
+                            self.commands.clone(),
+                        )
                         .await
                         .map_err(WrapBoxError::new)
                     {
@@ -169,11 +163,12 @@ impl Framework {
             return;
         }
 
-        let framework_command = match self.commands.get(command.data.name.as_str()) {
+        let command_name = command_data.name.as_str();
+        let framework_command = match self.commands.get(command_name) {
             Some(command) => command,
             None => {
                 // TODO: Unknown command handler
-                warn!("unknown command '{}'", command.data.name.as_str());
+                warn!("unknown command '{command_name}'");
                 return;
             }
         };
@@ -181,7 +176,8 @@ impl Framework {
         // TODO: Consider making parallel
         let mut check_result = Ok(());
         for check in self.checks.iter().chain(framework_command.checks().iter()) {
-            check_result = check_result.and(check(&ctx, &command, framework_command).await);
+            check_result = check_result
+                .and(check(&client_data, &interaction, &command_data, framework_command).await);
         }
 
         match check_result {
@@ -189,10 +185,10 @@ impl Framework {
                 info!(
                     "processing command `{}`, options={}",
                     framework_command.name(),
-                    FmtOptionsHelper(&command)
+                    FmtOptionsHelper(&command_data)
                 );
                 if let Err(e) = framework_command
-                    .fire_on_process(ctx, command)
+                    .fire_on_process(client_data, interaction, command_data)
                     .await
                     .map_err(WrapBoxError::new)
                 {
@@ -211,10 +207,18 @@ impl Framework {
                     warn!("{}", log);
                 }
 
-                if let Err(e) = command
-                    .create_interaction_response(&ctx.http, |res| {
-                        res.interaction_response_data(|res| res.content(content))
-                    })
+                let response_data = InteractionResponseDataBuilder::new()
+                    .content(content)
+                    .build();
+                let response = InteractionResponse {
+                    kind: InteractionResponseType::ChannelMessageWithSource,
+                    data: Some(response_data),
+                };
+
+                if let Err(e) = client_data
+                    .interaction_client()
+                    .create_response(interaction.id, &interaction.token, &response)
+                    .exec()
                     .await
                 {
                     warn!("{}", e);
@@ -224,7 +228,7 @@ impl Framework {
     }
 }
 
-impl std::fmt::Debug for Framework {
+impl<D> std::fmt::Debug for Framework<D> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Framework")
             .field("commands", &self.commands)
@@ -233,15 +237,18 @@ impl std::fmt::Debug for Framework {
 }
 
 /// A FrameworkBuilder for slash commands.
-pub struct FrameworkBuilder {
-    commands: HashMap<Box<str>, Command>,
-    help_command: Option<HelpCommand>,
-    checks: Vec<CheckFn>,
+pub struct FrameworkBuilder<D> {
+    commands: HashMap<Box<str>, Command<D>>,
+    help_command: Option<HelpCommand<D>>,
+    checks: Vec<CheckFn<D>>,
 
     error: Option<BuilderError>,
 }
 
-impl FrameworkBuilder {
+impl<D> FrameworkBuilder<D>
+where
+    D: ClientData,
+{
     /// Make a new [`FrameworkBuilder`].
     pub fn new() -> Self {
         Self {
@@ -254,7 +261,7 @@ impl FrameworkBuilder {
     }
 
     /// Add a command
-    pub fn command(&mut self, command: Command) -> &mut Self {
+    pub fn command(&mut self, command: Command<D>) -> &mut Self {
         if self.error.is_some() {
             return self;
         }
@@ -279,7 +286,7 @@ impl FrameworkBuilder {
     }
 
     /// Add a help command
-    pub fn help_command(&mut self, command: HelpCommand) -> &mut Self {
+    pub fn help_command(&mut self, command: HelpCommand<D>) -> &mut Self {
         if self.error.is_some() {
             return self;
         }
@@ -296,7 +303,7 @@ impl FrameworkBuilder {
     }
 
     /// Add a check
-    pub fn check(&mut self, check: CheckFn) -> &mut Self {
+    pub fn check(&mut self, check: CheckFn<D>) -> &mut Self {
         if self.error.is_some() {
             return self;
         }
@@ -306,7 +313,7 @@ impl FrameworkBuilder {
     }
 
     /// Build a framework
-    pub fn build(&mut self) -> Result<Framework, BuilderError> {
+    pub fn build(&mut self) -> Result<Framework<D>, BuilderError> {
         if let Some(error) = self.error.take() {
             return Err(error);
         }
@@ -320,7 +327,7 @@ impl FrameworkBuilder {
     }
 }
 
-impl std::fmt::Debug for FrameworkBuilder {
+impl<D> std::fmt::Debug for FrameworkBuilder<D> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FrameworkBuilder")
             .field("commands", &self.commands)
@@ -328,7 +335,10 @@ impl std::fmt::Debug for FrameworkBuilder {
     }
 }
 
-impl Default for FrameworkBuilder {
+impl<D> Default for FrameworkBuilder<D>
+where
+    D: ClientData,
+{
     fn default() -> Self {
         Self::new()
     }

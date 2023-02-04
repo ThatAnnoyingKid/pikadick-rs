@@ -1,5 +1,5 @@
 use crate::{
-    client_data::{
+    bot_context::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
@@ -11,9 +11,9 @@ use crate::{
         RequestMap,
         TimedCache,
         TimedCacheEntry,
+        TwilightLoadingReaction,
     },
-    ClientDataKey,
-    LoadingReaction,
+    BotContext,
     TikTokEmbedFlags,
 };
 use anyhow::{
@@ -24,15 +24,29 @@ use camino::{
     Utf8Path,
     Utf8PathBuf,
 };
-use serenity::{
-    model::prelude::*,
-    prelude::*,
-};
+use pikadick_slash_framework::ClientData;
 use std::sync::Arc;
 use tokio_stream::StreamExt;
 use tracing::{
     info,
     warn,
+};
+use twilight_model::{
+    gateway::payload::incoming::MessageCreate,
+    http::{
+        attachment::Attachment,
+        interaction::{
+            InteractionResponse,
+            InteractionResponseType,
+        },
+    },
+};
+use twilight_util::builder::{
+    embed::{
+        EmbedBuilder,
+        EmbedFieldBuilder,
+    },
+    InteractionResponseDataBuilder,
 };
 use url::Url;
 
@@ -390,10 +404,10 @@ impl TikTokData {
     /// Try embedding a url
     pub async fn try_embed_url(
         &self,
-        ctx: &Context,
-        msg: &Message,
+        client_data: &BotContext,
+        message_create: &MessageCreate,
         url: &Url,
-        loading_reaction: &mut Option<LoadingReaction>,
+        loading_reaction: &mut Option<TwilightLoadingReaction<BotContext>>,
         delete_link: bool,
     ) -> anyhow::Result<()> {
         let (video_url, video_id, video_format, video_duration) = {
@@ -420,16 +434,32 @@ impl TikTokData {
             )
             .await
             .context("failed to download tiktok video")?;
+        let video_file_name = video_path.file_name().context("missing video file name")?;
+        let video_bytes = tokio::fs::read(&*video_path)
+            .await
+            .context("failed to load file")?;
 
-        msg.channel_id
-            .send_message(&ctx.http, |m| m.add_file(video_path.as_std_path()))
+        client_data
+            .inner
+            .http
+            .create_message(message_create.0.channel_id)
+            .attachments(&[Attachment::from_bytes(
+                video_file_name.to_string(),
+                video_bytes,
+                0,
+            )])?
+            .exec()
             .await?;
 
         if let Some(mut loading_reaction) = loading_reaction.take() {
             loading_reaction.send_ok();
 
             if delete_link {
-                msg.delete(&ctx.http)
+                client_data
+                    .inner
+                    .http
+                    .delete_message(message_create.0.channel_id, message_create.0.id)
+                    .exec()
                     .await
                     .context("failed to delete original message")?;
             }
@@ -444,7 +474,7 @@ impl CacheStatsProvider for TikTokData {
         cache_stats_builder.publish_stat(
             "tiktok_data",
             "post_page_cache",
-            self.post_page_cache.len() as f32,
+            self.post_page_cache.len(),
         );
     }
 }
@@ -465,7 +495,7 @@ struct TikTokEmbedOptions {
 }
 
 /// Create a slash command
-pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
     use pikadick_slash_framework::FromOptions;
 
     pikadick_slash_framework::CommandBuilder::new()
@@ -473,71 +503,82 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
         .description("Configure tiktok embeds for this server")
         .check(crate::checks::admin::create_slash_check)
         .arguments(TikTokEmbedOptions::get_argument_params()?.into_iter())
-        .on_process(|ctx, interaction, args: TikTokEmbedOptions| async move {
-            let data_lock = ctx.data.read().await;
-            let client_data = data_lock.get::<ClientDataKey>().unwrap();
-            let db = client_data.db.clone();
-            drop(data_lock);
+        .on_process(
+            |client_data, interaction, args: TikTokEmbedOptions| async move {
+                let database = client_data.inner.database.clone();
+                let interaction_client = client_data.interaction_client();
+                let response_data = InteractionResponseDataBuilder::new();
 
-            let guild_id = match interaction.guild_id {
-                Some(id) => id,
-                None => {
-                    interaction
-                        .create_interaction_response(&ctx.http, |res| {
-                            res.interaction_response_data(|res| {
-                                res.content("Missing server id. Are you in a server right now?")
-                            })
-                        })
-                        .await?;
-                    return Ok(());
+                let guild_id = match interaction.guild_id {
+                    Some(id) => id,
+                    None => {
+                        let response_data = response_data
+                            .content("Missing server id. Are you in a server right now?")
+                            .build();
+                        let response = InteractionResponse {
+                            kind: InteractionResponseType::ChannelMessageWithSource,
+                            data: Some(response_data),
+                        };
+
+                        interaction_client
+                            .create_response(interaction.id, &interaction.token, &response)
+                            .exec()
+                            .await?;
+
+                        return Ok(());
+                    }
+                };
+
+                let mut set_flags = TikTokEmbedFlags::empty();
+                let mut unset_flags = TikTokEmbedFlags::empty();
+
+                if let Some(enable) = args.enable {
+                    if enable {
+                        set_flags.insert(TikTokEmbedFlags::ENABLED);
+                    } else {
+                        unset_flags.insert(TikTokEmbedFlags::ENABLED);
+                    }
                 }
-            };
 
-            let mut set_flags = TikTokEmbedFlags::empty();
-            let mut unset_flags = TikTokEmbedFlags::empty();
-
-            if let Some(enable) = args.enable {
-                if enable {
-                    set_flags.insert(TikTokEmbedFlags::ENABLED);
-                } else {
-                    unset_flags.insert(TikTokEmbedFlags::ENABLED);
+                if let Some(enable) = args.delete_link {
+                    if enable {
+                        set_flags.insert(TikTokEmbedFlags::DELETE_LINK);
+                    } else {
+                        unset_flags.insert(TikTokEmbedFlags::DELETE_LINK);
+                    }
                 }
-            }
 
-            if let Some(enable) = args.delete_link {
-                if enable {
-                    set_flags.insert(TikTokEmbedFlags::DELETE_LINK);
-                } else {
-                    unset_flags.insert(TikTokEmbedFlags::DELETE_LINK);
-                }
-            }
+                let (_old_flags, new_flags) = database
+                    .set_tiktok_embed_flags(guild_id.into_nonzero().into(), set_flags, unset_flags)
+                    .await?;
 
-            let (_old_flags, new_flags) = db
-                .set_tiktok_embed_flags(guild_id, set_flags, unset_flags)
-                .await?;
+                let embed = EmbedBuilder::new()
+                    .title("TikTok Embeds")
+                    .field(EmbedFieldBuilder::new(
+                        "Enabled?",
+                        bool_to_str(new_flags.contains(TikTokEmbedFlags::ENABLED)),
+                    ))
+                    .field(EmbedFieldBuilder::new(
+                        "Delete link?",
+                        bool_to_str(new_flags.contains(TikTokEmbedFlags::DELETE_LINK)),
+                    ))
+                    .build();
 
-            interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| {
-                        res.embed(|e| {
-                            e.title("TikTok Embeds")
-                                .field(
-                                    "Enabled?",
-                                    bool_to_str(new_flags.contains(TikTokEmbedFlags::ENABLED)),
-                                    false,
-                                )
-                                .field(
-                                    "Delete link?",
-                                    bool_to_str(new_flags.contains(TikTokEmbedFlags::DELETE_LINK)),
-                                    false,
-                                )
-                        })
-                    })
-                })
-                .await?;
+                let response_data = response_data.embeds(std::iter::once(embed)).build();
 
-            Ok(())
-        })
+                let response = InteractionResponse {
+                    kind: InteractionResponseType::ChannelMessageWithSource,
+                    data: Some(response_data),
+                };
+
+                interaction_client
+                    .create_response(interaction.id, &interaction.token, &response)
+                    .exec()
+                    .await?;
+
+                Ok(())
+            },
+        )
         .build()
         .context("failed to build command")
 }

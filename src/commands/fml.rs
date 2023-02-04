@@ -1,9 +1,9 @@
 use crate::{
-    checks::ENABLED_CHECK,
-    client_data::{
+    bot_context::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
+    checks::ENABLED_CHECK,
     util::LoadingReaction,
     ClientDataKey,
 };
@@ -61,7 +61,7 @@ impl FmlClient {
 
 impl CacheStatsProvider for FmlClient {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("fml", "cache", self.cache.len() as f32);
+        cache_stats_builder.publish_stat("fml", "cache", self.cache.len());
     }
 }
 

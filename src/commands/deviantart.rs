@@ -1,29 +1,22 @@
 use crate::{
-    checks::ENABLED_CHECK,
-    client_data::{
+    bot_context::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
     util::{
-        LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
-    ClientDataKey,
+    BotContext,
     Database,
 };
 use anyhow::Context as _;
 use deviantart::Deviation;
-use rand::seq::IteratorRandom;
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
+use pikadick_slash_framework::{
+    ClientData,
+    FromOptions,
 };
+use rand::seq::IteratorRandom;
 use std::{
     sync::Arc,
     time::Instant,
@@ -32,6 +25,11 @@ use tracing::{
     error,
     info,
 };
+use twilight_model::http::interaction::{
+    InteractionResponse,
+    InteractionResponseType,
+};
+use twilight_util::builder::InteractionResponseDataBuilder;
 
 const DATA_STORE_NAME: &str = "deviantart";
 const COOKIE_KEY: &str = "cookie-store";
@@ -137,90 +135,92 @@ impl DeviantartClient {
 
 impl CacheStatsProvider for DeviantartClient {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat(
-            "deviantart",
-            "search_cache",
-            self.search_cache.len() as f32,
-        );
+        cache_stats_builder.publish_stat("deviantart", "search_cache", self.search_cache.len());
     }
 }
 
-#[command]
-#[description("Get art from deviantart")]
-#[usage("<query>")]
-#[example("sun")]
-#[min_args(1)]
-#[max_args(1)]
-#[checks(Enabled)]
-#[bucket("default")]
-async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing clientdata");
-    let client = client_data.deviantart_client.clone();
-    let db = client_data.db.clone();
-    let config = client_data.config.clone();
-    drop(data_lock);
+#[derive(Debug, pikadick_slash_framework::FromOptions)]
+struct DeviantArtOptions {
+    #[pikadick_slash_framework(description = "What to look up")]
+    query: String,
+}
 
-    let query = args.trimmed().quoted().current().expect("missing query");
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
+    pikadick_slash_framework::CommandBuilder::<BotContext>::new()
+        .name("deviantart")
+        .description("Get art from deviantart")
+        .arguments(DeviantArtOptions::get_argument_params()?.into_iter())
+        .on_process(
+            |client_data, interaction, args: DeviantArtOptions| async move {
+                let deviantart_client = &client_data.inner.deviantart_client;
+                let database = &client_data.inner.database;
+                let config = &client_data.inner.config;
+                let interaction_client = client_data.interaction_client();
+                let mut response_data = InteractionResponseDataBuilder::new();
 
-    info!("Searching for '{}' on deviantart", query);
+                let query = args.query.as_str();
+                info!("Searching for '{query}' on deviantart");
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
+                let result = deviantart_client
+                    .search(
+                        database,
+                        &config.deviantart.username,
+                        &config.deviantart.password,
+                        query,
+                    )
+                    .await
+                    .with_context(|| format!("failed to search '{query}' on deviantart"));
 
-    match client
-        .search(
-            &db,
-            &config.deviantart.username,
-            &config.deviantart.password,
-            query,
-        )
-        .await
-    {
-        Ok(entry) => {
-            let data = entry.data();
-            let choice = data
-                .iter()
-                .filter_map(|deviation| {
-                    if deviation.is_image() {
-                        Some(
-                            deviation
-                                .get_image_download_url()
-                                .or_else(|| deviation.get_fullview_url()),
-                        )
-                    } else if deviation.is_film() {
-                        Some(deviation.get_best_video_url().cloned())
-                    } else {
-                        None
+                match result.as_ref().map(|entry| entry.data()).map(|data| {
+                    data.iter()
+                        .filter_map(|deviation| {
+                            if deviation.is_image() {
+                                Some(
+                                    deviation
+                                        .get_image_download_url()
+                                        .or_else(|| deviation.get_fullview_url()),
+                                )
+                            } else if deviation.is_film() {
+                                Some(deviation.get_best_video_url().cloned())
+                            } else {
+                                None
+                            }
+                        })
+                        .choose(&mut rand::thread_rng())
+                }) {
+                    Ok(Some(Some(url))) => {
+                        response_data = response_data.content(url);
                     }
-                })
-                .choose(&mut rand::thread_rng());
-
-            if let Some(choice) = choice {
-                if let Some(url) = choice {
-                    loading.send_ok();
-                    msg.channel_id.say(&ctx.http, url).await?;
-                } else {
-                    msg.channel_id
-                        .say(&ctx.http, "Missing url. This is probably a bug.")
-                        .await?;
-                    error!("DeviantArt deviation missing asset url: {:?}", choice);
+                    Ok(Some(None)) => {
+                        error!("deviantart deviation missing asset url: {:?}", result);
+                        response_data =
+                            response_data.content("Missing url. This is probably a bug.");
+                    }
+                    Ok(None) => {
+                        response_data = response_data.content("No results");
+                    }
+                    Err(e) => {
+                        error!("{e:?}");
+                        response_data = response_data.content(format!("{e:?}"));
+                    }
                 }
-            } else {
-                msg.channel_id.say(&ctx.http, "No Results").await?;
-            }
-        }
-        Err(e) => {
-            msg.channel_id
-                .say(&ctx.http, format!("Failed to search '{}': {:?}", query, e))
-                .await?;
 
-            error!("Failed to search for {} on deviantart: {:?}", query, e);
-        }
-    }
+                let response_data = response_data.build();
+                let response = InteractionResponse {
+                    kind: InteractionResponseType::ChannelMessageWithSource,
+                    data: Some(response_data),
+                };
+                interaction_client
+                    .create_response(interaction.id, interaction.token.as_str(), &response)
+                    .exec()
+                    .await
+                    .context("failed to send response")?;
 
-    client.search_cache.trim();
+                deviantart_client.search_cache.trim();
 
-    Ok(())
+                Ok(())
+            },
+        )
+        .build()
+        .context("failed to build")
 }

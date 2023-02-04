@@ -84,6 +84,7 @@
 
 //! # Pikadick
 
+pub mod bot_context;
 pub mod checks;
 pub mod cli_options;
 pub mod client_data;
@@ -94,6 +95,7 @@ pub mod logger;
 pub mod setup;
 pub mod util;
 
+pub use crate::bot_context::BotContext;
 use crate::{
     cli_options::CliOptions,
     client_data::ClientData,
@@ -107,8 +109,10 @@ use crate::{
         Database,
     },
     util::{
+        is_reddit_host,
+        is_tiktok_host,
         AsyncLockFile,
-        LoadingReaction,
+        TwilightLoadingReaction,
     },
 };
 use anyhow::{
@@ -116,36 +120,23 @@ use anyhow::{
     ensure,
     Context as _,
 };
+use futures::StreamExt;
 use once_cell::sync::Lazy;
+use pikadick_slash_framework::ClientData as _;
 use regex::Regex;
 use serenity::{
-    client::bridge::gateway::ShardManager,
     framework::standard::{
-        help_commands,
-        macros::{
-            group,
-            help,
-        },
-        Args,
-        CommandGroup,
+        macros::group,
         CommandResult,
-        DispatchError,
-        HelpOptions,
-        Reason,
         StandardFramework,
     },
     futures::future::BoxFuture,
-    gateway::ActivityData,
-    model::{
-        application::interaction::Interaction,
-        prelude::*,
-    },
+    model::prelude::*,
     prelude::*,
     FutureExt,
 };
 use songbird::SerenityInit;
 use std::{
-    collections::HashSet,
     sync::Arc,
     time::{
         Duration,
@@ -154,11 +145,26 @@ use std::{
 };
 use tokio::runtime::Builder as RuntimeBuilder;
 use tracing::{
+    debug,
     error,
     info,
     warn,
 };
 use tracing_appender::non_blocking::WorkerGuard;
+use twilight_cache_inmemory::{
+    InMemoryCache,
+    ResourceType,
+};
+use twilight_gateway::cluster::ClusterBuilder;
+use twilight_model::gateway::{
+    payload::outgoing::update_presence::UpdatePresencePayload,
+    presence::{
+        ActivityType,
+        MinimalActivity,
+        Status,
+    },
+    Intents,
+};
 use url::Url;
 
 const TOKIO_RT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
@@ -167,210 +173,6 @@ const TOKIO_RT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
 static URL_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex"));
 
-struct Handler;
-
-#[serenity::async_trait]
-impl EventHandler for Handler {
-    async fn ready(&self, ctx: Context, ready: Ready) {
-        let data_lock = ctx.data.read().await;
-        let client_data = data_lock
-            .get::<ClientDataKey>()
-            .expect("missing client data");
-        let slash_framework = data_lock
-            .get::<SlashFrameworkKey>()
-            .expect("missing slash framework")
-            .clone();
-        let config = client_data.config.clone();
-        drop(data_lock);
-
-        if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
-            match kind {
-                ActivityKind::Listening => {
-                    ctx.set_activity(Some(ActivityData::listening(status)))
-                        .await;
-                }
-                ActivityKind::Streaming => {
-                    let result: Result<_, anyhow::Error> = async {
-                        let activity = ActivityData::streaming(
-                            status,
-                            config.status_url().context("failed to get status url")?,
-                        )
-                        .context("failed to create activity")?;
-
-                        ctx.set_activity(Some(activity)).await;
-
-                        Ok(())
-                    }
-                    .await;
-
-                    if let Err(e) = result.context("failed to set activity") {
-                        error!("{:?}", e);
-                    }
-                }
-                ActivityKind::Playing => {
-                    ctx.set_activity(Some(ActivityData::playing(status))).await;
-                }
-            }
-        }
-
-        info!("logged in as '{}'", ready.user.name);
-
-        // TODO: Consider shutting down the bot. It might be possible to use old data though.
-        if let Err(e) = slash_framework
-            .register(ctx.clone(), config.test_guild)
-            .await
-            .context("failed to register slash commands")
-        {
-            error!("{:?}", e);
-        }
-
-        info!("registered slash commands");
-    }
-
-    async fn resume(&self, _ctx: Context, resumed: ResumedEvent) {
-        warn!("resumed connection. trace: {:?}", resumed.trace);
-    }
-
-    #[tracing::instrument(skip(self, ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
-    async fn message(&self, ctx: Context, msg: Message) {
-        let data_lock = ctx.data.read().await;
-        let client_data = data_lock
-            .get::<ClientDataKey>()
-            .expect("missing client data");
-        let reddit_embed_data = client_data.reddit_embed_data.clone();
-        let tiktok_data = client_data.tiktok_data.clone();
-        let db = client_data.db.clone();
-        drop(data_lock);
-
-        // Process URL Embeds
-        {
-            // Only embed guild links
-            let guild_id = match msg.guild_id {
-                Some(id) => id,
-                None => {
-                    return;
-                }
-            };
-
-            // No Bots
-            if msg.author.bot {
-                return;
-            }
-
-            // Get enabled data for embeds
-            let reddit_embed_is_enabled_for_guild = db
-                .get_reddit_embed_enabled(guild_id)
-                .await
-                .with_context(|| {
-                    format!("failed to get reddit-embed server data for '{}'", guild_id)
-                })
-                .unwrap_or_else(|e| {
-                    error!("{:?}", e);
-                    false
-                });
-            let tiktok_embed_flags = db
-                .get_tiktok_embed_flags(guild_id)
-                .await
-                .with_context(|| {
-                    format!("failed to get tiktok-embed server data for '{}'", guild_id)
-                })
-                .unwrap_or_else(|e| {
-                    error!("{:?}", e);
-                    TikTokEmbedFlags::empty()
-                });
-
-            // Extract urls
-            // NOTE: Regex doesn't HAVE to be perfect.
-            // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
-            // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
-            let urls: Vec<Url> = URL_REGEX
-                .find_iter(&msg.content)
-                .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
-                .collect();
-
-            // Check to see if it we will even try to embed
-            let will_try_embedding = urls.iter().any(|url| {
-                let url_host = match url.host() {
-                    Some(host) => host,
-                    None => return false,
-                };
-
-                let reddit_url =
-                    matches!(url_host, url::Host::Domain("www.reddit.com" | "reddit.com"));
-
-                let tiktok_url = matches!(
-                    url_host,
-                    url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")
-                );
-
-                (reddit_url && reddit_embed_is_enabled_for_guild)
-                    || (tiktok_url && tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED))
-            });
-
-            // Return if we won't try embedding
-            if !will_try_embedding {
-                return;
-            }
-
-            let mut loading_reaction = Some(LoadingReaction::new(ctx.http.clone(), &msg));
-
-            // Embed for each url
-            // NOTE: we short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem,
-            // especially since serenity retries each req once
-            for url in urls.iter() {
-                match url.host() {
-                    Some(url::Host::Domain("www.reddit.com" | "reddit.com")) => {
-                        // Don't process if it isn't enabled
-                        if reddit_embed_is_enabled_for_guild {
-                            if let Err(e) = reddit_embed_data
-                                .try_embed_url(&ctx, &msg, url, &mut loading_reaction)
-                                .await
-                                .context("failed to generate reddit embed")
-                            {
-                                error!("{:?}", e);
-                            }
-                        }
-                    }
-                    Some(url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")) => {
-                        if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
-                            if let Err(e) = tiktok_data
-                                .try_embed_url(
-                                    &ctx,
-                                    &msg,
-                                    url,
-                                    &mut loading_reaction,
-                                    tiktok_embed_flags.contains(TikTokEmbedFlags::DELETE_LINK),
-                                )
-                                .await
-                                .context("failed to generate tiktok embed")
-                            {
-                                error!("{:?}", e);
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-            // Trim caches
-            reddit_embed_data.cache.trim();
-            reddit_embed_data.video_data_cache.trim();
-            tiktok_data.post_page_cache.trim();
-        }
-    }
-
-    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        let data_lock = ctx.data.read().await;
-        let framework = data_lock
-            .get::<SlashFrameworkKey>()
-            .expect("missing slash framework")
-            .clone();
-        drop(data_lock);
-
-        framework.process_interaction_create(ctx, interaction).await;
-    }
-}
-
 #[derive(Debug, Clone, Copy)]
 pub struct ClientDataKey;
 
@@ -378,84 +180,21 @@ impl TypeMapKey for ClientDataKey {
     type Value = ClientData;
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct SlashFrameworkKey;
-
-impl TypeMapKey for SlashFrameworkKey {
-    type Value = pikadick_slash_framework::Framework;
-}
-
-#[help]
-async fn help(
-    ctx: &Context,
-    msg: &Message,
-    args: Args,
-    help_options: &'static HelpOptions,
-    groups: &[&'static CommandGroup],
-    owners: HashSet<UserId>,
-) -> CommandResult {
-    match help_commands::with_embeds(ctx, msg, args, help_options, groups, owners)
-        .await
-        .context("failed to send help")
-    {
-        Ok(_) => {}
-        Err(e) => {
-            error!("{:?}", e);
-        }
-    }
-    Ok(())
-}
-
 #[group]
 #[commands(
     system,
     quizizz,
     fml,
-    zalgo,
     shift,
     reddit_embed,
     invite,
-    vaporwave,
     cmd,
     latency,
-    uwuify,
-    cache_stats,
-    insta_dl,
-    deviantart,
-    urban,
-    xkcd,
     tic_tac_toe,
-    iqdb,
-    reddit,
     leave,
-    stop,
-    sauce_nao
+    stop
 )]
 struct General;
-
-async fn handle_ctrl_c(shard_manager: Arc<Mutex<ShardManager>>) {
-    match tokio::signal::ctrl_c().await {
-        Ok(_) => {
-            info!("shutting down...");
-            info!("stopping client...");
-            shard_manager.lock().await.shutdown_all().await;
-        }
-        Err(e) => {
-            warn!("failed to set ctrl-c handler: {}", e);
-            // The default "kill everything" handler is probably still installed, so this isn't a problem?
-        }
-    };
-}
-
-#[tracing::instrument(skip(_ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
-fn before_handler<'fut>(
-    _ctx: &'fut Context,
-    msg: &'fut Message,
-    cmd_name: &'fut str,
-) -> BoxFuture<'fut, bool> {
-    info!("allowing command to process");
-    async move { true }.boxed()
-}
 
 fn after_handler<'fut>(
     _ctx: &'fut Context,
@@ -491,90 +230,8 @@ fn unrecognised_command_handler<'fut>(
     .boxed()
 }
 
-fn process_dispatch_error<'fut>(
-    ctx: &'fut Context,
-    msg: &'fut Message,
-    error: DispatchError,
-    cmd_name: &'fut str,
-) -> BoxFuture<'fut, ()> {
-    process_dispatch_error_future(ctx, msg, error, cmd_name).boxed()
-}
-
-async fn process_dispatch_error_future<'fut>(
-    ctx: &'fut Context,
-    msg: &'fut Message,
-    error: DispatchError,
-    _cmd_name: &'fut str,
-) {
-    match error {
-        DispatchError::Ratelimited(s) => {
-            let _ = msg
-                .channel_id
-                .say(
-                    &ctx.http,
-                    format!("Wait {} seconds to use that command again", s.as_secs()),
-                )
-                .await
-                .is_ok();
-        }
-        DispatchError::NotEnoughArguments { min, given } => {
-            let _ = msg
-                .channel_id
-                .say(
-                    &ctx.http,
-                    format!(
-                        "Expected at least {} argument(s) for this command, but only got {}",
-                        min, given
-                    ),
-                )
-                .await
-                .is_ok();
-        }
-        DispatchError::TooManyArguments { max, given } => {
-            let response_str = format!("Expected no more than {} argument(s) for this command, but got {}. Try using quotation marks if your argument has spaces.",
-                max, given
-            );
-            let _ = msg.channel_id.say(&ctx.http, response_str).await.is_ok();
-        }
-        DispatchError::CheckFailed(check_name, reason) => match reason {
-            Reason::User(user_reason_str) => {
-                let _ = msg.channel_id.say(&ctx.http, user_reason_str).await.is_ok();
-            }
-            _ => {
-                let _ = msg
-                    .channel_id
-                    .say(
-                        &ctx.http,
-                        format!("{} check failed: {:#?}", check_name, reason),
-                    )
-                    .await
-                    .is_ok();
-            }
-        },
-        e => {
-            let _ = msg
-                .channel_id
-                .say(&ctx.http, format!("Unhandled Dispatch Error: {:?}", e))
-                .await
-                .is_ok();
-        }
-    };
-}
-
 /// Set up a serenity client
 async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
-    // Setup slash framework
-    let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
-        .check(self::checks::enabled::create_slash_check)
-        .help_command(create_slash_help_command()?)
-        .command(self::commands::nekos::create_slash_command()?)
-        .command(self::commands::ping::create_slash_command()?)
-        .command(self::commands::r6stats::create_slash_command()?)
-        .command(self::commands::r6tracker::create_slash_command()?)
-        .command(self::commands::rule34::create_slash_command()?)
-        .command(self::commands::tiktok_embed::create_slash_command()?)
-        .build()?;
-
     // Create second prefix that is uppercase so we are case-insensitive
     let config_prefix = config.prefix.clone();
     let uppercase_prefix = config_prefix.to_uppercase();
@@ -586,12 +243,7 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
             c.prefixes(&[config_prefix, uppercase_prefix])
                 .case_insensitivity(true)
         })
-        .help(&HELP)
         .group(&GENERAL_GROUP)
-        .bucket("r6stats", |b| b.delay(7))
-        .await
-        .bucket("r6tracker", |b| b.delay(7))
-        .await
         .bucket("system", |b| b.delay(30))
         .await
         .bucket("quizizz", |b| b.delay(10))
@@ -602,35 +254,19 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
         .await
         .bucket("default", |b| b.delay(1))
         .await
-        .before(before_handler)
         .after(after_handler)
-        .unrecognised_command(unrecognised_command_handler)
-        .on_dispatch_error(process_dispatch_error);
+        .unrecognised_command(unrecognised_command_handler);
 
     // Build the client
     let config_token = config.token.clone();
     let client = Client::builder(
-        config_token,
+        config_token.clone(),
         GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
     )
-    .event_handler(Handler)
-    .application_id(config.application_id)
     .framework(framework)
     .register_songbird()
     .await
     .context("failed to create client")?;
-
-    {
-        client
-            .data
-            .write()
-            .await
-            .insert::<SlashFrameworkKey>(slash_framework);
-    }
-
-    // TODO: Spawn a task for this earlier?
-    // Spawn the ctrl-c handler
-    tokio::spawn(handle_ctrl_c(client.shard_manager.clone()));
 
     Ok(client)
 }
@@ -693,7 +329,6 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
     std::fs::create_dir_all(config.log_file_dir()).context("failed to create log file dir")?;
     std::fs::create_dir_all(config.cache_dir()).context("failed to create cache dir")?;
 
-    // TODO: Init db
     eprintln!("opening database...");
     let database_path = config.data_dir.join("pikadick.sqlite");
 
@@ -772,40 +407,308 @@ fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
 
 /// The async entry
 async fn async_main(config: Arc<Config>, database: Database) -> anyhow::Result<()> {
-    // TODO: See if it is possible to start serenity without a network
-    info!("setting up client...");
-    let mut client = setup_client(config.clone())
-        .await
-        .context("failed to set up client")?;
+    // Setup slash framework
+    let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
+        .check(self::checks::enabled::create_slash_check)
+        .help_command(create_slash_help_command()?)
+        .command(self::commands::nekos::create_slash_command()?)
+        .command(self::commands::ping::create_slash_command()?)
+        .command(self::commands::r6stats::create_slash_command()?)
+        .command(self::commands::r6tracker::create_slash_command()?)
+        .command(self::commands::rule34::create_slash_command()?)
+        .command(self::commands::tiktok_embed::create_slash_command()?)
+        .command(self::commands::sauce_nao::create_slash_command()?)
+        .command(self::commands::reddit::create_slash_command()?)
+        .command(self::commands::iqdb::create_slash_command()?)
+        .command(self::commands::xkcd::create_slash_command()?)
+        .command(self::commands::urban::create_slash_command()?)
+        .command(self::commands::deviantart::create_slash_command()?)
+        .command(self::commands::insta_dl::create_slash_command()?)
+        .command(self::commands::cache_stats::create_slash_command()?)
+        .command(self::commands::uwuify::create_slash_command()?)
+        .command(self::commands::vaporwave::create_slash_command()?)
+        .command(self::commands::zalgo::create_slash_command()?)
+        .build()?;
 
-    let client_data = ClientData::init(client.shard_manager.clone(), config, database.clone())
-        .await
-        .context("client data initialization failed")?;
+    info!("starting shard cluster...");
+    let mut cluster_builder = ClusterBuilder::new(
+        config.token.clone(),
+        Intents::GUILD_MESSAGES | Intents::MESSAGE_CONTENT | Intents::DIRECT_MESSAGES,
+    );
 
-    // Add all post-init client data changes here
+    // Set activity in cluster builder if in config
+    if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
+        let activity = match kind {
+            ActivityKind::Listening => MinimalActivity {
+                kind: ActivityType::Listening,
+                name: status.to_string(),
+                url: None,
+            },
+            ActivityKind::Streaming => MinimalActivity {
+                kind: ActivityType::Streaming,
+                name: status.to_string(),
+                url: config.status_url().map(|s| s.to_string()),
+            },
+            ActivityKind::Playing => MinimalActivity {
+                kind: ActivityType::Playing,
+                name: status.to_string(),
+                url: None,
+            },
+        };
+        let payload =
+            UpdatePresencePayload::new(vec![activity.into()], false, None, Status::Online)?;
+        cluster_builder = cluster_builder.presence(payload);
+    }
+    let (cluster, mut events) = cluster_builder
+        .build()
+        .await
+        .context("failed to create shard cluster")?;
+    let cluster = Arc::new(cluster);
+    let http = twilight_http::Client::new(config.token.clone());
+    let cache = InMemoryCache::builder()
+        .resource_types(
+            ResourceType::MESSAGE
+                | ResourceType::CHANNEL
+                | ResourceType::VOICE_STATE
+                | ResourceType::USER_CURRENT
+                | ResourceType::ROLE
+                | ResourceType::GUILD
+                | ResourceType::MEMBER,
+        )
+        .build();
+
+    // Set up ctrl+c handler
     {
-        client_data.enabled_check_data.add_groups(&[&GENERAL_GROUP]);
+        let cluster = cluster.clone();
+        tokio::spawn(async move {
+            if let Err(e) = tokio::signal::ctrl_c()
+                .await
+                .context("failed to register ctrl+c handler")
+            {
+                error!("{e:?}");
+            }
+
+            info!("got ctrl+c, shutting down...");
+            cluster.down();
+        });
     }
 
-    {
-        let mut data = client.data.write().await;
-        data.insert::<ClientDataKey>(client_data);
+    cluster.up().await;
+    info!("shard cluster is up");
+
+    let bot_context = BotContext::new(http, config, slash_framework, database.clone())
+        .await
+        .context("failed to create bot context")?;
+    while let Some((shard_id, event)) = events.next().await {
+        cache.update(&event);
+        tokio::spawn(handle_event(shard_id, event, bot_context.clone()));
     }
+    info!("shard cluster is down");
 
-    info!("logging in...");
-    client.start().await.context("failed to run client")?;
-    let client_data = {
-        let mut data = client.data.write().await;
-        data.remove::<ClientDataKey>().expect("missing client data")
-    };
-    drop(client);
-
-    info!("running shutdown routine for client data");
-    client_data.shutdown().await;
-    drop(client_data);
+    info!("closing encoder task...");
+    if let Err(e) = bot_context
+        .inner
+        .encoder_task
+        .shutdown()
+        .await
+        .context("failed to shutdown encoder task")
+    {
+        error!("{e:?}");
+    }
 
     info!("closing database...");
-    database.close().await.context("failed to close database")?;
+    if let Err(e) = database.close().await.context("failed to close database") {
+        error!("{e:?}");
+    }
 
     Ok(())
+}
+
+async fn handle_event(shard_id: u64, event: twilight_gateway::Event, bot_context: BotContext) {
+    debug!(shard_id = shard_id, "got event kind {:?}", event.kind());
+
+    match event {
+        twilight_gateway::Event::ShardConnecting(_) => {
+            info!(shard_id = shard_id, "shard connecting");
+        }
+        twilight_gateway::Event::ShardConnected(_) => {
+            info!(shard_id = shard_id, "shard connected");
+        }
+        twilight_gateway::Event::ShardDisconnected(_) => {
+            info!(shard_id = shard_id, "shard disconnected");
+        }
+        twilight_gateway::Event::ShardIdentifying(_) => {
+            info!(shard_id = shard_id, "shard identifying");
+        }
+        twilight_gateway::Event::ShardReconnecting(_) => {
+            info!(shard_id = shard_id, "shard reconnecting");
+        }
+        twilight_gateway::Event::ShardResuming(_) => {
+            info!(shard_id = shard_id, "shard resuming");
+        }
+        twilight_gateway::Event::Ready(ready) => {
+            info!(shard_id = shard_id, "shard ready");
+
+            info!("logged in as '{}'", ready.user.name);
+
+            // Attempt to register slash commands
+            let interaction_client = bot_context.interaction_client();
+
+            // TODO: Consider shutting down the bot. It might be possible to use old data though.
+            if let Err(e) = bot_context
+                .inner
+                .slash_framework
+                .register(
+                    interaction_client,
+                    bot_context.inner.config.test_guild.map(|id| id.into()),
+                )
+                .await
+                .context("failed to register slash commands")
+            {
+                error!("{e:?}");
+            }
+            info!("registered slash commands");
+        }
+        twilight_gateway::Event::Resumed => {
+            info!(shard_id = shard_id, "shard resumed");
+        }
+        twilight_gateway::Event::MessageCreate(message_create) => {
+            // Process URL embeds
+
+            // Only embed guild links
+            let guild_id = match message_create.guild_id {
+                Some(id) => id,
+                None => {
+                    return;
+                }
+            };
+
+            // No Bots
+            if message_create.author.bot {
+                return;
+            }
+
+            // Get enabled data for embeds
+            let reddit_embed_is_enabled_for_guild = bot_context
+                .inner
+                .database
+                .get_reddit_embed_enabled(guild_id.into_nonzero().into())
+                .await
+                .with_context(|| format!("failed to get reddit-embed server data for '{guild_id}'"))
+                .unwrap_or_else(|e| {
+                    error!("{e:?}");
+                    false
+                });
+            let tiktok_embed_flags = bot_context
+                .inner
+                .database
+                .get_tiktok_embed_flags(guild_id.into_nonzero().into())
+                .await
+                .with_context(|| format!("failed to get tiktok-embed server data for '{guild_id}'"))
+                .unwrap_or_else(|e| {
+                    error!("{e:?}");
+                    TikTokEmbedFlags::empty()
+                });
+
+            // Extract urls
+            // NOTE: Regex doesn't HAVE to be perfect.
+            // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
+            //
+            // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
+            let urls: Vec<Url> = URL_REGEX
+                .find_iter(&message_create.content)
+                .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
+                .collect();
+
+            // Check to see if it we will even try to embed
+            let will_try_embedding = urls.iter().any(|url| {
+                let url_host = match url.host() {
+                    Some(host) => host,
+                    None => return false,
+                };
+
+                let is_reddit_url = is_reddit_host(&url_host);
+                let is_tiktok_url = is_tiktok_host(&url_host);
+
+                (is_reddit_url && reddit_embed_is_enabled_for_guild)
+                    || (is_tiktok_url && tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED))
+            });
+
+            // Return if we won't try embedding
+            if !will_try_embedding {
+                return;
+            }
+
+            // TODO: Port loadingreaction to twilight
+            let mut loading_reaction = Some(TwilightLoadingReaction::new(
+                bot_context.clone(),
+                message_create.0.channel_id,
+                message_create.0.id,
+            ));
+
+            // Embed for each url
+            // NOTE: we short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem.
+            for url in urls.iter() {
+                let url_host = match url.host() {
+                    Some(host) => host,
+                    None => continue,
+                };
+
+                let is_reddit_url = is_reddit_host(&url_host);
+                let is_tiktok_url = is_tiktok_host(&url_host);
+
+                if is_reddit_url {
+                    // Don't process if it isn't enabled
+                    if reddit_embed_is_enabled_for_guild {
+                        if let Err(e) = bot_context
+                            .inner
+                            .reddit_embed_data
+                            .try_embed_url(
+                                &bot_context,
+                                &message_create,
+                                url,
+                                &mut loading_reaction,
+                            )
+                            .await
+                            .context("failed to generate reddit embed")
+                        {
+                            error!("{e:?}");
+                        }
+                    }
+                } else if is_tiktok_url {
+                    // Don't process if it isn't enabled
+                    if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
+                        if let Err(e) = bot_context
+                            .inner
+                            .tiktok_data
+                            .try_embed_url(
+                                &bot_context,
+                                &message_create,
+                                url,
+                                &mut loading_reaction,
+                                tiktok_embed_flags.contains(TikTokEmbedFlags::DELETE_LINK),
+                            )
+                            .await
+                            .context("failed to generate tiktok embed")
+                        {
+                            error!("{e:?}");
+                        }
+                    }
+                }
+            }
+
+            // Trim caches
+            bot_context.inner.reddit_embed_data.cache.trim();
+            bot_context.inner.reddit_embed_data.video_data_cache.trim();
+            bot_context.inner.tiktok_data.post_page_cache.trim();
+        }
+        twilight_gateway::Event::InteractionCreate(interaction_create) => {
+            bot_context
+                .inner
+                .slash_framework
+                .process_interaction_create(bot_context.clone(), interaction_create)
+                .await;
+        }
+        _ => {}
+    }
 }

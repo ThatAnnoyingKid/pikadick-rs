@@ -4,45 +4,54 @@ use crate::{
     BoxFuture,
     BuilderError,
     CheckFn,
+    ClientData,
     DataType,
     FromOptions,
-};
-use serenity::{
-    builder::CreateApplicationCommand,
-    client::Context,
-    model::application::{
-        command::CommandOptionType,
-        interaction::application_command::ApplicationCommandInteraction,
-    },
 };
 use std::{
     collections::HashMap,
     future::Future,
     sync::Arc,
 };
+use twilight_model::application::{
+    command::{
+        BaseCommandOptionData as TwilightBaseOptionCommandData,
+        ChoiceCommandOptionData as TwilightChoiceCommandOptionData,
+        Command as TwilightCommand,
+        CommandOption as TwilightCommandOption,
+        CommandType as TwilightCommandType,
+        NumberCommandOptionData as TwilightNumberCommandOptionData,
+    },
+    interaction::{
+        application_command::CommandData,
+        Interaction as TwilightInteraction,
+    },
+};
+use twilight_util::builder::command::CommandBuilder as TwilightCommandBuilder;
 
 type OnProcessResult = Result<(), BoxError>;
 pub type OnProcessFuture = BoxFuture<'static, OnProcessResult>;
 
 // Keep these types in sync.
-type OnProcessFutureFn =
-    Box<dyn Fn(Context, ApplicationCommandInteraction) -> OnProcessFuture + Send + Sync>;
-type OnProcessFutureFnPtr<F, A> = fn(Context, ApplicationCommandInteraction, A) -> F;
+type OnProcessFutureFn<D> =
+    Box<dyn Fn(D, TwilightInteraction, Box<CommandData>) -> OnProcessFuture + Send + Sync>;
+type OnProcessFutureFnPtr<D, F, A> = fn(D, TwilightInteraction, A) -> F;
 
-type HelpOnProcessFutureFn = Box<
+type HelpOnProcessFutureFn<D> = Box<
     dyn Fn(
-            Context,
-            ApplicationCommandInteraction,
-            Arc<HashMap<Box<str>, Command>>,
+            D,
+            TwilightInteraction,
+            Box<CommandData>,
+            Arc<HashMap<Box<str>, Command<D>>>,
         ) -> OnProcessFuture
         + Send
         + Sync,
 >;
-type HelpOnProcessFutureFnPtr<F, A> =
-    fn(Context, ApplicationCommandInteraction, Arc<HashMap<Box<str>, Command>>, A) -> F;
+type HelpOnProcessFutureFnPtr<D, F, A> =
+    fn(D, TwilightInteraction, Arc<HashMap<Box<str>, Command<D>>>, A) -> F;
 
 /// A slash framework command
-pub struct Command {
+pub struct Command<D> {
     /// The name of the command
     name: Box<str>,
 
@@ -53,13 +62,13 @@ pub struct Command {
     arguments: Box<[ArgumentParam]>,
 
     /// The main "process" func
-    on_process: OnProcessFutureFn,
+    on_process: OnProcessFutureFn<D>,
 
     /// Checks that must pass before this command is run
-    checks: Vec<CheckFn>,
+    checks: Vec<CheckFn<D>>,
 }
 
-impl Command {
+impl<D> Command<D> {
     /// Get the command name
     pub fn name(&self) -> &str {
         &self.name
@@ -78,38 +87,73 @@ impl Command {
     /// Fire the on_process hook
     pub async fn fire_on_process(
         &self,
-        ctx: Context,
-        interaction: ApplicationCommandInteraction,
+        client_data: D,
+        interaction: TwilightInteraction,
+        command_data: Box<CommandData>,
     ) -> Result<(), BoxError> {
-        (self.on_process)(ctx, interaction).await
+        (self.on_process)(client_data, interaction, command_data).await
     }
 
     /// Get the inner checks
-    pub fn checks(&self) -> &[CheckFn] {
+    pub fn checks(&self) -> &[CheckFn<D>] {
         &self.checks
     }
 
-    /// Register this command
-    pub fn register(&self, command: &mut CreateApplicationCommand) {
-        command.name(self.name()).description(self.description());
+    /// Build a twilight command from this command
+    pub fn build_twilight_command(&self) -> TwilightCommand {
+        let mut command = TwilightCommandBuilder::new(
+            self.name(),
+            self.description(),
+            TwilightCommandType::ChatInput,
+        );
 
         for argument in self.arguments().iter() {
-            command.create_option(|option| {
-                option
-                    .name(argument.name())
-                    .description(argument.description())
-                    .kind(match argument.kind() {
-                        DataType::Boolean => CommandOptionType::Boolean,
-                        DataType::String => CommandOptionType::String,
-                        DataType::Integer => CommandOptionType::Integer,
+            let option = match argument.kind() {
+                DataType::Boolean => {
+                    TwilightCommandOption::Boolean(TwilightBaseOptionCommandData {
+                        description: argument.description().to_string(),
+                        description_localizations: None,
+                        name: argument.name().to_string(),
+                        name_localizations: None,
+                        required: argument.required(),
                     })
-                    .required(argument.required())
-            });
+                }
+                DataType::String => {
+                    TwilightCommandOption::String(TwilightChoiceCommandOptionData {
+                        autocomplete: false,
+                        choices: Vec::new(),
+                        description: argument.description().to_string(),
+                        description_localizations: None,
+                        max_length: None,
+                        min_length: None,
+                        name: argument.name().to_string(),
+                        name_localizations: None,
+                        required: argument.required(),
+                    })
+                }
+                DataType::Integer => {
+                    TwilightCommandOption::Integer(TwilightNumberCommandOptionData {
+                        autocomplete: false,
+                        choices: Vec::new(),
+                        description: argument.description().to_string(),
+                        description_localizations: None,
+                        max_value: None,
+                        min_value: None,
+                        name: argument.name().to_string(),
+                        name_localizations: None,
+                        required: argument.required(),
+                    })
+                }
+            };
+
+            command = command.option(option);
         }
+
+        command.build()
     }
 }
 
-impl std::fmt::Debug for Command {
+impl<D> std::fmt::Debug for Command<D> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Command")
             .field("name", &self.name)
@@ -121,16 +165,16 @@ impl std::fmt::Debug for Command {
 }
 
 /// A builder for a [`Command`].
-pub struct CommandBuilder<'a, 'b> {
+pub struct CommandBuilder<'a, 'b, D> {
     name: Option<&'a str>,
     description: Option<&'b str>,
     arguments: Vec<ArgumentParam>,
 
-    on_process: Option<OnProcessFutureFn>,
-    checks: Vec<CheckFn>,
+    on_process: Option<OnProcessFutureFn<D>>,
+    checks: Vec<CheckFn<D>>,
 }
 
-impl<'a, 'b> CommandBuilder<'a, 'b> {
+impl<'a, 'b, D> CommandBuilder<'a, 'b, D> {
     /// Make a new [`CommandBuilder`].
     pub fn new() -> Self {
         Self {
@@ -168,18 +212,23 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
         }
         self
     }
+}
 
+impl<'a, 'b, D> CommandBuilder<'a, 'b, D>
+where
+    D: ClientData,
+{
     /// The on_process hook
-    pub fn on_process<F, A>(&mut self, on_process: OnProcessFutureFnPtr<F, A>) -> &mut Self
+    pub fn on_process<F, A>(&mut self, on_process: OnProcessFutureFnPtr<D, F, A>) -> &mut Self
     where
         F: Future<Output = Result<(), BoxError>> + Send + 'static,
         A: FromOptions + 'static,
     {
         // Trampoline so user does not have to box manually and parse their args manually
-        self.on_process = Some(Box::new(move |ctx, interaction| {
+        self.on_process = Some(Box::new(move |client_data, interaction, command_data| {
             Box::pin(async move {
-                let args = A::from_options(&interaction)?;
-                (on_process)(ctx, interaction, args).await
+                let args = A::from_options(&command_data.options)?;
+                (on_process)(client_data, interaction, args).await
             })
         }));
 
@@ -187,21 +236,18 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
     }
 
     /// Add a check to this specific command
-    pub fn check(&mut self, check: CheckFn) -> &mut Self {
+    pub fn check(&mut self, check: CheckFn<D>) -> &mut Self {
         self.checks.push(check);
         self
     }
 
     /// Build the [`Command`]
-    pub fn build(&mut self) -> Result<Command, BuilderError> {
-        #[allow(clippy::or_fun_call)]
+    pub fn build(&mut self) -> Result<Command<D>, BuilderError> {
         let name = self.name.take().ok_or(BuilderError::MissingField("name"))?;
-        #[allow(clippy::or_fun_call)]
         let description = self
             .description
             .take()
             .ok_or(BuilderError::MissingField("description"))?;
-        #[allow(clippy::or_fun_call)]
         let on_process = self
             .on_process
             .take()
@@ -219,7 +265,7 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
     }
 }
 
-impl std::fmt::Debug for CommandBuilder<'_, '_> {
+impl<D> std::fmt::Debug for CommandBuilder<'_, '_, D> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CommandBuilder")
             .field("name", &self.name)
@@ -230,14 +276,14 @@ impl std::fmt::Debug for CommandBuilder<'_, '_> {
     }
 }
 
-impl Default for CommandBuilder<'_, '_> {
+impl<D> Default for CommandBuilder<'_, '_, D> {
     fn default() -> Self {
         Self::new()
     }
 }
 
 /// A slash framework help command
-pub struct HelpCommand {
+pub struct HelpCommand<D> {
     /// Description
     description: Box<str>,
 
@@ -245,10 +291,10 @@ pub struct HelpCommand {
     arguments: Box<[ArgumentParam]>,
 
     /// The main "process" func
-    on_process: HelpOnProcessFutureFn,
+    on_process: HelpOnProcessFutureFn<D>,
 }
 
-impl HelpCommand {
+impl<D> HelpCommand<D> {
     /// Get the help command description
     pub fn description(&self) -> &str {
         &self.description
@@ -262,33 +308,66 @@ impl HelpCommand {
     /// Fire the on_process hook
     pub async fn fire_on_process(
         &self,
-        ctx: Context,
-        interaction: ApplicationCommandInteraction,
-        map: Arc<HashMap<Box<str>, Command>>,
+        client_data: D,
+        interaction: TwilightInteraction,
+        command_data: Box<CommandData>,
+        map: Arc<HashMap<Box<str>, Command<D>>>,
     ) -> Result<(), BoxError> {
-        (self.on_process)(ctx, interaction, map).await
+        (self.on_process)(client_data, interaction, command_data, map).await
     }
 
-    /// Register this help command
-    pub fn register(&self, command: &mut CreateApplicationCommand) {
-        command.name("help").description(self.description());
+    /// Build a twilight command from this command
+    pub fn build_twilight_command(&self) -> TwilightCommand {
+        let mut command =
+            TwilightCommandBuilder::new("help", self.description(), TwilightCommandType::ChatInput);
 
         for argument in self.arguments().iter() {
-            command.create_option(|option| {
-                option
-                    .name(argument.name())
-                    .description(argument.description())
-                    .kind(match argument.kind() {
-                        DataType::Boolean => CommandOptionType::Boolean,
-                        DataType::String => CommandOptionType::String,
-                        DataType::Integer => CommandOptionType::Integer,
+            let option = match argument.kind() {
+                DataType::Boolean => {
+                    TwilightCommandOption::Boolean(TwilightBaseOptionCommandData {
+                        description: argument.description().to_string(),
+                        description_localizations: None,
+                        name: argument.name().to_string(),
+                        name_localizations: None,
+                        required: argument.required(),
                     })
-            });
+                }
+                DataType::String => {
+                    TwilightCommandOption::String(TwilightChoiceCommandOptionData {
+                        autocomplete: false,
+                        choices: Vec::new(),
+                        description: argument.description().to_string(),
+                        description_localizations: None,
+                        max_length: None,
+                        min_length: None,
+                        name: argument.name().to_string(),
+                        name_localizations: None,
+                        required: argument.required(),
+                    })
+                }
+                DataType::Integer => {
+                    TwilightCommandOption::Integer(TwilightNumberCommandOptionData {
+                        autocomplete: false,
+                        choices: Vec::new(),
+                        description: argument.description().to_string(),
+                        description_localizations: None,
+                        max_value: None,
+                        min_value: None,
+                        name: argument.name().to_string(),
+                        name_localizations: None,
+                        required: argument.required(),
+                    })
+                }
+            };
+
+            command = command.option(option);
         }
+
+        command.build()
     }
 }
 
-impl std::fmt::Debug for HelpCommand {
+impl<D> std::fmt::Debug for HelpCommand<D> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HelpCommand")
             .field("description", &self.description)
@@ -299,14 +378,17 @@ impl std::fmt::Debug for HelpCommand {
 }
 
 /// A builder for a [`HelpCommand`].
-pub struct HelpCommandBuilder<'a> {
+pub struct HelpCommandBuilder<'a, D> {
     description: Option<&'a str>,
     arguments: Vec<ArgumentParam>,
 
-    on_process: Option<HelpOnProcessFutureFn>,
+    on_process: Option<HelpOnProcessFutureFn<D>>,
 }
 
-impl<'a> HelpCommandBuilder<'a> {
+impl<'a, D> HelpCommandBuilder<'a, D>
+where
+    D: ClientData,
+{
     /// Make a new [`HelpCommandBuilder`].
     pub fn new() -> Self {
         Self {
@@ -330,30 +412,30 @@ impl<'a> HelpCommandBuilder<'a> {
     }
 
     /// The on_process hook
-    pub fn on_process<F, A>(&mut self, on_process: HelpOnProcessFutureFnPtr<F, A>) -> &mut Self
+    pub fn on_process<F, A>(&mut self, on_process: HelpOnProcessFutureFnPtr<D, F, A>) -> &mut Self
     where
         F: Future<Output = Result<(), BoxError>> + Send + 'static,
         A: FromOptions + 'static,
     {
         // Trampoline so user does not have to box manually and parse their args manually
-        self.on_process = Some(Box::new(move |ctx, interaction, map| {
-            Box::pin(async move {
-                let args = A::from_options(&interaction)?;
-                (on_process)(ctx, interaction, map, args).await
-            })
-        }));
+        self.on_process = Some(Box::new(
+            move |client_data, interaction, command_data, map| {
+                Box::pin(async move {
+                    let args = A::from_options(&command_data.options)?;
+                    (on_process)(client_data, interaction, map, args).await
+                })
+            },
+        ));
 
         self
     }
 
     /// Build the [`HelpCommand`]
-    pub fn build(&mut self) -> Result<HelpCommand, BuilderError> {
-        #[allow(clippy::or_fun_call)]
+    pub fn build(&mut self) -> Result<HelpCommand<D>, BuilderError> {
         let description = self
             .description
             .take()
             .ok_or(BuilderError::MissingField("description"))?;
-        #[allow(clippy::or_fun_call)]
         let on_process = self
             .on_process
             .take()
@@ -368,7 +450,7 @@ impl<'a> HelpCommandBuilder<'a> {
     }
 }
 
-impl std::fmt::Debug for HelpCommandBuilder<'_> {
+impl<D> std::fmt::Debug for HelpCommandBuilder<'_, D> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HelpCommandBuilder")
             .field("description", &self.description)
@@ -378,7 +460,10 @@ impl std::fmt::Debug for HelpCommandBuilder<'_> {
     }
 }
 
-impl Default for HelpCommandBuilder<'_> {
+impl<D> Default for HelpCommandBuilder<'_, D>
+where
+    D: ClientData,
+{
     fn default() -> Self {
         Self::new()
     }

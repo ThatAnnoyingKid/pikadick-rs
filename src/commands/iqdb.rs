@@ -1,28 +1,29 @@
 use crate::{
-    checks::ENABLED_CHECK,
-    client_data::{
+    bot_context::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
     util::{
-        LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
-    ClientDataKey,
+    BotContext,
 };
 use anyhow::Context as _;
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
+use pikadick_slash_framework::{
+    ClientData,
+    FromOptions,
 };
 use std::sync::Arc;
 use tracing::error;
+use twilight_model::http::interaction::{
+    InteractionResponse,
+    InteractionResponseType,
+};
+use twilight_util::builder::embed::{
+    EmbedBuilder,
+    ImageSource,
+};
 
 #[derive(Clone, Debug)]
 pub struct IqdbClient {
@@ -70,64 +71,71 @@ impl Default for IqdbClient {
 
 impl CacheStatsProvider for IqdbClient {
     fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("iqdb", "search_cache", self.search_cache.len() as f32);
+        cache_stats_builder.publish_stat("iqdb", "search_cache", self.search_cache.len());
     }
 }
 
-#[command]
-#[description("Search IQDB for an image at a url")]
-#[usage("<img_url>")]
-#[example("https://konachan.com/image/5982d8946ae503351e960f097f84cd90/Konachan.com%20-%20330136%20animal%20nobody%20original%20signed%20yutaka_kana.jpg")]
-#[checks(Enabled)]
-#[min_args(1)]
-#[max_args(1)]
-#[bucket("default")]
-async fn iqdb(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let client = client_data.iqdb_client.clone();
-    drop(data_lock);
+#[derive(Debug, pikadick_slash_framework::FromOptions)]
+struct IqdbOptions {
+    #[pikadick_slash_framework(description = "The url to look up")]
+    url: String,
+}
 
-    let query = args.trimmed().current().expect("missing query");
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
+    pikadick_slash_framework::CommandBuilder::<BotContext>::new()
+        .name("iqdb")
+        .description("Search IQDB for an image at a url")
+        .arguments(IqdbOptions::get_argument_params()?.into_iter())
+        .on_process(|client_data, interaction, args: IqdbOptions| async move {
+            let iqdb_client = client_data.inner.iqdb_client.clone();
+            let interaction_client = client_data.interaction_client();
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
+            interaction_client
+                .create_response(
+                    interaction.id,
+                    interaction.token.as_str(),
+                    &InteractionResponse {
+                        kind: InteractionResponseType::DeferredChannelMessageWithSource,
+                        data: None,
+                    },
+                )
+                .exec()
+                .await
+                .context("failed to send response")?;
+            let update_response = interaction_client.update_response(interaction.token.as_str());
 
-    match client
-        .search(query)
-        .await
-        .context("failed to search for image")
-    {
-        Ok(data) => {
-            let data = data.data();
-            match data.best_match.as_ref() {
-                Some(data) => {
-                    msg.channel_id
-                        .send_message(&ctx.http, |m| {
-                            m.embed(|e| {
-                                e.title("IQDB Best Match")
-                                    .image(data.image_url.as_str())
-                                    .url(data.url.as_str())
-                                    .description(data.url.as_str())
-                            })
-                        })
-                        .await?;
+            let img_url = args.url.as_str();
+            let result = iqdb_client
+                .search(img_url)
+                .await
+                .context("failed to search for image");
 
-                    loading.send_ok();
+            let update_response = match result
+                .as_ref()
+                .map(|entry| entry.data().best_match.as_ref())
+            {
+                Ok(Some(data)) => {
+                    let embed = EmbedBuilder::new()
+                        .title("IQDB Best Match")
+                        .image(ImageSource::url(data.image_url.as_str())?)
+                        .url(data.url.as_str())
+                        .description(data.url.as_str());
+
+                    update_response.embeds(Some(&[embed.build()]))?.exec()
                 }
-                None => {
-                    msg.channel_id
-                        .say(&ctx.http, format!("No results on iqdb for '{}'", query))
-                        .await?;
+                Ok(None) => update_response
+                    .content(Some(&format!("No results on iqdb for '{img_url}'")))?
+                    .exec(),
+                Err(e) => {
+                    error!("{e:?}");
+                    update_response.content(Some(&format!("{e:?}")))?.exec()
                 }
-            }
-        }
-        Err(e) => {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
-            error!("{:?}", e);
-        }
-    }
+            };
 
-    Ok(())
+            update_response.await.context("failed to update response")?;
+
+            Ok(())
+        })
+        .build()
+        .context("failed to build command")
 }

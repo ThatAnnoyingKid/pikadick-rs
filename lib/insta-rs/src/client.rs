@@ -1,12 +1,14 @@
 use crate::{
-    types::AdditionalDataLoaded,
+    CollectionListing,
     Error,
     LoginResponse,
+    MediaInfo,
+    PostPage,
+    SavedPostsQueryResult,
     USER_AGENT_STR,
 };
-use once_cell::sync::Lazy;
-use regex::Regex;
 use reqwest_cookie_store::CookieStoreMutex;
+use scraper::Html;
 use std::sync::Arc;
 
 /// A Client
@@ -103,24 +105,76 @@ impl Client {
         Ok(response)
     }
 
-    /// Get a post by url.
-    pub async fn get_post(&self, url: &str) -> Result<AdditionalDataLoaded, Error> {
-        static ADDITIONAL_DATA_LOADED_REGEX: Lazy<Regex> = Lazy::new(|| {
-            Regex::new("window\\.__additionalDataLoaded\\('.*',(.*)\\);")
-                .expect("failed to compile `ADDITIONAL_DATA_LOADED_REGEX`")
-        });
-
-        // TODO: Run on threadpool?
+    /// Get a post page by url
+    pub async fn get_post_page(&self, url: &str) -> Result<PostPage, Error> {
         let text = self.get_response(url).await?.text().await?;
-        let captures = ADDITIONAL_DATA_LOADED_REGEX.captures(&text);
+        Ok(tokio::task::spawn_blocking(move || {
+            let html = Html::parse_document(&text);
+            PostPage::from_html(&html)
+        })
+        .await??)
+    }
 
-        Ok(serde_json::from_str(
-            captures
-                .ok_or(Error::MissingAdditionalDataLoaded)?
-                .get(1)
-                .ok_or(Error::MissingAdditionalDataLoaded)?
-                .as_str(),
-        )?)
+    /// Get the media info for a media id
+    pub async fn get_media_info(&self, media_id: u64) -> Result<MediaInfo, Error> {
+        let url = format!("https://i.instagram.com/api/v1/media/{media_id}/info/");
+
+        let response = self.get_response(url.as_str()).await?;
+        Ok(response.json().await?)
+    }
+
+    /// Unsave a saved post by media id
+    pub async fn unsave_post(&self, media_id: u64) -> Result<serde_json::Value, Error> {
+        let url = format!("https://i.instagram.com/api/v1/media/{media_id}/unsave/");
+        let response = self.client.post(url).send().await?.error_for_status()?;
+        Ok(response.json().await?)
+    }
+
+    /// List collections for this user
+    pub async fn list_collections(&self) -> Result<CollectionListing, Error> {
+        let collection_types =
+            "[\"ALL_MEDIA_AUTO_COLLECTION\",\"MEDIA\",\"AUDIO_AUTO_COLLECTION\"]";
+        let url = format!("https://i.instagram.com/api/v1/collections/list/?collection_types={collection_types}&include_public_only=0&get_cover_media_lists=true&max_id=");
+        let response = self.get_response(&url).await?;
+        Ok(response.json().await?)
+    }
+
+    /// Make a graphql query
+    pub async fn graphql<V, R>(&self, query_hash: &str, variables: &V) -> Result<R, Error>
+    where
+        V: serde::Serialize,
+        R: serde::de::DeserializeOwned,
+    {
+        let variables = serde_json::to_string(&variables)?;
+        let url = format!("https://www.instagram.com/graphql/query/?query_hash={query_hash}&variables={variables}");
+        let response = self.get_response(&url).await?;
+        Ok(response.json().await?)
+    }
+
+    /// Get saved posts.
+    pub async fn get_saved_posts(
+        &self,
+        first: u32,
+        after: Option<&str>,
+    ) -> Result<SavedPostsQueryResult, Error> {
+        const QUERY_HASH: &str = "2ce1d673055b99250e93b6f88f878fde";
+
+        let user_id = self
+            .cookie_store
+            .lock()
+            .expect("cookie store poisoned")
+            .get("instagram.com", "/", "ds_user_id")
+            .ok_or(Error::MissingCookie("ds_user_id"))?
+            .value()
+            .to_string();
+
+        let variables = SavedPostsGraphQlQuery {
+            id: &user_id,
+            first,
+            after,
+        };
+
+        self.graphql(QUERY_HASH, &variables).await
     }
 }
 
@@ -128,4 +182,17 @@ impl Default for Client {
     fn default() -> Self {
         Self::new()
     }
+}
+
+#[derive(Debug, serde::Serialize)]
+struct SavedPostsGraphQlQuery<'a, 'b> {
+    /// The user id
+    id: &'a str,
+
+    /// The # of results to return
+    first: u32,
+
+    /// ?
+    #[serde(default)]
+    after: Option<&'b str>,
 }

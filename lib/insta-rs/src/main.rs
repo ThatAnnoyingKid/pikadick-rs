@@ -12,10 +12,6 @@ use insta::{
     MediaType,
 };
 use std::path::Path;
-use tokio::{
-    fs::File,
-    io::AsyncWriteExt,
-};
 use url::Url;
 
 #[derive(Debug, argh::FromArgs)]
@@ -30,6 +26,8 @@ struct Options {
 enum Subcommand {
     Login(LoginOptions),
     Download(DownloadOptions),
+    Saved(SavedOptions),
+    GetMediaInfo(GetMediaInfoOptions),
 }
 
 #[derive(Debug, argh::FromArgs)]
@@ -51,6 +49,58 @@ struct LoginOptions {
 struct DownloadOptions {
     #[argh(positional, description = "the post url")]
     post: String,
+}
+
+#[derive(Debug, argh::FromArgs)]
+#[argh(subcommand, name = "saved", description = "interact with saved posts")]
+struct SavedOptions {
+    #[argh(subcommand)]
+    subcommand: SavedOptionsSubcommand,
+}
+
+#[derive(Debug, argh::FromArgs)]
+#[argh(subcommand)]
+enum SavedOptionsSubcommand {
+    Unsave(UnsaveOptions),
+    Get(GetOptions),
+}
+
+#[derive(Debug, argh::FromArgs)]
+#[argh(subcommand, name = "unsave", description = "Unsave a saved post")]
+struct UnsaveOptions {
+    #[argh(positional, description = "the media id of the post to unsave")]
+    media_id: u64,
+}
+
+#[derive(Debug, argh::FromArgs)]
+#[argh(
+    subcommand,
+    name = "get",
+    description = "Get saved posts for the current user"
+)]
+struct GetOptions {
+    #[argh(
+        option,
+        short = 'n',
+        long = "num-posts",
+        description = "the number of posts to retrieve",
+        default = "12"
+    )]
+    num_posts: u32,
+
+    #[argh(option, short = 'a', long = "after", description = "the after marker")]
+    after: Option<String>,
+}
+
+#[derive(Debug, argh::FromArgs)]
+#[argh(
+    subcommand,
+    name = "get-media-info",
+    description = "Get the media info for the post with the given media id"
+)]
+struct GetMediaInfoOptions {
+    #[argh(positional, description = "the media id")]
+    media_id: u64,
 }
 
 struct BoxError(Box<dyn std::error::Error + Send + Sync>);
@@ -120,25 +170,13 @@ impl Config {
     }
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
+    // Run this first, as this will exit the process without running destructors on failure.
     let options = argh::from_env();
-    let code = match real_main(options) {
-        Ok(()) => 0,
-        Err(e) => {
-            eprintln!("Error: {:?}", e);
-            1
-        }
-    };
-
-    std::process::exit(code);
-}
-
-fn real_main(options: Options) -> anyhow::Result<()> {
     let tokio_rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .context("failed to build tokio runtime")?;
-
     tokio_rt.block_on(async_main(options))?;
 
     Ok(())
@@ -179,11 +217,13 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
             };
 
             match File::open(session_file_path).map(BufReader::new) {
-                Ok(mut file) => Ok(Some(
-                    CookieStore::load_json(&mut file)
+                Ok(mut file) => {
+                    let cookie_store = CookieStore::load_json(&mut file)
                         .map_err(BoxError)
-                        .context("failed to load session")?,
-                )),
+                        .context("failed to load session")?;
+
+                    Ok(Some(cookie_store))
+                }
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
                 Err(e) => Err(e).context("failed to open session file"),
             }
@@ -199,7 +239,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
         ),
         None => {
             if let (Some(username), Some(password)) = (maybe_username, maybe_password) {
-                println!("Missing session file, logging in...");
+                println!("missing session file, logging in...");
                 let login_response = client
                     .login(username, password)
                     .await
@@ -225,7 +265,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                 })
                 .await??;
             } else {
-                println!("Skipping log-in as username and password are not specified");
+                println!("skipping log-in as username and password are not specified");
             }
         }
     };
@@ -244,57 +284,44 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
         }
         Subcommand::Download(options) => {
             let post_page = client
-                .get_post(&options.post)
+                .get_post_page(&options.post)
                 .await
-                .context("failed to get post")?;
+                .context("failed to get post page")?;
+            let media_info = client
+                .get_media_info(post_page.media_id)
+                .await
+                .context("failed to get media info")?;
 
-            let post_page_item = post_page.items.first().context("missing post item")?;
+            let media_item = media_info.items.first().context("missing post item")?;
+            ensure!(media_info.items.len() == 1);
 
-            match post_page_item.media_type {
+            let mut download_items = Vec::with_capacity(4);
+
+            match media_item.media_type {
                 MediaType::Photo => {
-                    let image_versions2_candidate = post_page_item
+                    let image_versions2_candidate = media_item
                         .get_best_image_versions2_candidate()
                         .context("failed to select an image_versions2_candidate")?;
+                    let url = &image_versions2_candidate.url;
+                    let extension =
+                        get_extension_from_url(url).context("missing image extension")?;
+                    let file_name = format!("{}.{}", media_item.code, extension);
 
-                    let extension = get_extension_from_url(&image_versions2_candidate.url)
-                        .context("missing image extension")?;
-                    let file_name = format!("{}.{}", post_page_item.code, extension);
-                    let mut file = tokio::fs::OpenOptions::new()
-                        .create_new(true)
-                        .write(true)
-                        .open(file_name)
-                        .await
-                        .context("failed to open output file")?;
-
-                    download_to_file(
-                        &client.client,
-                        image_versions2_candidate.url.as_str(),
-                        &mut file,
-                    )
-                    .await
-                    .context("failed to download")?;
+                    download_items.push((url, file_name));
                 }
                 MediaType::Video => {
-                    let video_version = post_page_item
+                    let video_version = media_item
                         .get_best_video_version()
                         .context("failed to get the best video version")?;
+                    let url = &video_version.url;
 
-                    let extension =
-                        get_extension_from_url(&video_version.url).context("missing extension")?;
-                    let file_name = format!("{}.{}", post_page_item.code, extension);
-                    let mut file = tokio::fs::OpenOptions::new()
-                        .create_new(true)
-                        .write(true)
-                        .open(file_name)
-                        .await
-                        .context("failed to open output file")?;
+                    let extension = get_extension_from_url(url).context("missing extension")?;
+                    let file_name = format!("{}.{}", media_item.code, extension);
 
-                    download_to_file(&client.client, video_version.url.as_str(), &mut file)
-                        .await
-                        .context("failed to download")?;
+                    download_items.push((url, file_name));
                 }
                 MediaType::Carousel => {
-                    for (i, item) in post_page_item
+                    for (i, item) in media_item
                         .carousel_media
                         .as_ref()
                         .context("missing carousel media")?
@@ -306,26 +333,26 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                                 let image_versions2_candidate = item
                                     .get_best_image_versions2_candidate()
                                     .context("failed to select an image_versions2_candidate")?;
+                                let url = &image_versions2_candidate.url;
+
+                                let extension = get_extension_from_url(url)
+                                    .context("missing image extension")?;
+                                let file_name =
+                                    format!("{}.{}.{}", media_item.code, i + 1, extension);
+
+                                download_items.push((url, file_name));
+                            }
+                            MediaType::Video => {
+                                let video_version = item
+                                    .get_best_video_version()
+                                    .context("failed to get the best video version")?;
+                                let url = &video_version.url;
 
                                 let extension =
-                                    get_extension_from_url(&image_versions2_candidate.url)
-                                        .context("missing image extension")?;
-                                let file_name =
-                                    format!("{}.{}.{}", post_page_item.code, i + 1, extension);
-                                let mut file = tokio::fs::OpenOptions::new()
-                                    .create_new(true)
-                                    .write(true)
-                                    .open(file_name)
-                                    .await
-                                    .context("failed to open output file")?;
+                                    get_extension_from_url(url).context("missing extension")?;
+                                let file_name = format!("{}.{}", media_item.code, extension);
 
-                                download_to_file(
-                                    &client.client,
-                                    image_versions2_candidate.url.as_str(),
-                                    &mut file,
-                                )
-                                .await
-                                .context("failed to download")?;
+                                download_items.push((url, file_name));
                             }
                             _ => {
                                 bail!("Unsupported media_type `{:?}`", item.media_type);
@@ -334,52 +361,100 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
                     }
                 }
             }
+
+            for (url, file_name) in download_items {
+                println!("downloading `{file_name}`...");
+                let downloaded = download_to_path(&client.client, url.as_str(), file_name.as_ref())
+                    .await
+                    .context("failed to download")?;
+
+                if !downloaded {
+                    println!("  skipped downloading as it already exists...");
+                }
+            }
+        }
+        Subcommand::Saved(options) => match options.subcommand {
+            SavedOptionsSubcommand::Unsave(options) => {
+                client.unsave_post(options.media_id).await?;
+                println!("unsaved post `{}`", options.media_id);
+            }
+            SavedOptionsSubcommand::Get(options) => {
+                let saved_posts = client
+                    .get_saved_posts(options.num_posts, options.after.as_deref())
+                    .await
+                    .context("failed to get saved posts")?;
+
+                let edge_saved_media = &saved_posts.data.user.edge_saved_media;
+                let num_posts = edge_saved_media.count;
+
+                println!("total # of saved posts: {num_posts}");
+                println!("# of posts retrieved: {}", edge_saved_media.edges.len());
+                println!("end cursor: {}", edge_saved_media.page_info.end_cursor);
+                println!(
+                    "has next page: {}",
+                    edge_saved_media.page_info.has_next_page
+                );
+                println!();
+
+                for node in edge_saved_media.edges.iter().map(|edge| &edge.node) {
+                    println!("id: {}", node.id);
+                    println!("shortcode: {}", node.shortcode);
+                    println!("is video: {}", node.is_video);
+                    println!("owner id: {}", node.owner.id);
+                    if let Some(accessibility_caption) = node.accessibility_caption.as_deref() {
+                        println!("accessibility caption: {accessibility_caption}");
+                    }
+                    {
+                        let edges = &node.edge_media_to_caption.edges;
+                        ensure!(edges.len() <= 1);
+
+                        if let Some(caption) = edges.get(0).map(|edge| &edge.node.text) {
+                            println!("edge media to caption: {caption}");
+                        }
+                    }
+                    println!();
+                }
+            }
+        },
+        Subcommand::GetMediaInfo(options) => {
+            let media_info = client
+                .get_media_info(options.media_id)
+                .await
+                .context("failed to get media info")?;
+            let media_item = media_info.items.first().context("missing post item")?;
+            ensure!(media_info.items.len() == 1);
+
+            println!("username: {}", media_item.user.username);
+            println!("user id: {}", media_item.user.pk);
+            println!("user full name: {}", media_item.user.full_name);
         }
     }
 
     Ok(())
 }
 
-fn get_extension_from_url(url: &Url) -> Option<&str> {
-    Some(url.path_segments()?.rev().next()?.rsplit_once('.')?.1)
-}
-
-/// Try to download a url to a file. This will NOT delete the file if it fails.
-pub(crate) async fn download_to_file(
+async fn download_to_path(
     client: &reqwest::Client,
     url: &str,
-    file: &mut File,
-) -> anyhow::Result<()> {
-    // Start request
-    let mut response = client.get(url).send().await?.error_for_status()?;
-
-    // If there is a content-length, stash it and pre-allocate space in the file.
-    let maybe_content_length = response.content_length();
-    if let Some(content_length) = maybe_content_length {
-        file.set_len(content_length).await?;
+    path: &Path,
+) -> anyhow::Result<bool> {
+    match tokio::fs::metadata(path).await {
+        Ok(_metadata) => {
+            return Ok(false);
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            // Pass
+        }
+        Err(e) => {
+            return Err(e).context("failed to stat");
+        }
     }
 
-    // Perform the download, keeping track of the number of bytes written.
-    let mut actual_length = 0;
-    while let Some(chunk) = response.chunk().await? {
-        file.write_all(&chunk).await?;
-        actual_length += u64::try_from(chunk.len())?;
-    }
+    nd_util::download_to_path(client, url, path).await?;
 
-    // If a pre-allocation occured and if the actual length differs from the reported content length,
-    // return an error.
-    if let Some(content_length) = maybe_content_length {
-        ensure!(
-            actual_length == content_length,
-            "reported content length ({}) is different from the actual length ({})",
-            content_length,
-            actual_length
-        );
-    }
+    Ok(true)
+}
 
-    // flush and sync the file contents and metadata to the disk
-    file.flush().await?;
-    file.sync_all().await?;
-
-    Ok(())
+fn get_extension_from_url(url: &Url) -> Option<&str> {
+    Some(url.path_segments()?.rev().next()?.rsplit_once('.')?.1)
 }

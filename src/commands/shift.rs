@@ -1,9 +1,9 @@
 use crate::{
-    checks::ENABLED_CHECK,
-    client_data::{
+    bot_context::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
+    checks::ENABLED_CHECK,
     util::TimedCache,
     ClientDataKey,
 };
@@ -96,7 +96,7 @@ impl CacheStatsProvider for ShiftClient {
             self.cache
                 .get_if_fresh(&Game::Borderlands)
                 .map(|el| el.data().len())
-                .unwrap_or(0) as f32,
+                .unwrap_or(0),
         );
 
         cache_stats_builder.publish_stat(
@@ -105,7 +105,7 @@ impl CacheStatsProvider for ShiftClient {
             self.cache
                 .get_if_fresh(&Game::Borderlands2)
                 .map(|el| el.data().len())
-                .unwrap_or(0) as f32,
+                .unwrap_or(0),
         );
 
         cache_stats_builder.publish_stat(
@@ -114,7 +114,7 @@ impl CacheStatsProvider for ShiftClient {
             self.cache
                 .get_if_fresh(&Game::BorderlandsPreSequel)
                 .map(|el| el.data().len())
-                .unwrap_or(0) as f32,
+                .unwrap_or(0),
         );
 
         cache_stats_builder.publish_stat(
@@ -123,7 +123,7 @@ impl CacheStatsProvider for ShiftClient {
             self.cache
                 .get_if_fresh(&Game::Borderlands3)
                 .map(|el| el.data().len())
-                .unwrap_or(0) as f32,
+                .unwrap_or(0),
         );
     }
 }

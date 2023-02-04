@@ -1,3 +1,4 @@
+use crate::BotContext;
 use pikadick_slash_framework::{
     BoxFuture,
     Command,
@@ -11,14 +12,15 @@ use serenity::{
         CommandOptions,
         Reason,
     },
-    model::{
-        application::interaction::application_command::ApplicationCommandInteraction,
-        prelude::*,
-    },
+    model::prelude::*,
 };
 use tracing::{
     error,
     warn,
+};
+use twilight_model::application::interaction::{
+    application_command::CommandData,
+    Interaction,
 };
 
 #[check]
@@ -79,9 +81,10 @@ pub async fn admin_check(
 
 /// Ensure a user is admin
 pub fn create_slash_check<'a>(
-    _ctx: &'a Context,
-    interaction: &'a ApplicationCommandInteraction,
-    _command: &'a Command,
+    _client_data: &'a BotContext,
+    interaction: &'a Interaction,
+    _command_data: &'a CommandData,
+    _command: &'a Command<BotContext>,
 ) -> BoxFuture<'a, Result<(), SlashReason>> {
     Box::pin(async move {
         match interaction.guild_id {
@@ -101,7 +104,7 @@ pub fn create_slash_check<'a>(
             .and_then(|member| member.permissions)
         {
             Some(permissions) => {
-                if permissions.contains(Permissions::ADMINISTRATOR) {
+                if permissions.contains(twilight_model::guild::Permissions::ADMINISTRATOR) {
                     Ok(())
                 } else {
                     Err(SlashReason::new_user("Not Admin.".to_string()))

@@ -1,17 +1,21 @@
 #![allow(clippy::uninlined_format_args)]
 
+/// The client
 mod client;
-mod types;
+/// API Types
+pub mod types;
 
 pub use self::{
     client::Client,
     types::{
-        AdditionalDataLoaded,
         LoginResponse,
+        MediaInfo,
         MediaType,
         PostPage,
+        SavedPostsQueryResult,
     },
 };
+pub use crate::types::CollectionListing;
 pub use cookie_store::CookieStore;
 pub use reqwest_cookie_store::CookieStoreMutex;
 
@@ -32,13 +36,21 @@ pub enum Error {
     #[error("missing csrf token")]
     MissingCsrfToken,
 
-    /// Missing additionalDataLoaded
-    #[error("missing `additionalDataLoaded` field")]
-    MissingAdditionalDataLoaded,
+    /// Invalid Post Page
+    #[error("invalid post page")]
+    InvalidPostPage(#[from] crate::types::post_page::FromHtmlError),
+
+    /// Missing a cookie
+    #[error("missing cookie by name `{0}`")]
+    MissingCookie(&'static str),
 
     /// Json
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+
+    /// Tokio join error
+    #[error(transparent)]
+    TokioJoin(#[from] tokio::task::JoinError),
 }
 
 #[cfg(test)]
@@ -121,20 +133,93 @@ mod test {
     #[ignore]
     #[tokio::test]
     async fn get_post() {
+        let posts = [
+            "https://www.instagram.com/p/CIlZpXKFfNt/",
+            "https://www.instagram.com/p/Ch4J91UsYvZ/",
+            "https://www.instagram.com/p/ChzrLrjsAFK/",
+        ];
         let client = get_client().await;
 
-        let post_page = client
-            .get_post("https://www.instagram.com/p/CIlZpXKFfNt/")
+        for post in posts {
+            let post_page = client
+                .get_post_page(post)
+                .await
+                .expect("failed to get post page");
+
+            dbg!(&post_page);
+
+            let media_info = client
+                .get_media_info(post_page.media_id)
+                .await
+                .expect("failed to get media info");
+            let media_info_item = media_info.items.first().expect("missing item");
+
+            dbg!(&media_info);
+
+            match media_info_item.media_type {
+                MediaType::Photo => {
+                    let image_versions2 = media_info_item
+                        .image_versions2
+                        .as_ref()
+                        .expect("missing image version");
+                    let best = image_versions2
+                        .get_best()
+                        .expect("failed to get best image");
+                    dbg!(&best);
+                }
+                MediaType::Video => {
+                    let video_version = media_info_item
+                        .get_best_video_version()
+                        .expect("failed to get the best video version");
+                    dbg!(&video_version);
+                }
+                MediaType::Carousel => {
+                    let carousel_media = media_info_item
+                        .carousel_media
+                        .as_ref()
+                        .expect("missing carousel");
+
+                    for media in carousel_media {
+                        match media.media_type {
+                            MediaType::Photo => {
+                                let image_versions2 = media
+                                    .image_versions2
+                                    .as_ref()
+                                    .expect("missing image version");
+                                let best = image_versions2
+                                    .get_best()
+                                    .expect("failed to get best image");
+                                dbg!(&best);
+                            }
+                            MediaType::Video => {
+                                let video_version = media
+                                    .get_best_video_version()
+                                    .expect("failed to get the best video version");
+                                dbg!(&video_version);
+                            }
+                            MediaType::Carousel => todo!("nested carousel"),
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn collections_work() {
+        let client = get_client().await;
+
+        let collections = client
+            .list_collections()
             .await
-            .expect("failed to get post page");
+            .expect("failed to list collections");
+        dbg!(&collections);
 
-        let video_version = post_page
-            .items
-            .first()
-            .expect("missing post item")
-            .get_best_video_version()
-            .expect("failed to get the best video version");
-
-        dbg!(video_version);
+        let result = client
+            .get_saved_posts(12, None)
+            .await
+            .expect("failed to get saved posts");
+        dbg!(&result.data.user);
     }
 }

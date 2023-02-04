@@ -1,21 +1,29 @@
 use crate::{
-    client_data::{
+    bot_context::{
         CacheStatsBuilder,
         CacheStatsProvider,
     },
-    ClientDataKey,
+    BotContext,
 };
 use anyhow::Context as _;
 use crossbeam::queue::ArrayQueue;
 use indexmap::set::IndexSet;
 use parking_lot::RwLock;
-use pikadick_slash_framework::FromOptions;
+use pikadick_slash_framework::{
+    ClientData,
+    FromOptions,
+};
 use rand::Rng;
 use std::{
     str::FromStr,
     sync::Arc,
 };
 use tracing::error;
+use twilight_model::http::interaction::{
+    InteractionResponse,
+    InteractionResponseType,
+};
+use twilight_util::builder::InteractionResponseDataBuilder;
 use url::Url;
 
 /// Max images per single request
@@ -181,7 +189,7 @@ impl NekosClient {
                     .await
                     .context("failed to get new nekos data")
                 {
-                    error!("{:?}", e);
+                    error!("{e:?}");
                 }
             });
         }
@@ -204,17 +212,13 @@ impl CacheStatsProvider for NekosClient {
         let cache = self.get_cache(false);
         let nsfw_cache = self.get_cache(true);
 
-        cache_stats_builder.publish_stat("nekos", "primary_cache", cache.primary_len() as f32);
-        cache_stats_builder.publish_stat(
-            "nekos",
-            "primary_nsfw_cache",
-            nsfw_cache.primary_len() as f32,
-        );
-        cache_stats_builder.publish_stat("nekos", "secondary_cache", cache.secondary_len() as f32);
+        cache_stats_builder.publish_stat("nekos", "primary_cache", cache.primary_len());
+        cache_stats_builder.publish_stat("nekos", "primary_nsfw_cache", nsfw_cache.primary_len());
+        cache_stats_builder.publish_stat("nekos", "secondary_cache", cache.secondary_len());
         cache_stats_builder.publish_stat(
             "nekos",
             "secondary_nsfw_cache",
-            nsfw_cache.secondary_len() as f32,
+            nsfw_cache.secondary_len(),
         );
     }
 }
@@ -230,30 +234,20 @@ impl Default for NekosClient {
 
 /// Arguments for the nekos command
 #[derive(Debug, Copy, Clone, FromOptions)]
-pub struct NekosArguments {
+pub struct NekosOptions {
     /// Whether the command should look for nsfw pictures
+    #[pikadick_slash_framework(description = "Whether this should use nsfw results")]
     pub nsfw: Option<bool>,
 }
 
 /// Make a nekos slash command
-pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
-    pikadick_slash_framework::CommandBuilder::new()
+pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command<BotContext>> {
+    pikadick_slash_framework::CommandBuilder::<BotContext>::new()
         .name("nekos")
         .description("Get a random neko")
-        .argument(
-            pikadick_slash_framework::ArgumentParamBuilder::new()
-                .name("nsfw")
-                .kind(pikadick_slash_framework::ArgumentKind::Boolean)
-                .description("Whether this should use nsfw results")
-                .build()?,
-        )
-        .on_process(|ctx, interaction, args: NekosArguments| async move {
-            let data_lock = ctx.data.read().await;
-            let client_data = data_lock
-                .get::<ClientDataKey>()
-                .expect("failed to get client data");
-            let nekos_client = client_data.nekos_client.clone();
-            drop(data_lock);
+        .arguments(NekosOptions::get_argument_params()?.into_iter())
+        .on_process(|client_data, interaction, args: NekosOptions| async move {
+            let nekos_client = client_data.inner.nekos_client.clone();
 
             let content = match nekos_client
                 .get_rand(args.nsfw.unwrap_or(false))
@@ -262,15 +256,22 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
             {
                 Ok(url) => url.into(),
                 Err(e) => {
-                    error!("{:?}", e);
-                    format!("{:?}", e)
+                    error!("{e:?}");
+                    format!("{e:?}")
                 }
             };
+            let interaction_client = client_data.interaction_client();
+            let response_data = InteractionResponseDataBuilder::new()
+                .content(content)
+                .build();
+            let response = InteractionResponse {
+                kind: InteractionResponseType::ChannelMessageWithSource,
+                data: Some(response_data),
+            };
 
-            interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| res.content(content))
-                })
+            interaction_client
+                .create_response(interaction.id, &interaction.token, &response)
+                .exec()
                 .await?;
 
             Ok(())
