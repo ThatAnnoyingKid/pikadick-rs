@@ -1,7 +1,6 @@
 mod ascii_table;
 mod encoder_task;
 mod loading_reaction;
-mod request_map;
 mod timed_cache;
 pub mod twilight_loading_reaction;
 
@@ -9,7 +8,6 @@ pub use self::{
     ascii_table::AsciiTable,
     encoder_task::EncoderTask,
     loading_reaction::LoadingReaction,
-    request_map::RequestMap,
     timed_cache::{
         TimedCache,
         TimedCacheEntry,
@@ -25,6 +23,7 @@ pub use pikadick_util::{
     ArcAnyhowError,
     AsyncLockFile,
     DropRemoveFile,
+    RequestMap,
 };
 
 /// Check if a host is a reddit host

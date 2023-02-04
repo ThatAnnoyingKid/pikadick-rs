@@ -88,7 +88,7 @@ impl Client {
     }
 
     /// Create a builder to list posts from rule34.
-    pub fn list_posts<'a, 'b>(&'a self) -> PostListQueryBuilder<'a, 'b> {
+    pub fn list_posts<'a>(&self) -> PostListQueryBuilder<'_, 'a> {
         PostListQueryBuilder::new(self)
     }
 

@@ -22,16 +22,9 @@ pub struct Command {
     out_dir: PathBuf,
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let command: Command = argh::from_env();
-    let code = match real_main(command) {
-        Ok(()) => 0,
-        Err(e) => {
-            eprintln!("{:?}", e);
-            1
-        }
-    };
-    std::process::exit(code);
+    real_main(command)
 }
 
 fn real_main(command: Command) -> anyhow::Result<()> {

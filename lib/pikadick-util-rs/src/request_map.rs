@@ -12,19 +12,18 @@ use std::{
     future::Future,
     hash::Hash,
 };
-use tracing::error;
 
 /// A type to prevent two async requests from racing the same resource.
 #[derive(Debug)]
 pub struct RequestMap<K, V> {
-    map: parking_lot::Mutex<HashMap<K, Shared<BoxFuture<'static, V>>>>,
+    map: std::sync::Mutex<HashMap<K, Shared<BoxFuture<'static, V>>>>,
 }
 
 impl<K, V> RequestMap<K, V> {
-    /// Make a new [`RequestMap`]
+    /// Make a new [`RequestMap`].
     pub fn new() -> Self {
         Self {
-            map: parking_lot::Mutex::new(HashMap::new()),
+            map: std::sync::Mutex::new(HashMap::new()),
         }
     }
 }
@@ -34,7 +33,7 @@ where
     K: Eq + Hash + Clone + Debug,
     V: Clone,
 {
-    /// Lock the key if it is missing, or run a future to fetch the resource
+    /// Lock the key if it is missing, or run a future to fetch the resource.
     pub async fn get_or_fetch<FN, F>(&self, key: K, fetch_future_func: FN) -> V
     where
         FN: FnOnce() -> F,
@@ -42,7 +41,7 @@ where
     {
         let (_maybe_guard, shared_future) = {
             // Lock the map
-            let mut map = self.map.lock();
+            let mut map = self.map.lock().unwrap_or_else(|e| e.into_inner());
 
             // Get the entry
             match map.entry(key.clone()) {
@@ -90,7 +89,7 @@ impl<K, V> Default for RequestMap<K, V> {
     }
 }
 
-/// This will remove an entry from the request map when it gets dropped
+/// This will remove an entry from the request map when it gets dropped.
 struct RequestMapDropGuard<'a, K, V>
 where
     K: Eq + Hash + Debug,
@@ -105,12 +104,15 @@ where
 {
     fn drop(&mut self) {
         // Remove the key from the request map as we are done downloading it.
-        if self.map.map.lock().remove(&self.key).is_none() {
-            // Normally, a panic would be good,
-            // as somebody cleaned up something they didn't own.
-            // However, this is a destructor, and a panic here could easily abort.
-            // Instead, we will log an error in the console.
-            error!("key `{:?}` was unexpectedly cleaned up", self.key);
+        if self
+            .map
+            .map
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&self.key)
+            .is_none()
+        {
+            panic!("key `{:?}` was unexpectedly cleaned up", self.key);
         }
     }
 }

@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 /// Client type
 pub mod client;
 /// API Types
