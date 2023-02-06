@@ -56,7 +56,7 @@ thiserror = "1.0.38"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiktok = { path = "lib/tiktok-rs" }
 time = "0.3.17"
-tiny-skia = { version = "0.8.2", features = [ "std", "simd", "png-format" ], default-features = false }
+tiny-skia = { version = "0.8.3", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.25.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
 tokio-stream = "0.1.11"
