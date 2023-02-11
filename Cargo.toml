@@ -33,7 +33,7 @@ opentelemetry = { version = "0.18.0", features = [ "rt-tokio" ] }
 opentelemetry-otlp = { version = "0.11.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.12.1"
 pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
-pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "arc_anyhow_error", "async_lock_file", "drop_remove_file", "request_map" ] }
+pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "arc_anyhow_error", "async_lock_file", "request_map" ] }
 pikadick-system-info = { path = "./lib/pikadick-system-info-rs" }
 quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "rustls-tls" ] }
 r6stats = { path = "./lib/r6stats-rs", default-features = false, features = [ "rustls-tls" ] }
