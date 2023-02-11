@@ -93,6 +93,9 @@ skip = [
     
     # Blocked on ecosystem moving to base64 0.20 and above
     { name = "base64", version = "0.13.1" },
+    
+    # Blocked on ecosystem moving to windows 0.45.x
+    { name = "windows-sys", version = "0.42.0" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
