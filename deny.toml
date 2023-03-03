@@ -68,9 +68,6 @@ skip = [
     # Blocked on serenity-voice-model moving away from enum_primitive
     { name = "num-traits", version = "0.1.43" },
     
-    # Blocked on cssparser moving to version 1.
-    { name = "itoa", version = "0.4.8" },
-    
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.8.0" },
     
@@ -147,7 +144,6 @@ unknown-git = "deny"
 allow-registry = [ "https://github.com/rust-lang/crates.io-index" ]
 allow-git = [
     # "https://github.com/heim-rs/heim",
-    "https://github.com/servo/servo",
     "https://github.com/serenity-rs/serenity",
     "https://github.com/vectordotdev/heim",
     "https://github.com/FelixMcFelix/songbird",

@@ -86,10 +86,6 @@ use-openssl-vendored = [ "openssl" ]
 # heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }
 heim = { git = "https://github.com/vectordotdev/heim", branch = "update-nix" }
 
-# `servo_arc` has UB on crates.io. This still has UB, but less and I haven't seen any issues with it yet.
-# To fix this, I think https://doc.rust-lang.org/std/mem/fn.size_of_val_raw.html needs to stabilize.
-servo_arc = { git = "https://github.com/servo/servo", rev = "490c215798a92aca1468a1767e3cc294f824036c" }
-
 # Fix cross compilation, crates.io songbird does not support it
 # songbird = { git = "https://github.com/adumbidiot/songbird", branch = "audiopus-0.3.0" }
 # songbird requires serenity:next
