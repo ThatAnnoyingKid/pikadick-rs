@@ -20,6 +20,5 @@ pub use nd_util::{
 pub use pikadick_util::{
     ArcAnyhowError,
     AsyncLockFile,
-    DropRemoveFile,
     RequestMap,
 };

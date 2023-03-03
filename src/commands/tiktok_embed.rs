@@ -5,7 +5,6 @@ use crate::{
     },
     util::{
         ArcAnyhowError,
-        DropRemoveFile,
         DropRemovePath,
         EncoderTask,
         RequestMap,
@@ -220,19 +219,10 @@ impl TikTokData {
                             );
 
                             let result = async {
-                                let file_path_tmp =
-                                    crate::util::with_push_extension(&file_path, "tmp");
-                                let mut file = DropRemoveFile::create(&file_path_tmp)
+                                nd_util::download_to_path(&client, &url, &file_path).await?;
+                                tokio::fs::metadata(&file_path)
                                     .await
-                                    .context("failed to open file")?;
-                                crate::util::download_to_file(&client, &url, &mut file)
-                                    .await
-                                    .context("failed to download")?;
-                                tokio::fs::rename(&file_path_tmp, &file_path)
-                                    .await
-                                    .context("failed to rename file")?;
-                                file.persist();
-                                file.metadata().await.context("failed to get file metadata")
+                                    .context("failed to get file metadata")
                             }
                             .await;
 
