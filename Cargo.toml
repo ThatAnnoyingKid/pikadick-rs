@@ -29,6 +29,7 @@ lazy_static = "1.4.0"
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path", "drop-remove-path" ] }
 nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls-tls" ] }
 once_cell = "1.17.0"
+open-ai = { path = "./lib/open-ai-rs", features = [ "rustls-tls" ], default-features = false }
 opentelemetry = { version = "0.18.0", features = [ "rt-tokio" ] }
 opentelemetry-otlp = { version = "0.11.0", features = [ "tls", "tls-roots" ] }
 parking_lot = "0.12.1"

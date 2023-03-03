@@ -18,6 +18,9 @@ password = "[DEVIANT_PASSWORD]"
 [sauce_nao]
 api_key = "[SAUCE_NAO_API_KEY]"
 
+[open-ai]
+open-ai = "[OPEN_AI_API_KEY]"
+
 # This section is optional
 [log]
 # Logging directives. These are the suggested defaults.

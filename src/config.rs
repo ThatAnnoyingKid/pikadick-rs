@@ -51,6 +51,10 @@ pub struct Config {
     /// SauceNao config
     pub sauce_nao: SauceNaoConfig,
 
+    /// Open AI config
+    #[serde(rename = "open-ai")]
+    pub open_ai: OpenAiConfig,
+
     /// The log config
     #[serde(default)]
     pub log: LogConfig,
@@ -81,6 +85,18 @@ pub struct DeviantArtConfig {
 #[derive(Deserialize, Debug)]
 pub struct SauceNaoConfig {
     /// The api key
+    pub api_key: String,
+
+    /// Unknown extra data
+    #[serde(flatten)]
+    pub extra: HashMap<String, toml::Value>,
+}
+
+/// Open AI Config
+#[derive(Deserialize, Debug)]
+pub struct OpenAiConfig {
+    /// The api key
+    #[serde(rename = "api-key")]
     pub api_key: String,
 
     /// Unknown extra data

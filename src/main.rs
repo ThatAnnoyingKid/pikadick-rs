@@ -322,18 +322,18 @@ impl EventHandler for Handler {
                     Some(url::Host::Domain("www.reddit.com" | "reddit.com")) => {
                         // Don't process if it isn't enabled
                         if reddit_embed_is_enabled_for_guild {
-                            if let Err(e) = reddit_embed_data
+                            if let Err(error) = reddit_embed_data
                                 .try_embed_url(&ctx, &msg, url, &mut loading_reaction)
                                 .await
                                 .context("failed to generate reddit embed")
                             {
-                                error!("{:?}", e);
+                                error!("{error:?}");
                             }
                         }
                     }
                     Some(url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")) => {
                         if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
-                            if let Err(e) = tiktok_data
+                            if let Err(error) = tiktok_data
                                 .try_embed_url(
                                     &ctx,
                                     &msg,
@@ -344,7 +344,7 @@ impl EventHandler for Handler {
                                 .await
                                 .context("failed to generate tiktok embed")
                             {
-                                error!("{:?}", e);
+                                error!("{error:?}");
                             }
                         }
                     }
@@ -399,8 +399,8 @@ async fn help(
         .context("failed to send help")
     {
         Ok(_) => {}
-        Err(e) => {
-            error!("{:?}", e);
+        Err(error) => {
+            error!("{error:?}");
         }
     }
     Ok(())
@@ -573,6 +573,7 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
         .command(self::commands::r6tracker::create_slash_command()?)
         .command(self::commands::rule34::create_slash_command()?)
         .command(self::commands::tiktok_embed::create_slash_command()?)
+        .command(self::commands::chat::create_slash_command()?)
         .build()?;
 
     // Create second prefix that is uppercase so we are case-insensitive
