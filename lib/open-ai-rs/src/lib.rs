@@ -104,13 +104,15 @@ impl Client {
 #[cfg(test)]
 mod test {
     use super::*;
+    use once_cell::sync::Lazy;
 
-    const KEY: &str = include_str!("../key.txt");
+    const KEY: Lazy<String> =
+        Lazy::new(|| std::fs::read_to_string("key.txt").expect("failed to read api key"));
 
     #[ignore]
     #[tokio::test]
     async fn it_works() {
-        let client = Client::new(KEY);
+        let client = Client::new(&KEY);
         let response = client
             .chat_completion(
                 "gpt-3.5-turbo",
