@@ -106,7 +106,7 @@ mod test {
     use super::*;
     use once_cell::sync::Lazy;
 
-    const KEY: Lazy<String> =
+    static KEY: Lazy<String> =
         Lazy::new(|| std::fs::read_to_string("key.txt").expect("failed to read api key"));
 
     #[ignore]
