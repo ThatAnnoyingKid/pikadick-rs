@@ -48,6 +48,7 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                         role: "user".into(),
                         content: args.message.into(),
                     }],
+                    Some(500),
                 )
                 .await
                 .context("failed to get search results")

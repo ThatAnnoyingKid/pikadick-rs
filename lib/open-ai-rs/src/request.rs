@@ -20,4 +20,7 @@ pub struct ChatCompletionRequest {
 
     /// The messages in the conversation
     pub messages: Vec<ChatMessage>,
+
+    /// The max number of tokens to return
+    pub max_tokens: Option<u16>,
 }

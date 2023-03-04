@@ -81,6 +81,7 @@ impl Client {
         &self,
         model: &str,
         messages: &[ChatMessage],
+        max_tokens: Option<u16>,
     ) -> Result<ChatCompletionResponse, Error> {
         Ok(self
             .client
@@ -92,6 +93,7 @@ impl Client {
             .json(&ChatCompletionRequest {
                 model: model.into(),
                 messages: messages.into(),
+                max_tokens,
             })
             .send()
             .await?
@@ -120,6 +122,7 @@ mod test {
                     role: "user".into(),
                     content: "Hello! How are you today?".into(),
                 }],
+                None,
             )
             .await
             .expect("failed to get response");
