@@ -144,10 +144,7 @@ unknown-git = "deny"
 allow-registry = [ "https://github.com/rust-lang/crates.io-index" ]
 allow-git = [
     # "https://github.com/heim-rs/heim",
-    "https://github.com/serenity-rs/serenity",
     "https://github.com/vectordotdev/heim",
-    "https://github.com/FelixMcFelix/songbird",
-    "https://github.com/FelixMcFelix/Symphonia",
     "https://github.com/open-telemetry/opentelemetry-rust",
     "https://github.com/MSxDOS/ntapi",
     # "https://github.com/servo/rust-cssparser",

@@ -41,6 +41,8 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 args.message
             );
 
+            interaction.defer(&ctx.http).await?;
+
             let result = client
                 .chat_completion(
                     "gpt-3.5-turbo",
@@ -58,14 +60,14 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 });
 
             interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| match result {
+                .edit_original_interaction_response(&ctx.http, |res| {
+                   match result {
                         Ok(result) => res.content(result.message.content),
                         Err(error) => {
                             error!("{error:?}");
                             res.content(format!("{error:?}"))
                         }
-                    })
+                    }
                 })
                 .await?;
 

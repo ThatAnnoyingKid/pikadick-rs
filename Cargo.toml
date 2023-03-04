@@ -51,7 +51,7 @@ sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-featur
 serde = { version = "1.0.152", features = [ "derive" ] }
 serenity = { version = "0.11.2", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
-songbird = "0.2.2"
+songbird = "0.3.1"
 systemstat = "0.2.2"
 thiserror = "1.0.38"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
@@ -87,12 +87,6 @@ use-openssl-vendored = [ "openssl" ]
 # heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }
 heim = { git = "https://github.com/vectordotdev/heim", branch = "update-nix" }
 
-# Fix cross compilation, crates.io songbird does not support it
-# songbird = { git = "https://github.com/adumbidiot/songbird", branch = "audiopus-0.3.0" }
-# songbird requires serenity:next
-serenity = { git = "https://github.com/adumbidiot/serenity", branch = "next" }
-songbird = { git = "https://github.com/FelixMcFelix/songbird", branch = "symphonia" }
-
 # Fix doc gen on stable
 opentelemetry-proto = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
 opentelemetry-otlp = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
@@ -102,11 +96,6 @@ opentelemetry = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
 
 # Fix ntapi 0.3.0 not compiling on newer Rust versions
 ntapi3 = { version = "0.3.0", git = "https://github.com/MSxDOS/ntapi", rev = "2148881c30e8da6a3ff585efd1c7d8ad125ccd2c", package = "ntapi" }
-
-# cssparser27 = { git = "https://github.com/servo/rust-cssparser", rev  = "5ce9919680325c35220f4c8762335bc73a15314c", package = "cssparser" } 
-
-[patch.'https://github.com/serenity-rs/serenity']
-serenity = { git = "https://github.com/adumbidiot/serenity", branch = "next" }
 
 # To make image drawing times sane
 [profile.dev.package.tiny-skia]
