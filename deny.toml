@@ -108,9 +108,6 @@ deny = [
     # https://crates.io/crates/markup5ever_rcdom/0.1.0
     { name = "markup5ever_rcdom", version = "0.1.0" },
     
-    # https://github.com/RustSec/advisory-db/issues/867
-    { name = "rusttype", version = "*" },
-    
     # https://github.com/RustSec/advisory-db/issues/826
     { name = "totally-safe-transmute", version = "*" },
     
@@ -125,10 +122,6 @@ deny = [
     
     # https://github.com/rustsec/advisory-db/issues/1175
     { name = "futures-intrusive", version = "*" },
-    
-    # Probably abandoned. Commented as it is used by `tracing-subscriber`.
-    # https://github.com/rustsec/advisory-db/issues/1095
-    # { name = "ansi_term", version = "*" },
     
     # https://github.com/rustsec/advisory-db/issues/1173
     { name = "prettytables-rs", version = "*" },
