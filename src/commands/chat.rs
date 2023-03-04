@@ -60,13 +60,11 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 });
 
             interaction
-                .edit_original_interaction_response(&ctx.http, |res| {
-                   match result {
-                        Ok(result) => res.content(result.message.content),
-                        Err(error) => {
-                            error!("{error:?}");
-                            res.content(format!("{error:?}"))
-                        }
+                .edit_original_interaction_response(&ctx.http, |res| match result {
+                    Ok(result) => res.content(result.message.content),
+                    Err(error) => {
+                        error!("{error:?}");
+                        res.content(format!("{error:?}"))
                     }
                 })
                 .await?;
