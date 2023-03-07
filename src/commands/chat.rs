@@ -105,6 +105,7 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                                     .await?;
                             }
                             Err(error) => {
+                                error!("{error:?}");
                                 interaction
                                     .edit_original_interaction_response(&ctx.http, |res| {
                                         res.content(format!("{error:?}"))
