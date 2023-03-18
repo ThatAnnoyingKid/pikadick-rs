@@ -116,12 +116,12 @@ impl Stats {
 
         e.field(
             "Lifetime K/D",
-            ryu::Buffer::new().format(self.overwolf_player.lifetime_stats.kd),
+            format!("{:.2}", self.overwolf_player.lifetime_stats.kd),
             true,
         )
         .field(
             "Lifetime Win %",
-            ryu::Buffer::new().format(self.overwolf_player.lifetime_stats.win_pct),
+            format!("{:.2}", self.overwolf_player.lifetime_stats.win_pct),
             true,
         );
 

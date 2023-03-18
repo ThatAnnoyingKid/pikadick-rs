@@ -33,7 +33,7 @@ impl FromSql for DatabaseUserId {
             .map(NonZeroU64::new)?
             .ok_or(FromSqlError::OutOfRange(0))?;
 
-        Ok(Self(UserId(value)))
+        Ok(Self(UserId(value.into())))
     }
 }
 
@@ -179,7 +179,7 @@ impl FromStr for TicTacToePlayer {
         if input.eq_ignore_ascii_case("computer") {
             Ok(Self::Computer)
         } else if let Some(user_id) = parse_username(input) {
-            Ok(Self::User(user_id))
+            Ok(Self::User(UserId(user_id)))
         } else {
             Ok(Self::User(UserId(
                 input.parse().map_err(TicTacToePlayerParseError)?,
@@ -210,7 +210,11 @@ impl FromSql for TicTacToePlayer {
                 let int_u64 = u64::from_ne_bytes(int.to_ne_bytes());
                 // This is not heavy
                 #[allow(clippy::or_fun_call)]
-                let user_id = UserId(NonZeroU64::new(int_u64).ok_or(FromSqlError::OutOfRange(0))?);
+                let user_id = UserId(
+                    NonZeroU64::new(int_u64)
+                        .ok_or(FromSqlError::OutOfRange(0))?
+                        .into(),
+                );
                 Ok(Self::User(user_id))
             }
             ValueRef::Null => Ok(Self::Computer),
@@ -247,7 +251,7 @@ impl FromSql for MaybeGuildString {
         let text = value.as_str()?;
         match text.parse::<NonZeroU64>() {
             Ok(guild_id) => Ok(MaybeGuildString {
-                guild_id: Some(GuildId(guild_id)),
+                guild_id: Some(GuildId(guild_id.into())),
             }),
             Err(e) => {
                 if text == "empty" {
