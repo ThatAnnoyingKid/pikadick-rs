@@ -14,7 +14,10 @@ notice = "deny"
 ignore = [
     # Blocked on criterion moving away from atty.
     # Not a big issue, as this is used only for benchmarking.
-    "RUSTSEC-2021-0145"
+    "RUSTSEC-2021-0145",
+    
+    # Blocked on removing heim
+    "RUSTSEC-2020-0168",
 ]
 
 [licenses]
@@ -93,6 +96,9 @@ skip = [
     
     # Blocked on ecosystem moving to windows 0.45.x
     { name = "windows-sys", version = "0.42.0" },
+    
+    # Blocked on ecosystem moving to syn 2
+    { name = "syn", version = "1.0.109" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
