@@ -88,11 +88,11 @@ use-openssl-vendored = [ "openssl" ]
 heim = { git = "https://github.com/vectordotdev/heim", branch = "update-nix" }
 
 # Fix doc gen on stable
-opentelemetry-proto = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
-opentelemetry-otlp = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
-opentelemetry_sdk = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
-opentelemetry_api = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
-opentelemetry = { git = "https://github.com/open-telemetry/opentelemetry-rust" }
+opentelemetry-proto = { git = "https://github.com/open-telemetry/opentelemetry-rust", rev = "592e77a8f323fe5c490de9eab458b7e40e9c437b" }
+opentelemetry-otlp = { git = "https://github.com/open-telemetry/opentelemetry-rust", rev = "592e77a8f323fe5c490de9eab458b7e40e9c437b" }
+opentelemetry_sdk = { git = "https://github.com/open-telemetry/opentelemetry-rust", rev = "592e77a8f323fe5c490de9eab458b7e40e9c437b" }
+opentelemetry_api = { git = "https://github.com/open-telemetry/opentelemetry-rust", rev = "592e77a8f323fe5c490de9eab458b7e40e9c437b" }
+opentelemetry = { git = "https://github.com/open-telemetry/opentelemetry-rust", rev = "592e77a8f323fe5c490de9eab458b7e40e9c437b" }
 
 # Fix ntapi 0.3.0 not compiling on newer Rust versions
 ntapi3 = { version = "0.3.0", git = "https://github.com/MSxDOS/ntapi", rev = "2148881c30e8da6a3ff585efd1c7d8ad125ccd2c", package = "ntapi" }
