@@ -148,6 +148,7 @@ allow-registry = [ "https://github.com/rust-lang/crates.io-index" ]
 allow-git = [
     "https://github.com/vectordotdev/heim",
     "https://github.com/MSxDOS/ntapi",
+    "https://github.com/open-telemetry/opentelemetry-rust",
 ]
 
 [sources.allow-org]
