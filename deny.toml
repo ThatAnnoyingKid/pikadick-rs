@@ -99,6 +99,10 @@ skip = [
     
     # Blocked on ecosystem moving to syn 2
     { name = "syn", version = "1.0.109" },
+    
+    # Blocked on tempfile and fdlock updating rustix
+    { name = "rustix", version = "0.36.11" },
+    { name = "linux-raw-sys", version = "0.1.4" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -142,11 +146,8 @@ unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = [ "https://github.com/rust-lang/crates.io-index" ]
 allow-git = [
-    # "https://github.com/heim-rs/heim",
     "https://github.com/vectordotdev/heim",
-    "https://github.com/open-telemetry/opentelemetry-rust",
     "https://github.com/MSxDOS/ntapi",
-    # "https://github.com/servo/rust-cssparser",
 ]
 
 [sources.allow-org]
