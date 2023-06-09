@@ -6,7 +6,11 @@ mod search_query_builder;
 mod types;
 
 pub use crate::{
-    client::Client,
+    client::{
+        Client,
+        PostListQueryBuilder,
+        TagListQueryBuilder,
+    },
     error::Error,
     search_query_builder::SearchQueryBuilder,
     types::{
