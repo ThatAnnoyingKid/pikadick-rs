@@ -1,8 +1,9 @@
-mod query_builder;
+mod post_list_query_builder;
+mod tag_list_query_builder;
 
-pub use self::query_builder::{
-    PostListQueryBuilder,
-    TagListQueryBuilder,
+pub use self::{
+    post_list_query_builder::PostListQueryBuilder,
+    tag_list_query_builder::TagListQueryBuilder,
 };
 use crate::{
     DeletedImageList,
