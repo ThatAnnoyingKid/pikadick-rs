@@ -215,6 +215,7 @@ mod test {
         let result = client
             .list_tags()
             .limit(Some(crate::TAGS_LIST_LIMIT_MAX))
+            .order(Some("name"))
             .execute()
             .await
             .expect("failed to list tags");

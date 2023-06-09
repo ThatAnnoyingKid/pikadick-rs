@@ -137,7 +137,7 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
 
 /// A query builder to get tags
 #[derive(Debug)]
-pub struct TagListQueryBuilder<'a, 'b, 'c> {
+pub struct TagListQueryBuilder<'a, 'b, 'c, 'd> {
     /// The id
     pub id: Option<u64>,
 
@@ -167,11 +167,17 @@ pub struct TagListQueryBuilder<'a, 'b, 'c> {
     /// This option is undocumented.
     pub name_pattern: Option<&'c str>,
 
+    /// The field to order results by.
+    ///
+    /// name: Order by tag name
+    /// count: Order by tag count
+    pub order: Option<&'d str>,
+
     /// The client
     client: &'a Client,
 }
 
-impl<'a, 'b, 'c> TagListQueryBuilder<'a, 'b, 'c> {
+impl<'a, 'b, 'c, 'd> TagListQueryBuilder<'a, 'b, 'c, 'd> {
     /// Make a new [`TagsListQueryBuilder`]
     pub fn new(client: &'a Client) -> Self {
         Self {
@@ -180,6 +186,7 @@ impl<'a, 'b, 'c> TagListQueryBuilder<'a, 'b, 'c> {
             pid: None,
             name: None,
             name_pattern: None,
+            order: None,
 
             client,
         }
@@ -229,6 +236,16 @@ impl<'a, 'b, 'c> TagListQueryBuilder<'a, 'b, 'c> {
         self
     }
 
+    /// The field to order results by.
+    ///
+    /// name: Order by tag name
+    /// count: Order by tag count
+    /// This option is undocumented.
+    pub fn order(&'a mut self, order: Option<&'d str>) -> &'a mut Self {
+        self.order = order;
+        self
+    }
+
     /// Get the url for this query.
     pub fn get_url(&self) -> Result<Url, Error> {
         let mut url = Url::parse_with_params(
@@ -260,6 +277,10 @@ impl<'a, 'b, 'c> TagListQueryBuilder<'a, 'b, 'c> {
 
             if let Some(name_pattern) = self.name_pattern {
                 query_pairs.append_pair("name_pattern", name_pattern);
+            }
+            
+            if let Some(order) = self.order {
+                query_pairs.append_pair("order", order);
             }
         }
 
