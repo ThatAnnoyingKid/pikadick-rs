@@ -376,9 +376,7 @@ impl OsVersionInfoEx {
 
     /// Get product suites on the system
     pub fn suite_mask(&self) -> ProductSuite {
-        ProductSuite {
-            bits: self.0.wSuiteMask,
-        }
+        ProductSuite::from_bits_retain(self.0.wSuiteMask)
     }
 
     /// Get additional info about the system.
@@ -468,6 +466,7 @@ enum ProductType {
 }
 
 bitflags! {
+    #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
     struct ProductSuite: u16 {
         const WH_SERVER = VER_SUITE_WH_SERVER as u16;
     }
