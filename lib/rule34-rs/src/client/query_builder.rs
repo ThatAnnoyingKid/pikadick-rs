@@ -9,9 +9,9 @@ use url::Url;
 
 /// A builder for list api queries
 #[derive(Debug)]
-pub struct PostListQueryBuilder<'a, 'b> {
+pub struct PostListQueryBuilder<'a> {
     /// The tags.
-    pub tags: Option<&'b str>,
+    pub tags: Option<&'a str>,
 
     /// The page #
     ///
@@ -28,7 +28,7 @@ pub struct PostListQueryBuilder<'a, 'b> {
     client: &'a Client,
 }
 
-impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
+impl<'a> PostListQueryBuilder<'a> {
     /// Make a new [`PostListQueryBuilder`].
     pub fn new(client: &'a Client) -> Self {
         Self {
@@ -46,7 +46,7 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
     /// Querys are based on "tags".
     /// Tags are seperated by spaces, while words are seperated by underscores.
     /// Characters are automatically url-encoded.
-    pub fn tags(&mut self, tags: Option<&'b str>) -> &mut Self {
+    pub fn tags(&mut self, tags: Option<&'a str>) -> &mut Self {
         self.tags = tags;
         self
     }
@@ -137,7 +137,7 @@ impl<'a, 'b> PostListQueryBuilder<'a, 'b> {
 
 /// A query builder to get tags
 #[derive(Debug)]
-pub struct TagListQueryBuilder<'a, 'b, 'c, 'd> {
+pub struct TagListQueryBuilder<'a> {
     /// The id
     pub id: Option<u64>,
 
@@ -158,26 +158,26 @@ pub struct TagListQueryBuilder<'a, 'b, 'c, 'd> {
     ///
     /// This is a single tag name.
     /// This option is undocumented
-    pub name: Option<&'b str>,
+    pub name: Option<&'a str>,
 
     /// The name pattern to look up using a SQL LIKE clause.
     ///
     /// % = multi char wildcard
     /// _ = single char wildcard
     /// This option is undocumented.
-    pub name_pattern: Option<&'c str>,
+    pub name_pattern: Option<&'a str>,
 
     /// The field to order results by.
     ///
     /// name: Order by tag name
     /// count: Order by tag count
-    pub order: Option<&'d str>,
+    pub order: Option<&'a str>,
 
     /// The client
     client: &'a Client,
 }
 
-impl<'a, 'b, 'c, 'd> TagListQueryBuilder<'a, 'b, 'c, 'd> {
+impl<'a> TagListQueryBuilder<'a> {
     /// Make a new [`TagsListQueryBuilder`]
     pub fn new(client: &'a Client) -> Self {
         Self {
@@ -221,7 +221,7 @@ impl<'a, 'b, 'c, 'd> TagListQueryBuilder<'a, 'b, 'c, 'd> {
     ///
     /// This is a single tag name.
     /// This option is undocumented
-    pub fn name(&'a mut self, name: Option<&'b str>) -> &'a mut Self {
+    pub fn name(&'a mut self, name: Option<&'a str>) -> &'a mut Self {
         self.name = name;
         self
     }
@@ -231,7 +231,7 @@ impl<'a, 'b, 'c, 'd> TagListQueryBuilder<'a, 'b, 'c, 'd> {
     /// % = multi char wildcard
     /// _ = single char wildcard
     /// This option is undocumented.
-    pub fn name_pattern(&'a mut self, name_pattern: Option<&'c str>) -> &'a mut Self {
+    pub fn name_pattern(&'a mut self, name_pattern: Option<&'a str>) -> &'a mut Self {
         self.name_pattern = name_pattern;
         self
     }
@@ -241,7 +241,7 @@ impl<'a, 'b, 'c, 'd> TagListQueryBuilder<'a, 'b, 'c, 'd> {
     /// name: Order by tag name
     /// count: Order by tag count
     /// This option is undocumented.
-    pub fn order(&'a mut self, order: Option<&'d str>) -> &'a mut Self {
+    pub fn order(&'a mut self, order: Option<&'a str>) -> &'a mut Self {
         self.order = order;
         self
     }
@@ -278,7 +278,7 @@ impl<'a, 'b, 'c, 'd> TagListQueryBuilder<'a, 'b, 'c, 'd> {
             if let Some(name_pattern) = self.name_pattern {
                 query_pairs.append_pair("name_pattern", name_pattern);
             }
-            
+
             if let Some(order) = self.order {
                 query_pairs.append_pair("order", order);
             }
