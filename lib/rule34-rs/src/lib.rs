@@ -1,12 +1,14 @@
-#![allow(clippy::uninlined_format_args)]
-
 mod client;
 mod error;
 mod search_query_builder;
 mod types;
 
 pub use crate::{
-    client::Client,
+    client::{
+        Client,
+        PostListQueryBuilder,
+        TagListQueryBuilder,
+    },
     error::Error,
     search_query_builder::SearchQueryBuilder,
     types::{
@@ -25,7 +27,10 @@ pub use url::Url;
 
 /// The maximum number of responses per post list request
 pub const POST_LIST_LIMIT_MAX: u16 = 1_000;
-/// The maximum number of responses per tags list request
+/// The maximum number of responses per tags list request.
+///
+/// This is undocumented.
+/// The documented limit is 100.
 pub const TAGS_LIST_LIMIT_MAX: u16 = 1_000;
 
 // URL constants

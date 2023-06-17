@@ -29,6 +29,6 @@ pub enum Error {
     XmlDeserialize(#[from] quick_xml::DeError),
 
     /// The limit was too large
-    #[error("the limit `{0}` is too large")]
+    #[error("the limit {0} is too large")]
     LimitTooLarge(u16),
 }

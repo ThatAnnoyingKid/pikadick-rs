@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 bitflags! {
     /// Encoder capabilities
+    #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
     pub struct Capabilities: u16 {
         const VIDEO = 1 << 1;
         const AUDIO = 1 << 2;

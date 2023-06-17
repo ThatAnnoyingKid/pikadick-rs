@@ -5,9 +5,9 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-rusqlite = "0.28.0"
-thiserror = "1.0.38"
-tokio = { version = "1.25.0", features = [ "rt", "sync" ] }
+rusqlite = "0.29.0"
+thiserror = "1.0.40"
+tokio = { version = "1.28.2", features = [ "rt", "sync" ] }
 
 [features]
 bundled = [ "rusqlite/bundled" ]

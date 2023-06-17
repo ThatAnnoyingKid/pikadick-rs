@@ -4,13 +4,13 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.68"
+anyhow = "1.0.71"
 argh = "0.1.10"
-cargo_metadata = "0.15.3"
-serde = { version = "1.0.152", features = [ "derive" ] }
-serde_json = "1.0.91"
+cargo_metadata = "0.15.4"
+serde = { version = "1.0.164", features = [ "derive" ] }
+serde_json = "1.0.96"
 ssh2 = { version = "0.9.4", features = [ "vendored-openssl", "openssl-on-win32" ] }
-toml = "0.5.10"
+toml = "0.7.4"
 rand = "0.8.5"
-indicatif = "0.17.3"
-camino = "1.1.2"
+indicatif = "0.17.5"
+camino = "1.1.4"

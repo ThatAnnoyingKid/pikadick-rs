@@ -43,38 +43,38 @@ pub struct TagKind(pub u64);
 
 impl TagKind {
     // When adding more variants, make sure to update the Debug impl and and functions to test for it
-    const GENERAL: Self = TagKind(0);
-    const AUTHOR: Self = TagKind(1);
-    const COPYRIGHT: Self = TagKind(3);
-    const CHARACTER: Self = TagKind(4);
-    const METADATA: Self = TagKind(5);
+    pub const GENERAL: Self = TagKind(0);
+    pub const AUTHOR: Self = TagKind(1);
+    pub const COPYRIGHT: Self = TagKind(3);
+    pub const CHARACTER: Self = TagKind(4);
+    pub const METADATA: Self = TagKind(5);
 
-    /// Returns true if this tag kind is general
+    /// Returns true if this tag kind is general.
     pub fn is_general(self) -> bool {
         self == Self::GENERAL
     }
 
-    /// Returns true if this tag kind is an author
+    /// Returns true if this tag kind is an author.
     pub fn is_author(self) -> bool {
         self == Self::AUTHOR
     }
 
-    /// Retruns true if this tag is a copyright
+    /// Retruns true if this tag is a copyright.
     pub fn is_copyright(self) -> bool {
         self == Self::COPYRIGHT
     }
 
-    /// Returns true if this tag kind is a character
+    /// Returns true if this tag kind is a character.
     pub fn is_character(self) -> bool {
         self == Self::CHARACTER
     }
 
-    /// Returns true if this tag kind is a metadata
+    /// Returns true if this tag kind is a metadata.
     pub fn is_metadata(self) -> bool {
         self == Self::METADATA
     }
 
-    /// Returns true if the tag kind is unknown
+    /// Returns true if the tag kind is unknown.
     pub fn is_unknown(self) -> bool {
         !self.is_general()
             && !self.is_author()
@@ -94,6 +94,8 @@ impl std::fmt::Debug for TagKind {
             "Copyright".fmt(f)
         } else if self.is_character() {
             "Character".fmt(f)
+        } else if self.is_metadata() {
+            "Metadata".fmt(f)
         } else {
             write!(f, "Unknown({})", self.0)
         }

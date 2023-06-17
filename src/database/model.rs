@@ -330,6 +330,7 @@ impl TicTacToeTopPlayerScore {
 
 bitflags! {
     /// Flags for TikTok embeds
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
     pub struct TikTokEmbedFlags: u32 {
         /// Whether embeds are enabled
         const ENABLED = 1 << 0;

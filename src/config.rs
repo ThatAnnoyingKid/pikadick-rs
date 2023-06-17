@@ -179,14 +179,14 @@ impl Config {
         P: AsRef<Utf8Path>,
     {
         let path = path.as_ref();
-        std::fs::read(path)
+        std::fs::read_to_string(path)
             .with_context(|| format!("failed to read config from '{}'", path))
-            .and_then(|b| Self::load_from_bytes(&b))
+            .and_then(|b| Self::load_from_str(&b))
     }
 
-    /// Load a config from bytes
-    pub fn load_from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
-        toml::from_slice(bytes).context("failed to parse config")
+    /// Load a config from a str
+    pub fn load_from_str(s: &str) -> anyhow::Result<Self> {
+        toml::from_str(s).context("failed to parse config")
     }
 
     /// Validate a config
