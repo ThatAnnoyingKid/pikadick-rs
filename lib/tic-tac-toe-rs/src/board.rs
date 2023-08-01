@@ -296,7 +296,7 @@ impl Board {
                 0 => None,
                 1 => Some(Team::X),
                 2 => Some(Team::O),
-                unknown_tile => unreachable!("unknown tile '{}'", unknown_tile),
+                unknown_tile => unreachable!("unknown tile \"{unknown_tile}\"",),
             };
             ret = ret.set(i, tile);
 
@@ -335,6 +335,10 @@ impl Iterator for ChildrenIter {
     type Item = (u8, Board);
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.board.get_winner().is_some() {
+            return None;
+        }
+
         loop {
             if self.index >= NUM_TILES {
                 return None;

@@ -12,29 +12,31 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-
+        
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
-        toolchain: stable
-        target: armv7-unknown-linux-gnueabihf
-        profile: minimal
-        override: true
-        components: rustfmt, rust-src
+        targets: armv7-unknown-linux-gnueabihf, aarch64-unknown-linux-gnu
         
     - name: Update Package Lists
       run: sudo apt-get update
 
     - name: Install GCC Cross Compilation Toolchain
-      run: sudo apt-get install gcc-arm-linux-gnueabihf
+      run: sudo apt-get install gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
       
     - name: Install Python Deps
       run: |
           python -m pip install --upgrade pip
           pip install tomli
+          
+    - name: Install `cargo-deb`
+      run: cargo install cargo-deb
+      
+    - name: Install `across`
+      run: cargo install --path ./lib/across-rs
 
     - name: Build
-      run: python3 ./scripts/cross.py
+      run: make pkg-ci
       
     - name: Upload Binary
       uses: actions/upload-artifact@v2

@@ -18,9 +18,9 @@ impl CargoTomlConfig {
             .metadata
             .get(CARGO_TOML_CONFIG_METADATA_KEY)
             .with_context(|| {
+                let package_name = package.name.as_str();
                 format!(
-                    "missing `{}` key in metadata for `{}`",
-                    CARGO_TOML_CONFIG_METADATA_KEY, package.name
+                    "missing `{CARGO_TOML_CONFIG_METADATA_KEY}` key in metadata for `{package_name}`"
                 )
             })?;
 
@@ -38,15 +38,29 @@ pub struct FileConfig {
 }
 
 impl FileConfig {
-    /// Load a file config
+    /// Load a file config.
     pub fn new() -> anyhow::Result<Self> {
-        let config_str = std::fs::read_to_string(FILE_CONFIG_FILE_NAME).with_context(|| {
-            format!("failed to read file config at `{}`", FILE_CONFIG_FILE_NAME)
-        })?;
+        let config_str = match std::fs::read_to_string(FILE_CONFIG_FILE_NAME) {
+            Ok(config_str) => config_str,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Self::empty()),
+            Err(e) => {
+                return Err(e).with_context(|| {
+                    format!("failed to read file config at `{}`", FILE_CONFIG_FILE_NAME)
+                })?;
+            }
+        };
+
         toml::from_str(&config_str).context("failed to parse file config")
     }
 
-    /// Get the machine config for a key
+    /// Make an empty config.
+    fn empty() -> Self {
+        Self {
+            machines: HashMap::new(),
+        }
+    }
+
+    /// Get the machine config for a key.
     pub fn get_machine_config(&self, name: &str) -> Option<&MachineConfig> {
         self.machines.get(name)
     }

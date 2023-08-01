@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 pub mod board;
 pub mod team;
 
@@ -62,6 +64,7 @@ pub fn minimax(board: Board, depth: u8) -> (i8, u8) {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn minimax_all() {
@@ -94,5 +97,23 @@ mod test {
         let (score, index) = minimax(board, 9);
         assert_eq!(score, 1, "expected O win");
         assert_eq!(index, 7);
+    }
+
+    #[test]
+    fn tabulate() {
+        let mut set = HashSet::with_capacity(1024 * 8);
+        set.insert(Board::new());
+
+        let mut stack = vec![Board::new()];
+        while let Some(board) = stack.pop() {
+            stack.extend(
+                board
+                    .iter_children()
+                    .map(|(_, board)| board)
+                    .filter(|child| set.insert(*child)),
+            );
+        }
+
+        assert!(set.len() == 5478);
     }
 }

@@ -176,7 +176,12 @@ async fn shift(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                     &ctx.http,
                     format!(
                         "Source: {}\nIssue Date: {}\nReward: {}\nCode: {}",
-                        code.source, code.issue_date, code.rewards, code.pc
+                        code.source,
+                        code.issue_date
+                            .map(|d| d.to_string())
+                            .unwrap_or_else(|| "unknown".to_string()),
+                        code.rewards,
+                        code.pc
                     ),
                 )
                 .await?;

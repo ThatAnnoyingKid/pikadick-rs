@@ -194,11 +194,14 @@ impl<'a, 'b> CommandBuilder<'a, 'b> {
 
     /// Build the [`Command`]
     pub fn build(&mut self) -> Result<Command, BuilderError> {
+        #[allow(clippy::or_fun_call)]
         let name = self.name.take().ok_or(BuilderError::MissingField("name"))?;
+        #[allow(clippy::or_fun_call)]
         let description = self
             .description
             .take()
             .ok_or(BuilderError::MissingField("description"))?;
+        #[allow(clippy::or_fun_call)]
         let on_process = self
             .on_process
             .take()
@@ -345,10 +348,12 @@ impl<'a> HelpCommandBuilder<'a> {
 
     /// Build the [`HelpCommand`]
     pub fn build(&mut self) -> Result<HelpCommand, BuilderError> {
+        #[allow(clippy::or_fun_call)]
         let description = self
             .description
             .take()
             .ok_or(BuilderError::MissingField("description"))?;
+        #[allow(clippy::or_fun_call)]
         let on_process = self
             .on_process
             .take()

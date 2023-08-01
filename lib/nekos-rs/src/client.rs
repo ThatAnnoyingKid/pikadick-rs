@@ -2,10 +2,7 @@ use crate::{
     types::ImageList,
     Error,
 };
-use tokio::io::{
-    AsyncWrite,
-    AsyncWriteExt,
-};
+use std::time::Duration;
 use url::Url;
 
 const DEFAULT_USER_AGENT: &str = "nekos-rs";
@@ -13,14 +10,20 @@ const DEFAULT_USER_AGENT: &str = "nekos-rs";
 /// Client for nekos.moe
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client
+    pub client: reqwest::Client,
 }
 
 impl Client {
     /// Make a new client
     pub fn new() -> Self {
         Client {
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .connect_timeout(Duration::from_secs(10))
+                .timeout(Duration::from_secs(10))
+                .user_agent(DEFAULT_USER_AGENT)
+                .build()
+                .expect("failed to build client"),
         }
     }
 
@@ -38,25 +41,11 @@ impl Client {
         Ok(self
             .client
             .get(url.as_str())
-            .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT)
             .send()
             .await?
             .error_for_status()?
             .json()
             .await?)
-    }
-
-    /// Get a url and copy it to the given writer
-    pub async fn get_to_writer<W>(&self, url: &str, mut writer: W) -> Result<(), Error>
-    where
-        W: AsyncWrite + Unpin,
-    {
-        let mut res = self.client.get(url).send().await?.error_for_status()?;
-        while let Some(chunk) = res.chunk().await? {
-            writer.write_all(&chunk).await?;
-        }
-
-        Ok(())
     }
 }
 

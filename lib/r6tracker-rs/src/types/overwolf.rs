@@ -183,7 +183,7 @@ impl OverwolfPlayer {
     /// Get lifetime ranked win %
     pub fn get_lifetime_ranked_win_pct(&self) -> Option<f64> {
         let mut length = 0;
-        let mut sum = 0.0;
+        let mut sum = 0.0f64;
         for season in self.iter_placed_ranked_seasons() {
             sum += season.win_pct;
             length += 1;
@@ -238,7 +238,7 @@ pub struct OverwolfSeason {
 
     /// Maybe the change in mmr this season?
     #[serde(rename = "mmrChange")]
-    pub mmr_change: i64,
+    pub mmr_change: Option<i64>,
 
     /// Whether this season represents a ranked season
     #[serde(rename = "isRanked")]

@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use anyhow::Context;
 
 #[derive(argh::FromArgs)]

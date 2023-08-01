@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 mod config;
 mod context;
 mod util;
@@ -37,7 +39,14 @@ pub enum Subcommand {
 
 #[derive(argh::FromArgs)]
 #[argh(subcommand, description = "package a build", name = "package")]
-pub struct PackageOptions {}
+pub struct PackageOptions {
+    #[argh(
+        option,
+        long = "cross-config",
+        description = "the path to the cross config"
+    )]
+    cross_config: Option<camino::Utf8PathBuf>,
+}
 
 #[derive(argh::FromArgs)]
 #[argh(subcommand, description = "deploy a package", name = "deploy")]
@@ -51,25 +60,21 @@ pub struct DeployOptions {
     pub name: String,
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let options: Options = argh::from_env();
-    let code = match real_main(options) {
-        Ok(()) => 0,
-        Err(e) => {
-            eprintln!("Error: {:?}", e);
-            1
-        }
-    };
-
-    std::process::exit(code);
+    real_main(options)
 }
 
 fn real_main(options: Options) -> anyhow::Result<()> {
-    let ctx = Context::new()?;
+    let mut ctx = Context::new()?;
 
     match options.subcommand {
-        Subcommand::Package(_options) => {
+        Subcommand::Package(options) => {
             ensure!(!ctx.cargo_toml_config.targets.is_empty(), "missing targets");
+
+            if let Some(cross_config) = options.cross_config.as_ref() {
+                ctx.set_cross_config(cross_config);
+            }
 
             println!("Packaging...");
             println!();
@@ -158,7 +163,11 @@ fn real_main(options: Options) -> anyhow::Result<()> {
             // Perform copy
             let metadata_len = local_package_file_metadata.len();
             let progress_bar = indicatif::ProgressBar::new(metadata_len);
-            progress_bar.set_style(indicatif::ProgressStyle::default_bar().template("[Time = {elapsed_precise} | ETA = {eta_precise} | Speed = {bytes_per_sec}] {wide_bar} {bytes}/{total_bytes}"));
+            let progress_bar_style_template = "[Time = {elapsed_precise} | ETA = {eta_precise} | Speed = {bytes_per_sec}] {wide_bar} {bytes}/{total_bytes}";
+            let progress_bar_style = indicatif::ProgressStyle::default_bar()
+                .template(progress_bar_style_template)
+                .expect("invalid progress bar style template");
+            progress_bar.set_style(progress_bar_style);
             // remote_package_file.set_len(metadata_len)?;
             let bytes_copied = std::io::copy(
                 &mut progress_bar.wrap_read(local_package_file),

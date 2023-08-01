@@ -15,7 +15,8 @@ use url::Url;
 /// R6tracker Client
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client
+    pub client: reqwest::Client,
 }
 
 impl Client {
@@ -59,11 +60,8 @@ impl Client {
             return Err(Error::EmptyUsername);
         }
 
-        let url = format!(
-            "https://r6.tracker.network/api/v1/standard/profile/{}/{}/",
-            platform.as_u32(),
-            name
-        );
+        let platform = platform.as_u32();
+        let url = format!("https://r6.tracker.network/api/v1/standard/profile/{platform}/{name}/");
 
         self.get_api_response(&url).await
     }
@@ -78,10 +76,9 @@ impl Client {
             return Err(Error::EmptyUsername);
         }
 
+        let platform = platform.as_u32();
         let url = format!(
-            "https://r6.tracker.network/api/v1/standard/profile/{}/{}/sessions?",
-            platform.as_u32(),
-            name
+            "https://r6.tracker.network/api/v1/standard/profile/{platform}/{name}/sessions?"
         );
 
         self.get_api_response(&url).await
@@ -135,8 +132,11 @@ mod test {
     async fn it_works_overwolf() {
         let client = Client::new();
 
-        let profile = client.get_overwolf_player(VALID_USER).await.unwrap();
-        let profile_data = profile.take_valid().unwrap();
+        let profile = client
+            .get_overwolf_player(VALID_USER)
+            .await
+            .expect("failed to get overwolf player");
+        let profile_data = profile.take_valid().expect("missing profile data");
         dbg!(&profile_data);
     }
 

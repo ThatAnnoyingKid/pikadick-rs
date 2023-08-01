@@ -162,7 +162,7 @@ impl Database {
                 .take()
                 .ok_or(Error::AlreadyJoined)?
                 .join()
-                .map_err(|_| Error::ThreadJoin)
+                .map_err(|e| Error::ThreadJoin(SyncWrapper::new(e)))
         })
         .await??;
         if let Err((_connection, error)) = result {

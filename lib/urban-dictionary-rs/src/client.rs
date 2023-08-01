@@ -7,7 +7,8 @@ use url::Url;
 /// Client
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client
+    pub client: reqwest::Client,
 }
 
 impl Client {

@@ -1,14 +1,17 @@
 use crate::{
+    Error,
     GetVideoResponse,
     MainPage,
-    TubeResult,
 };
 use scraper::Html;
+
+const DEFAULT_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
 /// Client
 #[derive(Clone, Debug)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client
+    pub client: reqwest::Client,
 }
 
 impl Client {
@@ -19,7 +22,7 @@ impl Client {
     pub fn new() -> Self {
         let client = reqwest::ClientBuilder::new()
             .cookie_store(true)
-            .user_agent("reddit-tube-rs")
+            .user_agent(DEFAULT_USER_AGENT)
             .build()
             .expect("failed to build client");
 
@@ -32,10 +35,10 @@ impl Client {
     ///
     /// # Errors
     /// Returns an error if the [`MainPage`] could not be fetched.
-    pub async fn get_main_page(&self) -> TubeResult<MainPage> {
+    pub async fn get_main_page(&self) -> Result<MainPage, Error> {
         let body = self
             .client
-            .get("https://www.reddit.tube/")
+            .get("https://www.redd.tube/")
             .send()
             .await?
             .error_for_status()?
@@ -59,10 +62,14 @@ impl Client {
     ///
     /// # Errors
     /// Returns an error if the video url could not be fetched.
-    pub async fn get_video(&self, main_page: &MainPage, url: &str) -> TubeResult<GetVideoResponse> {
+    pub async fn get_video(
+        &self,
+        main_page: &MainPage,
+        url: &str,
+    ) -> Result<GetVideoResponse, Error> {
         Ok(self
             .client
-            .post("https://www.reddit.tube/services/get_video")
+            .post("https://www.redd.tube/services/get_video")
             .form(&[
                 ("url", url),
                 ("zip", ""),

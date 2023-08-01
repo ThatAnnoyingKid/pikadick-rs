@@ -20,7 +20,7 @@ use ttf_parser::OutlineBuilder;
 const FONT_BYTES: &[u8] =
     include_bytes!("../../../assets/Averia_Serif_Libre/AveriaSerifLibre-Light.ttf");
 static FONT_FACE: Lazy<ttf_parser::Face<'static>> =
-    Lazy::new(|| ttf_parser::Face::from_slice(FONT_BYTES, 0).expect("failed to load `FONT_BYTES`"));
+    Lazy::new(|| ttf_parser::Face::parse(FONT_BYTES, 0).expect("failed to load `FONT_BYTES`"));
 
 const RENDERED_SIZE: u16 = 300;
 const SQUARE_SIZE: u16 = RENDERED_SIZE / 3;
@@ -61,9 +61,7 @@ impl Renderer {
                     paint.set_color_rgba8(119, 119, 119, 255);
                 }
 
-                background_pixmap
-                    .fill_rect(square, &paint, Transform::identity(), None)
-                    .context("failed to fill square")?;
+                background_pixmap.fill_rect(square, &paint, Transform::identity(), None);
             }
         }
 
@@ -142,9 +140,7 @@ impl Renderer {
                 let path =
                     path.with_context(|| format!("failed to build path for team '{:?}'", team))?;
 
-                pixmap
-                    .stroke_path(&path, &paint, &stroke, transform, None)
-                    .with_context(|| format!("failed to draw path for team '{:?}'", team))?;
+                pixmap.stroke_path(&path, &paint, &stroke, transform, None);
             } else {
                 paint.set_color_rgba8(255, 255, 255, 255);
                 let path = &self.number_paths[usize::from(i) + 1];
@@ -156,9 +152,7 @@ impl Renderer {
                     (SQUARE_SIZE_F32 / 2.0) - (ratio * bounds.height() / 2.0),
                 );
 
-                pixmap
-                    .fill_path(path, &paint, Default::default(), transform, None)
-                    .with_context(|| format!("failed to draw path for digit '{}'", i))?;
+                pixmap.fill_path(path, &paint, Default::default(), transform, None);
             }
         }
 
@@ -242,9 +236,7 @@ fn draw_winning_line(
         .finish()
         .context("failed to draw winning line")?;
 
-    pixmap
-        .stroke_path(&path, &paint, &stroke, Transform::identity(), None)
-        .context("failed to draw path for winning line")?;
+    pixmap.stroke_path(&path, &paint, &stroke, Transform::identity(), None);
 
     Ok(())
 }

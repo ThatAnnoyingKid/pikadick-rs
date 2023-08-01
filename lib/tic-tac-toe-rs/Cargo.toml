@@ -1,13 +1,13 @@
 [package]
 name = "tic-tac-toe"
 version = "0.0.0"
-edition = "2018"
-license = "MIT"
+edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 
 [dev-dependencies]
-criterion = { version = "0.3.6", features = [ "html_reports" ] } 
+criterion = { version = "0.5.1", features = [ "html_reports" ] } 
 
 [[bench]]
 name = "benchmark"

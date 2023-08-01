@@ -1,4 +1,7 @@
-use std::str::FromStr;
+use std::{
+    num::NonZeroU64,
+    str::FromStr,
+};
 
 #[derive(argh::FromArgs)]
 #[argh(subcommand, name = "list-posts", description = "list rule34 posts")]
@@ -10,7 +13,7 @@ pub struct Options {
     pid: Option<u64>,
 
     #[argh(option, long = "id", description = "the post id")]
-    id: Option<u64>,
+    id: Option<NonZeroU64>,
 
     #[argh(
         option,

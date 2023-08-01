@@ -24,6 +24,8 @@ struct DatabaseUserId(UserId);
 
 impl FromSql for DatabaseUserId {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        // This is not heavy
+        #[allow(clippy::or_fun_call)]
         let value = value
             .as_i64()
             .map(i64::to_ne_bytes)
@@ -31,7 +33,7 @@ impl FromSql for DatabaseUserId {
             .map(NonZeroU64::new)?
             .ok_or(FromSqlError::OutOfRange(0))?;
 
-        Ok(Self(UserId(value)))
+        Ok(Self(UserId(value.into())))
     }
 }
 
@@ -177,7 +179,7 @@ impl FromStr for TicTacToePlayer {
         if input.eq_ignore_ascii_case("computer") {
             Ok(Self::Computer)
         } else if let Some(user_id) = parse_username(input) {
-            Ok(Self::User(user_id))
+            Ok(Self::User(UserId(user_id)))
         } else {
             Ok(Self::User(UserId(
                 input.parse().map_err(TicTacToePlayerParseError)?,
@@ -206,7 +208,13 @@ impl FromSql for TicTacToePlayer {
         match value {
             ValueRef::Integer(int) => {
                 let int_u64 = u64::from_ne_bytes(int.to_ne_bytes());
-                let user_id = UserId(NonZeroU64::new(int_u64).ok_or(FromSqlError::OutOfRange(0))?);
+                // This is not heavy
+                #[allow(clippy::or_fun_call)]
+                let user_id = UserId(
+                    NonZeroU64::new(int_u64)
+                        .ok_or(FromSqlError::OutOfRange(0))?
+                        .into(),
+                );
                 Ok(Self::User(user_id))
             }
             ValueRef::Null => Ok(Self::Computer),
@@ -217,7 +225,7 @@ impl FromSql for TicTacToePlayer {
 
 /// A String wrapper for a [`GuildId`]
 ///
-/// This is "<u64>.to_string()" if a guild, or "empty" if not.
+/// This is "[u64].to_string()" if a guild, or "empty" if not.
 #[derive(Debug, Copy, Clone)]
 pub struct MaybeGuildString {
     pub guild_id: Option<GuildId>,
@@ -243,7 +251,7 @@ impl FromSql for MaybeGuildString {
         let text = value.as_str()?;
         match text.parse::<NonZeroU64>() {
             Ok(guild_id) => Ok(MaybeGuildString {
-                guild_id: Some(GuildId(guild_id)),
+                guild_id: Some(GuildId(guild_id.into())),
             }),
             Err(e) => {
                 if text == "empty" {
@@ -322,6 +330,7 @@ impl TicTacToeTopPlayerScore {
 
 bitflags! {
     /// Flags for TikTok embeds
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
     pub struct TikTokEmbedFlags: u32 {
         /// Whether embeds are enabled
         const ENABLED = 1 << 0;

@@ -10,7 +10,10 @@ pub struct DeletedImageList {
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct Post {
     /// The deleted post id
+    #[serde(alias = "@deleted")]
     pub deleted: u64,
-    /// The md5 of the deleted post
+
+    /// The md5 hash of the deleted post
+    #[serde(alias = "@md5")]
     pub md5: String,
 }

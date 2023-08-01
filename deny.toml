@@ -11,9 +11,12 @@ targets = [
 vulnerability = "deny"
 unmaintained = "deny"
 notice = "deny"
-ignore = [
-    # Blocked on criterion moving away from "serde_cbor". This is fine as criterion is a dev-dependency.
-    "RUSTSEC-2021-0127",
+ignore = [    
+    # Blocked on removing heim
+    "RUSTSEC-2020-0168",
+    
+    # Blocked on songbird updating their deps
+    "RUSTSEC-2023-0037",
 ]
 
 [licenses]
@@ -43,6 +46,13 @@ license-files = [
 ]
 
 [[licenses.clarify]]
+name = "rustls-webpki"
+expression = "ISC"
+license-files = [
+    { path = "LICENSE", hash = 0x001c7e6c },
+]
+
+[[licenses.clarify]]
 name = "encoding_rs"
 expression = "(Apache-2.0 OR MIT) AND BSD-3-Clause"
 license-files = [
@@ -61,44 +71,57 @@ skip = [
     { name = "rand_core", version = "0.5.1" },
     { name = "rand_chacha", version = "0.2.2" },
     
-    # Blocked on reqwest updating webpki
-    { name = "webpki", version = "0.21.4" },
-    
-    # Blocked on async-tungstenite and tonic updating tokio-rustls to 0.23.1 and rustls to 0.20.x
-    { name = "tokio-rustls", version = "0.22.0" },
-    { name = "rustls", version = "0.19.1" },
-    { name = "sct", version = "0.6.1" },
-    
     # Blocked on ring updating their version of spin to 0.9
     { name = "spin", version = "0.5.2" },
     
     # Blocked on serenity-voice-model moving away from enum_primitive
     { name = "num-traits", version = "0.1.43" },
     
-    # Blocked on cssparser moving to version 1.
-    { name = "itoa", version = "0.4.8" },
-    
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.8.0" },
     
-    # Blocked on h2 updating tokio-util to v 7
-    { name = "tokio-util", version = "0.6.9" },
-    
     # Blocked on markup5ever updating phf_codegen
     { name = "phf_generator", version = "0.8.0" },
-    
-    # Blocked on updates to tiny-skia
-    { name = "arrayvec", version = "0.5.2" },
     
     # Blocked on cssparser updating phf
     { name = "phf", version = "0.8.0" },
     { name = "phf_codegen", version = "0.8.0" },
     
-    # Blocked on `hashlink` and `publicsuffix` moving to hashbrown 12
-    { name = "hashbrown", version = "0.11.2" },
-    
     # Blocked on removing heim
     { name = "nix", version = "0.23.1" },
+    { name = "memoffset", version = "0.6.5" },
+    
+    # Blocked on cookie-store moving to idna 0.3
+    { name = "idna", version = "0.2.3" },
+    
+    # Blocked on reqwest updating cookie-store to 0.19.x
+    { name = "cookie_store", version = "0.16.1" },
+    
+    # Blocked on ecosystem moving to base64 0.20 and above
+    { name = "base64", version = "0.13.1" },
+    
+    # Blocked on ecosystem moving to windows 0.48.x
+    { name = "windows-sys", version = "0.42.0" },
+    { name = "windows_x86_64_msvc", version = "0.42.2" },
+    
+    # Blocked on ecosystem moving to syn 2
+    { name = "syn", version = "1.0.109" },
+    
+    # Blocked on serenity updating async-tungstenite
+    { name = "tokio-rustls", version = "0.23.4" },
+    { name = "rustls", version = "0.20.8" },
+    
+    # Blocked on tracing subscriber updating their deps
+    { name = "regex-syntax", version = "0.6.29" },
+    
+    # Blocked on ecosystem moving to idna 0.4.x
+    { name = "idna", version = "0.3.0" },
+    
+    # Blocked on ecosystem moving to bitflags 2
+    { name = "bitflags", version = "1.3.2" },
+    
+    # Blocked on ecosystem moving to hashbrown 0.13.x
+    { name = "hashbrown", version = "0.12.3" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
@@ -113,9 +136,6 @@ deny = [
     # It's a crate only intended for testing; people insist on using it for some reason.
     # https://crates.io/crates/markup5ever_rcdom/0.1.0
     { name = "markup5ever_rcdom", version = "0.1.0" },
-    
-    # https://github.com/RustSec/advisory-db/issues/867
-    { name = "rusttype", version = "*" },
     
     # https://github.com/RustSec/advisory-db/issues/826
     { name = "totally-safe-transmute", version = "*" },
@@ -132,10 +152,6 @@ deny = [
     # https://github.com/rustsec/advisory-db/issues/1175
     { name = "futures-intrusive", version = "*" },
     
-    # Probably abandoned. Commented as it is used by `tracing-subscriber`.
-    # https://github.com/rustsec/advisory-db/issues/1095
-    # { name = "ansi_term", version = "*" },
-    
     # https://github.com/rustsec/advisory-db/issues/1173
     { name = "prettytables-rs", version = "*" },
     
@@ -149,18 +165,13 @@ unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = [ "https://github.com/rust-lang/crates.io-index" ]
 allow-git = [
-    "https://github.com/nathaniel-daniel/zalgo-rs",
-    "https://github.com/adumbidiot/shift-client-rs",
-    "https://github.com/nathaniel-daniel/reddit-rs",
-    # "https://github.com/heim-rs/heim",
-    "https://github.com/servo/servo",
-    "https://github.com/serenity-rs/serenity",
     "https://github.com/vectordotdev/heim",
-    "https://github.com/FelixMcFelix/songbird",
-    "https://github.com/adumbidiot/fslock",
-    "https://github.com/adumbidiot/serenity",
-    # "https://github.com/nathaniel-daniel/raspberry-pi-rs",
-    "https://github.com/nathaniel-daniel/nix",
-    "https://github.com/FelixMcFelix/Symphonia",
-    # "https://github.com/bheisler/criterion.rs",
+    "https://github.com/MSxDOS/ntapi",
+    # "https://github.com/open-telemetry/opentelemetry-rust",
+]
+
+[sources.allow-org]
+github = [
+    "adumbidiot",
+    "nathaniel-daniel",
 ]

@@ -1,8 +1,25 @@
 # This is the cross compile config for CI.
+
 [armv7-unknown-linux-gnueabihf]
 linker = "arm-linux-gnueabihf-gcc"
-strip = "arm-linux-gnueabihf-strip"
+cmake_toolchain_file = """
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_PROCESSOR arm)
+set(CMAKE_C_FLAGS "-mcpu=cortex-a7 -mfpu=neon-vfpv4 -fPIC")
+"""
 
 [armv7-unknown-linux-gnueabihf.env]
-# This is empty as the default env is fine.
-# The default perl does not need to be overridden.
+CC = "arm-linux-gnueabihf-gcc"
+CXX = "arm-linux-gnueabihf-g++"
+
+# CMAKE_GENERATOR = "Ninja"
+
+[aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
+cmake_toolchain_file = """
+set(CMAKE_SYSTEM_NAME Linux)
+"""
+
+[aarch64-unknown-linux-gnu.env]
+CC = "aarch64-linux-gnu-gcc"
+CXX = "aarch64-linux-gnu-g++"

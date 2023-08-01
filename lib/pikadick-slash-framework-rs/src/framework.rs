@@ -151,13 +151,13 @@ impl Framework {
                         "processing help command, options={}",
                         FmtOptionsHelper(&command)
                     );
-                    if let Err(e) = framework_command
+                    if let Err(error) = framework_command
                         .fire_on_process(ctx, command, self.commands.clone())
                         .await
                         .map_err(WrapBoxError::new)
                     {
                         // TODO: handle error with handler
-                        warn!("{}", e);
+                        warn!("{error}");
                     }
                 }
                 None => {
@@ -173,7 +173,8 @@ impl Framework {
             Some(command) => command,
             None => {
                 // TODO: Unknown command handler
-                warn!("unknown command '{}'", command.data.name.as_str());
+                let command_name = command.data.name.as_str();
+                warn!("unknown command \"{command_name}\"");
                 return;
             }
         };
@@ -186,18 +187,18 @@ impl Framework {
 
         match check_result {
             Ok(()) => {
+                let command_name = framework_command.name();
                 info!(
-                    "processing command `{}`, options={}",
-                    framework_command.name(),
+                    "processing command \"{command_name}\", options={}",
                     FmtOptionsHelper(&command)
                 );
-                if let Err(e) = framework_command
+                if let Err(error) = framework_command
                     .fire_on_process(ctx, command)
                     .await
                     .map_err(WrapBoxError::new)
                 {
                     // TODO: handle error with handler
-                    warn!("{}", e);
+                    warn!("{error}");
                 }
             }
             Err(e) => {
@@ -208,16 +209,16 @@ impl Framework {
                 };
 
                 if let Some(log) = e.log {
-                    warn!("{}", log);
+                    warn!("{log}");
                 }
 
-                if let Err(e) = command
+                if let Err(error) = command
                     .create_interaction_response(&ctx.http, |res| {
                         res.interaction_response_data(|res| res.content(content))
                     })
                     .await
                 {
-                    warn!("{}", e);
+                    warn!("{error}");
                 }
             }
         }

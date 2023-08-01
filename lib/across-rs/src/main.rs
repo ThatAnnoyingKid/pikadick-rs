@@ -52,8 +52,7 @@ struct Options {
 /// The entry point
 fn main() -> anyhow::Result<()> {
     let options: Options = argh::from_env();
-    real_main(options)?;
-    Ok(())
+    real_main(options)
 }
 
 /// The real entry point
@@ -299,7 +298,7 @@ impl CrossCompileCommandBuilder {
         // Generate RUSTFLAGS environment variable
         let mut rust_flags = String::with_capacity(64);
         rust_flags.push_str("-Clinker=");
-        rust_flags.push_str(&*linker);
+        rust_flags.push_str(&linker);
         rust_flags.push(' ');
 
         // Init cargo build command
@@ -316,11 +315,11 @@ impl CrossCompileCommandBuilder {
         };
 
         // Set target
-        command.args(&["--target", &*target]);
+        command.args(["--target", &target]);
 
         // Set features if present
         if let Some(features) = features {
-            command.args(&["--features", &*features]);
+            command.args(["--features", &features]);
         }
 
         // Set profile flag if requested

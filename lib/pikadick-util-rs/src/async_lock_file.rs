@@ -21,13 +21,13 @@ impl AsyncLockFile {
         P: IntoOsString,
     {
         let path = path.into_os_string()?;
-        tokio::task::spawn_blocking(move || Self::open_blocking(&path))
+        tokio::task::spawn_blocking(move || Self::blocking_open(&path))
             .await
             .context("failed to join task")?
     }
 
     /// Open a file for locking in a blocking manner
-    pub fn open_blocking<P>(path: &P) -> anyhow::Result<Self>
+    pub fn blocking_open<P>(path: &P) -> anyhow::Result<Self>
     where
         P: ToOsStr + ?Sized,
     {
@@ -93,7 +93,7 @@ impl AsyncLockFile {
     }
 
     /// Unlock the file in a blocking manner
-    pub fn unlock_blocking(&self) -> anyhow::Result<()> {
+    pub fn blocking_unlock(&self) -> anyhow::Result<()> {
         Ok(self.file.blocking_lock().unlock()?)
     }
 }

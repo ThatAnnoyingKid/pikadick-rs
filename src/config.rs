@@ -51,6 +51,10 @@ pub struct Config {
     /// SauceNao config
     pub sauce_nao: SauceNaoConfig,
 
+    /// Open AI config
+    #[serde(rename = "open-ai")]
+    pub open_ai: OpenAiConfig,
+
     /// The log config
     #[serde(default)]
     pub log: LogConfig,
@@ -81,6 +85,18 @@ pub struct DeviantArtConfig {
 #[derive(Deserialize, Debug)]
 pub struct SauceNaoConfig {
     /// The api key
+    pub api_key: String,
+
+    /// Unknown extra data
+    #[serde(flatten)]
+    pub extra: HashMap<String, toml::Value>,
+}
+
+/// Open AI Config
+#[derive(Deserialize, Debug)]
+pub struct OpenAiConfig {
+    /// The api key
+    #[serde(rename = "api-key")]
     pub api_key: String,
 
     /// Unknown extra data
@@ -163,14 +179,14 @@ impl Config {
         P: AsRef<Utf8Path>,
     {
         let path = path.as_ref();
-        std::fs::read(path)
+        std::fs::read_to_string(path)
             .with_context(|| format!("failed to read config from '{}'", path))
-            .and_then(|b| Self::load_from_bytes(&b))
+            .and_then(|b| Self::load_from_str(&b))
     }
 
-    /// Load a config from bytes
-    pub fn load_from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
-        toml::from_slice(bytes).context("failed to parse config")
+    /// Load a config from a str
+    pub fn load_from_str(s: &str) -> anyhow::Result<Self> {
+        toml::from_str(s).context("failed to parse config")
     }
 
     /// Validate a config
@@ -216,17 +232,12 @@ pub struct StatusConfig {
     pub extra: HashMap<String, toml::Value>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Deserialize, Serialize, Default)]
 pub enum ActivityKind {
     Listening,
+    #[default]
     Playing,
     Streaming,
-}
-
-impl Default for ActivityKind {
-    fn default() -> Self {
-        ActivityKind::Playing
-    }
 }
 
 #[derive(Debug)]

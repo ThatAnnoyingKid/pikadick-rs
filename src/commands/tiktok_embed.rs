@@ -5,7 +5,6 @@ use crate::{
     },
     util::{
         ArcAnyhowError,
-        DropRemoveFile,
         DropRemovePath,
         EncoderTask,
         RequestMap,
@@ -161,7 +160,7 @@ impl TikTokData {
     /// Get video data, using the cache if needed
     pub async fn get_video_data_cached(
         &self,
-        id: &str,
+        id: u64,
         format: &str,
         url: &str,
         video_duration: u64,
@@ -173,10 +172,10 @@ impl TikTokData {
                 let encoder_task = self.encoder_task.clone();
 
                 let reencoded_file_name = format!("{id}-reencoded.mp4");
-                let reencoded_file_path = self.video_download_cache_path.join(&reencoded_file_name);
+                let reencoded_file_path = self.video_download_cache_path.join(reencoded_file_name);
 
                 let file_name = format!("{id}.{format}");
-                let file_path = self.video_download_cache_path.join(&file_name);
+                let file_path = self.video_download_cache_path.join(file_name);
 
                 let id = id.to_string();
                 let format = format.to_string();
@@ -220,19 +219,10 @@ impl TikTokData {
                             );
 
                             let result = async {
-                                let file_path_tmp =
-                                    crate::util::with_push_extension(&file_path, "tmp");
-                                let mut file = DropRemoveFile::create(&file_path_tmp)
+                                nd_util::download_to_path(&client, &url, &file_path).await?;
+                                tokio::fs::metadata(&file_path)
                                     .await
-                                    .context("failed to open file")?;
-                                crate::util::download_to_file(&client, &url, &mut file)
-                                    .await
-                                    .context("failed to download")?;
-                                tokio::fs::rename(&file_path_tmp, &file_path)
-                                    .await
-                                    .context("failed to rename file")?;
-                                file.persist();
-                                file.metadata().await.context("failed to get file metadata")
+                                    .context("failed to get file metadata")
                             }
                             .await;
 
@@ -404,7 +394,7 @@ impl TikTokData {
                 .context("missing item module post")?;
 
             let video_url = item_module_post.video.download_addr.clone();
-            let video_id = item_module_post.video.id.clone();
+            let video_id: u64 = item_module_post.id.parse().context("invalid video id")?;
             let video_format = item_module_post.video.format.clone();
             let video_duration = item_module_post.video.duration;
 
@@ -413,7 +403,7 @@ impl TikTokData {
 
         let video_path = self
             .get_video_data_cached(
-                video_id.as_str(),
+                video_id,
                 video_format.as_str(),
                 video_url.as_str(),
                 video_duration,

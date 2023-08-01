@@ -14,7 +14,6 @@
     rust_2018_idioms,
     future_incompatible,
     nonstandard_style,
-    rustdoc::all,
     clippy::all,
     clippy::filter_map_next,
     clippy::ptr_as_ptr,
@@ -38,7 +37,7 @@
     clippy::items_after_statements,
     clippy::large_stack_arrays,
     clippy::large_types_passed_by_value,
-    clippy::let_underscore_drop,
+    let_underscore_drop,
     clippy::linkedlist,
     clippy::lossy_float_literal,
     clippy::manual_ok_or,
@@ -65,9 +64,11 @@
     clippy::unicode_not_nfc,
     clippy::unnecessary_join,
     clippy::unnested_or_patterns,
-    clippy::zero_sized_map_values
+    clippy::zero_sized_map_values,
+    variant_size_differences
 )]
-#![allow(rustdoc::missing_doc_code_examples)]
+// TODO: Consider if we want to deny this
+#![allow(clippy::uninlined_format_args)]
 // TODO: Document everything properly
 // clippy::default_trait_access
 // clippy::use_self
@@ -134,9 +135,9 @@ use serenity::{
         StandardFramework,
     },
     futures::future::BoxFuture,
-    gateway::ActivityData,
     model::{
         application::interaction::Interaction,
+        gateway::Activity,
         prelude::*,
     },
     prelude::*,
@@ -185,18 +186,16 @@ impl EventHandler for Handler {
         if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
             match kind {
                 ActivityKind::Listening => {
-                    ctx.set_activity(Some(ActivityData::listening(status)))
-                        .await;
+                    ctx.set_activity(Activity::listening(status)).await;
                 }
                 ActivityKind::Streaming => {
                     let result: Result<_, anyhow::Error> = async {
-                        let activity = ActivityData::streaming(
+                        let activity = Activity::streaming(
                             status,
                             config.status_url().context("failed to get status url")?,
-                        )
-                        .context("failed to create activity")?;
+                        );
 
-                        ctx.set_activity(Some(activity)).await;
+                        ctx.set_activity(activity).await;
 
                         Ok(())
                     }
@@ -207,7 +206,7 @@ impl EventHandler for Handler {
                     }
                 }
                 ActivityKind::Playing => {
-                    ctx.set_activity(Some(ActivityData::playing(status))).await;
+                    ctx.set_activity(Activity::playing(status)).await;
                 }
             }
         }
@@ -321,18 +320,18 @@ impl EventHandler for Handler {
                     Some(url::Host::Domain("www.reddit.com" | "reddit.com")) => {
                         // Don't process if it isn't enabled
                         if reddit_embed_is_enabled_for_guild {
-                            if let Err(e) = reddit_embed_data
+                            if let Err(error) = reddit_embed_data
                                 .try_embed_url(&ctx, &msg, url, &mut loading_reaction)
                                 .await
                                 .context("failed to generate reddit embed")
                             {
-                                error!("{:?}", e);
+                                error!("{error:?}");
                             }
                         }
                     }
                     Some(url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")) => {
                         if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
-                            if let Err(e) = tiktok_data
+                            if let Err(error) = tiktok_data
                                 .try_embed_url(
                                     &ctx,
                                     &msg,
@@ -343,7 +342,7 @@ impl EventHandler for Handler {
                                 .await
                                 .context("failed to generate tiktok embed")
                             {
-                                error!("{:?}", e);
+                                error!("{error:?}");
                             }
                         }
                     }
@@ -398,8 +397,8 @@ async fn help(
         .context("failed to send help")
     {
         Ok(_) => {}
-        Err(e) => {
-            error!("{:?}", e);
+        Err(error) => {
+            error!("{error:?}");
         }
     }
     Ok(())
@@ -572,6 +571,7 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
         .command(self::commands::r6tracker::create_slash_command()?)
         .command(self::commands::rule34::create_slash_command()?)
         .command(self::commands::tiktok_embed::create_slash_command()?)
+        .command(self::commands::chat::create_slash_command()?)
         .build()?;
 
     // Create second prefix that is uppercase so we are case-insensitive
@@ -582,7 +582,7 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     info!("using prefix '{}'", &config_prefix);
     let framework = StandardFramework::new()
         .configure(|c| {
-            c.prefixes(&[&config_prefix, &uppercase_prefix])
+            c.prefixes(&[config_prefix, uppercase_prefix])
                 .case_insensitivity(true)
         })
         .help(&HELP)
@@ -682,15 +682,15 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
 
     eprintln!("creating lockfile...");
     let lock_file_path = config.data_dir.join("pikadick.lock");
-    let lock_file = AsyncLockFile::open_blocking(lock_file_path.as_std_path())
+    let lock_file = AsyncLockFile::blocking_open(lock_file_path.as_std_path())
         .context("failed to open lockfile")?;
     let lock_file_locked = lock_file
         .try_lock_with_pid_blocking()
         .context("failed to try to lock the lockfile")?;
     ensure!(lock_file_locked, "another process has locked the lockfile");
 
-    std::fs::create_dir_all(&config.log_file_dir()).context("failed to create log file dir")?;
-    std::fs::create_dir_all(&config.cache_dir()).context("failed to create cache dir")?;
+    std::fs::create_dir_all(config.log_file_dir()).context("failed to create log file dir")?;
+    std::fs::create_dir_all(config.cache_dir()).context("failed to create cache dir")?;
 
     // TODO: Init db
     eprintln!("opening database...");
@@ -699,7 +699,7 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
     // Safety: This is called before any other sqlite functions.
     // TODO: Is there a good reason to not remake the db if it is missing?
     let database = unsafe {
-        Database::blocking_new(&database_path, true) // missing_data_dir
+        Database::blocking_new(database_path, true) // missing_data_dir
             .context("failed to open database")?
     };
 
@@ -758,7 +758,7 @@ fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
     info!("unlocking lockfile...");
     setup_data
         .lock_file
-        .unlock_blocking()
+        .blocking_unlock()
         .context("failed to unlock lockfile")?;
 
     info!("successful shutdown");
