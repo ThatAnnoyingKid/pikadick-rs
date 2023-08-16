@@ -4,6 +4,9 @@ pub mod admin;
 pub mod enabled;
 
 pub use self::{
-    admin::*,
-    enabled::*,
+    admin::ADMIN_CHECK,
+    enabled::{
+        EnabledCheckData,
+        ENABLED_CHECK,
+    },
 };

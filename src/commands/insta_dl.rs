@@ -111,5 +111,5 @@ async fn download_post<'a>(
 
 /// Get the file extension from a url
 fn get_extension_from_url(url: &Url) -> Option<&str> {
-    Some(url.path_segments()?.rev().next()?.rsplit_once('.')?.1)
+    Some(url.path_segments()?.next_back()?.rsplit_once('.')?.1)
 }

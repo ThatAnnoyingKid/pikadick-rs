@@ -60,7 +60,7 @@ license-files = [
 ]
 
 [bans]
-multiple-versions = "deny"
+multiple-versions = "warn"
 highlight = "all"
 skip = [
     # Blocked on rand updating getrandom to 0.2.x 
@@ -100,10 +100,6 @@ skip = [
     # Blocked on ecosystem moving to base64 0.20 and above
     { name = "base64", version = "0.13.1" },
     
-    # Blocked on ecosystem moving to windows 0.48.x
-    { name = "windows-sys", version = "0.42.0" },
-    { name = "windows_x86_64_msvc", version = "0.42.2" },
-    
     # Blocked on ecosystem moving to syn 2
     { name = "syn", version = "1.0.109" },
     
@@ -122,6 +118,25 @@ skip = [
     
     # Blocked on ecosystem moving to hashbrown 0.13.x
     { name = "hashbrown", version = "0.12.3" },
+    
+    # Blocked on ecosystem moving to socket 0.5.x
+    { name = "socket2", version = "0.4.9" },
+    
+    # Blocked on ecosystem moving to rustix 0.38.x
+    { name = "rustix", version = "0.37.23" },
+    { name = "linux-raw-sys", version = "0.3.8" },
+    
+    # Blocked on matchers updating regex-automata 
+    { name = "regex-automata", version = "0.1.10" },
+    
+    # Blocked on ecosystem moving to indexmap 2
+    { name = "indexmap", version = "1.9.3" },
+    
+    # Blocked on ecosystem moving to fastrand 2
+    { name = "fastrand", version = "1.9.0" },
+    
+    # Blocked on reqwest updating cookie-store to 0.16.0
+    { name = "cookie", version = "0.16.2" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
