@@ -137,6 +137,9 @@ skip = [
     
     # Blocked on reqwest updating cookie-store to 0.16.0
     { name = "cookie", version = "0.16.2" },
+    
+    # Blocked on serde-value updating ordered-float to 0.3.x
+    { name = "ordered-float", version = "2.10.0" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
