@@ -3,6 +3,8 @@ mod error;
 mod search_query_builder;
 mod types;
 
+#[cfg(feature = "scrape")]
+pub use crate::types::HtmlPost;
 pub use crate::{
     client::{
         Client,
@@ -13,7 +15,6 @@ pub use crate::{
     search_query_builder::SearchQueryBuilder,
     types::{
         DeletedImageList,
-        HtmlPost,
         Post,
         PostList,
         Tag,
@@ -21,6 +22,7 @@ pub use crate::{
         TagList,
     },
 };
+#[cfg(feature = "scrape")]
 pub use scraper::Html;
 use std::num::NonZeroU64;
 pub use url::Url;

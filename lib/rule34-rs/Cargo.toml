@@ -15,7 +15,7 @@ itoa = "1.0.9"
 once_cell = { version = "1.18.0", features = [ "std" ], default-features = false }
 quick-xml = { version = "0.30.0", features = [ "serialize" ] }
 reqwest = { version = "0.11.18", default-features = false, features = [ "json", "brotli" ] }
-scraper = { version = "0.17.1", default-features = false }
+scraper = { version = "0.17.1", default-features = false, optional = true }
 serde = { version = "1.0.183", features = [ "derive" ] }
 thiserror = "1.0.46"
 tokio = "1.32.0"
@@ -44,4 +44,8 @@ native-tls = ["reqwest/native-tls"]
 # Use rustls for TLS
 rustls-tls = ["reqwest/rustls-tls"]
 
-cli = ["argh", "anyhow", "tokio/rt-multi-thread", "tokio/fs", "nd-util"]
+# Whether to include API functions that use scraping.
+# Omitting this feature reduces the number of dependencies.
+scrape = ["scraper"]
+
+cli = ["argh", "anyhow", "tokio/rt-multi-thread", "tokio/fs", "nd-util", "scrape"]
