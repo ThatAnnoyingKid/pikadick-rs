@@ -62,15 +62,7 @@ license-files = [
 [bans]
 multiple-versions = "warn"
 highlight = "all"
-skip = [
-    # Blocked on rand updating getrandom to 0.2.x 
-    { name = "getrandom", version = "0.1.15" },
-    
-    # Blocked on phf_generator, tempfile, tungstenite, and zalgo moving to rand 0.8.x
-    { name = "rand", version = "0.7.3" },
-    { name = "rand_core", version = "0.5.1" },
-    { name = "rand_chacha", version = "0.2.2" },
-    
+skip = [    
     # Blocked on ring updating their version of spin to 0.9
     { name = "spin", version = "0.5.2" },
     
@@ -78,14 +70,14 @@ skip = [
     { name = "num-traits", version = "0.1.43" },
     
     # Blocked on updates to cssparser
-    { name = "phf_shared", version = "0.8.0" },
+    { name = "phf_shared", version = "0.10.0" },
     
     # Blocked on markup5ever updating phf_codegen
-    { name = "phf_generator", version = "0.8.0" },
+    { name = "phf_generator", version = "0.10.0" },
     
     # Blocked on cssparser updating phf
-    { name = "phf", version = "0.8.0" },
-    { name = "phf_codegen", version = "0.8.0" },
+    { name = "phf", version = "0.10.0" },
+    { name = "phf_codegen", version = "0.10.0" },
     
     # Blocked on removing heim
     { name = "nix", version = "0.23.1" },
