@@ -1113,17 +1113,6 @@ checksum = "6999dc1837253364c2ebb0704ba97994bd874e8f195d665c50b7548f6ea92764"
 
 [[package]]
 name = "fd-lock"
-version = "3.0.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef033ed5e9bad94e55838ca0ca906db0e043f517adda0c8b79c7a8c66c93c1b5"
-dependencies = [
- "cfg-if",
- "rustix 0.38.8",
- "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "fd-lock"
 version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b0377f1edc77dbd1118507bc7a66e4ab64d2b90c66f90726dc801e73a8c68f9"
@@ -2038,7 +2027,7 @@ source = "git+https://github.com/nathaniel-daniel/nd-util-rs#94dcb2c6471c64786f4
 dependencies = [
  "anyhow",
  "cfg-if",
- "fd-lock 4.0.0",
+ "fd-lock",
  "reqwest",
  "tokio",
  "tracing",
@@ -2655,7 +2644,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "cfg-if",
- "fd-lock 3.0.13",
+ "fd-lock",
  "fslock",
  "futures",
  "nd-util",
