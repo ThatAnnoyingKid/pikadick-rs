@@ -2581,7 +2581,7 @@ dependencies = [
  "fml",
  "futures",
  "heim",
- "indexmap 1.9.3",
+ "indexmap 2.0.0",
  "insta",
  "iqdb",
  "itoa",

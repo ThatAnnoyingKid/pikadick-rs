@@ -12,14 +12,14 @@ required-features = [ "cli" ]
 
 [dependencies]
 scraper = { version = "0.16.0", default-features = false }
-thiserror = "1.0.40"
+thiserror = "1.0.46"
 url = "2.4.0"
 
 # Optional
-anyhow = { version = "1.0.71", optional = true }
-argh = { version = "0.1.10", optional = true }
+anyhow = { version = "1.0.74", optional = true }
+argh = { version = "0.1.12", optional = true }
 reqwest = { version = "0.11.18", default-features = false, optional = true }
-tokio = { version = "1.28.2", optional = true }
+tokio = { version = "1.32.0", optional = true }
 
 [features]
 default = []
