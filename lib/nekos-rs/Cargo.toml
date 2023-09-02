@@ -11,16 +11,16 @@ required-features = [ "cli" ]
 
 [dependencies]
 itoa = "1.0.9"
-reqwest = { version = "0.11.18", default-features = false, features = [ "json" ] }
-serde = { version = "1.0.183", features = [ "derive" ] }
+reqwest = { version = "0.11.20", default-features = false, features = [ "json" ] }
+serde = { version = "1.0.188", features = [ "derive" ] }
 serde_json = "1.0.105"
-thiserror = "1.0.46"
+thiserror = "1.0.47"
 tokio = { version = "1.32.0", features = [ "io-util" ] }
-url = "2.4.0"
+url = "2.4.1"
 
 # Optional
 argh = { version = "0.1.12", optional = true }
-anyhow = { version = "1.0.74", optional = true }
+anyhow = { version = "1.0.75", optional = true }
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path" ], optional = true }
 
 [dev-dependencies]

@@ -5,7 +5,7 @@ pub struct TagList {
     ///
     /// So far, this has only been "array"
     #[serde(rename = "type", alias = "@type")]
-    pub kind: String,
+    pub kind: Box<str>,
 
     /// The list of tags
     #[serde(rename = "tag", default)]
@@ -25,7 +25,7 @@ pub struct Tag {
 
     /// The tag name
     #[serde(alias = "@name")]
-    pub name: String,
+    pub name: Box<str>,
 
     /// ?
     #[serde(alias = "@ambiguous")]
