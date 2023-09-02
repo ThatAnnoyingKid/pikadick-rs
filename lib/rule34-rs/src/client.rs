@@ -187,7 +187,7 @@ mod test {
 
         #[cfg(feature = "scrape")]
         {
-            let first = res.posts.first().expect("missing first entry");
+            let first = response.posts.first().expect("missing first entry");
             let post = client
                 .get_html_post(first.id)
                 .await
