@@ -182,7 +182,7 @@ mod test {
             .await
             .unwrap_or_else(|error| panic!("failed to search rule34 for \"{query}\": {error}"));
         assert!(!response.posts.is_empty(), "no posts for \"{query}\"");
-        
+
         dbg!(&response);
 
         #[cfg(feature = "scrape")]
