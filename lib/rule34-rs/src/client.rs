@@ -175,13 +175,15 @@ mod test {
 
     async fn get_top_post(query: &str) {
         let client = Client::new();
-        let res = client
+        let response = client
             .list_posts()
             .tags(Some(query))
             .execute()
             .await
-            .unwrap_or_else(|e| panic!("failed to search rule34 for `{}`: {}", query, e));
-        assert!(!res.posts.is_empty(), "no posts for `{}`", query);
+            .unwrap_or_else(|error| panic!("failed to search rule34 for \"{query}\": {error}"));
+        assert!(!response.posts.is_empty(), "no posts for \"{query}\"");
+        
+        dbg!(&response);
 
         #[cfg(feature = "scrape")]
         {
