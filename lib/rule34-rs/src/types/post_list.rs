@@ -1,5 +1,19 @@
 use std::num::NonZeroU64;
+use time::{
+    format_description::FormatItem,
+    OffsetDateTime,
+};
 use url::Url;
+
+const ASCTIME_WITH_OFFSET_FORMAT: &[FormatItem<'_>] = time::macros::format_description!(
+    "[weekday repr:short] [month repr:short] [day] [hour]:[minute]:[second] [offset_hour][offset_minute] [year]"
+);
+
+time::serde::format_description!(
+    asctime_with_offset,
+    OffsetDateTime,
+    ASCTIME_WITH_OFFSET_FORMAT
+);
 
 /// A list of posts
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -22,11 +36,11 @@ pub struct PostList {
 /// A Post
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct Post {
-    /// The height
+    /// The height of the original file.
     #[serde(alias = "@height")]
     pub height: u64,
 
-    /// ?
+    /// The number of up-votes.
     #[serde(alias = "@score")]
     pub score: u64,
 
@@ -60,7 +74,7 @@ pub struct Post {
 
     /// Tags
     #[serde(alias = "@tags")]
-    pub tags: String,
+    pub tags: Box<str>,
 
     /// The id the post
     #[serde(alias = "@id")]
@@ -74,45 +88,45 @@ pub struct Post {
     #[serde(alias = "@change")]
     pub change: u64,
 
-    /// A md5 hash?
+    /// The md5 hash of the file.
     #[serde(alias = "@md5")]
-    pub md5: String,
+    pub md5: Box<str>,
 
-    /// The creator id
+    /// The creator id.
     #[serde(alias = "@creator_id")]
     pub creator_id: u64,
 
-    /// Whether this has children
+    /// Whether this has children.
     #[serde(alias = "@has_children")]
     pub has_children: bool,
 
-    /// Creation date
-    #[serde(alias = "@created_at")]
-    pub created_at: String,
+    /// The creation date of the post.
+    #[serde(alias = "@created_at", with = "asctime_with_offset")]
+    pub created_at: OffsetDateTime,
 
     /// ?
     #[serde(alias = "@status")]
-    pub status: String,
+    pub status: Box<str>,
 
     /// The original source.
     ///
-    /// May or may not be a url
+    /// May or may not be a url, it is filled manually by users.
     #[serde(alias = "@source")]
-    pub source: Option<String>,
+    pub source: Option<Box<str>>,
 
-    /// Whether the post has notes
+    /// Whether the post has notes.
     #[serde(alias = "@has_notes")]
     pub has_notes: bool,
 
-    /// Whether this post has comments
+    /// Whether this post has comments.
     #[serde(alias = "@has_comments")]
     pub has_comments: bool,
 
-    /// The preview image width
+    /// The preview image width.
     #[serde(alias = "@preview_width")]
     pub preview_width: u64,
 
-    /// The preview image height
+    /// The preview image height.
     #[serde(alias = "@preview_height")]
     pub preview_height: u64,
 }
@@ -159,5 +173,19 @@ impl Rating {
             Self::Explicit => "e",
             Self::Safe => "s",
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn asctime_with_offset_sanity() {
+        let date_time_str = "Sat Sep 02 02:01:00 +0000 2023";
+        let date = OffsetDateTime::parse(date_time_str, ASCTIME_WITH_OFFSET_FORMAT)
+            .expect("failed to parse");
+
+        assert!(date.unix_timestamp() == 1693620060);
     }
 }
