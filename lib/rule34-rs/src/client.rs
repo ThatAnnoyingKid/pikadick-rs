@@ -17,7 +17,10 @@ use reqwest::header::{
 };
 #[cfg(feature = "scrape")]
 use scraper::Html;
-use std::num::NonZeroU64;
+use std::{
+    num::NonZeroU64,
+    time::Duration,
+};
 use url::Url;
 
 // Default Header values
@@ -49,6 +52,7 @@ impl Client {
 
         let client = reqwest::Client::builder()
             .default_headers(default_headers)
+            .connect_timeout(Duration::from_secs(10))
             .build()
             .expect("failed to build rule34 client");
 
