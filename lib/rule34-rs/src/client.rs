@@ -215,7 +215,7 @@ mod test {
     async fn deleted_images_list() {
         let client = Client::new();
         let result = client
-            .list_deleted_images(Some(NonZeroU64::new(500_000).unwrap())) // Just choose a high-ish post id here and update to keep the download limited
+            .list_deleted_images(Some(NonZeroU64::new(826_550).unwrap())) // Just choose a high-ish post id here and update to keep the download limited
             .await
             .expect("failed to get deleted images");
         dbg!(result);
