@@ -25,47 +25,42 @@ pub struct Stats {
 }
 
 impl Stats {
+    /// Populate an embed with data.
     pub fn populate_embed<'a>(&self, e: &'a mut CreateEmbed) -> &'a mut CreateEmbed {
         // We mix overwolf and non-overwolf data to get what we want.
 
-        // New Overwolf Api
+        // Overwolf Api
         e.title(self.overwolf_player.name.as_str())
-            .image(self.overwolf_player.avatar.as_str());
+            .image(self.overwolf_player.avatar.as_str())
+            .field("Level", self.overwolf_player.level, true)
+            .field(
+                "Suspected Cheater",
+                self.overwolf_player.suspected_cheater,
+                true,
+            );
 
         if let Some(season) = self.overwolf_player.current_season_best_region.as_ref() {
             e.field("Current Rank", &season.rank_name, true)
-                .field("Current MMR", itoa::Buffer::new().format(season.mmr), true)
+                .field("Current MMR", season.mmr, true)
                 .field("Seasonal Ranked K/D", format!("{:.2}", season.kd), true)
                 .field(
                     "Seasonal Ranked Win %",
-                    ryu::Buffer::new().format(season.win_pct),
+                    format!("{:.2}", season.win_pct),
                     true,
                 )
-                .field(
-                    "Seasonal # of Ranked Matches",
-                    itoa::Buffer::new().format(season.matches),
-                    true,
-                );
+                .field("Seasonal # of Ranked Matches", season.matches, true);
         }
 
         if let Some(season) = self.overwolf_player.get_current_casual_season() {
             e.field("Current Casual Rank", &season.rank_name, true)
-                .field(
-                    "Current Casual MMR",
-                    itoa::Buffer::new().format(season.mmr),
-                    true,
-                )
+                .field("Current Casual MMR", season.mmr, true)
                 .field("Seasonal Casual K/D", format!("{:.2}", season.kd), true)
                 .field(
                     "Seasonal Casual Win %",
-                    ryu::Buffer::new().format(season.win_pct),
+                    format!("{:.2}", season.win_pct),
                     true,
                 )
-                .field(
-                    "Seasonal # of Casual Matches",
-                    itoa::Buffer::new().format(season.matches),
-                    true,
-                );
+                .field("Seasonal # of Casual Matches", season.matches, true);
         }
 
         // Best Rank/MMR lifetime stats are bugged in Overwolf.
@@ -91,7 +86,7 @@ impl Stats {
             .or_else(|| overwolf_best_mmr.map(|best_mmr| best_mmr.name.as_str()));
 
         if let Some(max_mmr) = max_mmr {
-            e.field("Best MMR", itoa::Buffer::new().format(max_mmr), true);
+            e.field("Best MMR", max_mmr, true);
         }
 
         if let Some(max_rank) = max_rank {
@@ -101,7 +96,7 @@ impl Stats {
         if let Some(lifetime_ranked_kd) = self.overwolf_player.get_lifetime_ranked_kd() {
             e.field(
                 "Lifetime Ranked K/D",
-                format!("{:.2}", lifetime_ranked_kd),
+                format!("{lifetime_ranked_kd:.2}"),
                 true,
             );
         }
@@ -109,7 +104,7 @@ impl Stats {
         if let Some(lifetime_ranked_win_pct) = self.overwolf_player.get_lifetime_ranked_win_pct() {
             e.field(
                 "Lifetime Ranked Win %",
-                format!("{:.2}", lifetime_ranked_win_pct),
+                format!("{lifetime_ranked_win_pct:.2}"),
                 true,
             );
         }
