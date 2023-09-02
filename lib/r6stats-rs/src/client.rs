@@ -5,29 +5,34 @@ use crate::{
     },
     Error,
 };
+use std::time::Duration;
 
 /// An R6Stats client
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client
+    pub client: reqwest::Client,
 }
 
 impl Client {
-    /// Make a new client
+    /// Make a new client.
     pub fn new() -> Self {
-        Client {
-            client: reqwest::Client::new(),
-        }
+        let client = reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(10))
+            .build()
+            .expect("failed to build client");
+
+        Client { client }
     }
 
     // TODO: Add non-pc support
     /// Search for a PC user's profile by name.
     pub async fn search(&self, name: &str) -> Result<Vec<UserData>, Error> {
-        let url = format!("https://r6stats.com/api/player-search/{}/pc", name);
+        let url = format!("https://r6stats.com/api/player-search/{name}/pc");
         let text = self.client.get(&url).send().await?.text().await?;
-        let res: ApiResponse<Vec<UserData>> = serde_json::from_str(&text)?;
+        let response: ApiResponse<Vec<UserData>> = serde_json::from_str(&text)?;
 
-        Ok(res.data)
+        Ok(response.data)
     }
 }
 
