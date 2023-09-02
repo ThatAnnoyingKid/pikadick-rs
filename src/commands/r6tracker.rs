@@ -206,12 +206,12 @@ impl R6TrackerClient {
         // Open profile in the map so that we only validate the profile if we got overwolf data
         // This is because profile will fail in strange ways if the player does not exist.
         let entry = overwolf_player
-            .map::<Result<_, anyhow::Error>, _>(|overwolf_player| {
+            .map(|overwolf_player| {
                 let profile = profile
                     .context("failed to get profile data")?
                     .into_result()
                     .context("profile api response was invalid")?;
-                Ok(Stats {
+                anyhow::Ok(Stats {
                     overwolf_player,
                     profile,
                 })
@@ -264,25 +264,27 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
             let client = client_data.r6tracker_client.clone();
             drop(data_lock);
 
-            info!("Getting r6 stats for '{}' using R6Tracker", args.name);
+            let name = args.name;
+
+            info!("Getting r6 stats for \"{name}\" using R6Tracker");
+
+            interaction.defer(&ctx.http).await?;
 
             let result = client
-                .get_stats(&args.name)
+                .get_stats(&name)
                 .await
-                .with_context(|| format!("failed to get r6tracker stats for '{}'", args.name));
+                .with_context(|| format!("failed to get r6tracker stats for \"{name}\""));
 
             interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| {
-                        match result.as_ref().map(|entry| entry.data()) {
-                            Ok(Some(stats)) => res.embed(|e| stats.populate_embed(e)),
-                            Ok(None) => res.content("No Results"),
-                            Err(e) => {
-                                error!("{:?}", e);
-                                res.content(format!("{:?}", e))
-                            }
+                .edit_original_interaction_response(&ctx.http, |edit_response| {
+                    match result.as_ref().map(|entry| entry.data()) {
+                        Ok(Some(stats)) => edit_response.embed(|e| stats.populate_embed(e)),
+                        Ok(None) => edit_response.content("No Results"),
+                        Err(error) => {
+                            error!("{error:?}");
+                            edit_response.content(format!("{error:?}"))
                         }
-                    })
+                    }
                 })
                 .await?;
 
