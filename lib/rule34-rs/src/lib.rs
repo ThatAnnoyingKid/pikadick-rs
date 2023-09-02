@@ -38,6 +38,9 @@ pub const TAGS_LIST_LIMIT_MAX: u16 = 1_000;
 // URL constants
 pub(crate) const URL_INDEX: &str = "https://rule34.xxx/index.php";
 
+/// The base Api Url
+pub(crate) const API_BASE_URL: &str = "https://api.rule34.xxx/index.php";
+
 /// Turn a post id into a post url
 fn post_id_to_html_post_url(id: NonZeroU64) -> Url {
     // It shouldn't be possible to make this function fail for any valid id.

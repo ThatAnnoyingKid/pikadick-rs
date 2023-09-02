@@ -100,7 +100,7 @@ pub struct Post {
     #[serde(alias = "@source")]
     pub source: Option<String>,
 
-    /// ?
+    /// Whether the post has notes
     #[serde(alias = "@has_notes")]
     pub has_notes: bool,
 
@@ -108,11 +108,11 @@ pub struct Post {
     #[serde(alias = "@has_comments")]
     pub has_comments: bool,
 
-    /// preview image width
+    /// The preview image width
     #[serde(alias = "@preview_width")]
     pub preview_width: u64,
 
-    /// preview image height
+    /// The preview image height
     #[serde(alias = "@preview_height")]
     pub preview_height: u64,
 }

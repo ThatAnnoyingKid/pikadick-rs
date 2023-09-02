@@ -86,18 +86,13 @@ impl TagKind {
 
 impl std::fmt::Debug for TagKind {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        if self.is_general() {
-            "General".fmt(f)
-        } else if self.is_author() {
-            "Author".fmt(f)
-        } else if self.is_copyright() {
-            "Copyright".fmt(f)
-        } else if self.is_character() {
-            "Character".fmt(f)
-        } else if self.is_metadata() {
-            "Metadata".fmt(f)
-        } else {
-            write!(f, "Unknown({})", self.0)
+        match *self {
+            Self::GENERAL => "General".fmt(f),
+            Self::AUTHOR => "Author".fmt(f),
+            Self::COPYRIGHT => "Copyright".fmt(f),
+            Self::CHARACTER => "Character".fmt(f),
+            Self::METADATA => "Metadata".fmt(f),
+            Self(unknown) => write!(f, "Unknown({unknown})"),
         }
     }
 }
