@@ -132,6 +132,9 @@ skip = [
     
     # Blocked on serde-value updating ordered-float to 0.3.x
     { name = "ordered-float", version = "2.10.0" },
+    
+    # Blocked on serenity updating async-tungstenite
+    { name = "webpki-roots", version = "0.22.6" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
