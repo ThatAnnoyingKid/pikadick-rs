@@ -1,3 +1,4 @@
+use super::Md5Digest;
 use std::num::NonZeroU64;
 
 /// A list of deleted images
@@ -17,5 +18,5 @@ pub struct Post {
 
     /// The md5 hash of the deleted post
     #[serde(alias = "@md5")]
-    pub md5: Box<str>,
+    pub md5: Md5Digest,
 }

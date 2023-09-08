@@ -1,3 +1,4 @@
+use super::Md5Digest;
 use std::num::NonZeroU64;
 use time::{
     format_description::FormatItem,
@@ -90,7 +91,7 @@ pub struct Post {
 
     /// The md5 hash of the file.
     #[serde(alias = "@md5")]
-    pub md5: Box<str>,
+    pub md5: Md5Digest,
 
     /// The creator id.
     #[serde(alias = "@creator_id")]
