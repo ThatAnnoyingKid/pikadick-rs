@@ -51,4 +51,5 @@ rustls-tls = ["reqwest/rustls-tls"]
 # Omitting this feature reduces the number of dependencies.
 scrape = ["scraper", "once_cell"]
 
+# Whether to enable the CLI
 cli = ["argh", "anyhow", "tokio/rt-multi-thread", "tokio/fs", "nd-util", "scrape"]

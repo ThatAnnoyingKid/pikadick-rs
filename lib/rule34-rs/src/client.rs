@@ -53,6 +53,7 @@ impl Client {
         let client = reqwest::Client::builder()
             .default_headers(default_headers)
             .connect_timeout(Duration::from_secs(10))
+            .timeout(Duration::from_secs(90))
             .build()
             .expect("failed to build rule34 client");
 
