@@ -17,6 +17,7 @@ pub use crate::{
         DeletedImageList,
         Post,
         PostList,
+        Rating,
         Tag,
         TagKind,
         TagList,
