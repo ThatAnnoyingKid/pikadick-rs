@@ -21,7 +21,9 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
     for (i, post) in list.posts.iter().enumerate() {
         println!("{})", i + 1);
         println!("ID: {}", post.deleted);
-        println!("MD5: {}", post.md5);
+        if let Some(md5) = post.md5 {
+            println!("MD5: {md5}");
+        }
         println!();
     }
 
