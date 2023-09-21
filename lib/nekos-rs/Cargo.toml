@@ -13,7 +13,7 @@ required-features = [ "cli" ]
 itoa = "1.0.9"
 reqwest = { version = "0.11.20", default-features = false, features = [ "json" ] }
 serde = { version = "1.0.188", features = [ "derive" ] }
-serde_json = "1.0.105"
+serde_json = "1.0.107"
 thiserror = "1.0.48"
 tokio = { version = "1.32.0", features = [ "io-util" ] }
 url = "2.4.1"

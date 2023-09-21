@@ -27,7 +27,7 @@ use tracing::error;
 #[derive(Clone, Debug)]
 pub struct SauceNaoClient {
     client: sauce_nao::Client,
-    search_cache: TimedCache<String, sauce_nao::SearchJson>,
+    search_cache: TimedCache<String, sauce_nao::OkResponse>,
 }
 
 impl SauceNaoClient {
@@ -42,7 +42,7 @@ impl SauceNaoClient {
     pub async fn search(
         &self,
         query: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<sauce_nao::SearchJson>>> {
+    ) -> anyhow::Result<Arc<TimedCacheEntry<sauce_nao::OkResponse>>> {
         if let Some(entry) = self.search_cache.get_if_fresh(query) {
             return Ok(entry);
         }

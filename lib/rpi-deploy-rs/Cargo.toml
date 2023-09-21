@@ -8,9 +8,9 @@ anyhow = "1.0.75"
 argh = "0.1.12"
 cargo_metadata = "0.17.0"
 serde = { version = "1.0.188", features = [ "derive" ] }
-serde_json = "1.0.105"
+serde_json = "1.0.107"
 ssh2 = { version = "0.9.4", features = [ "vendored-openssl", "openssl-on-win32" ] }
-toml = "0.7.7"
+toml = "0.7.8"
 rand = "0.8.5"
 indicatif = "0.17.6"
 camino = "1.1.6"
