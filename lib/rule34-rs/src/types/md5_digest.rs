@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 const DIGEST_LEN: usize = 16;
 
 /// An error that may occur while parsing an Md5Digest from a &str.
@@ -16,7 +18,7 @@ pub enum FromStrError {
 ///
 /// Smaller and faster than a String, and performs basic validation.
 #[derive(Debug, Copy, Clone, serde::Deserialize, serde::Serialize)]
-#[serde(try_from = "&str", into = "String")]
+#[serde(try_from = "Cow<str>", into = "String")]
 pub struct Md5Digest(pub [u8; DIGEST_LEN]);
 
 impl TryFrom<&str> for Md5Digest {
@@ -48,6 +50,15 @@ impl TryFrom<&str> for Md5Digest {
         }
 
         Ok(Self(digest))
+    }
+}
+
+impl TryFrom<Cow<'_, str>> for Md5Digest {
+    type Error = FromStrError;
+
+    fn try_from(input: Cow<str>) -> Result<Self, Self::Error> {
+        let input: &str = &input;
+        input.try_into()
     }
 }
 
