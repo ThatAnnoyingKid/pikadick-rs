@@ -19,4 +19,4 @@ nix = { version = "0.27.1", features = [ "hostname", "feature" ], default-featur
 libc = "0.2.148"
 
 [dev-dependencies]
-time = { version = "0.3.28", features = [ "local-offset" ] }
+time = { version = "0.3.29", features = [ "local-offset" ] }
