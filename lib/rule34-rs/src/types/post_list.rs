@@ -73,7 +73,11 @@ pub struct Post {
     #[serde(alias = "@rating")]
     pub rating: Rating,
 
-    /// Tags
+    /// A list of tag names.
+    ///
+    /// Tag names are separated by one or more spaces.
+    /// There may ore may not be a leading or trailing space.
+    /// Tag names are always lowercase.
     #[serde(alias = "@tags")]
     pub tags: Box<str>,
 
