@@ -89,9 +89,11 @@ pub struct Post {
     #[serde(alias = "@width")]
     pub width: u64,
 
-    /// ?
-    #[serde(alias = "@change")]
-    pub change: u64,
+    /// The time of the last change?
+    ///
+    /// This is a unix timestamp.
+    #[serde(alias = "@change", with = "time::serde::timestamp")]
+    pub change: OffsetDateTime,
 
     /// The md5 hash of the file.
     #[serde(alias = "@md5")]
