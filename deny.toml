@@ -17,6 +17,9 @@ ignore = [
     
     # Blocked on songbird updating their deps
     "RUSTSEC-2023-0037",
+    
+    # Blocked on serenity updating their deps
+    "RUSTSEC-2023-0065",
 ]
 
 [licenses]
