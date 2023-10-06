@@ -116,8 +116,6 @@ use anyhow::{
     ensure,
     Context as _,
 };
-use once_cell::sync::Lazy;
-use regex::Regex;
 use serenity::{
     client::bridge::gateway::ShardManager,
     framework::standard::{
@@ -162,10 +160,6 @@ use tracing_appender::non_blocking::WorkerGuard;
 use url::Url;
 
 const TOKIO_RT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
-
-/// Source: <https://urlregex.com/>
-static URL_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex"));
 
 struct Handler;
 
@@ -259,32 +253,23 @@ impl EventHandler for Handler {
             let reddit_embed_is_enabled_for_guild = db
                 .get_reddit_embed_enabled(guild_id)
                 .await
-                .with_context(|| {
-                    format!("failed to get reddit-embed server data for '{}'", guild_id)
-                })
-                .unwrap_or_else(|e| {
-                    error!("{:?}", e);
+                .with_context(|| format!("failed to get reddit-embed server data for {guild_id}"))
+                .unwrap_or_else(|error| {
+                    error!("{error:?}");
                     false
                 });
             let tiktok_embed_flags = db
                 .get_tiktok_embed_flags(guild_id)
                 .await
-                .with_context(|| {
-                    format!("failed to get tiktok-embed server data for '{}'", guild_id)
-                })
-                .unwrap_or_else(|e| {
-                    error!("{:?}", e);
+                .with_context(|| format!("failed to get tiktok-embed server data for {guild_id}"))
+                .unwrap_or_else(|error| {
+                    error!("{error:?}");
                     TikTokEmbedFlags::empty()
                 });
 
-            // Extract urls
-            // NOTE: Regex doesn't HAVE to be perfect.
-            // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
+            // Extract urls.
             // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
-            let urls: Vec<Url> = URL_REGEX
-                .find_iter(&msg.content)
-                .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
-                .collect();
+            let urls: Vec<Url> = crate::util::extract_urls(&msg.content).collect();
 
             // Check to see if it we will even try to embed
             let will_try_embedding = urls.iter().any(|url| {
