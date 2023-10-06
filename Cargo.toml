@@ -21,7 +21,7 @@ deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-feat
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
 futures = { version = "0.3.28", features = [ "std" ], default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
-indexmap = "2.0.0"
+indexmap = "2.0.2"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }
 itoa = "1.0.9"
@@ -42,8 +42,8 @@ r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = 
 rand = "0.8.5"
 reddit = { git = "https://github.com/nathaniel-daniel/reddit-rs", features = [ "rustls-tls" ], default-features = false }
 reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls-tls" ] }
-regex = "1.9.5"
-reqwest = { version = "0.11.20", default-features = false }
+regex = "1.9.6"
+reqwest = { version = "0.11.22", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
 rusqlite = { version = "0.29.0", features = [ "bundled", "blob", "trace" ] }
 ryu = "1.0.15"
@@ -53,11 +53,11 @@ serenity = { version = "0.11.6", features = [ "client", "standard_framework", "r
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
 songbird = "0.3.2"
 systemstat = "0.2.3"
-thiserror = "1.0.48"
+thiserror = "1.0.49"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tiktok = { git = "https://github.com/adumbidiot/tiktok-rs", default-features = false, features = [ "rustls-tls" ] }
 time = "0.3.29"
-tiny-skia = { version = "0.11.1", features = [ "std", "simd", "png-format" ], default-features = false }
+tiny-skia = { version = "0.11.2", features = [ "std", "simd", "png-format" ], default-features = false }
 tokio = { version = "1.32.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
 tokio-stream = "0.1.14"
