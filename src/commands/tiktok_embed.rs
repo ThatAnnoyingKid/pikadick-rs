@@ -74,7 +74,7 @@ pub struct TikTokData {
     encoder_task: EncoderTask,
 
     /// A cache of post urls => post pages
-    pub post_page_cache: TimedCache<String, tiktok::PostPage>,
+    pub post_page_cache: TimedCache<String, tiktok::Post>,
 
     /// The path to tiktok's cache dir
     video_download_cache_path: Utf8PathBuf,
@@ -143,20 +143,30 @@ impl TikTokData {
     pub async fn get_post_cached(
         &self,
         url: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<tiktok::PostPage>>> {
+    ) -> anyhow::Result<Arc<TimedCacheEntry<tiktok::Post>>> {
         if let Some(post_page) = self.post_page_cache.get_if_fresh(url) {
             return Ok(post_page);
         }
 
-        let post_page = self
-            .client
-            .get_post(url)
-            .await
-            .context("failed to get post page")?;
+        let video_id = Url::parse(url)?
+            .path_segments()
+            .context("missing path")?
+            .next_back()
+            .context("missing video id")?
+            .parse()
+            .context("invalid video id")?;
 
-        Ok(self
-            .post_page_cache
-            .insert_and_get(url.to_string(), post_page))
+        let mut feed = self
+            .client
+            .get_feed(Some(video_id))
+            .await
+            .context("failed to get feed")?;
+        ensure!(!feed.aweme_list.is_empty(), "missing post");
+
+        let post = feed.aweme_list.swap_remove(0);
+        ensure!(post.aweme_id == video_id);
+
+        Ok(self.post_page_cache.insert_and_get(url.to_string(), post))
     }
 
     /// Get video data, using the cache if needed
@@ -389,14 +399,19 @@ impl TikTokData {
         let (video_url, video_id, video_format, video_duration) = {
             let post = self.get_post_cached(url.as_str()).await?;
             let post = post.data();
-            let item_module_post = post
-                .get_item_module_post()
-                .context("missing item module post")?;
 
-            let video_url = item_module_post.video.download_addr.clone();
-            let video_id: u64 = item_module_post.id.parse().context("invalid video id")?;
-            let video_format = item_module_post.video.format.clone();
-            let video_duration = item_module_post.video.duration;
+            let video_url = post
+                .video
+                .download_addr
+                .url_list
+                .first()
+                .context("missing video url")?
+                .clone();
+            let video_id: u64 = post.aweme_id;
+            // let video_format = post.video.format.clone();
+            // TODO: Can this ever NOT be an mp4?
+            let video_format = String::from("mp4");
+            let video_duration = post.video.duration;
 
             (video_url, video_id, video_format, video_duration)
         };
