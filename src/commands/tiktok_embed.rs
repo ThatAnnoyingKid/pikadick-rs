@@ -4,10 +4,7 @@ use crate::{
         CacheStatsProvider,
     },
     util::{
-        ArcAnyhowError,
-        DropRemovePath,
         EncoderTask,
-        RequestMap,
         TimedCache,
         TimedCacheEntry,
     },
@@ -22,6 +19,11 @@ use anyhow::{
 use camino::{
     Utf8Path,
     Utf8PathBuf,
+};
+pub use nd_util::DropRemovePath;
+use pikadick_util::{
+    ArcAnyhowError,
+    RequestMap,
 };
 use serenity::{
     model::prelude::*,
@@ -104,7 +106,7 @@ impl TikTokData {
 
         // Keep only h264 encoders
         encoders.retain(|encoder| encoder.description.ends_with("(codec h264)"));
-        info!("found h264 encoders: {:#?}", encoders);
+        info!("found h264 encoders: {encoders:#?}");
 
         let mut best_encoder_index = None;
         for encoder in encoders {
@@ -122,7 +124,7 @@ impl TikTokData {
         let best_encoder_index = best_encoder_index.context("failed to select an encoder")?;
         let best_encoder = ENCODER_PREFERENCE_LIST[best_encoder_index];
 
-        info!("selected encoder '{}'", best_encoder);
+        info!("selected encoder \"{best_encoder}\"");
 
         Ok(Self {
             client: tiktok::Client::new(),
@@ -245,7 +247,7 @@ impl TikTokData {
                                 video_duration,
                             );
                             let reencoded_file_path_tmp_1 = DropRemovePath::new(
-                                crate::util::with_push_extension(&reencoded_file_path, "1.tmp"),
+                                nd_util::with_push_extension(&reencoded_file_path, "1.tmp"),
                             );
 
                             info!(
@@ -263,7 +265,7 @@ impl TikTokData {
                                     .output(&*reencoded_file_path_tmp_1)
                                     .audio_codec("copy")
                                     .video_codec(video_encoder)
-                                    .video_bitrate(format!("{}K", target_bitrate))
+                                    .video_bitrate(format!("{target_bitrate}K"))
                                     .output_format("mp4")
                                     .try_send()
                                     .await
@@ -298,7 +300,7 @@ impl TikTokData {
                             // The RPI's ffmpeg produces invalid mp4 files.
                             // Until we can investigate and fix, transcode the file to try to let ffmpeg fix it.
                             let reencoded_file_path_tmp_2 = DropRemovePath::new(
-                                crate::util::with_push_extension(&reencoded_file_path, "2.tmp"),
+                                nd_util::with_push_extension(&reencoded_file_path, "2.tmp"),
                             );
 
                             {
@@ -348,9 +350,7 @@ impl TikTokData {
                             let metadata_len = metadata.len();
                             ensure!(
                                 metadata_len < FILE_SIZE_LIMIT_BYTES,
-                                "re-encoded file size ({}) is larger than the limit {}",
-                                metadata_len,
-                                FILE_SIZE_LIMIT_BYTES
+                                "re-encoded file size ({metadata_len}) is larger than the limit {FILE_SIZE_LIMIT_BYTES}",
                             );
 
                             // Rename the tmp file to be the actual name.

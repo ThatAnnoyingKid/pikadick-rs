@@ -106,16 +106,14 @@ use crate::{
         model::TikTokEmbedFlags,
         Database,
     },
-    util::{
-        AsyncLockFile,
-        LoadingReaction,
-    },
+    util::LoadingReaction,
 };
 use anyhow::{
     bail,
     ensure,
     Context as _,
 };
+use pikadick_util::AsyncLockFile;
 use serenity::{
     client::bridge::gateway::ShardManager,
     framework::standard::{
@@ -208,12 +206,12 @@ impl EventHandler for Handler {
         info!("logged in as '{}'", ready.user.name);
 
         // TODO: Consider shutting down the bot. It might be possible to use old data though.
-        if let Err(e) = slash_framework
+        if let Err(error) = slash_framework
             .register(ctx.clone(), config.test_guild)
             .await
             .context("failed to register slash commands")
         {
-            error!("{:?}", e);
+            error!("{error:?}");
         }
 
         info!("registered slash commands");
@@ -417,14 +415,17 @@ async fn help(
 struct General;
 
 async fn handle_ctrl_c(shard_manager: Arc<Mutex<ShardManager>>) {
-    match tokio::signal::ctrl_c().await {
+    match tokio::signal::ctrl_c()
+        .await
+        .context("failed to set ctrl-c handler")
+    {
         Ok(_) => {
             info!("shutting down...");
             info!("stopping client...");
             shard_manager.lock().await.shutdown_all().await;
         }
-        Err(e) => {
-            warn!("failed to set ctrl-c handler: {}", e);
+        Err(error) => {
+            warn!("{error}");
             // The default "kill everything" handler is probably still installed, so this isn't a problem?
         }
     };
@@ -447,8 +448,8 @@ fn after_handler<'fut>(
     command_result: CommandResult,
 ) -> BoxFuture<'fut, ()> {
     async move {
-        if let Err(e) = command_result {
-            error!("failed to process command '{}': {}", command_name, e);
+        if let Err(error) = command_result {
+            error!("failed to process command \"{command_name}\": {error}");
         }
     }
     .boxed()
@@ -460,13 +461,13 @@ fn unrecognised_command_handler<'fut>(
     command_name: &'fut str,
 ) -> BoxFuture<'fut, ()> {
     async move {
-        error!("unrecognized command '{}'", command_name);
+        error!("unrecognized command \"{command_name}\"");
 
         let _ = msg
             .channel_id
             .say(
                 &ctx.http,
-                format!("Could not find command '{}'", command_name),
+                format!("Could not find command \"{command_name}\""),
             )
             .await
             .is_ok();
@@ -514,9 +515,7 @@ async fn process_dispatch_error_future<'fut>(
                 .is_ok();
         }
         DispatchError::TooManyArguments { max, given } => {
-            let response_str = format!("Expected no more than {} argument(s) for this command, but got {}. Try using quotation marks if your argument has spaces.",
-                max, given
-            );
+            let response_str = format!("Expected no more than {max} argument(s) for this command, but got {given}. Try using quotation marks if your argument has spaces.");
             let _ = msg.channel_id.say(&ctx.http, response_str).await.is_ok();
         }
         DispatchError::CheckFailed(check_name, reason) => match reason {
@@ -528,16 +527,16 @@ async fn process_dispatch_error_future<'fut>(
                     .channel_id
                     .say(
                         &ctx.http,
-                        format!("{} check failed: {:#?}", check_name, reason),
+                        format!("\"{check_name}\" check failed: {reason:#?}"),
                     )
                     .await
                     .is_ok();
             }
         },
-        e => {
+        error => {
             let _ = msg
                 .channel_id
-                .say(&ctx.http, format!("Unhandled Dispatch Error: {:?}", e))
+                .say(&ctx.http, format!("Unhandled Dispatch Error: {error:?}"))
                 .await
                 .is_ok();
         }
@@ -564,7 +563,7 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     let uppercase_prefix = config_prefix.to_uppercase();
 
     // Build the standard framework
-    info!("using prefix '{}'", &config_prefix);
+    info!("using prefix \"{config_prefix}\"");
     let framework = StandardFramework::new()
         .configure(|c| {
             c.prefixes(&[config_prefix, uppercase_prefix])
