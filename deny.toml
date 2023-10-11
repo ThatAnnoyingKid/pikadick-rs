@@ -138,6 +138,11 @@ skip = [
     
     # Blocked on serenity updating async-tungstenite
     { name = "webpki-roots", version = "0.22.6" },
+    { name = "untrusted", version = "0.7.1" },
+    { name = "ring", version = "0.16.20" },
+    
+    # Blocked on async-channel updating event-listener to 3.0.0
+    { name = "event-listener", version = "2.5.3" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
