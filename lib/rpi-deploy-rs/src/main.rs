@@ -87,13 +87,13 @@ fn real_main(options: Options) -> anyhow::Result<()> {
                 .file_config
                 .get_machine_config(&options.name)
                 .with_context(|| {
-                    format!("missing machine config for machine `{}`", options.name)
+                    format!("missing machine config for machine \"{}\"", options.name)
                 })?;
 
             println!("Packaging...");
             ctx.package_target(&machine_config.target)?;
 
-            println!("Deploying to `{}`...", options.name);
+            println!("Deploying to \"{}\"...", options.name);
 
             let deb_package_path =
                 ctx.get_cargo_deb_package_path(machine_config.target.as_str())?;
@@ -122,7 +122,9 @@ fn real_main(options: Options) -> anyhow::Result<()> {
 
             println!("Copying package...");
             let local_package_file_path = deb_package_path;
-            let local_package_file = File::open(&local_package_file_path)?;
+            let local_package_file = File::open(&local_package_file_path).with_context(|| {
+                format!("failed to open package at \"{local_package_file_path}\"")
+            })?;
             let local_package_file_metadata = local_package_file.metadata()?;
 
             let file_name = {
@@ -152,7 +154,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
             };
 
             // TODO: Don't assume /tmp is the temp dir
-            let remote_package_file_path = format!("/tmp/{}", file_name);
+            let remote_package_file_path = format!("/tmp/{file_name}");
             let mut remote_package_file = sftp.open_mode(
                 remote_package_file_path.as_ref(),
                 ssh2::OpenFlags::WRITE | ssh2::OpenFlags::TRUNCATE,
@@ -176,9 +178,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
             progress_bar.finish();
             ensure!(
                 metadata_len == bytes_copied,
-                "file length changed during transfer, (expected) {} != (actual) {}",
-                metadata_len,
-                bytes_copied
+                "file length changed during transfer, (expected) {metadata_len} != (actual) {bytes_copied}",
             );
             remote_package_file.flush()?;
             remote_package_file.fsync()?;
@@ -189,7 +189,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
                 let mut ssh_channel = session.channel_session()?;
                 ssh_channel.handle_extended_data(ssh2::ExtendedData::Merge)?;
                 ssh_channel.exec(
-                    format!("DEBIAN_FRONTEND=noninteractive sudo apt-get -y --fix-broken reinstall -o DPkg::options::=\"--force-confdef\" -o DPkg::options::=\"--force-confold\" {}", remote_package_file_path).as_str(),
+                    format!("DEBIAN_FRONTEND=noninteractive sudo apt-get -y --fix-broken reinstall -o DPkg::options::=\"--force-confdef\" -o DPkg::options::=\"--force-confold\" {remote_package_file_path}").as_str(),
                 )?;
 
                 {
@@ -204,17 +204,16 @@ fn real_main(options: Options) -> anyhow::Result<()> {
 
                 ensure!(
                     exit_status == 0,
-                    "command exited with exit code {}",
-                    exit_status
+                    "command exited with exit code {exit_status}",
                 );
             }
 
-            println!("Deleting tmp file...");
+            println!("Deleting temp file...");
             println!();
             {
                 let mut ssh_channel = session.channel_session()?;
                 ssh_channel.handle_extended_data(ssh2::ExtendedData::Merge)?;
-                ssh_channel.exec(format!("rm {}", remote_package_file_path).as_str())?;
+                ssh_channel.exec(format!("rm {remote_package_file_path}").as_str())?;
 
                 {
                     let mut stderr_lock = std::io::stderr();
@@ -228,8 +227,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
 
                 ensure!(
                     exit_status == 0,
-                    "command exited with exit code {}",
-                    exit_status
+                    "command exited with exit code {exit_status}"
                 );
             }
             println!();

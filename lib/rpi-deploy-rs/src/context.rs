@@ -53,13 +53,10 @@ impl Context {
             get_rustup_active_toolchain().context("failed to get the active toolchain")?;
         let rustup_installed_targets = get_rustup_installed_targets(rustup_toolchain.as_str())
             .with_context(|| {
-                format!(
-                    "failed to get rustup toolchains for toolchain `{}`",
-                    rustup_toolchain
-                )
+                format!("failed to get rustup toolchains for toolchain \"{rustup_toolchain}\"",)
             })?;
-        println!("Current Toolchain: {}", rustup_toolchain);
-        println!("Installed Targets: {:#?}", rustup_installed_targets);
+        println!("Current Toolchain: {rustup_toolchain}");
+        println!("Installed Targets: {rustup_installed_targets:#?}");
 
         println!();
 
@@ -90,11 +87,16 @@ impl Context {
     /// Get the cargo deb package name
     pub fn get_cargo_deb_package_name(&self, target: &str) -> anyhow::Result<String> {
         let deb_arch = make_deb_arch(target)?;
+        let name = &self.root_package.name;
+        let version = &self.root_package.version;
+        let revision = &self
+            .root_package
+            .metadata
+            .as_object()
+            .and_then(|metadata| metadata.get("deb")?.as_object()?.get("revision")?.as_str())
+            .unwrap_or("1");
 
-        Ok(format!(
-            "{}_{}_{}.deb",
-            self.root_package.name, self.root_package.version, deb_arch
-        ))
+        Ok(format!("{name}_{version}-{revision}_{deb_arch}.deb"))
     }
 
     /// Set the cross config path
@@ -107,13 +109,12 @@ impl Context {
 
     /// Package a target
     pub fn package_target(&self, target: &str) -> anyhow::Result<()> {
-        println!("Packaging for `{}`...", target);
+        println!("Packaging for \"{target}\"...");
         println!();
 
         ensure!(
             self.rustup_target_is_installed(target),
-            "rustup target `{}` is not installed",
-            target
+            "rustup target \"{target}\" is not installed",
         );
 
         // Building
@@ -144,7 +145,7 @@ impl Context {
             println!();
         }
 
-        println!("Done packaging `{}`", target);
+        println!("Done packaging \"{target}\"");
         println!();
 
         Ok(())
