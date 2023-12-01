@@ -121,7 +121,10 @@ mod test {
     async fn it_works() {
         let client = Client::new();
 
-        let profile = client.get_profile(VALID_USER, Platform::Pc).await.unwrap();
+        let profile = client
+            .get_profile(VALID_USER, Platform::Pc)
+            .await
+            .expect("failed to get profile");
         dbg!(profile.take_valid().unwrap());
 
         let sessions = client.get_sessions(VALID_USER, Platform::Pc).await.unwrap();

@@ -15,8 +15,8 @@ reqwest = { version = "0.11.22", default-features = false, features = [ "multipa
 scraper = { version = "0.18.1", default-features = false }
 thiserror = "1.0.50"
 tokio = { version = "1.34.0", features = [ "fs", "rt" ] }
-tokio-util = { version = "0.7.9", features = ["codec"] }
-url = "2.4.1"
+tokio-util = { version = "0.7.10", features = ["codec"] }
+url = "2.5.0"
 
 # Optional
 anyhow = { version = "1.0.75", optional = true }

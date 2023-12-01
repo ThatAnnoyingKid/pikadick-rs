@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 cfg-if = "1.0.0"
 once_cell = "1.18.0"
-platforms = "3.1.2"
+platforms = "3.2.0"
 thiserror = "1.0.50"
 
 [target.'cfg(target_os = "windows")'.dependencies]
@@ -16,7 +16,7 @@ bitflags = "2.4.1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 nix = { version = "0.27.1", features = [ "hostname", "feature" ], default-features = false }
-libc = "0.2.149"
+libc = "0.2.150"
 
 [dev-dependencies]
-time = { version = "0.3.29", features = [ "local-offset" ] }
+time = { version = "0.3.30", features = [ "local-offset" ] }

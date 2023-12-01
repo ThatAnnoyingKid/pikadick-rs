@@ -13,7 +13,7 @@ required-features = [ "cli" ]
 [dependencies]
 scraper = { version = "0.18.1", default-features = false }
 thiserror = "1.0.50"
-url = "2.4.1"
+url = "2.5.0"
 
 # Optional
 anyhow = { version = "1.0.75", optional = true }
