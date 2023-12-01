@@ -114,7 +114,7 @@ impl Default for Client {
 mod test {
     use super::*;
 
-    const VALID_USER: &str = "KingGeorge";
+    const VALID_USER: &str = "ALEX-_-SAGAS";
     const INVALID_USER: &str = "aaaaabbaaaa";
 
     #[tokio::test]
@@ -124,8 +124,9 @@ mod test {
         let profile = client
             .get_profile(VALID_USER, Platform::Pc)
             .await
-            .expect("failed to get profile");
-        dbg!(profile.take_valid().unwrap());
+            .expect("failed to get profile")
+            .into_result();
+        dbg!(profile.unwrap());
 
         let sessions = client.get_sessions(VALID_USER, Platform::Pc).await.unwrap();
         dbg!(sessions.take_valid().unwrap());
