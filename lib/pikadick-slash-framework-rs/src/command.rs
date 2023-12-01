@@ -8,11 +8,14 @@ use crate::{
     FromOptions,
 };
 use serenity::{
-    builder::CreateApplicationCommand,
+    builder::{
+        CreateCommand,
+        CreateCommandOption,
+    },
     client::Context,
     model::application::{
-        command::CommandOptionType,
-        interaction::application_command::ApplicationCommandInteraction,
+        CommandInteraction,
+        CommandOptionType,
     },
 };
 use std::{
@@ -25,21 +28,16 @@ type OnProcessResult = Result<(), BoxError>;
 pub type OnProcessFuture = BoxFuture<'static, OnProcessResult>;
 
 // Keep these types in sync.
-type OnProcessFutureFn =
-    Box<dyn Fn(Context, ApplicationCommandInteraction) -> OnProcessFuture + Send + Sync>;
-type OnProcessFutureFnPtr<F, A> = fn(Context, ApplicationCommandInteraction, A) -> F;
+type OnProcessFutureFn = Box<dyn Fn(Context, CommandInteraction) -> OnProcessFuture + Send + Sync>;
+type OnProcessFutureFnPtr<F, A> = fn(Context, CommandInteraction, A) -> F;
 
 type HelpOnProcessFutureFn = Box<
-    dyn Fn(
-            Context,
-            ApplicationCommandInteraction,
-            Arc<HashMap<Box<str>, Command>>,
-        ) -> OnProcessFuture
+    dyn Fn(Context, CommandInteraction, Arc<HashMap<Box<str>, Command>>) -> OnProcessFuture
         + Send
         + Sync,
 >;
 type HelpOnProcessFutureFnPtr<F, A> =
-    fn(Context, ApplicationCommandInteraction, Arc<HashMap<Box<str>, Command>>, A) -> F;
+    fn(Context, CommandInteraction, Arc<HashMap<Box<str>, Command>>, A) -> F;
 
 /// A slash framework command
 pub struct Command {
@@ -79,7 +77,7 @@ impl Command {
     pub async fn fire_on_process(
         &self,
         ctx: Context,
-        interaction: ApplicationCommandInteraction,
+        interaction: CommandInteraction,
     ) -> Result<(), BoxError> {
         (self.on_process)(ctx, interaction).await
     }
@@ -90,22 +88,22 @@ impl Command {
     }
 
     /// Register this command
-    pub fn register(&self, command: &mut CreateApplicationCommand) {
-        command.name(self.name()).description(self.description());
+    pub fn register(&self, mut command: CreateCommand) -> CreateCommand {
+        command = command.name(self.name()).description(self.description());
 
         for argument in self.arguments().iter() {
-            command.create_option(|option| {
-                option
-                    .name(argument.name())
-                    .description(argument.description())
-                    .kind(match argument.kind() {
-                        DataType::Boolean => CommandOptionType::Boolean,
-                        DataType::String => CommandOptionType::String,
-                        DataType::Integer => CommandOptionType::Integer,
-                    })
-                    .required(argument.required())
-            });
+            let option_kind = match argument.kind() {
+                DataType::Boolean => CommandOptionType::Boolean,
+                DataType::String => CommandOptionType::String,
+                DataType::Integer => CommandOptionType::Integer,
+            };
+            let option =
+                CreateCommandOption::new(option_kind, argument.name(), argument.description())
+                    .required(argument.required());
+            command = command.add_option(option);
         }
+
+        command
     }
 }
 
@@ -263,28 +261,29 @@ impl HelpCommand {
     pub async fn fire_on_process(
         &self,
         ctx: Context,
-        interaction: ApplicationCommandInteraction,
+        interaction: CommandInteraction,
         map: Arc<HashMap<Box<str>, Command>>,
     ) -> Result<(), BoxError> {
         (self.on_process)(ctx, interaction, map).await
     }
 
     /// Register this help command
-    pub fn register(&self, command: &mut CreateApplicationCommand) {
-        command.name("help").description(self.description());
+    pub fn register(&self, mut command: CreateCommand) -> CreateCommand {
+        command = command.name("help").description(self.description());
 
         for argument in self.arguments().iter() {
-            command.create_option(|option| {
-                option
-                    .name(argument.name())
-                    .description(argument.description())
-                    .kind(match argument.kind() {
-                        DataType::Boolean => CommandOptionType::Boolean,
-                        DataType::String => CommandOptionType::String,
-                        DataType::Integer => CommandOptionType::Integer,
-                    })
-            });
+            let option_kind = match argument.kind() {
+                DataType::Boolean => CommandOptionType::Boolean,
+                DataType::String => CommandOptionType::String,
+                DataType::Integer => CommandOptionType::Integer,
+            };
+            let option =
+                CreateCommandOption::new(option_kind, argument.name(), argument.description())
+                    .required(argument.required());
+            command = command.add_option(option);
         }
+
+        command
     }
 }
 
