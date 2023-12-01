@@ -7,5 +7,5 @@ edition = "2021"
 anyhow = "1.0.75"
 argh = "0.1.12"
 cargo_metadata = "0.18.0"
-serde = { version = "1.0.188", features = [ "derive" ] }
+serde = { version = "1.0.193", features = [ "derive" ] }
 toml = "0.8.2"

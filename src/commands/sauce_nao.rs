@@ -98,7 +98,7 @@ async fn sauce_nao(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
     {
         Ok(data) => {
             let data = data.data();
-            match data.results.get(0) {
+            match data.results.first() {
                 Some(data) => {
                     msg.channel_id
                         .send_message(&ctx.http, |m| {
@@ -106,7 +106,7 @@ async fn sauce_nao(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                                 e.title("SauceNao Best Match")
                                     .image(data.header.thumbnail.as_str());
 
-                                if let Some(ext_url) = data.data.ext_urls.get(0) {
+                                if let Some(ext_url) = data.data.ext_urls.first() {
                                     e.description(ext_url.as_str()).url(ext_url.as_str());
                                 }
 
