@@ -101,7 +101,7 @@ pub struct Post {
 
     /// The creator id.
     #[serde(alias = "@creator_id")]
-    pub creator_id: u64,
+    pub creator_id: NonZeroU64,
 
     /// Whether this has children.
     #[serde(alias = "@has_children")]
