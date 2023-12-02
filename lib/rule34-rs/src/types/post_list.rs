@@ -39,7 +39,7 @@ pub struct PostList {
 pub struct Post {
     /// The height of the original file.
     #[serde(alias = "@height")]
-    pub height: u64,
+    pub height: NonZeroU64,
 
     /// The number of up-votes.
     #[serde(alias = "@score")]
@@ -59,11 +59,11 @@ pub struct Post {
 
     /// The sample width
     #[serde(alias = "@sample_width")]
-    pub sample_width: u64,
+    pub sample_width: NonZeroU64,
 
     /// The sample height
     #[serde(alias = "@sample_height")]
-    pub sample_height: u64,
+    pub sample_height: NonZeroU64,
 
     /// The preview url
     #[serde(alias = "@preview_url")]
@@ -87,7 +87,7 @@ pub struct Post {
 
     /// image width
     #[serde(alias = "@width")]
-    pub width: u64,
+    pub width: NonZeroU64,
 
     /// The time of the last change?
     ///
@@ -131,11 +131,11 @@ pub struct Post {
 
     /// The preview image width.
     #[serde(alias = "@preview_width")]
-    pub preview_width: u64,
+    pub preview_width: NonZeroU64,
 
     /// The preview image height.
     #[serde(alias = "@preview_height")]
-    pub preview_height: u64,
+    pub preview_height: NonZeroU64,
 }
 
 impl Post {
