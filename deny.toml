@@ -14,12 +14,6 @@ notice = "deny"
 ignore = [    
     # Blocked on removing heim
     "RUSTSEC-2020-0168",
-    
-    # Blocked on songbird updating their deps
-    "RUSTSEC-2023-0037",
-    
-    # Blocked on serenity updating their deps
-    "RUSTSEC-2023-0065",
 ]
 
 [licenses]
@@ -66,12 +60,6 @@ license-files = [
 multiple-versions = "warn"
 highlight = "all"
 skip = [    
-    # Blocked on ring updating their version of spin to 0.9
-    { name = "spin", version = "0.5.2" },
-    
-    # Blocked on serenity-voice-model moving away from enum_primitive
-    { name = "num-traits", version = "0.1.43" },
-    
     # Blocked on updates to cssparser
     { name = "phf_shared", version = "0.10.0" },
     
@@ -98,15 +86,8 @@ skip = [
     # Blocked on reqwest updating cookie-store to 0.19.x
     { name = "cookie_store", version = "0.16.1" },
     
-    # Blocked on ecosystem moving to base64 0.20 and above
-    { name = "base64", version = "0.13.1" },
-    
     # Blocked on ecosystem moving to syn 2
     { name = "syn", version = "1.0.109" },
-    
-    # Blocked on serenity updating async-tungstenite
-    { name = "tokio-rustls", version = "0.23.4" },
-    { name = "rustls", version = "0.20.8" },
     
     # Blocked on tracing subscriber updating their deps
     { name = "regex-syntax", version = "0.6.29" },
@@ -138,14 +119,6 @@ skip = [
     
     # Blocked on reqwest updating cookie-store to 0.16.0
     { name = "cookie", version = "0.16.2" },
-    
-    # Blocked on serde-value updating ordered-float to 0.3.x
-    { name = "ordered-float", version = "2.10.0" },
-    
-    # Blocked on serenity updating async-tungstenite
-    { name = "webpki-roots", version = "0.22.6" },
-    { name = "untrusted", version = "0.7.1" },
-    { name = "ring", version = "0.16.20" },
     
     # Blocked on async-channel updating event-listener to 3.0.0
     { name = "event-listener", version = "2.5.3" },
