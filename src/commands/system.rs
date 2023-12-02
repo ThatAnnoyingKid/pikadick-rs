@@ -8,14 +8,21 @@ use heim::units::{
     Frequency,
 };
 use serenity::{
+    builder::{
+        CreateEmbed,
+        CreateEmbedFooter,
+        CreateMessage,
+    },
     framework::standard::{
         macros::command,
         Args,
         CommandResult,
     },
-    model::prelude::*,
+    model::{
+        colour::Colour,
+        prelude::*,
+    },
     prelude::*,
-    utils::Colour,
 };
 use std::time::{
     Duration,
@@ -63,8 +70,8 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     let cpu_temp = match sys.cpu_temp() {
         Ok(cpu_temp) => Some(cpu_temp),
-        Err(e) => {
-            warn!("Failed to get cpu temp: {}", e);
+        Err(error) => {
+            warn!("Failed to get cpu temp: {error}");
             None
         }
     };
@@ -82,16 +89,16 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 .context("failed to format boot time date")
         }) {
         Ok(boot_time) => Some(boot_time),
-        Err(e) => {
-            warn!("{:?}", e);
+        Err(error) => {
+            warn!("{error:?}");
             None
         }
     };
 
     let uptime = match cache_context.get_uptime().context("failed to get uptime") {
         Ok(uptime) => Some(uptime),
-        Err(e) => {
-            warn!("{:?}", e);
+        Err(error) => {
+            warn!("{error:?}");
             None
         }
     };
@@ -101,8 +108,8 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .context("failed to get hostname")
     {
         Ok(hostname) => Some(hostname),
-        Err(e) => {
-            warn!("{:?}", e);
+        Err(error) => {
+            warn!("{error:?}");
             None
         }
     };
@@ -116,8 +123,8 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 .map(|architecture| architecture.as_str())
                 .unwrap_or("unknown"),
         ),
-        Err(e) => {
-            warn!("{:?}", e);
+        Err(error) => {
+            warn!("{error:?}");
             None
         }
     };
@@ -127,8 +134,8 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .context("failed to get system name")
     {
         Ok(system_name) => system_name,
-        Err(e) => {
-            warn!("{:?}", e);
+        Err(error) => {
+            warn!("{error:?}");
             None
         }
     };
@@ -138,8 +145,8 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .context("failed to get system version")
     {
         Ok(system_name) => Some(system_name),
-        Err(e) => {
-            warn!("{:?}", e);
+        Err(error) => {
+            warn!("{error:?}");
             None
         }
     };
@@ -149,8 +156,8 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .context("failed to get total memory")
     {
         Ok(memory) => Some(memory),
-        Err(e) => {
-            warn!("{:?}", e);
+        Err(error) => {
+            warn!("{error:?}");
             None
         }
     };
@@ -160,8 +167,8 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .context("failed to get available memory")
     {
         Ok(memory) => Some(memory),
-        Err(e) => {
-            warn!("{:?}", e);
+        Err(error) => {
+            warn!("{error:?}");
             None
         }
     };
@@ -171,8 +178,8 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .context("failed to get total swap")
     {
         Ok(memory) => Some(memory),
-        Err(e) => {
-            warn!("{:?}", e);
+        Err(error) => {
+            warn!("{error:?}");
             None
         }
     };
@@ -182,32 +189,32 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .context("failed to get available swap")
     {
         Ok(memory) => Some(memory),
-        Err(e) => {
-            warn!("{:?}", e);
+        Err(error) => {
+            warn!("{error:?}");
             None
         }
     };
 
     let cpu_frequency = match heim::cpu::frequency().await {
         Ok(cpu_frequency) => Some(cpu_frequency),
-        Err(e) => {
-            warn!("Failed to get cpu frequency: {}", e);
+        Err(error) => {
+            warn!("Failed to get cpu frequency: {error}");
             None
         }
     };
 
     let cpu_logical_count = match heim::cpu::logical_count().await {
         Ok(cpu_logical_count) => Some(cpu_logical_count),
-        Err(e) => {
-            warn!("Failed to get logical cpu count: {}", e);
+        Err(error) => {
+            warn!("Failed to get logical cpu count: {error}");
             None
         }
     };
 
     let cpu_physical_count = match heim::cpu::physical_count().await {
         Ok(cpu_physical_count) => cpu_physical_count, // This returns an option, so we return it here to flatten it.
-        Err(e) => {
-            warn!("Failed to get physical cpu count: {}", e);
+        Err(error) => {
+            warn!("Failed to get physical cpu count: {error}");
             None
         }
     };
@@ -216,8 +223,8 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     let cpu_usage = match get_cpu_usage().await {
         Ok(usage) => Some(usage),
-        Err(e) => {
-            warn!("Failed to get cpu usage: {}", e);
+        Err(error) => {
+            warn!("Failed to get cpu usage: {error}");
             None
         }
     };
@@ -237,183 +244,177 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     // End WIP
 
+    let mut embed_builder = CreateEmbed::new()
+        .title("System Status")
+        .color(Colour::from_rgb(255, 0, 0));
+    if let Some(icon) = profile_avatar_url {
+        embed_builder = embed_builder.thumbnail(icon);
+    }
+
+    if let Some(hostname) = hostname {
+        embed_builder = embed_builder.field("Hostname", hostname, true);
+    }
+
+    if let Some(system_name) = system_name {
+        embed_builder = embed_builder.field("OS", system_name, true);
+    }
+
+    if let Some(system_version) = system_version {
+        embed_builder = embed_builder.field("OS Version", system_version, true);
+    }
+
+    if let Some(architecture) = architecture {
+        embed_builder = embed_builder.field("Architecture", architecture, true);
+    }
+
+    if let Some(boot_time) = boot_time {
+        embed_builder = embed_builder.field("Boot Time", boot_time, true);
+    }
+
+    if let Some(uptime) = uptime {
+        let raw_secs = uptime.as_secs();
+
+        let days = raw_secs / (60 * 60 * 24);
+        let hours = (raw_secs % (60 * 60 * 24)) / (60 * 60);
+        let minutes = (raw_secs % (60 * 60)) / 60;
+        let seconds = raw_secs % 60;
+
+        let mut value = String::with_capacity(64);
+        if days != 0 {
+            value.push_str(itoa::Buffer::new().format(days));
+            value.push_str(" day");
+            if days > 1 {
+                value.push('s');
+            }
+        }
+
+        if hours != 0 {
+            value.push(' ');
+
+            value.push_str(itoa::Buffer::new().format(hours));
+            value.push_str(" hour");
+            if hours > 1 {
+                value.push('s');
+            }
+        }
+
+        if minutes != 0 {
+            value.push(' ');
+
+            value.push_str(itoa::Buffer::new().format(minutes));
+            value.push_str(" minute");
+            if minutes > 1 {
+                value.push('s');
+            }
+        }
+
+        if seconds != 0 {
+            value.push(' ');
+
+            value.push_str(itoa::Buffer::new().format(seconds));
+            value.push_str(" second");
+            if seconds > 1 {
+                value.push('s');
+            }
+        }
+
+        embed_builder = embed_builder.field("Uptime", value, true);
+    }
+
+    // Currently reports incorrectly on Windows
+    if let Some(cpu_frequency) = cpu_frequency {
+        embed_builder =
+            embed_builder.field("Cpu Freq", fmt_cpu_frequency(cpu_frequency.current()), true);
+
+        if let Some(min_cpu_frequency) = cpu_frequency.min() {
+            embed_builder =
+                embed_builder.field("Min Cpu Freq", fmt_cpu_frequency(min_cpu_frequency), true);
+        }
+
+        if let Some(max_cpu_frequency) = cpu_frequency.max() {
+            embed_builder =
+                embed_builder.field("Max Cpu Freq", fmt_cpu_frequency(max_cpu_frequency), true);
+        }
+    }
+
+    match (cpu_logical_count, cpu_physical_count) {
+        (Some(logical_count), Some(physical_count)) => {
+            embed_builder = embed_builder.field(
+                "Cpu Core Count",
+                format!("{logical_count} logical, {physical_count} physical"),
+                true,
+            );
+        }
+        (Some(logical_count), None) => {
+            embed_builder =
+                embed_builder.field("Cpu Core Count", format!("{logical_count} logical"), true);
+        }
+        (None, Some(physical_count)) => {
+            embed_builder =
+                embed_builder.field("Cpu Core Count", format!("{physical_count} physical"), true);
+        }
+        (None, None) => {}
+    }
+
+    if let (Some(total_memory), Some(available_memory)) = (total_memory, available_memory) {
+        embed_builder = embed_builder.field(
+            "Memory Usage",
+            format!(
+                "{:.2} GB / {:.2} GB",
+                (total_memory - available_memory) as f64 / BYTES_IN_GB_F64,
+                total_memory as f64 / BYTES_IN_GB_F64,
+            ),
+            true,
+        );
+    }
+
+    if let (Some(total_swap), Some(available_swap)) = (total_swap, available_swap) {
+        embed_builder = embed_builder.field(
+            "Swap Usage",
+            format!(
+                "{:.2} GB / {:.2} GB",
+                (total_swap - available_swap) as f64 / BYTES_IN_GB_F64,
+                total_swap as f64 / BYTES_IN_GB_F64,
+            ),
+            true,
+        );
+    }
+
+    let virtualization_field = match virtualization.as_ref() {
+        Some(virtualization) => virtualization.as_str(),
+        None => "None",
+    };
+    embed_builder = embed_builder.field("Virtualization", virtualization_field, true);
+
+    if let (Some(cpu_usage), Some(cpu_logical_count)) = (cpu_usage, cpu_logical_count) {
+        embed_builder = embed_builder.field(
+            "Cpu Usage",
+            format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),
+            true,
+        );
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////
+    // Legacy (These functions from systemstat have no direct replacement in heim yet) //
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    // This does not work on Windows
+    // TODO: This can probably be replaced with temprature readings from heim.
+    // It doesn't support Windows, but this never worked there anyways as Windows has no simple way to get temps
+    if let Some(cpu_temp) = cpu_temp {
+        embed_builder = embed_builder.field("Cpu Temp", format!("{cpu_temp} °C"), true);
+    }
+
+    let footer = CreateEmbedFooter::new(format!(
+        "Retrieved system data in {:.2} second(s)",
+        data_retrieval_time.as_secs_f32()
+    ));
+
+    embed_builder = embed_builder.footer(footer);
+
+    let message_builder = CreateMessage::new().embed(embed_builder);
     msg.channel_id
-        .send_message(&ctx.http, |m| {
-            m.embed(|e| {
-                e.title("System Status");
-                e.color(Colour::from_rgb(255, 0, 0));
-
-                if let Some(icon) = profile_avatar_url {
-                    e.thumbnail(&icon);
-                }
-
-                if let Some(hostname) = hostname {
-                    e.field("Hostname", hostname, true);
-                }
-
-                if let Some(system_name) = system_name {
-                    e.field("OS", system_name, true);
-                }
-
-                if let Some(system_version) = system_version {
-                    e.field("OS Version", system_version, true);
-                }
-
-                if let Some(architecture) = architecture {
-                    e.field("Architecture", architecture, true);
-                }
-
-                if let Some(boot_time) = boot_time {
-                    e.field("Boot Time", boot_time, true);
-                }
-
-                if let Some(uptime) = uptime {
-                    let raw_secs = uptime.as_secs();
-
-                    let days = raw_secs / (60 * 60 * 24);
-                    let hours = (raw_secs % (60 * 60 * 24)) / (60 * 60);
-                    let minutes = (raw_secs % (60 * 60)) / 60;
-                    let seconds = raw_secs % 60;
-
-                    let mut value = String::with_capacity(64);
-                    if days != 0 {
-                        value.push_str(itoa::Buffer::new().format(days));
-                        value.push_str(" day");
-                        if days > 1 {
-                            value.push('s');
-                        }
-                    }
-
-                    if hours != 0 {
-                        value.push(' ');
-
-                        value.push_str(itoa::Buffer::new().format(hours));
-                        value.push_str(" hour");
-                        if hours > 1 {
-                            value.push('s');
-                        }
-                    }
-
-                    if minutes != 0 {
-                        value.push(' ');
-
-                        value.push_str(itoa::Buffer::new().format(minutes));
-                        value.push_str(" minute");
-                        if minutes > 1 {
-                            value.push('s');
-                        }
-                    }
-
-                    if seconds != 0 {
-                        value.push(' ');
-
-                        value.push_str(itoa::Buffer::new().format(seconds));
-                        value.push_str(" second");
-                        if seconds > 1 {
-                            value.push('s');
-                        }
-                    }
-
-                    e.field("Uptime", value, true);
-                }
-
-                // Currently reports incorrectly on Windows
-                if let Some(cpu_frequency) = cpu_frequency {
-                    e.field("Cpu Freq", fmt_cpu_frequency(cpu_frequency.current()), true);
-
-                    if let Some(min_cpu_frequency) = cpu_frequency.min() {
-                        e.field("Min Cpu Freq", fmt_cpu_frequency(min_cpu_frequency), true);
-                    }
-
-                    if let Some(max_cpu_frequency) = cpu_frequency.max() {
-                        e.field("Max Cpu Freq", fmt_cpu_frequency(max_cpu_frequency), true);
-                    }
-                }
-
-                match (cpu_logical_count, cpu_physical_count) {
-                    (Some(logical_count), Some(physical_count)) => {
-                        e.field(
-                            "Cpu Core Count",
-                            format!("{} logical, {} physical", logical_count, physical_count),
-                            true,
-                        );
-                    }
-                    (Some(logical_count), None) => {
-                        e.field("Cpu Core Count", format!("{} logical", logical_count), true);
-                    }
-                    (None, Some(physical_count)) => {
-                        e.field(
-                            "Cpu Core Count",
-                            format!("{} physical", physical_count),
-                            true,
-                        );
-                    }
-                    (None, None) => {}
-                }
-
-                if let (Some(total_memory), Some(available_memory)) =
-                    (total_memory, available_memory)
-                {
-                    e.field(
-                        "Memory Usage",
-                        format!(
-                            "{:.2} GB / {:.2} GB",
-                            (total_memory - available_memory) as f64 / BYTES_IN_GB_F64,
-                            total_memory as f64 / BYTES_IN_GB_F64,
-                        ),
-                        true,
-                    );
-                }
-
-                if let (Some(total_swap), Some(available_swap)) = (total_swap, available_swap) {
-                    e.field(
-                        "Swap Usage",
-                        format!(
-                            "{:.2} GB / {:.2} GB",
-                            (total_swap - available_swap) as f64 / BYTES_IN_GB_F64,
-                            total_swap as f64 / BYTES_IN_GB_F64,
-                        ),
-                        true,
-                    );
-                }
-
-                let virtualization_field = match virtualization.as_ref() {
-                    Some(virtualization) => virtualization.as_str(),
-                    None => "None",
-                };
-                e.field("Virtualization", virtualization_field, true);
-
-                if let (Some(cpu_usage), Some(cpu_logical_count)) = (cpu_usage, cpu_logical_count) {
-                    e.field(
-                        "Cpu Usage",
-                        format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),
-                        true,
-                    );
-                }
-
-                /////////////////////////////////////////////////////////////////////////////////////
-                // Legacy (These functions from systemstat have no direct replacement in heim yet) //
-                /////////////////////////////////////////////////////////////////////////////////////
-
-                // This does not work on Windows
-                // TODO: This can probably be replaced with temprature readings from heim.
-                // It doesn't support Windows, but this never worked there anyways as Windows has no simple way to get temps
-                if let Some(cpu_temp) = cpu_temp {
-                    e.field("Cpu Temp", format!("{} °C", cpu_temp), true);
-                }
-
-                e.footer(|f| {
-                    f.text(format!(
-                        "Retrieved system data in {:.2} second(s)",
-                        data_retrieval_time.as_secs_f32()
-                    ));
-
-                    f
-                });
-
-                e
-            })
-        })
+        .send_message(&ctx.http, message_builder)
         .await?;
 
     Ok(())

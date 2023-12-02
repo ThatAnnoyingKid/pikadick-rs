@@ -3,6 +3,10 @@ use crate::{
     ClientDataKey,
 };
 use serenity::{
+    builder::{
+        CreateAttachment,
+        CreateMessage,
+    },
     client::Context,
     framework::standard::{
         macros::command,
@@ -43,23 +47,23 @@ pub async fn board(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 .render_board_async(game.board)
                 .await
             {
-                Ok(file) => AttachmentType::Bytes {
-                    data: file.into(),
-                    filename: format!("ttt-{}.png", game.board.encode_u16()),
-                },
-                Err(e) => {
-                    error!("Failed to render Tic-Tac-Toe board: {}", e);
+                Ok(file) => {
+                    CreateAttachment::bytes(file, format!("ttt-{}.png", game.board.encode_u16()))
+                }
+                Err(error) => {
+                    error!("Failed to render Tic-Tac-Toe board: {error}");
                     msg.channel_id
                         .say(
                             &ctx.http,
-                            format!("Failed to render Tic-Tac-Toe board: {}", e),
+                            format!("Failed to render Tic-Tac-Toe board: {error}"),
                         )
                         .await?;
                     return Ok(());
                 }
             };
+            let message_builder = CreateMessage::new().add_file(file);
             msg.channel_id
-                .send_message(&ctx.http, |m| m.add_file(file))
+                .send_message(&ctx.http, message_builder)
                 .await?;
         }
         Ok(None) => {
@@ -67,8 +71,8 @@ pub async fn board(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
             msg.channel_id.say(&ctx.http, response).await?;
             return Ok(());
         }
-        Err(e) => {
-            error!("{:?}", e);
+        Err(error) => {
+            error!("{error:?}");
             msg.channel_id.say(&ctx.http, "database error").await?;
         }
     };

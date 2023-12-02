@@ -101,7 +101,7 @@ pub trait FromOptionValue: Sized {
     /// Parse from an option value
     fn from_option_value(
         name: &'static str,
-        option: Option<&CommandDataOptionValue>,
+        option: &CommandDataOptionValue,
     ) -> Result<Self, ConvertError>;
 
     /// The expected data type
@@ -119,16 +119,9 @@ pub trait FromOptionValue: Sized {
 impl FromOptionValue for bool {
     fn from_option_value(
         name: &'static str,
-        option: Option<&CommandDataOptionValue>,
+        option: &CommandDataOptionValue,
     ) -> Result<Self, ConvertError> {
         let expected = Self::get_expected_data_type();
-
-        let option = match option {
-            Some(option) => option,
-            None => {
-                return Err(ConvertError::MissingRequiredField { name, expected });
-            }
-        };
 
         match option {
             CommandDataOptionValue::Boolean(b) => Ok(*b),
@@ -148,16 +141,9 @@ impl FromOptionValue for bool {
 impl FromOptionValue for String {
     fn from_option_value(
         name: &'static str,
-        option: Option<&CommandDataOptionValue>,
+        option: &CommandDataOptionValue,
     ) -> Result<Self, ConvertError> {
         let expected = Self::get_expected_data_type();
-
-        let option = match option {
-            Some(option) => option,
-            None => {
-                return Err(ConvertError::MissingRequiredField { name, expected });
-            }
-        };
 
         match option {
             CommandDataOptionValue::String(s) => Ok(s.clone()),
@@ -180,12 +166,8 @@ where
 {
     fn from_option_value(
         name: &'static str,
-        option: Option<&CommandDataOptionValue>,
+        option: &CommandDataOptionValue,
     ) -> Result<Self, ConvertError> {
-        if option.is_none() {
-            return Ok(None);
-        }
-
         T::from_option_value(name, option).map(Some)
     }
 

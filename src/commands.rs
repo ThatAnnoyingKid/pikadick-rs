@@ -54,6 +54,11 @@ pub use crate::commands::{
 };
 use anyhow::Context;
 use pikadick_slash_framework::FromOptions;
+use serenity::builder::{
+    CreateEmbed,
+    CreateInteractionResponse,
+    CreateInteractionResponseMessage,
+};
 
 /// Help Options
 #[derive(Debug, FromOptions)]
@@ -75,59 +80,53 @@ pub fn create_slash_help_command() -> anyhow::Result<pikadick_slash_framework::H
         )
         .on_process(
             |ctx, interaction, map, args: HelpCommandOptions| async move {
-                interaction
-                    .create_interaction_response(&ctx.http, |res| {
-                        res.interaction_response_data(|res| {
-                            res.embed(|embed| {
-                                embed.color(0xF4D665_u32);
+                let mut embed_builder = CreateEmbed::new().color(0xF4D665_u32);
+                if let Some(command) = args.command {
+                    let maybe_command = map.get(command.as_str());
 
-                                if let Some(command) = args.command {
-                                    let maybe_command = map.get(command.as_str());
+                    match maybe_command {
+                        Some(command) => {
+                            embed_builder = embed_builder
+                                .title(command.name())
+                                .description(command.description());
 
-                                    match maybe_command {
-                                        Some(command) => {
-                                            embed
-                                                .title(command.name())
-                                                .description(command.description());
+                            if !command.arguments().is_empty() {
+                                let mut arguments = String::with_capacity(256);
+                                for argument in command.arguments().iter() {
+                                    arguments.push_str("**");
+                                    arguments.push_str(argument.name());
+                                    arguments.push_str("**");
 
-                                            if !command.arguments().is_empty() {
-                                                let mut arguments = String::with_capacity(256);
-                                                for argument in command.arguments().iter() {
-                                                    arguments.push_str("**");
-                                                    arguments.push_str(argument.name());
-                                                    arguments.push_str("**");
-
-                                                    arguments.push_str(": ");
-                                                    arguments.push_str(argument.description());
-                                                }
-                                                embed.field("Arguments", &arguments, false);
-                                            }
-                                        }
-                                        None => {
-                                            embed.title("Unknown Command").description(format!(
-                                                "Command `{}` was not found.",
-                                                command
-                                            ));
-                                        }
-                                    }
-                                } else {
-                                    embed.title("Help");
-
-                                    let mut description = String::with_capacity(256);
-                                    for name in map.keys() {
-                                        description.push('`');
-                                        description.push_str(name);
-                                        description.push('`');
-                                        description.push('\n');
-                                    }
-
-                                    embed.description(description);
+                                    arguments.push_str(": ");
+                                    arguments.push_str(argument.description());
                                 }
+                                embed_builder = embed_builder.field("Arguments", &arguments, false);
+                            }
+                        }
+                        None => {
+                            embed_builder = embed_builder
+                                .title("Unknown Command")
+                                .description(format!("Command \"{command}\" was not found."));
+                        }
+                    }
+                } else {
+                    embed_builder = embed_builder.title("Help");
 
-                                embed
-                            })
-                        })
-                    })
+                    let mut description = String::with_capacity(256);
+                    for name in map.keys() {
+                        description.push('`');
+                        description.push_str(name);
+                        description.push('`');
+                        description.push('\n');
+                    }
+
+                    embed_builder = embed_builder.description(description);
+                }
+
+                let message_builder = CreateInteractionResponseMessage::new().embed(embed_builder);
+                let response_builder = CreateInteractionResponse::Message(message_builder);
+                interaction
+                    .create_response(&ctx.http, response_builder)
                     .await?;
 
                 Ok(())

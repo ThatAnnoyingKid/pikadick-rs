@@ -13,6 +13,10 @@ use crate::{
 };
 use anyhow::Context as _;
 use serenity::{
+    builder::{
+        CreateEmbed,
+        CreateMessage,
+    },
     framework::standard::{
         macros::command,
         Args,
@@ -91,54 +95,56 @@ async fn sauce_nao(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
 
     let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
-    match client
+    let result = client
         .search(query)
         .await
-        .context("failed to search for image")
-    {
+        .context("failed to search for image");
+
+    match result {
         Ok(data) => {
             let data = data.data();
+
             match data.results.first() {
                 Some(data) => {
+                    let mut embed_builder = CreateEmbed::new()
+                        .title("SauceNao Best Match")
+                        .image(data.header.thumbnail.as_str());
+                    if let Some(ext_url) = data.data.ext_urls.first() {
+                        embed_builder = embed_builder
+                            .description(ext_url.as_str())
+                            .url(ext_url.as_str());
+                    }
+
+                    if let Some(source) = data.data.source.as_deref() {
+                        embed_builder = embed_builder.field("Source", source, true);
+                    }
+
+                    if let Some(eng_name) = data.data.eng_name.as_deref() {
+                        embed_builder = embed_builder.field("English Name", eng_name, true);
+                    }
+
+                    if let Some(jp_name) = data.data.jp_name.as_deref() {
+                        embed_builder = embed_builder.field("Jap Name", jp_name, true);
+                    }
+
+                    let message_builder = CreateMessage::new().embed(embed_builder);
+
                     msg.channel_id
-                        .send_message(&ctx.http, |m| {
-                            m.embed(|e| {
-                                e.title("SauceNao Best Match")
-                                    .image(data.header.thumbnail.as_str());
-
-                                if let Some(ext_url) = data.data.ext_urls.first() {
-                                    e.description(ext_url.as_str()).url(ext_url.as_str());
-                                }
-
-                                if let Some(source) = data.data.source.as_deref() {
-                                    e.field("Source", source, true);
-                                }
-
-                                if let Some(eng_name) = data.data.eng_name.as_deref() {
-                                    e.field("English Name", eng_name, true);
-                                }
-
-                                if let Some(jp_name) = data.data.jp_name.as_deref() {
-                                    e.field("Jap Name", jp_name, true);
-                                }
-
-                                e
-                            })
-                        })
+                        .send_message(&ctx.http, message_builder)
                         .await?;
 
                     loading.send_ok();
                 }
                 None => {
                     msg.channel_id
-                        .say(&ctx.http, format!("No results on SauceNao for '{}'", query))
+                        .say(&ctx.http, format!("No results on SauceNao for \"{query}\""))
                         .await?;
                 }
             }
         }
-        Err(e) => {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
-            error!("{:?}", e);
+        Err(error) => {
+            error!("{error:?}");
+            msg.channel_id.say(&ctx.http, format!("{error:?}")).await?;
         }
     }
 

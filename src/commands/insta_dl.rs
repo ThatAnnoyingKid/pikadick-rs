@@ -10,6 +10,10 @@ use anyhow::{
 use bytes::Bytes;
 use insta::MediaType;
 use serenity::{
+    builder::{
+        CreateAttachment,
+        CreateMessage,
+    },
     framework::standard::{
         macros::command,
         Args,
@@ -39,7 +43,7 @@ async fn insta_dl(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     let url = args.trimmed().current().expect("missing url");
 
-    info!("downloading instagram post '{}'", url);
+    info!("downloading instagram post \"{url}\"");
     let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
     let result = async {
@@ -55,13 +59,16 @@ async fn insta_dl(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     match result {
         Ok((post_data, file_name)) => {
+            let file_builder = CreateAttachment::bytes(post_data, file_name);
+            let message_builder = CreateMessage::new().add_file(file_builder);
+
             msg.channel_id
-                .send_files(&ctx.http, [(&*post_data, &*file_name)], |m| m)
+                .send_message(&ctx.http, message_builder)
                 .await?;
             loading.send_ok();
         }
-        Err(e) => {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
+        Err(error) => {
+            msg.channel_id.say(&ctx.http, format!("{error:?}")).await?;
         }
     }
 
@@ -91,12 +98,13 @@ async fn download_post<'a>(
             &video_version.url
         }
         media_type => {
-            bail!("Unsupported media type `{:?}`", media_type);
+            bail!("Unsupported media type `{media_type:?}`",);
         }
     };
 
+    let code = &post_page_item.code;
     let extension = get_extension_from_url(url).context("missing image extension")?;
-    let file_name = format!("{}.{}", post_page_item.code, extension);
+    let file_name = format!("{code}.{extension}");
 
     let data = client
         .get(url.as_str())

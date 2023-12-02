@@ -62,7 +62,7 @@ impl LoadingReaction {
             let reaction = reaction.into();
 
             tokio::spawn(async move {
-                http.create_reaction(channel_id.into(), msg_id.into(), &reaction)
+                http.create_reaction(channel_id, msg_id, &reaction)
                     .await
                     .ok();
             });

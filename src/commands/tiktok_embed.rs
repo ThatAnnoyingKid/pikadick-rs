@@ -26,6 +26,13 @@ use pikadick_util::{
     RequestMap,
 };
 use serenity::{
+    builder::{
+        CreateAttachment,
+        CreateEmbed,
+        CreateInteractionResponse,
+        CreateInteractionResponseMessage,
+        CreateMessage,
+    },
     model::prelude::*,
     prelude::*,
 };
@@ -426,8 +433,10 @@ impl TikTokData {
             .await
             .context("failed to download tiktok video")?;
 
+        let file = CreateAttachment::path(video_path.as_std_path()).await?;
+        let message_builder = CreateMessage::new().add_file(file);
         msg.channel_id
-            .send_message(&ctx.http, |m| m.add_file(video_path.as_std_path()))
+            .send_message(&ctx.http, message_builder)
             .await?;
 
         if let Some(mut loading_reaction) = loading_reaction.take() {
@@ -487,13 +496,10 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
             let guild_id = match interaction.guild_id {
                 Some(id) => id,
                 None => {
-                    interaction
-                        .create_interaction_response(&ctx.http, |res| {
-                            res.interaction_response_data(|res| {
-                                res.content("Missing server id. Are you in a server right now?")
-                            })
-                        })
-                        .await?;
+                    let message_builder = CreateInteractionResponseMessage::new()
+                        .content("Missing server id. Are you in a server right now?");
+                    let response = CreateInteractionResponse::Message(message_builder);
+                    interaction.create_response(&ctx.http, response).await?;
                     return Ok(());
                 }
             };
@@ -521,25 +527,21 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 .set_tiktok_embed_flags(guild_id, set_flags, unset_flags)
                 .await?;
 
-            interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| {
-                        res.embed(|e| {
-                            e.title("TikTok Embeds")
-                                .field(
-                                    "Enabled?",
-                                    bool_to_str(new_flags.contains(TikTokEmbedFlags::ENABLED)),
-                                    false,
-                                )
-                                .field(
-                                    "Delete link?",
-                                    bool_to_str(new_flags.contains(TikTokEmbedFlags::DELETE_LINK)),
-                                    false,
-                                )
-                        })
-                    })
-                })
-                .await?;
+            let embed_builder = CreateEmbed::new()
+                .title("TikTok Embeds")
+                .field(
+                    "Enabled?",
+                    bool_to_str(new_flags.contains(TikTokEmbedFlags::ENABLED)),
+                    false,
+                )
+                .field(
+                    "Delete link?",
+                    bool_to_str(new_flags.contains(TikTokEmbedFlags::DELETE_LINK)),
+                    false,
+                );
+            let message_builder = CreateInteractionResponseMessage::new().embed(embed_builder);
+            let response = CreateInteractionResponse::Message(message_builder);
+            interaction.create_response(&ctx.http, response).await?;
 
             Ok(())
         })

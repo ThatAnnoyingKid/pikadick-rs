@@ -115,8 +115,8 @@ use anyhow::{
 };
 use pikadick_util::AsyncLockFile;
 use serenity::{
-    client::bridge::gateway::ShardManager,
     framework::standard::{
+        buckets::BucketBuilder,
         help_commands,
         macros::{
             group,
@@ -125,15 +125,19 @@ use serenity::{
         Args,
         CommandGroup,
         CommandResult,
+        Configuration as StandardFrameworkConfiguration,
         DispatchError,
         HelpOptions,
         Reason,
         StandardFramework,
     },
     futures::future::BoxFuture,
+    gateway::{
+        ActivityData,
+        ShardManager,
+    },
     model::{
-        application::interaction::Interaction,
-        gateway::Activity,
+        application::Interaction,
         prelude::*,
     },
     prelude::*,
@@ -178,32 +182,32 @@ impl EventHandler for Handler {
         if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
             match kind {
                 ActivityKind::Listening => {
-                    ctx.set_activity(Activity::listening(status)).await;
+                    ctx.set_activity(Some(ActivityData::listening(status)));
                 }
                 ActivityKind::Streaming => {
                     let result: Result<_, anyhow::Error> = async {
-                        let activity = Activity::streaming(
+                        let activity = ActivityData::streaming(
                             status,
                             config.status_url().context("failed to get status url")?,
-                        );
+                        )?;
 
-                        ctx.set_activity(activity).await;
+                        ctx.set_activity(Some(activity));
 
                         Ok(())
                     }
                     .await;
 
-                    if let Err(e) = result.context("failed to set activity") {
-                        error!("{:?}", e);
+                    if let Err(error) = result.context("failed to set activity") {
+                        error!("{error:?}");
                     }
                 }
                 ActivityKind::Playing => {
-                    ctx.set_activity(Activity::playing(status)).await;
+                    ctx.set_activity(Some(ActivityData::playing(status)));
                 }
             }
         }
 
-        info!("logged in as '{}'", ready.user.name);
+        info!("logged in as \"{}\"", ready.user.name);
 
         // TODO: Consider shutting down the bot. It might be possible to use old data though.
         if let Err(error) = slash_framework
@@ -217,8 +221,8 @@ impl EventHandler for Handler {
         info!("registered slash commands");
     }
 
-    async fn resume(&self, _ctx: Context, resumed: ResumedEvent) {
-        warn!("resumed connection. trace: {:?}", resumed.trace);
+    async fn resume(&self, _ctx: Context, _resumed: ResumedEvent) {
+        warn!("resumed connection");
     }
 
     #[tracing::instrument(skip(self, ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
@@ -414,7 +418,7 @@ async fn help(
 )]
 struct General;
 
-async fn handle_ctrl_c(shard_manager: Arc<Mutex<ShardManager>>) {
+async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
     match tokio::signal::ctrl_c()
         .await
         .context("failed to set ctrl-c handler")
@@ -422,7 +426,7 @@ async fn handle_ctrl_c(shard_manager: Arc<Mutex<ShardManager>>) {
         Ok(_) => {
             info!("shutting down...");
             info!("stopping client...");
-            shard_manager.lock().await.shutdown_all().await;
+            shard_manager.shutdown_all().await;
         }
         Err(error) => {
             warn!("{error}");
@@ -507,8 +511,7 @@ async fn process_dispatch_error_future<'fut>(
                 .say(
                     &ctx.http,
                     format!(
-                        "Expected at least {} argument(s) for this command, but only got {}",
-                        min, given
+                        "Expected at least {min} argument(s) for this command, but only got {given}",
                     ),
                 )
                 .await
@@ -564,26 +567,27 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
 
     // Build the standard framework
     info!("using prefix \"{config_prefix}\"");
-    let framework = StandardFramework::new()
-        .configure(|c| {
-            c.prefixes(&[config_prefix, uppercase_prefix])
-                .case_insensitivity(true)
-        })
+    let framework_config = StandardFrameworkConfiguration::new()
+        .prefixes([config_prefix, uppercase_prefix])
+        .case_insensitivity(true);
+    let framework = StandardFramework::new();
+    framework.configure(framework_config);
+    let framework = framework
         .help(&HELP)
         .group(&GENERAL_GROUP)
-        .bucket("r6stats", |b| b.delay(7))
+        .bucket("r6stats", BucketBuilder::new_channel().delay(7))
         .await
-        .bucket("r6tracker", |b| b.delay(7))
+        .bucket("r6tracker", BucketBuilder::new_channel().delay(7))
         .await
-        .bucket("system", |b| b.delay(30))
+        .bucket("system", BucketBuilder::new_channel().delay(30))
         .await
-        .bucket("quizizz", |b| b.delay(10))
+        .bucket("quizizz", BucketBuilder::new_channel().delay(10))
         .await
-        .bucket("insta-dl", |b| b.delay(10))
+        .bucket("insta-dl", BucketBuilder::new_channel().delay(10))
         .await
-        .bucket("ttt-board", |b| b.delay(1))
+        .bucket("ttt-board", BucketBuilder::new_channel().delay(1))
         .await
-        .bucket("default", |b| b.delay(1))
+        .bucket("default", BucketBuilder::new_channel().delay(1))
         .await
         .before(before_handler)
         .after(after_handler)
@@ -597,7 +601,7 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
         GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
     )
     .event_handler(Handler)
-    .application_id(config.application_id)
+    .application_id(ApplicationId::new(config.application_id))
     .framework(framework)
     .register_songbird()
     .await

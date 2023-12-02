@@ -3,6 +3,10 @@ use anyhow::{
     ensure,
     Context as _,
 };
+use serenity::builder::{
+    CreateEmbed,
+    EditInteractionResponse,
+};
 use tracing::{
     error,
     info,
@@ -73,15 +77,15 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 Ok(result) => result.message.content,
                 Err(error) => {
                     error!("{error:?}");
-                    interaction
-                        .edit_original_interaction_response(&ctx.http, |res| {
-                            res.content(format!("{error:?}"))
-                        })
-                        .await?;
+                    let response = EditInteractionResponse::new().content(format!("{error:?}"));
+
+                    interaction.edit_response(&ctx.http, response).await?;
                     return Ok(());
                 }
             };
 
+            // This may be expaned in the future.
+            #[allow(clippy::collapsible_match)]
             match chat_response.split_once(' ') {
                 Some((command, rest)) => match command {
                     "!r6tracker" => {
@@ -91,43 +95,34 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                             .context("failed to get r6tracker stats");
                         match stats.as_ref().map(|stats| stats.data()) {
                             Ok(Some(stats)) => {
-                                interaction
-                                    .edit_original_interaction_response(&ctx.http, |res| {
-                                        res.embed(|e| stats.populate_embed(e))
-                                    })
-                                    .await?;
+                                let embed_builder = stats.populate_embed(CreateEmbed::new());
+                                let response = EditInteractionResponse::new().embed(embed_builder);
+
+                                interaction.edit_response(&ctx.http, response).await?;
                             }
                             Ok(None) => {
-                                interaction
-                                    .edit_original_interaction_response(&ctx.http, |res| {
-                                        res.content(format!("User \"{}\" was not found", rest))
-                                    })
-                                    .await?;
+                                let response = EditInteractionResponse::new()
+                                    .content(format!("User \"{rest}\" was not found"));
+
+                                interaction.edit_response(&ctx.http, response).await?;
                             }
                             Err(error) => {
+                                let response =
+                                    EditInteractionResponse::new().content(format!("{error:?}"));
+
                                 error!("{error:?}");
-                                interaction
-                                    .edit_original_interaction_response(&ctx.http, |res| {
-                                        res.content(format!("{error:?}"))
-                                    })
-                                    .await?;
+                                interaction.edit_response(&ctx.http, response).await?;
                             }
                         }
                     }
                     _ => {
-                        interaction
-                            .edit_original_interaction_response(&ctx.http, |res| {
-                                res.content(chat_response)
-                            })
-                            .await?;
+                        let response = EditInteractionResponse::new().content(chat_response);
+                        interaction.edit_response(&ctx.http, response).await?;
                     }
                 },
                 None => {
-                    interaction
-                        .edit_original_interaction_response(&ctx.http, |res| {
-                            res.content(chat_response)
-                        })
-                        .await?;
+                    let response = EditInteractionResponse::new().content(chat_response);
+                    interaction.edit_response(&ctx.http, response).await?;
                 }
             }
 

@@ -11,7 +11,7 @@ use rusqlite::{
 };
 use serenity::{
     model::prelude::*,
-    utils::parse_username,
+    utils::parse_user_mention,
 };
 use std::{
     borrow::Cow,
@@ -33,7 +33,7 @@ impl FromSql for DatabaseUserId {
             .map(NonZeroU64::new)?
             .ok_or(FromSqlError::OutOfRange(0))?;
 
-        Ok(Self(UserId(value.into())))
+        Ok(Self(UserId::from(value)))
     }
 }
 
@@ -178,12 +178,11 @@ impl FromStr for TicTacToePlayer {
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         if input.eq_ignore_ascii_case("computer") {
             Ok(Self::Computer)
-        } else if let Some(user_id) = parse_username(input) {
-            Ok(Self::User(UserId(user_id)))
+        } else if let Some(user_id) = parse_user_mention(input) {
+            Ok(Self::User(user_id))
         } else {
-            Ok(Self::User(UserId(
-                input.parse().map_err(TicTacToePlayerParseError)?,
-            )))
+            let user_id: NonZeroU64 = input.parse().map_err(TicTacToePlayerParseError)?;
+            Ok(Self::User(UserId::from(user_id)))
         }
     }
 }
@@ -210,11 +209,8 @@ impl FromSql for TicTacToePlayer {
                 let int_u64 = u64::from_ne_bytes(int.to_ne_bytes());
                 // This is not heavy
                 #[allow(clippy::or_fun_call)]
-                let user_id = UserId(
-                    NonZeroU64::new(int_u64)
-                        .ok_or(FromSqlError::OutOfRange(0))?
-                        .into(),
-                );
+                let user_id =
+                    UserId::from(NonZeroU64::new(int_u64).ok_or(FromSqlError::OutOfRange(0))?);
                 Ok(Self::User(user_id))
             }
             ValueRef::Null => Ok(Self::Computer),
@@ -251,7 +247,7 @@ impl FromSql for MaybeGuildString {
         let text = value.as_str()?;
         match text.parse::<NonZeroU64>() {
             Ok(guild_id) => Ok(MaybeGuildString {
-                guild_id: Some(GuildId(guild_id.into())),
+                guild_id: Some(GuildId::from(guild_id)),
             }),
             Err(e) => {
                 if text == "empty" {

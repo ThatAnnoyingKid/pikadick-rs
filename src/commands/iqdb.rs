@@ -13,6 +13,10 @@ use crate::{
 };
 use anyhow::Context as _;
 use serenity::{
+    builder::{
+        CreateEmbed,
+        CreateMessage,
+    },
     framework::standard::{
         macros::command,
         Args,
@@ -103,29 +107,28 @@ async fn iqdb(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             let data = data.data();
             match data.best_match.as_ref() {
                 Some(data) => {
+                    let embed_builder = CreateEmbed::new()
+                        .title("IQDB Best Match")
+                        .image(data.image_url.as_str())
+                        .url(data.url.as_str())
+                        .description(data.url.as_str());
+                    let message_builder = CreateMessage::new().embed(embed_builder);
                     msg.channel_id
-                        .send_message(&ctx.http, |m| {
-                            m.embed(|e| {
-                                e.title("IQDB Best Match")
-                                    .image(data.image_url.as_str())
-                                    .url(data.url.as_str())
-                                    .description(data.url.as_str())
-                            })
-                        })
+                        .send_message(&ctx.http, message_builder)
                         .await?;
 
                     loading.send_ok();
                 }
                 None => {
                     msg.channel_id
-                        .say(&ctx.http, format!("No results on iqdb for '{}'", query))
+                        .say(&ctx.http, format!("No results on iqdb for \"{query}\"",))
                         .await?;
                 }
             }
         }
-        Err(e) => {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
-            error!("{:?}", e);
+        Err(error) => {
+            error!("{error:?}");
+            msg.channel_id.say(&ctx.http, format!("{error:?}")).await?;
         }
     }
 

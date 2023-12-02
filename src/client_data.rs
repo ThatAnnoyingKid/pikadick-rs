@@ -21,10 +21,7 @@ use crate::{
     util::EncoderTask,
 };
 use anyhow::Context;
-use serenity::{
-    client::bridge::gateway::ShardManager,
-    prelude::*,
-};
+use serenity::gateway::ShardManager;
 use std::{
     collections::BTreeMap,
     fmt::Debug,
@@ -73,7 +70,7 @@ pub trait CacheStatsProvider {
 #[derive(Debug)]
 pub struct ClientData {
     /// The discord shard_manager
-    pub shard_manager: Arc<Mutex<ShardManager>>,
+    pub shard_manager: Arc<ShardManager>,
 
     /// The client for nekos
     pub nekos_client: NekosClient,
@@ -124,7 +121,7 @@ pub struct ClientData {
 impl ClientData {
     /// Init this client data
     pub async fn init(
-        shard_manager: Arc<Mutex<ShardManager>>,
+        shard_manager: Arc<ShardManager>,
         config: Arc<Config>,
         db: Database,
     ) -> anyhow::Result<Self> {

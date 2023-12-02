@@ -4,6 +4,10 @@ use crate::{
     ClientDataKey,
 };
 use serenity::{
+    builder::{
+        CreateAttachment,
+        CreateMessage,
+    },
     client::Context,
     framework::standard::{
         macros::command,
@@ -60,16 +64,13 @@ pub async fn concede(ctx: &Context, msg: &Message, _args: Args) -> CommandResult
         .render_board_async(game.board)
         .await
     {
-        Ok(file) => AttachmentType::Bytes {
-            data: file.into(),
-            filename: format!("ttt-{}.png", game.board.encode_u16()),
-        },
-        Err(e) => {
-            error!("failed to render Tic-Tac-Toe board: {}", e);
+        Ok(file) => CreateAttachment::bytes(file, format!("ttt-{}.png", game.board.encode_u16())),
+        Err(error) => {
+            error!("failed to render Tic-Tac-Toe board: {error}");
             msg.channel_id
                 .say(
                     &ctx.http,
-                    format!("Failed to render Tic-Tac-Toe board: {}", e),
+                    format!("Failed to render Tic-Tac-Toe board: {error}"),
                 )
                 .await?;
             return Ok(());
@@ -82,8 +83,9 @@ pub async fn concede(ctx: &Context, msg: &Message, _args: Args) -> CommandResult
         opponent.mention()
     );
 
+    let message_builder = CreateMessage::new().content(content).add_file(file);
     msg.channel_id
-        .send_message(&ctx.http, |m| m.content(content).add_file(file))
+        .send_message(&ctx.http, message_builder)
         .await?;
 
     Ok(())

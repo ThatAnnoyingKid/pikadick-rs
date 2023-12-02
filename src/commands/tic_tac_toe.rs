@@ -23,6 +23,10 @@ use crate::{
     ClientDataKey,
 };
 use serenity::{
+    builder::{
+        CreateAttachment,
+        CreateMessage,
+    },
     client::Context,
     framework::standard::{
         macros::command,
@@ -111,8 +115,8 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
 
     let mut move_index = match args.trimmed().single::<u8>() {
         Ok(num) => num,
-        Err(e) => {
-            let response = format!("That move is not a number: {}\nUse `tic-tac-toe play <computer/@user> <X/O> to start a game.`", e);
+        Err(error) => {
+            let response = format!("That move is not a number: {error}\nUse `tic-tac-toe play <computer/@user> <X/O> to start a game.`");
             msg.channel_id.say(&ctx.http, response).await?;
             return Ok(());
         }
@@ -143,16 +147,15 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 .render_board_async(game.board)
                 .await
             {
-                Ok(file) => AttachmentType::Bytes {
-                    data: file.into(),
-                    filename: format!("ttt-{}.png", game.board.encode_u16()),
-                },
-                Err(e) => {
-                    error!("Failed to render Tic-Tac-Toe board: {}", e);
+                Ok(file) => {
+                    CreateAttachment::bytes(file, format!("ttt-{}.png", game.board.encode_u16()))
+                }
+                Err(error) => {
+                    error!("Failed to render Tic-Tac-Toe board: {error}");
                     msg.channel_id
                         .say(
                             &ctx.http,
-                            format!("Failed to render Tic-Tac-Toe board: {}", e),
+                            format!("Failed to render Tic-Tac-Toe board: {error}"),
                         )
                         .await?;
                     return Ok(());
@@ -163,8 +166,9 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 winner.mention(),
                 loser.mention(),
             );
+            let message_builder = CreateMessage::new().content(content).add_file(file);
             msg.channel_id
-                .send_message(&ctx.http, |m| m.content(content).add_file(file))
+                .send_message(&ctx.http, message_builder)
                 .await?;
         }
         Ok(TicTacToeTryMoveResponse::Tie { game }) => {
@@ -173,16 +177,15 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 .render_board_async(game.board)
                 .await
             {
-                Ok(file) => AttachmentType::Bytes {
-                    data: file.into(),
-                    filename: format!("ttt-{}.png", game.board.encode_u16()),
-                },
-                Err(e) => {
-                    error!("Failed to render Tic-Tac-Toe board: {}", e);
+                Ok(file) => {
+                    CreateAttachment::bytes(file, format!("ttt-{}.png", game.board.encode_u16()))
+                }
+                Err(error) => {
+                    error!("Failed to render Tic-Tac-Toe board: {error}");
                     msg.channel_id
                         .say(
                             &ctx.http,
-                            format!("Failed to render Tic-Tac-Toe board: {}", e),
+                            format!("Failed to render Tic-Tac-Toe board: {error}"),
                         )
                         .await?;
                     return Ok(());
@@ -193,8 +196,9 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 game.get_player(tic_tac_toe::Team::X).mention(),
                 game.get_player(tic_tac_toe::Team::O).mention(),
             );
+            let message_builder = CreateMessage::new().content(content).add_file(file);
             msg.channel_id
-                .send_message(&ctx.http, |m| m.content(content).add_file(file))
+                .send_message(&ctx.http, message_builder)
                 .await?;
         }
         Ok(TicTacToeTryMoveResponse::NextTurn { game }) => {
@@ -203,24 +207,24 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 .render_board_async(game.board)
                 .await
             {
-                Ok(file) => AttachmentType::Bytes {
-                    data: file.into(),
-                    filename: format!("ttt-{}.png", game.board.encode_u16()),
-                },
-                Err(e) => {
-                    error!("Failed to render Tic-Tac-Toe board: {}", e);
+                Ok(file) => {
+                    CreateAttachment::bytes(file, format!("ttt-{}.png", game.board.encode_u16()))
+                }
+                Err(error) => {
+                    error!("Failed to render Tic-Tac-Toe board: {error}");
                     msg.channel_id
                         .say(
                             &ctx.http,
-                            format!("Failed to render Tic-Tac-Toe board: {}", e),
+                            format!("Failed to render Tic-Tac-Toe board: {error}"),
                         )
                         .await?;
                     return Ok(());
                 }
             };
             let content = format!("Your turn {}", game.get_player_turn().mention());
+            let message_builder = CreateMessage::new().content(content).add_file(file);
             msg.channel_id
-                .send_message(&ctx.http, |m| m.content(content).add_file(file))
+                .send_message(&ctx.http, message_builder)
                 .await?;
         }
         Err(TicTacToeTryMoveError::InvalidTurn) => {
@@ -239,8 +243,8 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 "No games in progress. Make one with `tic-tac-toe play <computer/@user> <X/O>`.";
             msg.channel_id.say(&ctx.http, response).await?;
         }
-        Err(TicTacToeTryMoveError::Database(e)) => {
-            error!("{:?}", e);
+        Err(TicTacToeTryMoveError::Database(error)) => {
+            error!("{error:?}");
             msg.channel_id.say(&ctx.http, "database error").await?;
         }
     }

@@ -10,7 +10,10 @@ use crate::{
     ClientDataKey,
 };
 use anyhow::Context as _;
-use serenity::builder::CreateEmbed;
+use serenity::builder::{
+    CreateEmbed,
+    EditInteractionResponse,
+};
 use std::sync::Arc;
 use tracing::{
     error,
@@ -26,41 +29,52 @@ pub struct Stats {
 
 impl Stats {
     /// Populate an embed with data.
-    pub fn populate_embed<'a>(&self, e: &'a mut CreateEmbed) -> &'a mut CreateEmbed {
+    pub fn populate_embed(&self, mut embed_builder: CreateEmbed) -> CreateEmbed {
         // We mix overwolf and non-overwolf data to get what we want.
 
         // Overwolf Api
-        e.title(self.overwolf_player.name.as_str())
+        embed_builder = embed_builder
+            .title(self.overwolf_player.name.as_str())
             .image(self.overwolf_player.avatar.as_str())
-            .field("Level", self.overwolf_player.level, true)
+            .field("Level", self.overwolf_player.level.to_string(), true)
             .field(
                 "Suspected Cheater",
-                self.overwolf_player.suspected_cheater,
+                self.overwolf_player.suspected_cheater.to_string(),
                 true,
             );
 
         if let Some(season) = self.overwolf_player.current_season_best_region.as_ref() {
-            e.field("Current Rank", &season.rank_name, true)
-                .field("Current MMR", season.mmr, true)
+            embed_builder = embed_builder
+                .field("Current Rank", &season.rank_name, true)
+                .field("Current MMR", season.mmr.to_string(), true)
                 .field("Seasonal Ranked K/D", format!("{:.2}", season.kd), true)
                 .field(
                     "Seasonal Ranked Win %",
                     format!("{:.2}", season.win_pct),
                     true,
                 )
-                .field("Seasonal # of Ranked Matches", season.matches, true);
+                .field(
+                    "Seasonal # of Ranked Matches",
+                    season.matches.to_string(),
+                    true,
+                );
         }
 
         if let Some(season) = self.overwolf_player.get_current_casual_season() {
-            e.field("Current Casual Rank", &season.rank_name, true)
-                .field("Current Casual MMR", season.mmr, true)
+            embed_builder = embed_builder
+                .field("Current Casual Rank", &season.rank_name, true)
+                .field("Current Casual MMR", season.mmr.to_string(), true)
                 .field("Seasonal Casual K/D", format!("{:.2}", season.kd), true)
                 .field(
                     "Seasonal Casual Win %",
                     format!("{:.2}", season.win_pct),
                     true,
                 )
-                .field("Seasonal # of Casual Matches", season.matches, true);
+                .field(
+                    "Seasonal # of Casual Matches",
+                    season.matches.to_string(),
+                    true,
+                );
         }
 
         // Best Rank/MMR lifetime stats are bugged in Overwolf.
@@ -86,15 +100,15 @@ impl Stats {
             .or_else(|| overwolf_best_mmr.map(|best_mmr| best_mmr.name.as_str()));
 
         if let Some(max_mmr) = max_mmr {
-            e.field("Best MMR", max_mmr, true);
+            embed_builder = embed_builder.field("Best MMR", max_mmr.to_string(), true);
         }
 
         if let Some(max_rank) = max_rank {
-            e.field("Best Rank", max_rank, true);
+            embed_builder = embed_builder.field("Best Rank", max_rank, true);
         }
 
         if let Some(lifetime_ranked_kd) = self.overwolf_player.get_lifetime_ranked_kd() {
-            e.field(
+            embed_builder = embed_builder.field(
                 "Lifetime Ranked K/D",
                 format!("{lifetime_ranked_kd:.2}"),
                 true,
@@ -102,37 +116,38 @@ impl Stats {
         }
 
         if let Some(lifetime_ranked_win_pct) = self.overwolf_player.get_lifetime_ranked_win_pct() {
-            e.field(
+            embed_builder = embed_builder.field(
                 "Lifetime Ranked Win %",
                 format!("{lifetime_ranked_win_pct:.2}"),
                 true,
             );
         }
 
-        e.field(
-            "Lifetime K/D",
-            format!("{:.2}", self.overwolf_player.lifetime_stats.kd),
-            true,
-        )
-        .field(
-            "Lifetime Win %",
-            format!("{:.2}", self.overwolf_player.lifetime_stats.win_pct),
-            true,
-        );
+        embed_builder = embed_builder
+            .field(
+                "Lifetime K/D",
+                format!("{:.2}", self.overwolf_player.lifetime_stats.kd),
+                true,
+            )
+            .field(
+                "Lifetime Win %",
+                format!("{:.2}", self.overwolf_player.lifetime_stats.win_pct),
+                true,
+            );
 
         // Old Non-Overwolf API
 
         // Overwolf API does not send season colors
         if let Some(c) = self.profile.season_color_u32() {
-            e.color(c);
+            embed_builder = embed_builder.color(c);
         }
 
         // Overwolf API does not send non-svg rank thumbnails
         if let Some(thumb) = self.profile.current_mmr_image() {
-            e.thumbnail(thumb.as_str());
+            embed_builder = embed_builder.thumbnail(thumb.as_str());
         }
 
-        e
+        embed_builder
     }
 }
 
@@ -270,17 +285,23 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 .await
                 .with_context(|| format!("failed to get r6tracker stats for \"{name}\""));
 
+            let mut edit_response_builder = EditInteractionResponse::new();
+            match result.as_ref().map(|entry| entry.data()) {
+                Ok(Some(stats)) => {
+                    let embed_builder = stats.populate_embed(CreateEmbed::new());
+                    edit_response_builder = edit_response_builder.embed(embed_builder);
+                }
+                Ok(None) => {
+                    edit_response_builder = edit_response_builder.content("No Results");
+                }
+                Err(error) => {
+                    error!("{error:?}");
+                    edit_response_builder = edit_response_builder.content(format!("{error:?}"));
+                }
+            }
+
             interaction
-                .edit_original_interaction_response(&ctx.http, |edit_response| {
-                    match result.as_ref().map(|entry| entry.data()) {
-                        Ok(Some(stats)) => edit_response.embed(|e| stats.populate_embed(e)),
-                        Ok(None) => edit_response.content("No Results"),
-                        Err(error) => {
-                            error!("{error:?}");
-                            edit_response.content(format!("{error:?}"))
-                        }
-                    }
-                })
+                .edit_response(&ctx.http, edit_response_builder)
                 .await?;
 
             client.search_cache.trim();
