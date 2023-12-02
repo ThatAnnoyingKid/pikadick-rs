@@ -50,7 +50,7 @@ pub struct Post {
     pub file_url: Url,
 
     /// The parent post id
-    #[serde(alias = "@parent_id")]
+    #[serde(alias = "@parent_id", with = "serde_optional_str_non_zero_u64")]
     pub parent_id: Option<NonZeroU64>,
 
     /// The sample url
@@ -179,6 +179,42 @@ impl Rating {
             Self::Questionable => "q",
             Self::Explicit => "e",
             Self::Safe => "s",
+        }
+    }
+}
+
+mod serde_optional_str_non_zero_u64 {
+    use serde::de::Error;
+    use std::{
+        borrow::Cow,
+        num::NonZeroU64,
+        str::FromStr,
+    };
+
+    pub(super) fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        T: FromStr,
+        <T as FromStr>::Err: std::fmt::Display,
+    {
+        let data: Cow<'_, str> = serde::Deserialize::deserialize(deserializer)?;
+        if data.is_empty() {
+            return Ok(None);
+        }
+
+        Ok(Some(data.parse().map_err(D::Error::custom)?))
+    }
+
+    pub(super) fn serialize<S>(value: &Option<NonZeroU64>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match value {
+            Some(value) => {
+                let mut buffer = itoa::Buffer::new();
+                serializer.serialize_str(buffer.format(value.get()))
+            }
+            None => serializer.serialize_str(""),
         }
     }
 }

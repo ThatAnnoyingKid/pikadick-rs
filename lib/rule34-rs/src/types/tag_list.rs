@@ -15,15 +15,17 @@ pub struct TagList {
 /// A Tag
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct Tag {
-    /// The tag kind
+    /// The tag kind.
     #[serde(rename = "type", alias = "@type")]
     pub kind: TagKind,
 
-    /// The # of posts with this tag?
+    /// The # of posts with this tag.
+    ///
+    /// This is not always up to date.
     #[serde(alias = "@count")]
     pub count: u64,
 
-    /// The tag name
+    /// The tag name.
     #[serde(alias = "@name")]
     pub name: Box<str>,
 
@@ -31,7 +33,7 @@ pub struct Tag {
     #[serde(alias = "@ambiguous")]
     pub ambiguous: bool,
 
-    /// The tag id
+    /// The tag id.
     #[serde(alias = "@id")]
     pub id: u64,
 }
