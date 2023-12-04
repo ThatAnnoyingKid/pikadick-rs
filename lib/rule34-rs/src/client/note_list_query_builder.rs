@@ -60,7 +60,7 @@ impl<'a> NotesListQueryBuilder<'a> {
     /// Execute the query
     pub async fn execute(&self) -> Result<NoteList, Error> {
         let url = self.get_url()?;
-        
+
         self.client.get_xml(url.as_str()).await
     }
 }
