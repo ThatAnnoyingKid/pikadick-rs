@@ -2,12 +2,14 @@ mod client;
 mod error;
 mod search_query_builder;
 mod types;
+mod util;
 
 #[cfg(feature = "scrape")]
 pub use crate::types::HtmlPost;
 pub use crate::{
     client::{
         Client,
+        NotesListQueryBuilder,
         PostListQueryBuilder,
         TagListQueryBuilder,
     },
@@ -15,6 +17,8 @@ pub use crate::{
     search_query_builder::SearchQueryBuilder,
     types::{
         DeletedImageList,
+        Note,
+        NoteList,
         Post,
         PostList,
         Rating,

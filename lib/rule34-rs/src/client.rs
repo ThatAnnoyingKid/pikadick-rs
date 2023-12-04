@@ -1,7 +1,9 @@
+mod note_list_query_builder;
 mod post_list_query_builder;
 mod tag_list_query_builder;
 
 pub use self::{
+    note_list_query_builder::NotesListQueryBuilder,
     post_list_query_builder::PostListQueryBuilder,
     tag_list_query_builder::TagListQueryBuilder,
 };
@@ -149,6 +151,13 @@ impl Client {
     pub fn list_tags(&self) -> TagListQueryBuilder {
         TagListQueryBuilder::new(self)
     }
+
+    /// Get a builder to list notes.
+    ///
+    /// This is undocumented.
+    pub fn list_notes(&self) -> NotesListQueryBuilder {
+        NotesListQueryBuilder::new(self)
+    }
 }
 
 impl Default for Client {
@@ -236,5 +245,17 @@ mod test {
             .expect("failed to list tags");
         assert!(!result.tags.is_empty());
         // dbg!(result);
+    }
+
+    #[tokio::test]
+    async fn notes_list() {
+        let client = Client::new();
+        let result = client
+            .list_notes()
+            .execute()
+            .await
+            .expect("failed to list notes");
+        assert!(!result.notes.is_empty());
+        dbg!(result);
     }
 }
