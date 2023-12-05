@@ -4,10 +4,7 @@ use crate::{
         CacheStatsProvider,
     },
     util::{
-        ArcAnyhowError,
-        DropRemovePath,
         EncoderTask,
-        RequestMap,
         TimedCache,
         TimedCacheEntry,
     },
@@ -23,7 +20,19 @@ use camino::{
     Utf8Path,
     Utf8PathBuf,
 };
+pub use nd_util::DropRemovePath;
+use pikadick_util::{
+    ArcAnyhowError,
+    RequestMap,
+};
 use serenity::{
+    builder::{
+        CreateAttachment,
+        CreateEmbed,
+        CreateInteractionResponse,
+        CreateInteractionResponseMessage,
+        CreateMessage,
+    },
     model::prelude::*,
     prelude::*,
 };
@@ -72,7 +81,7 @@ pub struct TikTokData {
     encoder_task: EncoderTask,
 
     /// A cache of post urls => post pages
-    pub post_page_cache: TimedCache<String, tiktok::PostPage>,
+    pub post_page_cache: TimedCache<String, tiktok::Post>,
 
     /// The path to tiktok's cache dir
     video_download_cache_path: Utf8PathBuf,
@@ -104,7 +113,7 @@ impl TikTokData {
 
         // Keep only h264 encoders
         encoders.retain(|encoder| encoder.description.ends_with("(codec h264)"));
-        info!("found h264 encoders: {:#?}", encoders);
+        info!("found h264 encoders: {encoders:#?}");
 
         let mut best_encoder_index = None;
         for encoder in encoders {
@@ -122,7 +131,7 @@ impl TikTokData {
         let best_encoder_index = best_encoder_index.context("failed to select an encoder")?;
         let best_encoder = ENCODER_PREFERENCE_LIST[best_encoder_index];
 
-        info!("selected encoder '{}'", best_encoder);
+        info!("selected encoder \"{best_encoder}\"");
 
         Ok(Self {
             client: tiktok::Client::new(),
@@ -141,20 +150,30 @@ impl TikTokData {
     pub async fn get_post_cached(
         &self,
         url: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<tiktok::PostPage>>> {
+    ) -> anyhow::Result<Arc<TimedCacheEntry<tiktok::Post>>> {
         if let Some(post_page) = self.post_page_cache.get_if_fresh(url) {
             return Ok(post_page);
         }
 
-        let post_page = self
-            .client
-            .get_post(url)
-            .await
-            .context("failed to get post page")?;
+        let video_id = Url::parse(url)?
+            .path_segments()
+            .context("missing path")?
+            .next_back()
+            .context("missing video id")?
+            .parse()
+            .context("invalid video id")?;
 
-        Ok(self
-            .post_page_cache
-            .insert_and_get(url.to_string(), post_page))
+        let mut feed = self
+            .client
+            .get_feed(Some(video_id))
+            .await
+            .context("failed to get feed")?;
+        ensure!(!feed.aweme_list.is_empty(), "missing post");
+
+        let post = feed.aweme_list.swap_remove(0);
+        ensure!(post.aweme_id == video_id);
+
+        Ok(self.post_page_cache.insert_and_get(url.to_string(), post))
     }
 
     /// Get video data, using the cache if needed
@@ -245,7 +264,7 @@ impl TikTokData {
                                 video_duration,
                             );
                             let reencoded_file_path_tmp_1 = DropRemovePath::new(
-                                crate::util::with_push_extension(&reencoded_file_path, "1.tmp"),
+                                nd_util::with_push_extension(&reencoded_file_path, "1.tmp"),
                             );
 
                             info!(
@@ -263,7 +282,7 @@ impl TikTokData {
                                     .output(&*reencoded_file_path_tmp_1)
                                     .audio_codec("copy")
                                     .video_codec(video_encoder)
-                                    .video_bitrate(format!("{}K", target_bitrate))
+                                    .video_bitrate(format!("{target_bitrate}K"))
                                     .output_format("mp4")
                                     .try_send()
                                     .await
@@ -298,7 +317,7 @@ impl TikTokData {
                             // The RPI's ffmpeg produces invalid mp4 files.
                             // Until we can investigate and fix, transcode the file to try to let ffmpeg fix it.
                             let reencoded_file_path_tmp_2 = DropRemovePath::new(
-                                crate::util::with_push_extension(&reencoded_file_path, "2.tmp"),
+                                nd_util::with_push_extension(&reencoded_file_path, "2.tmp"),
                             );
 
                             {
@@ -348,9 +367,7 @@ impl TikTokData {
                             let metadata_len = metadata.len();
                             ensure!(
                                 metadata_len < FILE_SIZE_LIMIT_BYTES,
-                                "re-encoded file size ({}) is larger than the limit {}",
-                                metadata_len,
-                                FILE_SIZE_LIMIT_BYTES
+                                "re-encoded file size ({metadata_len}) is larger than the limit {FILE_SIZE_LIMIT_BYTES}",
                             );
 
                             // Rename the tmp file to be the actual name.
@@ -389,14 +406,19 @@ impl TikTokData {
         let (video_url, video_id, video_format, video_duration) = {
             let post = self.get_post_cached(url.as_str()).await?;
             let post = post.data();
-            let item_module_post = post
-                .get_item_module_post()
-                .context("missing item module post")?;
 
-            let video_url = item_module_post.video.download_addr.clone();
-            let video_id: u64 = item_module_post.id.parse().context("invalid video id")?;
-            let video_format = item_module_post.video.format.clone();
-            let video_duration = item_module_post.video.duration;
+            let video_url = post
+                .video
+                .download_addr
+                .url_list
+                .first()
+                .context("missing video url")?
+                .clone();
+            let video_id: u64 = post.aweme_id;
+            // let video_format = post.video.format.clone();
+            // TODO: Can this ever NOT be an mp4?
+            let video_format = String::from("mp4");
+            let video_duration = post.video.duration;
 
             (video_url, video_id, video_format, video_duration)
         };
@@ -411,8 +433,10 @@ impl TikTokData {
             .await
             .context("failed to download tiktok video")?;
 
+        let file = CreateAttachment::path(video_path.as_std_path()).await?;
+        let message_builder = CreateMessage::new().add_file(file);
         msg.channel_id
-            .send_message(&ctx.http, |m| m.add_file(video_path.as_std_path()))
+            .send_message(&ctx.http, message_builder)
             .await?;
 
         if let Some(mut loading_reaction) = loading_reaction.take() {
@@ -472,13 +496,10 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
             let guild_id = match interaction.guild_id {
                 Some(id) => id,
                 None => {
-                    interaction
-                        .create_interaction_response(&ctx.http, |res| {
-                            res.interaction_response_data(|res| {
-                                res.content("Missing server id. Are you in a server right now?")
-                            })
-                        })
-                        .await?;
+                    let message_builder = CreateInteractionResponseMessage::new()
+                        .content("Missing server id. Are you in a server right now?");
+                    let response = CreateInteractionResponse::Message(message_builder);
+                    interaction.create_response(&ctx.http, response).await?;
                     return Ok(());
                 }
             };
@@ -506,25 +527,21 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 .set_tiktok_embed_flags(guild_id, set_flags, unset_flags)
                 .await?;
 
-            interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| {
-                        res.embed(|e| {
-                            e.title("TikTok Embeds")
-                                .field(
-                                    "Enabled?",
-                                    bool_to_str(new_flags.contains(TikTokEmbedFlags::ENABLED)),
-                                    false,
-                                )
-                                .field(
-                                    "Delete link?",
-                                    bool_to_str(new_flags.contains(TikTokEmbedFlags::DELETE_LINK)),
-                                    false,
-                                )
-                        })
-                    })
-                })
-                .await?;
+            let embed_builder = CreateEmbed::new()
+                .title("TikTok Embeds")
+                .field(
+                    "Enabled?",
+                    bool_to_str(new_flags.contains(TikTokEmbedFlags::ENABLED)),
+                    false,
+                )
+                .field(
+                    "Delete link?",
+                    bool_to_str(new_flags.contains(TikTokEmbedFlags::DELETE_LINK)),
+                    false,
+                );
+            let message_builder = CreateInteractionResponseMessage::new().embed(embed_builder);
+            let response = CreateInteractionResponse::Message(message_builder);
+            interaction.create_response(&ctx.http, response).await?;
 
             Ok(())
         })

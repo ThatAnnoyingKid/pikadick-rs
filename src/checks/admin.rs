@@ -12,14 +12,11 @@ use serenity::{
         Reason,
     },
     model::{
-        application::interaction::application_command::ApplicationCommandInteraction,
+        application::CommandInteraction,
         prelude::*,
     },
 };
-use tracing::{
-    error,
-    warn,
-};
+use tracing::warn;
 
 #[check]
 #[name("Admin")]
@@ -38,30 +35,12 @@ pub async fn admin_check(
         };
 
         if let Some(guild) = guild_id.to_guild_cached(&ctx.cache) {
-            let channel = match guild.channels.get(&msg.channel_id) {
+            let guild_channel = match guild.channels.get(&msg.channel_id) {
                 Some(channel) => channel,
                 None => return Err(Reason::Unknown),
             };
 
-            let guild_channel = match channel {
-                Channel::Guild(channel) => channel,
-                _ => {
-                    return Err(Reason::Unknown);
-                }
-            };
-
-            let perms = match guild.user_permissions_in(guild_channel, &member) {
-                Ok(perms) => perms,
-                Err(e) => {
-                    error!(
-                        "error getting permissions for user {} in channel {}: {}",
-                        member.user.id,
-                        channel.id(),
-                        e
-                    );
-                    return Err(Reason::Unknown);
-                }
-            };
+            let perms = guild.user_permissions_in(guild_channel, &member);
 
             if perms.administrator() {
                 Ok(())
@@ -80,7 +59,7 @@ pub async fn admin_check(
 /// Ensure a user is admin
 pub fn create_slash_check<'a>(
     _ctx: &'a Context,
-    interaction: &'a ApplicationCommandInteraction,
+    interaction: &'a CommandInteraction,
     _command: &'a Command,
 ) -> BoxFuture<'a, Result<(), SlashReason>> {
     Box::pin(async move {

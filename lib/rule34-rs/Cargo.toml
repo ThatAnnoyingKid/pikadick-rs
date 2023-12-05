@@ -11,24 +11,27 @@ required-features = [ "cli" ]
 path = "src/cli/main.rs"
 
 [dependencies]
-itoa = "1.0.6"
-once_cell = { version = "1.18.0", features = [ "std" ], default-features = false }
-quick-xml = { version = "0.28.2", features = [ "serialize" ] }
-reqwest = { version = "0.11.18", default-features = false, features = [ "json", "brotli" ] }
-scraper = { version = "0.16.0", default-features = false }
-serde = { version = "1.0.164", features = [ "derive" ] }
-thiserror = "1.0.40"
-tokio = "1.28.2"
-url = { version = "2.4.0", features = [ "serde" ] }
-serde_json = "1.0.96"
+itoa = "1.0.9"
+quick-xml = { version = "0.31.0", features = [ "serialize" ] }
+reqwest = { version = "0.11.22", default-features = false, features = [ "json", "brotli" ] }
+serde = { version = "1.0.193", features = [ "derive" ] }
+thiserror = "1.0.50"
+time = { version = "0.3.30", features = [ "serde", "parsing", "formatting", "macros" ], default-features = false }
+tokio = "1.34.0"
+url = { version = "2.5.0", features = [ "serde" ] }
+serde_json = "1.0.108"
 
-# Optional
-argh = { version = "0.1.10", optional = true }
-anyhow = { version = "1.0.71", optional = true }
+# scrape
+once_cell = { version = "1.18.0", features = [ "std" ], default-features = false, optional = true }
+scraper = { version = "0.18.1", default-features = false, optional = true }
+
+# cli
+argh = { version = "0.1.12", optional = true }
+anyhow = { version = "1.0.75", optional = true }
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path" ], optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.28.2", features = [ "macros" ] }
+tokio = { version = "1.34.0", features = [ "macros" ] }
 
 [features]
 # Use reqwest's default by default.
@@ -44,4 +47,9 @@ native-tls = ["reqwest/native-tls"]
 # Use rustls for TLS
 rustls-tls = ["reqwest/rustls-tls"]
 
-cli = ["argh", "anyhow", "tokio/rt-multi-thread", "tokio/fs", "nd-util"]
+# Whether to include API functions that use scraping.
+# Omitting this feature reduces the number of dependencies.
+scrape = ["scraper", "once_cell"]
+
+# Whether to enable the CLI
+cli = ["argh", "anyhow", "tokio/rt-multi-thread", "tokio/fs", "nd-util", "scrape"]

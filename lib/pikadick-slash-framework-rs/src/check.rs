@@ -4,12 +4,12 @@ use crate::{
 };
 use serenity::{
     client::Context,
-    model::application::interaction::application_command::ApplicationCommandInteraction,
+    model::application::CommandInteraction,
 };
 
 pub type CheckFn = for<'a> fn(
     &'a Context,
-    &'a ApplicationCommandInteraction,
+    &'a CommandInteraction,
     &'a Command,
 ) -> BoxFuture<'a, Result<(), Reason>>;
 

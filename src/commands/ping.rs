@@ -1,4 +1,8 @@
 use anyhow::Context as _;
+use serenity::builder::{
+    CreateInteractionResponse,
+    CreateInteractionResponseMessage,
+};
 
 /// Create a slash command
 pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
@@ -6,11 +10,9 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
         .name("ping")
         .description("Respond with pong")
         .on_process(|ctx, interaction, _args: ()| async move {
-            interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| res.content("pong"))
-                })
-                .await?;
+            let message_builder = CreateInteractionResponseMessage::new().content("pong");
+            let response = CreateInteractionResponse::Message(message_builder);
+            interaction.create_response(&ctx.http, response).await?;
             Ok(())
         })
         .build()

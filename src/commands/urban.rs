@@ -13,12 +13,19 @@ use crate::{
 };
 use anyhow::Context as _;
 use serenity::{
+    builder::{
+        CreateEmbed,
+        CreateMessage,
+    },
     framework::standard::{
         macros::command,
         Args,
         CommandResult,
     },
-    model::prelude::*,
+    model::{
+        prelude::*,
+        timestamp::Timestamp,
+    },
     prelude::*,
 };
 use std::sync::Arc;
@@ -56,7 +63,7 @@ impl UrbanClient {
         Ok(self
             .search_cache
             .get_if_fresh(query)
-            .expect("recently aquired entry expired"))
+            .expect("recently acquired entry expired"))
     }
 }
 
@@ -90,19 +97,31 @@ pub async fn urban(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
     {
         Ok(entry) => {
             if let Some(entry) = entry.data().list.first() {
+                let mut thumbs_down_buf = itoa::Buffer::new();
+
+                let mut embed_builder = CreateEmbed::new()
+                    .title(&entry.word)
+                    .url(entry.permalink.as_str())
+                    .field("Definition", entry.get_raw_definition(), false)
+                    .field("Example", entry.get_raw_example(), false)
+                    .field("👍", entry.thumbs_up.to_string(), true)
+                    .field("👎", thumbs_down_buf.format(entry.thumbs_down), true);
+
+                match Timestamp::parse(entry.written_on.as_str())
+                    .context("failed to parse timestamp")
+                {
+                    Ok(timestamp) => {
+                        embed_builder = embed_builder.timestamp(timestamp);
+                    }
+                    Err(error) => {
+                        error!("{error}");
+                    }
+                }
+
+                let message_builder = CreateMessage::new().embed(embed_builder);
+
                 msg.channel_id
-                    .send_message(&ctx.http, |m| {
-                        m.embed(|e| {
-                            let mut thumbs_down_buf = itoa::Buffer::new();
-                            e.title(&entry.word)
-                                .timestamp(entry.written_on.as_str())
-                                .url(entry.permalink.as_str())
-                                .field("Definition", &entry.get_raw_definition(), false)
-                                .field("Example", &entry.get_raw_example(), false)
-                                .field("👍", &entry.thumbs_up.to_string(), true)
-                                .field("👎", thumbs_down_buf.format(entry.thumbs_down), true)
-                        })
-                    })
+                    .send_message(&ctx.http, message_builder)
                     .await?;
 
                 loading.send_ok();
@@ -111,9 +130,9 @@ pub async fn urban(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
             }
         }
 
-        Err(e) => {
-            error!("{:?}", e);
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
+        Err(error) => {
+            error!("{error:?}");
+            msg.channel_id.say(&ctx.http, format!("{error:?}")).await?;
         }
     }
 

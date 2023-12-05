@@ -119,7 +119,7 @@ impl<'a> TagListQueryBuilder<'a> {
     /// Get the url for this query.
     pub fn get_url(&self) -> Result<Url, Error> {
         let mut url = Url::parse_with_params(
-            crate::URL_INDEX,
+            crate::API_BASE_URL,
             &[("page", "dapi"), ("s", "tag"), ("q", "index")],
         )?;
 

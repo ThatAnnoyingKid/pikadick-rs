@@ -16,7 +16,7 @@ use serenity::{
         Reason,
     },
     model::{
-        application::interaction::application_command::ApplicationCommandInteraction,
+        application::CommandInteraction,
         prelude::*,
     },
 };
@@ -184,7 +184,7 @@ pub async fn enabled_check(
 /// Check if a command is enabled via slash framework
 pub fn create_slash_check<'a>(
     ctx: &'a Context,
-    interaction: &'a ApplicationCommandInteraction,
+    interaction: &'a CommandInteraction,
     command: &'a Command,
 ) -> BoxFuture<'a, Result<(), SlashReason>> {
     Box::pin(async move {

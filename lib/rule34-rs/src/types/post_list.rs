@@ -1,4 +1,6 @@
+use super::Md5Digest;
 use std::num::NonZeroU64;
+use time::OffsetDateTime;
 use url::Url;
 
 /// A list of posts
@@ -7,114 +9,120 @@ pub struct PostList {
     /// The # of posts.
     ///
     /// This is the total # of posts, not the # in this list.
-    #[serde(alias = "@count")]
+    #[serde(rename = "@count")]
     pub count: u64,
 
     /// The current offset
-    #[serde(alias = "@offset")]
+    #[serde(rename = "@offset")]
     pub offset: u64,
 
     /// The posts
-    #[serde(alias = "post", default)]
+    #[serde(rename = "post", default)]
     pub posts: Vec<Post>,
 }
 
 /// A Post
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct Post {
-    /// The height
-    #[serde(alias = "@height")]
-    pub height: u64,
+    /// The height of the original file.
+    #[serde(rename = "@height")]
+    pub height: NonZeroU64,
 
-    /// ?
-    #[serde(alias = "@score")]
+    /// The number of up-votes.
+    #[serde(rename = "@score")]
     pub score: u64,
 
     /// The main file url
-    #[serde(alias = "@file_url")]
+    #[serde(rename = "@file_url")]
     pub file_url: Url,
 
     /// The parent post id
-    #[serde(alias = "@parent_id")]
+    #[serde(rename = "@parent_id", with = "serde_optional_str_non_zero_u64")]
     pub parent_id: Option<NonZeroU64>,
 
     /// The sample url
-    #[serde(alias = "@sample_url")]
+    #[serde(rename = "@sample_url")]
     pub sample_url: Url,
 
     /// The sample width
-    #[serde(alias = "@sample_width")]
-    pub sample_width: u64,
+    #[serde(rename = "@sample_width")]
+    pub sample_width: NonZeroU64,
 
     /// The sample height
-    #[serde(alias = "@sample_height")]
-    pub sample_height: u64,
+    #[serde(rename = "@sample_height")]
+    pub sample_height: NonZeroU64,
 
     /// The preview url
-    #[serde(alias = "@preview_url")]
+    #[serde(rename = "@preview_url")]
     pub preview_url: Url,
 
     /// The image rating
-    #[serde(alias = "@rating")]
+    #[serde(rename = "@rating")]
     pub rating: Rating,
 
-    /// Tags
-    #[serde(alias = "@tags")]
-    pub tags: String,
+    /// A list of tag names.
+    ///
+    /// Tag names are separated by one or more spaces.
+    /// There may ore may not be a leading or trailing space.
+    /// Tag names are always lowercase.
+    #[serde(rename = "@tags")]
+    pub tags: Box<str>,
 
     /// The id the post
-    #[serde(alias = "@id")]
+    #[serde(rename = "@id")]
     pub id: NonZeroU64,
 
     /// image width
-    #[serde(alias = "@width")]
-    pub width: u64,
+    #[serde(rename = "@width")]
+    pub width: NonZeroU64,
 
-    /// ?
-    #[serde(alias = "@change")]
-    pub change: u64,
+    /// The time of the last change?
+    ///
+    /// This is a unix timestamp.
+    #[serde(rename = "@change", with = "time::serde::timestamp")]
+    pub change: OffsetDateTime,
 
-    /// A md5 hash?
-    #[serde(alias = "@md5")]
-    pub md5: String,
+    /// The md5 hash of the file.
+    #[serde(rename = "@md5")]
+    pub md5: Md5Digest,
 
-    /// The creator id
-    #[serde(alias = "@creator_id")]
-    pub creator_id: u64,
+    /// The creator id.
+    #[serde(rename = "@creator_id")]
+    pub creator_id: NonZeroU64,
 
-    /// Whether this has children
-    #[serde(alias = "@has_children")]
+    /// Whether this has children.
+    #[serde(rename = "@has_children")]
     pub has_children: bool,
 
-    /// Creation date
-    #[serde(alias = "@created_at")]
-    pub created_at: String,
+    /// The creation date of the post.
+    #[serde(rename = "@created_at", with = "crate::util::asctime_with_offset")]
+    pub created_at: OffsetDateTime,
 
     /// ?
-    #[serde(alias = "@status")]
-    pub status: String,
+    #[serde(rename = "@status")]
+    pub status: Box<str>,
 
     /// The original source.
     ///
-    /// May or may not be a url
-    #[serde(alias = "@source")]
-    pub source: Option<String>,
+    /// May or may not be a url, it is filled manually by users.
+    #[serde(rename = "@source")]
+    pub source: Option<Box<str>>,
 
-    /// ?
-    #[serde(alias = "@has_notes")]
+    /// Whether the post has notes.
+    #[serde(rename = "@has_notes")]
     pub has_notes: bool,
 
-    /// Whether this post has comments
-    #[serde(alias = "@has_comments")]
+    /// Whether this post has comments.
+    #[serde(rename = "@has_comments")]
     pub has_comments: bool,
 
-    /// preview image width
-    #[serde(alias = "@preview_width")]
-    pub preview_width: u64,
+    /// The preview image width.
+    #[serde(rename = "@preview_width")]
+    pub preview_width: NonZeroU64,
 
-    /// preview image height
-    #[serde(alias = "@preview_height")]
-    pub preview_height: u64,
+    /// The preview image height.
+    #[serde(rename = "@preview_height")]
+    pub preview_height: NonZeroU64,
 }
 
 impl Post {
@@ -158,6 +166,42 @@ impl Rating {
             Self::Questionable => "q",
             Self::Explicit => "e",
             Self::Safe => "s",
+        }
+    }
+}
+
+mod serde_optional_str_non_zero_u64 {
+    use serde::de::Error;
+    use std::{
+        borrow::Cow,
+        num::NonZeroU64,
+        str::FromStr,
+    };
+
+    pub(super) fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        T: FromStr,
+        <T as FromStr>::Err: std::fmt::Display,
+    {
+        let data: Cow<'_, str> = serde::Deserialize::deserialize(deserializer)?;
+        if data.is_empty() {
+            return Ok(None);
+        }
+
+        Ok(Some(data.parse().map_err(D::Error::custom)?))
+    }
+
+    pub(super) fn serialize<S>(value: &Option<NonZeroU64>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match value {
+            Some(value) => {
+                let mut buffer = itoa::Buffer::new();
+                serializer.serialize_str(buffer.format(value.get()))
+            }
+            None => serializer.serialize_str(""),
         }
     }
 }

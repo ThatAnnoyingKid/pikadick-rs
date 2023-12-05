@@ -8,30 +8,31 @@ description = "yet another discord bot"
 authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 
 [dependencies]
-anyhow = "1.0.71"
-argh = "0.1.10"
+anyhow = "1.0.75"
+argh = "0.1.12"
 async-rusqlite = { path = "./lib/async-rusqlite-rs", features = [ "bundled" ] }
 bincode = "1.3.3"
-bitflags = "2.3.1"
-bytes = "1.4.0"
-camino = { version = "1.1.4", features = [ "serde1" ] }
+bitflags = "2.4.1"
+bytes = "1.5.0"
+camino = { version = "1.1.6", features = [ "serde1" ] }
 crossbeam = "0.8.2"
-dashmap = "5.4.0"
+dashmap = "5.5.3"
 deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
-futures = { version = "0.3.28", features = [ "std" ], default-features = false }
+futures = { version = "0.3.29", features = [ "std" ], default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
-indexmap = "1.9.3"
+indexmap = "2.1.0"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }
-itoa = "1.0.6"
+itoa = "1.0.9"
 lazy_static = "1.4.0"
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path", "drop-remove-path" ] }
 nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls-tls" ] }
 once_cell = "1.18.0"
 open-ai = { path = "./lib/open-ai-rs", features = [ "rustls-tls" ], default-features = false }
-opentelemetry = { version = "0.19.0", features = [ "rt-tokio" ] }
-opentelemetry-otlp = { version = "0.12.0", features = [ "tls", "tls-roots" ] }
+opentelemetry = { version = "0.21.0" }
+opentelemetry-otlp = { version = "0.14.0", features = [ "tls", "tls-roots" ] }
+opentelemetry_sdk = { version = "0.21.1", features = [ "rt-tokio" ] }
 parking_lot = "0.12.1"
 pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
 pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "arc_anyhow_error", "async_lock_file", "request_map" ] }
@@ -42,41 +43,41 @@ r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = 
 rand = "0.8.5"
 reddit = { git = "https://github.com/nathaniel-daniel/reddit-rs", features = [ "rustls-tls" ], default-features = false }
 reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls-tls" ] }
-regex = "1.8.4"
-reqwest = { version = "0.11.18", default-features = false }
+regex = "1.10.2"
+reqwest = { version = "0.11.22", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
-rusqlite = { version = "0.29.0", features = [ "bundled", "blob", "trace" ] }
-ryu = "1.0.13"
+rusqlite = { version = "0.30.0", features = [ "bundled", "blob", "trace" ] }
+ryu = "1.0.15"
 sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-features = false, features = [ "rustls-tls" ] }
-serde = { version = "1.0.164", features = [ "derive" ] }
-serenity = { version = "0.11.5", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
+serde = { version = "1.0.193", features = [ "derive" ] }
+serenity = { version = "0.12.0", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
-songbird = "0.3.2"
+songbird = "0.4.0"
 systemstat = "0.2.3"
-thiserror = "1.0.40"
+thiserror = "1.0.50"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
-tiktok = { path = "lib/tiktok-rs" }
-time = "0.3.22"
-tiny-skia = { version = "0.11.0", features = [ "std", "simd", "png-format" ], default-features = false }
-tokio = { version = "1.28.2", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tiktok = { git = "https://github.com/adumbidiot/tiktok-rs", default-features = false, features = [ "rustls-tls" ] }
+time = "0.3.30"
+tiny-skia = { version = "0.11.2", features = [ "std", "simd", "png-format" ], default-features = false }
+tokio = { version = "1.34.0", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
 tokio-stream = "0.1.14"
-toml = "0.7.4"
-tonic = { version = "0.8.3", default-features = false }
-tracing = "0.1.37"
-tracing-appender = "0.2.2"
-tracing-log = "0.1.3"
-tracing-opentelemetry = "0.19.0"
-tracing-subscriber = { version = "0.3.17", features = [ "env-filter", "fmt", "parking_lot" ] }
-ttf-parser = "0.19.0"
+toml = "0.8.8"
+tonic = { version = "0.9.2", default-features = false }
+tracing = "0.1.40"
+tracing-appender = "0.2.3"
+tracing-log = "0.2.0"
+tracing-opentelemetry = "0.22.0"
+tracing-subscriber = { version = "0.3.18", features = [ "env-filter", "fmt", "parking_lot" ] }
+ttf-parser = "0.20.0"
 uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs", default-features = false, features = [ "rustls-tls" ] }
-url = "2.4.0"
+url = "2.5.0"
 xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls-tls" ] }
 zalgo = { git = "https://github.com/nathaniel-daniel/zalgo-rs", default-features = false }
 
 # Optional
-openssl = { version = "0.10.54", optional = true, features = [ "vendored" ] }
+openssl = { version = "0.10.60", optional = true, features = [ "vendored" ] }
 
 [features]
 # Note: This is needed for cross comp
@@ -153,7 +154,6 @@ enable = true
 start = true
 
 [package.metadata.rpi-deploy]
-targets = [ 
-    "armv7-unknown-linux-gnueabihf",
+targets = [
     "aarch64-unknown-linux-gnu",
 ]

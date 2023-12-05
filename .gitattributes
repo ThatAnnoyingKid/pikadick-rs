@@ -3,3 +3,5 @@
 **/test_data/*.json linguist-detectable=false
 
 *.rs text eol=lf
+*.toml text eol=lf
+Cargo.lock text eol=lf

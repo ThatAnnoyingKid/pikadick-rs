@@ -5,7 +5,7 @@ pub struct TagList {
     ///
     /// So far, this has only been "array"
     #[serde(rename = "type", alias = "@type")]
-    pub kind: String,
+    pub kind: Box<str>,
 
     /// The list of tags
     #[serde(rename = "tag", default)]
@@ -15,24 +15,26 @@ pub struct TagList {
 /// A Tag
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct Tag {
-    /// The tag kind
-    #[serde(rename = "type", alias = "@type")]
+    /// The tag kind.
+    #[serde(rename = "@type")]
     pub kind: TagKind,
 
-    /// The # of posts with this tag?
-    #[serde(alias = "@count")]
+    /// The # of posts with this tag.
+    ///
+    /// This is not always up to date.
+    #[serde(rename = "@count")]
     pub count: u64,
 
-    /// The tag name
-    #[serde(alias = "@name")]
-    pub name: String,
+    /// The tag name.
+    #[serde(rename = "@name")]
+    pub name: Box<str>,
 
     /// ?
-    #[serde(alias = "@ambiguous")]
+    #[serde(rename = "@ambiguous")]
     pub ambiguous: bool,
 
-    /// The tag id
-    #[serde(alias = "@id")]
+    /// The tag id.
+    #[serde(rename = "@id")]
     pub id: u64,
 }
 
@@ -86,18 +88,13 @@ impl TagKind {
 
 impl std::fmt::Debug for TagKind {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        if self.is_general() {
-            "General".fmt(f)
-        } else if self.is_author() {
-            "Author".fmt(f)
-        } else if self.is_copyright() {
-            "Copyright".fmt(f)
-        } else if self.is_character() {
-            "Character".fmt(f)
-        } else if self.is_metadata() {
-            "Metadata".fmt(f)
-        } else {
-            write!(f, "Unknown({})", self.0)
+        match *self {
+            Self::GENERAL => "General".fmt(f),
+            Self::AUTHOR => "Author".fmt(f),
+            Self::COPYRIGHT => "Copyright".fmt(f),
+            Self::CHARACTER => "Character".fmt(f),
+            Self::METADATA => "Metadata".fmt(f),
+            Self(unknown) => write!(f, "Unknown({unknown})"),
         }
     }
 }

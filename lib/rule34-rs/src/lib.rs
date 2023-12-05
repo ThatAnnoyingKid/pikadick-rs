@@ -2,10 +2,14 @@ mod client;
 mod error;
 mod search_query_builder;
 mod types;
+mod util;
 
+#[cfg(feature = "scrape")]
+pub use crate::types::HtmlPost;
 pub use crate::{
     client::{
         Client,
+        NotesListQueryBuilder,
         PostListQueryBuilder,
         TagListQueryBuilder,
     },
@@ -13,14 +17,17 @@ pub use crate::{
     search_query_builder::SearchQueryBuilder,
     types::{
         DeletedImageList,
-        HtmlPost,
+        Note,
+        NoteList,
         Post,
         PostList,
+        Rating,
         Tag,
         TagKind,
         TagList,
     },
 };
+#[cfg(feature = "scrape")]
 pub use scraper::Html;
 use std::num::NonZeroU64;
 pub use url::Url;
@@ -35,6 +42,9 @@ pub const TAGS_LIST_LIMIT_MAX: u16 = 1_000;
 
 // URL constants
 pub(crate) const URL_INDEX: &str = "https://rule34.xxx/index.php";
+
+/// The base Api Url
+pub(crate) const API_BASE_URL: &str = "https://api.rule34.xxx/index.php";
 
 /// Turn a post id into a post url
 fn post_id_to_html_post_url(id: NonZeroU64) -> Url {

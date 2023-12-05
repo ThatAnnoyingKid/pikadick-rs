@@ -12,13 +12,19 @@ pub use self::{
         TimedCacheEntry,
     },
 };
-pub use nd_util::{
-    download_to_file,
-    with_push_extension,
-    DropRemovePath,
-};
-pub use pikadick_util::{
-    ArcAnyhowError,
-    AsyncLockFile,
-    RequestMap,
-};
+use once_cell::sync::Lazy;
+use regex::Regex;
+use url::Url;
+
+/// Source: <https://urlregex.com/>
+static URL_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(include_str!("url_regex.txt")).expect("invalid url regex"));
+
+/// Get an iterator over urls in text.
+pub fn extract_urls(text: &str) -> impl Iterator<Item = Url> + '_ {
+    // Regex doesn't HAVE to be perfect.
+    // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
+    URL_REGEX
+        .find_iter(text)
+        .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
+}

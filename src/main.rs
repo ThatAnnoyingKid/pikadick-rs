@@ -106,21 +106,17 @@ use crate::{
         model::TikTokEmbedFlags,
         Database,
     },
-    util::{
-        AsyncLockFile,
-        LoadingReaction,
-    },
+    util::LoadingReaction,
 };
 use anyhow::{
     bail,
     ensure,
     Context as _,
 };
-use once_cell::sync::Lazy;
-use regex::Regex;
+use pikadick_util::AsyncLockFile;
 use serenity::{
-    client::bridge::gateway::ShardManager,
     framework::standard::{
+        buckets::BucketBuilder,
         help_commands,
         macros::{
             group,
@@ -129,15 +125,19 @@ use serenity::{
         Args,
         CommandGroup,
         CommandResult,
+        Configuration as StandardFrameworkConfiguration,
         DispatchError,
         HelpOptions,
         Reason,
         StandardFramework,
     },
     futures::future::BoxFuture,
+    gateway::{
+        ActivityData,
+        ShardManager,
+    },
     model::{
-        application::interaction::Interaction,
-        gateway::Activity,
+        application::Interaction,
         prelude::*,
     },
     prelude::*,
@@ -163,10 +163,6 @@ use url::Url;
 
 const TOKIO_RT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
 
-/// Source: <https://urlregex.com/>
-static URL_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(include_str!("./url_regex.txt")).expect("invalid url regex"));
-
 struct Handler;
 
 #[serenity::async_trait]
@@ -186,47 +182,47 @@ impl EventHandler for Handler {
         if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
             match kind {
                 ActivityKind::Listening => {
-                    ctx.set_activity(Activity::listening(status)).await;
+                    ctx.set_activity(Some(ActivityData::listening(status)));
                 }
                 ActivityKind::Streaming => {
                     let result: Result<_, anyhow::Error> = async {
-                        let activity = Activity::streaming(
+                        let activity = ActivityData::streaming(
                             status,
                             config.status_url().context("failed to get status url")?,
-                        );
+                        )?;
 
-                        ctx.set_activity(activity).await;
+                        ctx.set_activity(Some(activity));
 
                         Ok(())
                     }
                     .await;
 
-                    if let Err(e) = result.context("failed to set activity") {
-                        error!("{:?}", e);
+                    if let Err(error) = result.context("failed to set activity") {
+                        error!("{error:?}");
                     }
                 }
                 ActivityKind::Playing => {
-                    ctx.set_activity(Activity::playing(status)).await;
+                    ctx.set_activity(Some(ActivityData::playing(status)));
                 }
             }
         }
 
-        info!("logged in as '{}'", ready.user.name);
+        info!("logged in as \"{}\"", ready.user.name);
 
         // TODO: Consider shutting down the bot. It might be possible to use old data though.
-        if let Err(e) = slash_framework
+        if let Err(error) = slash_framework
             .register(ctx.clone(), config.test_guild)
             .await
             .context("failed to register slash commands")
         {
-            error!("{:?}", e);
+            error!("{error:?}");
         }
 
         info!("registered slash commands");
     }
 
-    async fn resume(&self, _ctx: Context, resumed: ResumedEvent) {
-        warn!("resumed connection. trace: {:?}", resumed.trace);
+    async fn resume(&self, _ctx: Context, _resumed: ResumedEvent) {
+        warn!("resumed connection");
     }
 
     #[tracing::instrument(skip(self, ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
@@ -259,32 +255,23 @@ impl EventHandler for Handler {
             let reddit_embed_is_enabled_for_guild = db
                 .get_reddit_embed_enabled(guild_id)
                 .await
-                .with_context(|| {
-                    format!("failed to get reddit-embed server data for '{}'", guild_id)
-                })
-                .unwrap_or_else(|e| {
-                    error!("{:?}", e);
+                .with_context(|| format!("failed to get reddit-embed server data for {guild_id}"))
+                .unwrap_or_else(|error| {
+                    error!("{error:?}");
                     false
                 });
             let tiktok_embed_flags = db
                 .get_tiktok_embed_flags(guild_id)
                 .await
-                .with_context(|| {
-                    format!("failed to get tiktok-embed server data for '{}'", guild_id)
-                })
-                .unwrap_or_else(|e| {
-                    error!("{:?}", e);
+                .with_context(|| format!("failed to get tiktok-embed server data for {guild_id}"))
+                .unwrap_or_else(|error| {
+                    error!("{error:?}");
                     TikTokEmbedFlags::empty()
                 });
 
-            // Extract urls
-            // NOTE: Regex doesn't HAVE to be perfect.
-            // Ideally, it just needs to be aggressive since parsing it into a url will weed out invalids.
+            // Extract urls.
             // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
-            let urls: Vec<Url> = URL_REGEX
-                .find_iter(&msg.content)
-                .filter_map(|url_match| Url::parse(url_match.as_str()).ok())
-                .collect();
+            let urls: Vec<Url> = crate::util::extract_urls(&msg.content).collect();
 
             // Check to see if it we will even try to embed
             let will_try_embedding = urls.iter().any(|url| {
@@ -431,15 +418,18 @@ async fn help(
 )]
 struct General;
 
-async fn handle_ctrl_c(shard_manager: Arc<Mutex<ShardManager>>) {
-    match tokio::signal::ctrl_c().await {
+async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
+    match tokio::signal::ctrl_c()
+        .await
+        .context("failed to set ctrl-c handler")
+    {
         Ok(_) => {
             info!("shutting down...");
             info!("stopping client...");
-            shard_manager.lock().await.shutdown_all().await;
+            shard_manager.shutdown_all().await;
         }
-        Err(e) => {
-            warn!("failed to set ctrl-c handler: {}", e);
+        Err(error) => {
+            warn!("{error}");
             // The default "kill everything" handler is probably still installed, so this isn't a problem?
         }
     };
@@ -462,8 +452,8 @@ fn after_handler<'fut>(
     command_result: CommandResult,
 ) -> BoxFuture<'fut, ()> {
     async move {
-        if let Err(e) = command_result {
-            error!("failed to process command '{}': {}", command_name, e);
+        if let Err(error) = command_result {
+            error!("failed to process command \"{command_name}\": {error}");
         }
     }
     .boxed()
@@ -475,13 +465,13 @@ fn unrecognised_command_handler<'fut>(
     command_name: &'fut str,
 ) -> BoxFuture<'fut, ()> {
     async move {
-        error!("unrecognized command '{}'", command_name);
+        error!("unrecognized command \"{command_name}\"");
 
         let _ = msg
             .channel_id
             .say(
                 &ctx.http,
-                format!("Could not find command '{}'", command_name),
+                format!("Could not find command \"{command_name}\""),
             )
             .await
             .is_ok();
@@ -521,17 +511,14 @@ async fn process_dispatch_error_future<'fut>(
                 .say(
                     &ctx.http,
                     format!(
-                        "Expected at least {} argument(s) for this command, but only got {}",
-                        min, given
+                        "Expected at least {min} argument(s) for this command, but only got {given}",
                     ),
                 )
                 .await
                 .is_ok();
         }
         DispatchError::TooManyArguments { max, given } => {
-            let response_str = format!("Expected no more than {} argument(s) for this command, but got {}. Try using quotation marks if your argument has spaces.",
-                max, given
-            );
+            let response_str = format!("Expected no more than {max} argument(s) for this command, but got {given}. Try using quotation marks if your argument has spaces.");
             let _ = msg.channel_id.say(&ctx.http, response_str).await.is_ok();
         }
         DispatchError::CheckFailed(check_name, reason) => match reason {
@@ -543,16 +530,16 @@ async fn process_dispatch_error_future<'fut>(
                     .channel_id
                     .say(
                         &ctx.http,
-                        format!("{} check failed: {:#?}", check_name, reason),
+                        format!("\"{check_name}\" check failed: {reason:#?}"),
                     )
                     .await
                     .is_ok();
             }
         },
-        e => {
+        error => {
             let _ = msg
                 .channel_id
-                .say(&ctx.http, format!("Unhandled Dispatch Error: {:?}", e))
+                .say(&ctx.http, format!("Unhandled Dispatch Error: {error:?}"))
                 .await
                 .is_ok();
         }
@@ -579,27 +566,28 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     let uppercase_prefix = config_prefix.to_uppercase();
 
     // Build the standard framework
-    info!("using prefix '{}'", &config_prefix);
-    let framework = StandardFramework::new()
-        .configure(|c| {
-            c.prefixes(&[config_prefix, uppercase_prefix])
-                .case_insensitivity(true)
-        })
+    info!("using prefix \"{config_prefix}\"");
+    let framework_config = StandardFrameworkConfiguration::new()
+        .prefixes([config_prefix, uppercase_prefix])
+        .case_insensitivity(true);
+    let framework = StandardFramework::new();
+    framework.configure(framework_config);
+    let framework = framework
         .help(&HELP)
         .group(&GENERAL_GROUP)
-        .bucket("r6stats", |b| b.delay(7))
+        .bucket("r6stats", BucketBuilder::new_channel().delay(7))
         .await
-        .bucket("r6tracker", |b| b.delay(7))
+        .bucket("r6tracker", BucketBuilder::new_channel().delay(7))
         .await
-        .bucket("system", |b| b.delay(30))
+        .bucket("system", BucketBuilder::new_channel().delay(30))
         .await
-        .bucket("quizizz", |b| b.delay(10))
+        .bucket("quizizz", BucketBuilder::new_channel().delay(10))
         .await
-        .bucket("insta-dl", |b| b.delay(10))
+        .bucket("insta-dl", BucketBuilder::new_channel().delay(10))
         .await
-        .bucket("ttt-board", |b| b.delay(1))
+        .bucket("ttt-board", BucketBuilder::new_channel().delay(1))
         .await
-        .bucket("default", |b| b.delay(1))
+        .bucket("default", BucketBuilder::new_channel().delay(1))
         .await
         .before(before_handler)
         .after(after_handler)
@@ -613,7 +601,7 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
         GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
     )
     .event_handler(Handler)
-    .application_id(config.application_id)
+    .application_id(ApplicationId::new(config.application_id))
     .framework(framework)
     .register_songbird()
     .await

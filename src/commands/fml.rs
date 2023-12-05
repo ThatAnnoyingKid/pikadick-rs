@@ -13,6 +13,10 @@ use fml::{
     FmlResult,
 };
 use serenity::{
+    builder::{
+        CreateEmbed,
+        CreateMessage,
+    },
     client::Context,
     framework::standard::{
         macros::command,
@@ -79,11 +83,11 @@ async fn fml(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
 
     if client.should_repopulate() {
-        if let Err(e) = client.repopulate().await {
-            error!("Failed to repopulate fml cache: {}", e);
+        if let Err(error) = client.repopulate().await {
+            error!("Failed to repopulate fml cache: {error}");
 
             msg.channel_id
-                .say(&ctx.http, format!("Failed to get fml entry: {}", e))
+                .say(&ctx.http, format!("Failed to get fml entry: {error}"))
                 .await?;
 
             return Ok(());
@@ -91,46 +95,41 @@ async fn fml(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     }
 
     if let Some(entry) = client.get_entry() {
-        loading.send_ok();
+        let mut votes_up_buf = itoa::Buffer::new();
+        let mut votes_down_buf = itoa::Buffer::new();
+
+        let embed_builder = CreateEmbed::new()
+            .title("FML Story")
+            .description(entry.content_hidden)
+            .field(
+                "I agree, your life sucks",
+                votes_up_buf.format(entry.metrics.votes_up),
+                true,
+            )
+            .field(
+                "You deserved it",
+                votes_down_buf.format(entry.metrics.votes_down),
+                true,
+            )
+            .field("\u{200B}", "\u{200B}", false)
+            .field(
+                "Reactions",
+                format!(
+                    "😐 {}\n\n😃 {}\n\n😲 {}\n\n😂 {}",
+                    entry.metrics.smiley_amusing,
+                    entry.metrics.smiley_funny,
+                    entry.metrics.smiley_weird,
+                    entry.metrics.smiley_hilarious
+                ),
+                true,
+            );
+        let message_builder = CreateMessage::new().embed(embed_builder);
 
         msg.channel_id
-            .send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    let mut votes_up_buf = itoa::Buffer::new();
-                    let mut votes_down_buf = itoa::Buffer::new();
-
-                    e.title("FML Story");
-                    e.description(entry.content_hidden);
-                    e.field(
-                        "I agree, your life sucks",
-                        votes_up_buf.format(entry.metrics.votes_up),
-                        true,
-                    );
-                    e.field(
-                        "You deserved it",
-                        votes_down_buf.format(entry.metrics.votes_down),
-                        true,
-                    );
-
-                    e.field("\u{200B}", "\u{200B}", false);
-
-                    e.field(
-                        "Reactions",
-                        &format!(
-                            "😐 {}\n\n😃 {}\n\n😲 {}\n\n😂 {}",
-                            entry.metrics.smiley_amusing,
-                            entry.metrics.smiley_funny,
-                            entry.metrics.smiley_weird,
-                            entry.metrics.smiley_hilarious
-                        ),
-                        true,
-                    );
-                    e
-                });
-
-                m
-            })
+            .send_message(&ctx.http, message_builder)
             .await?;
+
+        loading.send_ok();
     } else {
         // TODO: Maybe get a lock so this can't fail?
         msg.channel_id

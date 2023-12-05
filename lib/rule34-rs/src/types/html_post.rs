@@ -311,7 +311,7 @@ impl HtmlPost {
 
     /// Try to get the image name.
     pub fn get_image_name(&self) -> Option<&str> {
-        self.image_url.path_segments()?.rev().next()
+        self.image_url.path_segments()?.next_back()
     }
 
     /// Get the post url for this post.

@@ -1,8 +1,10 @@
 /// The Error that occurs when a `HtmlPost` could not be parsed.
+#[cfg(feature = "scrape")]
 pub type HtmlPostError = crate::types::html_post::FromHtmlError;
 
 /// Crate Error Type
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
     /// Reqwest HTTP Error
     #[error(transparent)]
@@ -18,6 +20,7 @@ pub enum Error {
 
     /// Invalid Post
     #[error("invalid html post")]
+    #[cfg(feature = "scrape")]
     InvalidHtmlPost(#[from] HtmlPostError),
 
     /// A tokio task failed to join

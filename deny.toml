@@ -14,9 +14,6 @@ notice = "deny"
 ignore = [    
     # Blocked on removing heim
     "RUSTSEC-2020-0168",
-    
-    # Blocked on songbird updating their deps
-    "RUSTSEC-2023-0037",
 ]
 
 [licenses]
@@ -60,36 +57,28 @@ license-files = [
 ]
 
 [bans]
-multiple-versions = "deny"
+multiple-versions = "warn"
 highlight = "all"
-skip = [
-    # Blocked on rand updating getrandom to 0.2.x 
-    { name = "getrandom", version = "0.1.15" },
-    
-    # Blocked on phf_generator, tempfile, tungstenite, and zalgo moving to rand 0.8.x
-    { name = "rand", version = "0.7.3" },
-    { name = "rand_core", version = "0.5.1" },
-    { name = "rand_chacha", version = "0.2.2" },
-    
-    # Blocked on ring updating their version of spin to 0.9
-    { name = "spin", version = "0.5.2" },
-    
-    # Blocked on serenity-voice-model moving away from enum_primitive
-    { name = "num-traits", version = "0.1.43" },
-    
+skip = [    
     # Blocked on updates to cssparser
-    { name = "phf_shared", version = "0.8.0" },
+    { name = "phf_shared", version = "0.10.0" },
     
     # Blocked on markup5ever updating phf_codegen
-    { name = "phf_generator", version = "0.8.0" },
+    { name = "phf_generator", version = "0.10.0" },
     
     # Blocked on cssparser updating phf
-    { name = "phf", version = "0.8.0" },
-    { name = "phf_codegen", version = "0.8.0" },
+    { name = "phf", version = "0.10.0" },
+    { name = "phf_codegen", version = "0.10.0" },
     
     # Blocked on removing heim
     { name = "nix", version = "0.23.1" },
     { name = "memoffset", version = "0.6.5" },
+    { name = "polling", version = "2.8.0" },
+    { name = "futures-lite", version = "1.13.0" },
+    { name = "event-listener", version = "3.1.0" },
+    { name = "async-lock", version = "2.8.0" },
+    { name = "async-io", version = "1.13.0" },
+    { name = "async-channel", version = "1.9.0" },
     
     # Blocked on cookie-store moving to idna 0.3
     { name = "idna", version = "0.2.3" },
@@ -97,19 +86,8 @@ skip = [
     # Blocked on reqwest updating cookie-store to 0.19.x
     { name = "cookie_store", version = "0.16.1" },
     
-    # Blocked on ecosystem moving to base64 0.20 and above
-    { name = "base64", version = "0.13.1" },
-    
-    # Blocked on ecosystem moving to windows 0.48.x
-    { name = "windows-sys", version = "0.42.0" },
-    { name = "windows_x86_64_msvc", version = "0.42.2" },
-    
     # Blocked on ecosystem moving to syn 2
     { name = "syn", version = "1.0.109" },
-    
-    # Blocked on serenity updating async-tungstenite
-    { name = "tokio-rustls", version = "0.23.4" },
-    { name = "rustls", version = "0.20.8" },
     
     # Blocked on tracing subscriber updating their deps
     { name = "regex-syntax", version = "0.6.29" },
@@ -122,6 +100,34 @@ skip = [
     
     # Blocked on ecosystem moving to hashbrown 0.13.x
     { name = "hashbrown", version = "0.12.3" },
+    
+    # Blocked on ecosystem moving to socket 0.5.x
+    { name = "socket2", version = "0.4.9" },
+    
+    # Blocked on ecosystem moving to rustix 0.38.x
+    { name = "rustix", version = "0.37.23" },
+    { name = "linux-raw-sys", version = "0.3.8" },
+    
+    # Blocked on matchers updating regex-automata 
+    { name = "regex-automata", version = "0.1.10" },
+    
+    # Blocked on ecosystem moving to indexmap 2
+    { name = "indexmap", version = "1.9.3" },
+    
+    # Blocked on ecosystem moving to fastrand 2
+    { name = "fastrand", version = "1.9.0" },
+    
+    # Blocked on reqwest updating cookie-store to 0.16.0
+    { name = "cookie", version = "0.16.2" },
+    
+    # Blocked on async-channel updating event-listener to 3.0.0
+    { name = "event-listener", version = "2.5.3" },
+    
+    # Blocked on ecosystem moving to 0.52.0
+    { name = "windows_x86_64_msvc", version = "0.48.0" },
+    { name = "windows_x86_64_gnu", version = "0.48.0" },
+    { name = "windows-targets", version = "0.48.5" },
+    { name = "windows-sys", version = "0.48.0" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs

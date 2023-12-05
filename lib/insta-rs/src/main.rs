@@ -341,7 +341,7 @@ async fn async_main(options: Options) -> anyhow::Result<()> {
 }
 
 fn get_extension_from_url(url: &Url) -> Option<&str> {
-    Some(url.path_segments()?.rev().next()?.rsplit_once('.')?.1)
+    Some(url.path_segments()?.next_back()?.rsplit_once('.')?.1)
 }
 
 /// Try to download a url to a file. This will NOT delete the file if it fails.

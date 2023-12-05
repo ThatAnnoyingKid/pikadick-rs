@@ -1,21 +1,28 @@
+mod note_list_query_builder;
 mod post_list_query_builder;
 mod tag_list_query_builder;
 
 pub use self::{
+    note_list_query_builder::NotesListQueryBuilder,
     post_list_query_builder::PostListQueryBuilder,
     tag_list_query_builder::TagListQueryBuilder,
 };
+#[cfg(feature = "scrape")]
+use crate::HtmlPost;
 use crate::{
     DeletedImageList,
     Error,
-    HtmlPost,
 };
 use reqwest::header::{
     HeaderMap,
     HeaderValue,
 };
+#[cfg(feature = "scrape")]
 use scraper::Html;
-use std::num::NonZeroU64;
+use std::{
+    num::NonZeroU64,
+    time::Duration,
+};
 use url::Url;
 
 // Default Header values
@@ -47,6 +54,7 @@ impl Client {
 
         let client = reqwest::Client::builder()
             .default_headers(default_headers)
+            .connect_timeout(Duration::from_secs(10))
             .build()
             .expect("failed to build rule34 client");
 
@@ -58,6 +66,7 @@ impl Client {
         Ok(self
             .client
             .get(url)
+            .timeout(Duration::from_secs(90))
             .send()
             .await?
             .error_for_status()?
@@ -67,6 +76,7 @@ impl Client {
 
     /// Send a GET web request to a `uri` and get the result as [`Html`],
     /// then use the given func to process it.
+    #[cfg(feature = "scrape")]
     async fn get_html<F, T>(&self, uri: &str, f: F) -> Result<T, Error>
     where
         F: FnOnce(Html) -> T + Send + 'static,
@@ -94,6 +104,7 @@ impl Client {
     }
 
     /// Get a [`HtmlPost`] by `id`.
+    #[cfg(feature = "scrape")]
     pub async fn get_html_post(&self, id: NonZeroU64) -> Result<HtmlPost, Error> {
         let url = crate::post_id_to_html_post_url(id);
         let ret = self
@@ -117,7 +128,7 @@ impl Client {
         last_id: Option<NonZeroU64>,
     ) -> Result<DeletedImageList, Error> {
         let mut url = Url::parse_with_params(
-            crate::URL_INDEX,
+            crate::API_BASE_URL,
             &[
                 ("page", "dapi"),
                 ("s", "post"),
@@ -139,6 +150,13 @@ impl Client {
     /// Get a builder to list tags.
     pub fn list_tags(&self) -> TagListQueryBuilder {
         TagListQueryBuilder::new(self)
+    }
+
+    /// Get a builder to list notes.
+    ///
+    /// This is undocumented.
+    pub fn list_notes(&self) -> NotesListQueryBuilder {
+        NotesListQueryBuilder::new(self)
     }
 }
 
@@ -165,21 +183,27 @@ mod test {
         assert!(!res.posts.is_empty());
     }
 
-    async fn get_top_post(query: &str) -> HtmlPost {
+    async fn get_top_post(query: &str) {
         let client = Client::new();
-        let res = client
+        let response = client
             .list_posts()
             .tags(Some(query))
             .execute()
             .await
-            .unwrap_or_else(|e| panic!("failed to search rule34 for `{}`: {}", query, e));
-        assert!(!res.posts.is_empty(), "no posts for `{}`", query);
+            .unwrap_or_else(|error| panic!("failed to search rule34 for \"{query}\": {error}"));
+        assert!(!response.posts.is_empty(), "no posts for \"{query}\"");
 
-        let first = res.posts.first().expect("missing first entry");
-        client
-            .get_html_post(first.id)
-            .await
-            .expect("failed to get first post")
+        dbg!(&response);
+
+        #[cfg(feature = "scrape")]
+        {
+            let first = response.posts.first().expect("missing first entry");
+            let post = client
+                .get_html_post(first.id)
+                .await
+                .expect("failed to get first post");
+            dbg!(post);
+        }
     }
 
     #[tokio::test]
@@ -195,8 +219,7 @@ mod test {
         ];
 
         for item in list {
-            let post = get_top_post(item).await;
-            dbg!(&post);
+            get_top_post(item).await;
         }
     }
 
@@ -204,7 +227,7 @@ mod test {
     async fn deleted_images_list() {
         let client = Client::new();
         let result = client
-            .list_deleted_images(Some(NonZeroU64::new(500_000).unwrap())) // Just choose a high-ish post id here and update to keep the download limited
+            .list_deleted_images(Some(NonZeroU64::new(826_550).unwrap())) // Just choose a high-ish post id here and update to keep the download limited
             .await
             .expect("failed to get deleted images");
         dbg!(result);
@@ -222,5 +245,17 @@ mod test {
             .expect("failed to list tags");
         assert!(!result.tags.is_empty());
         // dbg!(result);
+    }
+
+    #[tokio::test]
+    async fn notes_list() {
+        let client = Client::new();
+        let result = client
+            .list_notes()
+            .execute()
+            .await
+            .expect("failed to list notes");
+        assert!(!result.notes.is_empty());
+        dbg!(result);
     }
 }

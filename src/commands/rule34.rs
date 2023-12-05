@@ -11,6 +11,10 @@ use crate::{
 };
 use anyhow::Context as _;
 use rand::seq::SliceRandom;
+use serenity::builder::{
+    CreateInteractionResponse,
+    CreateInteractionResponseMessage,
+};
 use std::sync::Arc;
 use tracing::{
     error,
@@ -98,38 +102,38 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 .add_tag_iter(args.query.split(' '))
                 .take_query_string();
 
-            info!("searching rule34 for '{}'", query_str);
+            info!("searching rule34 for \"{query_str}\"");
 
             let result = client
                 .list(&query_str)
                 .await
                 .context("failed to get search results");
 
-            interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| match result {
-                        Ok(list_results) => {
-                            let maybe_list_result: Option<String> = list_results
-                                .data()
-                                .posts
-                                .choose(&mut rand::thread_rng())
-                                .map(|list_result| list_result.file_url.to_string());
+            let mut message_builder = CreateInteractionResponseMessage::new();
+            match result {
+                Ok(list_results) => {
+                    let maybe_list_result: Option<String> = list_results
+                        .data()
+                        .posts
+                        .choose(&mut rand::thread_rng())
+                        .map(|list_result| list_result.file_url.to_string());
 
-                            if let Some(file_url) = maybe_list_result {
-                                info!("sending {}", file_url);
-                                res.content(file_url)
-                            } else {
-                                info!("no results");
-                                res.content(format!("No results for '{}'", query_str))
-                            }
-                        }
-                        Err(e) => {
-                            error!("{:?}", e);
-                            res.content(format!("{:?}", e))
-                        }
-                    })
-                })
-                .await?;
+                    if let Some(file_url) = maybe_list_result {
+                        info!("sending \"{file_url}\"");
+                        message_builder = message_builder.content(file_url);
+                    } else {
+                        info!("no results");
+                        message_builder =
+                            message_builder.content(format!("No results for \"{query_str}\""));
+                    }
+                }
+                Err(error) => {
+                    error!("{error:?}");
+                    message_builder = message_builder.content(format!("{error:?}"));
+                }
+            }
+            let response = CreateInteractionResponse::Message(message_builder);
+            interaction.create_response(&ctx.http, response).await?;
 
             client.list_cache.trim();
 

@@ -15,14 +15,6 @@ use windows_sys::Win32::{
         STATUS_SUCCESS,
     },
     System::{
-        Diagnostics::Debug::{
-            PROCESSOR_ARCHITECTURE,
-            PROCESSOR_ARCHITECTURE_AMD64,
-            PROCESSOR_ARCHITECTURE_ARM,
-            PROCESSOR_ARCHITECTURE_IA64,
-            PROCESSOR_ARCHITECTURE_INTEL,
-            PROCESSOR_ARCHITECTURE_UNKNOWN,
-        },
         SystemInformation::{
             ComputerNameDnsDomain,
             ComputerNameDnsFullyQualified,
@@ -40,6 +32,12 @@ use windows_sys::Win32::{
             MEMORYSTATUSEX,
             OSVERSIONINFOEXW,
             OSVERSIONINFOW,
+            PROCESSOR_ARCHITECTURE,
+            PROCESSOR_ARCHITECTURE_AMD64,
+            PROCESSOR_ARCHITECTURE_ARM,
+            PROCESSOR_ARCHITECTURE_IA64,
+            PROCESSOR_ARCHITECTURE_INTEL,
+            PROCESSOR_ARCHITECTURE_UNKNOWN,
             SYSTEM_INFO,
         },
         SystemServices::{

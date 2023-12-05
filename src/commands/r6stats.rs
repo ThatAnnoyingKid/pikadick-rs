@@ -11,6 +11,11 @@ use crate::{
 };
 use anyhow::Context as _;
 use r6stats::UserData;
+use serenity::builder::{
+    CreateEmbed,
+    CreateInteractionResponse,
+    CreateInteractionResponseMessage,
+};
 use std::sync::Arc;
 use tracing::{
     error,
@@ -88,53 +93,68 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
             let client = client_data.r6stats_client.clone();
             drop(data_lock);
 
-            info!("getting r6 stats for '{}' using r6stats", args.name);
+            let name = args.name.as_str();
+
+            info!("getting r6 stats for \"{name}\" using r6stats");
 
             let result = client
-                .get_stats(&args.name)
+                .get_stats(name)
                 .await
-                .with_context(|| format!("failed to get stats for '{}' using r6stats", args.name));
+                .with_context(|| format!("failed to get stats for \"{name}\" using r6stats"));
+
+            let mut message_builder = CreateInteractionResponseMessage::new();
+            match result {
+                Ok(Some(entry)) => {
+                    let data = entry.data();
+
+                    let mut embed_builder = CreateEmbed::new();
+                    embed_builder = embed_builder
+                        .title(&data.username)
+                        .image(data.avatar_url_256.as_str());
+
+                    if let Some(stats) = data.seasonal_stats.as_ref() {
+                        embed_builder =
+                            embed_builder.field("MMR", ryu::Buffer::new().format(stats.mmr), true);
+                        embed_builder = embed_builder.field(
+                            "Max MMR",
+                            ryu::Buffer::new().format(stats.max_mmr),
+                            true,
+                        );
+                        embed_builder = embed_builder.field(
+                            "Mean Skill",
+                            ryu::Buffer::new().format(stats.skill_mean),
+                            true,
+                        );
+                    }
+
+                    if let Some(kd) = data.kd() {
+                        embed_builder = embed_builder.field(
+                            "Overall Kill / Death",
+                            ryu::Buffer::new().format(kd),
+                            true,
+                        );
+                    }
+
+                    if let Some(wl) = data.wl() {
+                        embed_builder = embed_builder.field(
+                            "Overall Win / Loss",
+                            ryu::Buffer::new().format(wl),
+                            true,
+                        );
+                    }
+
+                    message_builder = message_builder.embed(embed_builder);
+                }
+                Ok(None) => message_builder = message_builder.content("No results"),
+                Err(error) => {
+                    error!("{error:?}");
+                    message_builder = message_builder.content(format!("{error:?}"));
+                }
+            }
+            let response_builder = CreateInteractionResponse::Message(message_builder);
 
             interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| match result {
-                        Ok(Some(entry)) => res.embed(|e| {
-                            let data = entry.data();
-
-                            e.title(&data.username).image(data.avatar_url_256.as_str());
-
-                            if let Some(kd) = data.kd() {
-                                e.field(
-                                    "Overall Kill / Death",
-                                    ryu::Buffer::new().format(kd),
-                                    true,
-                                );
-                            }
-
-                            if let Some(wl) = data.wl() {
-                                e.field("Overall Win / Loss", ryu::Buffer::new().format(wl), true);
-                            }
-
-                            if let Some(stats) = data.seasonal_stats.as_ref() {
-                                e.field("MMR", ryu::Buffer::new().format(stats.mmr), true);
-                                e.field("Max MMR", ryu::Buffer::new().format(stats.max_mmr), true);
-                                e.field(
-                                    "Mean Skill",
-                                    ryu::Buffer::new().format(stats.skill_mean),
-                                    true,
-                                );
-                            }
-
-                            e
-                        }),
-                        Ok(None) => res.content("No results"),
-                        Err(e) => {
-                            error!("{:?}", e);
-
-                            res.content(format!("{:?}", e))
-                        }
-                    })
-                })
+                .create_response(&ctx.http, response_builder)
                 .await?;
 
             client.search_cache.trim();

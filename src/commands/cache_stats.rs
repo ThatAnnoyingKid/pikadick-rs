@@ -3,14 +3,20 @@ use crate::{
     ClientDataKey,
 };
 use serenity::{
+    builder::{
+        CreateEmbed,
+        CreateMessage,
+    },
     framework::standard::{
         macros::command,
         Args,
         CommandResult,
     },
-    model::prelude::*,
+    model::{
+        colour::Colour,
+        prelude::*,
+    },
     prelude::*,
-    utils::Colour,
 };
 use std::fmt::Write;
 use tracing::info;
@@ -27,26 +33,24 @@ pub async fn cache_stats(ctx: &Context, msg: &Message, _args: Args) -> CommandRe
 
     info!("reporting all cache stats");
 
+    let mut embed_builder = CreateEmbed::new()
+        .title("Cache Stats")
+        .color(Colour::from_rgb(255, 0, 0));
+    for (stat_family_name, stat_family) in stats.into_iter() {
+        // Low ball, but better than nothing
+        let mut output = String::with_capacity(stat_family.len() * 16);
+
+        for (stat_name, stat) in stat_family.iter() {
+            writeln!(&mut output, "**{stat_name}**: {stat} item(s)").unwrap();
+        }
+
+        embed_builder = embed_builder.field(stat_family_name, output, false);
+    }
+
+    let message_builder = CreateMessage::new().embed(embed_builder);
+
     msg.channel_id
-        .send_message(&ctx.http, |m| {
-            m.embed(|e| {
-                e.title("Cache Stats");
-                e.color(Colour::from_rgb(255, 0, 0));
-
-                for (stat_family_name, stat_family) in stats.into_iter() {
-                    // Low ball, but better than nothing
-                    let mut output = String::with_capacity(stat_family.len() * 16);
-
-                    for (stat_name, stat) in stat_family.iter() {
-                        writeln!(&mut output, "**{stat_name}**: {stat} item(s)").unwrap();
-                    }
-
-                    e.field(stat_family_name, output, false);
-                }
-
-                e
-            })
-        })
+        .send_message(&ctx.http, message_builder)
         .await?;
 
     Ok(())

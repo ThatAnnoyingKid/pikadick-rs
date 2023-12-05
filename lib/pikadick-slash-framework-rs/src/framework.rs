@@ -6,14 +6,17 @@ use crate::{
     HelpCommand,
 };
 use serenity::{
+    builder::{
+        CreateCommand,
+        CreateInteractionResponse,
+        CreateInteractionResponseMessage,
+    },
     client::Context,
     model::{
         application::{
-            command::Command as ApplicationCommand,
-            interaction::{
-                application_command::ApplicationCommandInteraction,
-                Interaction,
-            },
+            Command as ApplicationCommand,
+            CommandInteraction,
+            Interaction,
         },
         prelude::GuildId,
     },
@@ -51,7 +54,7 @@ impl std::fmt::Display for WrapBoxError {
 
 impl std::error::Error for WrapBoxError {}
 
-struct FmtOptionsHelper<'a>(&'a ApplicationCommandInteraction);
+struct FmtOptionsHelper<'a>(&'a CommandInteraction);
 
 impl std::fmt::Display for FmtOptionsHelper<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -59,7 +62,7 @@ impl std::fmt::Display for FmtOptionsHelper<'_> {
         let len = self.0.data.options.len();
         for (i, option) in self.0.data.options.iter().enumerate() {
             if i + 1 == len {
-                write!(f, "'{}'={:?}", option.name, option.resolved)?;
+                write!(f, "'{}'={:?}", option.name, option.value)?;
             }
         }
         write!(f, "]")?;
@@ -87,42 +90,31 @@ impl Framework {
         test_guild_id: Option<GuildId>,
     ) -> Result<(), serenity::Error> {
         for framework_command in self.commands.values() {
-            ApplicationCommand::create_global_application_command(&ctx.http, |command| {
-                framework_command.register(command);
-
-                command
-            })
-            .await?;
+            let mut command_builder = CreateCommand::new(framework_command.name());
+            command_builder = framework_command.register(command_builder);
+            ApplicationCommand::create_global_command(&ctx.http, command_builder).await?;
         }
 
         if let Some(framework_command) = self.help_command.as_deref() {
-            ApplicationCommand::create_global_application_command(&ctx.http, |command| {
-                framework_command.register(command);
-
-                command
-            })
-            .await?;
+            let mut command_builder = CreateCommand::new("help");
+            command_builder = framework_command.register(command_builder);
+            ApplicationCommand::create_global_command(&ctx.http, command_builder).await?;
         }
 
         if let Some(guild_id) = test_guild_id {
-            GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
-                for framework_command in self.commands.values() {
-                    commands.create_application_command(|command| {
-                        framework_command.register(command);
-                        command
-                    });
-                }
+            let mut create_commands = Vec::new();
+            for framework_command in self.commands.values() {
+                let mut command_builder = CreateCommand::new(framework_command.name());
+                command_builder = framework_command.register(command_builder);
+                create_commands.push(command_builder);
+            }
+            if let Some(framework_command) = self.help_command.as_deref() {
+                let mut command_builder = CreateCommand::new("help");
+                command_builder = framework_command.register(command_builder);
+                create_commands.push(command_builder);
+            }
 
-                if let Some(framework_command) = self.help_command.as_deref() {
-                    commands.create_application_command(|command| {
-                        framework_command.register(command);
-                        command
-                    });
-                }
-
-                commands
-            })
-            .await?;
+            GuildId::set_commands(guild_id, &ctx.http, create_commands).await?;
         }
 
         Ok(())
@@ -130,7 +122,7 @@ impl Framework {
 
     /// Process an interaction create event
     pub async fn process_interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
+        if let Interaction::Command(command) = interaction {
             self.process_interaction_create_application_command(ctx, command)
                 .await
         }
@@ -140,7 +132,7 @@ impl Framework {
     async fn process_interaction_create_application_command(
         &self,
         ctx: Context,
-        command: ApplicationCommandInteraction,
+        command: CommandInteraction,
     ) {
         if command.data.name.as_str() == "help" {
             // Keep comments
@@ -201,21 +193,20 @@ impl Framework {
                     warn!("{error}");
                 }
             }
-            Err(e) => {
-                let content = if let Some(user) = e.user.as_deref() {
+            Err(error) => {
+                let content = if let Some(user) = error.user.as_deref() {
                     user
                 } else {
                     "check failed for unknown reason"
                 };
 
-                if let Some(log) = e.log {
+                if let Some(log) = error.log {
                     warn!("{log}");
                 }
 
+                let response = CreateInteractionResponseMessage::new().content(content);
                 if let Err(error) = command
-                    .create_interaction_response(&ctx.http, |res| {
-                        res.interaction_response_data(|res| res.content(content))
-                    })
+                    .create_response(&ctx.http, CreateInteractionResponse::Message(response))
                     .await
                 {
                     warn!("{error}");

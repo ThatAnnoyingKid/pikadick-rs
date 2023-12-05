@@ -3,7 +3,6 @@ use crate::{
     ClientDataKey,
 };
 use serenity::{
-    client::bridge::gateway::ShardId,
     framework::standard::{
         macros::command,
         Args,
@@ -24,11 +23,10 @@ async fn latency(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let shard_manager = client_data.shard_manager.clone();
     drop(data_lock);
 
-    let shard_id = ShardId(ctx.shard_id);
+    let shard_id = ctx.shard_id;
 
     let latency = {
-        let manager = shard_manager.lock().await;
-        let runners = manager.runners.lock().await;
+        let runners = shard_manager.runners.lock().await;
         let maybe_shard = runners.get(&shard_id);
         maybe_shard.and_then(|shard| shard.latency)
     };
@@ -36,11 +34,11 @@ async fn latency(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     match latency {
         Some(latency) => {
             msg.channel_id
-                .say(&ctx.http, format!("Shard Latency: {:?}", latency))
+                .say(&ctx.http, format!("Shard Latency: {latency:?}"))
                 .await?;
         }
         None => {
-            warn!("Failed to get latency for shard: {}", shard_id);
+            warn!("Failed to get latency for shard: {shard_id}");
             msg.channel_id
                 .say(&ctx.http, "Failed to get latency")
                 .await?;

@@ -69,7 +69,7 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
         let tracer = opentelemetry_otlp::new_pipeline()
             .tracing()
             .with_exporter(exporter)
-            .install_batch(opentelemetry::runtime::Tokio)
+            .install_batch(opentelemetry_sdk::runtime::Tokio)
             .context("failed to install otlp opentelemetry exporter")?;
 
         Some(tracing_opentelemetry::layer().with_tracer(tracer))

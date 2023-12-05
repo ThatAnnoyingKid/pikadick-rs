@@ -11,6 +11,10 @@ use indexmap::set::IndexSet;
 use parking_lot::RwLock;
 use pikadick_slash_framework::FromOptions;
 use rand::Rng;
+use serenity::builder::{
+    CreateInteractionResponse,
+    CreateInteractionResponseMessage,
+};
 use std::{
     str::FromStr,
     sync::Arc,
@@ -261,17 +265,16 @@ pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Comman
                 .context("failed to repopulate nekos caches")
             {
                 Ok(url) => url.into(),
-                Err(e) => {
-                    error!("{:?}", e);
-                    format!("{:?}", e)
+                Err(error) => {
+                    error!("{error:?}");
+                    format!("{error:?}")
                 }
             };
 
-            interaction
-                .create_interaction_response(&ctx.http, |res| {
-                    res.interaction_response_data(|res| res.content(content))
-                })
-                .await?;
+            let message_builder = CreateInteractionResponseMessage::new().content(content);
+            let response = CreateInteractionResponse::Message(message_builder);
+
+            interaction.create_response(&ctx.http, response).await?;
 
             Ok(())
         })
