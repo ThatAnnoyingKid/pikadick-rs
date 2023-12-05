@@ -3197,7 +3197,7 @@ dependencies = [
 [[package]]
 name = "reddit"
 version = "0.0.0"
-source = "git+https://github.com/nathaniel-daniel/reddit-rs#7202eb420d56e01a328e70d3808c81bbe54b1833"
+source = "git+https://github.com/nathaniel-daniel/reddit-rs#8db3fcc59e09f1894594ef78f19ec325f18ca537"
 dependencies = [
  "reqwest",
  "serde",
