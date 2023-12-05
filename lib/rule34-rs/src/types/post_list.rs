@@ -98,9 +98,9 @@ pub struct Post {
     #[serde(rename = "@created_at", with = "crate::util::asctime_with_offset")]
     pub created_at: OffsetDateTime,
 
-    /// ?
+    /// The status of the post.
     #[serde(rename = "@status")]
-    pub status: Box<str>,
+    pub status: PostStatus,
 
     /// The original source.
     ///
@@ -168,6 +168,26 @@ impl Rating {
             Self::Safe => "s",
         }
     }
+}
+
+/// A Post Status
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
+pub enum PostStatus {
+    /// Active, the default state
+    #[serde(rename = "active")]
+    Active,
+
+    /// Pending, probably waiting for moderator approval
+    #[serde(rename = "pending")]
+    Pending,
+
+    /// Deleted
+    #[serde(rename = "deleted")]
+    Deleted,
+
+    /// Flagged
+    #[serde(rename = "flagged")]
+    Flagged,
 }
 
 mod serde_optional_str_non_zero_u64 {

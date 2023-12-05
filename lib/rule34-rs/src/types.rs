@@ -24,6 +24,7 @@ pub use self::{
     post_list::{
         Post,
         PostList,
+        PostStatus,
         Rating,
     },
     tag_list::{
