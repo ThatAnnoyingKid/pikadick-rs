@@ -15,7 +15,7 @@ itoa = "1.0.9"
 quick-xml = { version = "0.31.0", features = [ "serialize" ] }
 reqwest = { version = "0.11.22", default-features = false, features = [ "json", "brotli" ] }
 serde = { version = "1.0.193", features = [ "derive" ] }
-thiserror = "1.0.50"
+thiserror = "1.0.51"
 time = { version = "0.3.30", features = [ "serde", "parsing", "formatting", "macros" ], default-features = false }
 tokio = "1.34.0"
 url = { version = "2.5.0", features = [ "serde" ] }
