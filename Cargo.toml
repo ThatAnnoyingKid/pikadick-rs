@@ -24,7 +24,7 @@ heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
 indexmap = "2.1.0"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }
-itoa = "1.0.9"
+itoa = "1.0.10"
 lazy_static = "1.4.0"
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path", "drop-remove-path" ] }
 nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls-tls" ] }
