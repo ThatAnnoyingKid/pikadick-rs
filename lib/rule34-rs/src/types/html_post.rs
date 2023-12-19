@@ -26,9 +26,9 @@ pub enum FromHtmlError {
     #[error("missing post date")]
     MissingPostDate,
 
-    /// Missing the author
-    #[error("missing author")]
-    MissingAuthor,
+    /// Missing the creator
+    #[error("missing creator")]
+    MissingCreator,
 
     /// Invalid Post source
     #[error("invalid post source")]
@@ -112,8 +112,8 @@ pub struct HtmlPost {
     /// Whether this post has a parent post
     pub parent_post: Option<NonZeroU64>,
 
-    /// The author's name
-    pub author: Box<str>,
+    /// The creator's name
+    pub creator: Box<str>,
 }
 
 impl HtmlPost {
@@ -138,7 +138,7 @@ impl HtmlPost {
         let mut id_str = None;
         let mut date = None;
         let mut source_str = None;
-        let mut author = None;
+        let mut creator = None;
 
         let stats_header_element_iter = html
             .select(&STATS_SELECTOR)
@@ -156,12 +156,12 @@ impl HtmlPost {
                 if date.is_none() && text.starts_with("Posted: ") {
                     date = Some(text.trim_start_matches("Posted: "));
 
-                    author = Some(
+                    creator = Some(
                         element
                             .select(&A_SELECTOR)
                             .next()
                             .and_then(|a| a.text().next())
-                            .ok_or(FromHtmlError::MissingAuthor)?,
+                            .ok_or(FromHtmlError::MissingCreator)?,
                     );
                 }
 
@@ -183,7 +183,7 @@ impl HtmlPost {
             .map(|source| source.parse())
             .transpose()
             .map_err(FromHtmlError::InvalidPostSource)?;
-        let author = author.ok_or(FromHtmlError::MissingAuthor)?.into();
+        let creator = creator.ok_or(FromHtmlError::MissingCreator)?.into();
 
         let options_header = html
             .select(&OPTIONS_HEADER_SELECTOR)
@@ -323,7 +323,7 @@ impl HtmlPost {
             meta_tags,
             has_child_posts,
             parent_post,
-            author,
+            creator,
         })
     }
 
