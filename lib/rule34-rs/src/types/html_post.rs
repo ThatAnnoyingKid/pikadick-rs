@@ -160,7 +160,29 @@ impl HtmlPost {
                         element
                             .select(&A_SELECTOR)
                             .next()
-                            .and_then(|a| a.text().next())
+                            .and_then(|a| {
+                                let href = a.value().attr("href")?;
+
+                                // Extract from the href param to avoid issues with names.
+                                let base_url = Url::parse(crate::URL_INDEX).unwrap();
+                                // TODO: Consider making a failure here an error.
+                                let url =
+                                    Url::options().base_url(Some(&base_url)).parse(href).ok()?;
+                                let creator: Box<str> = url
+                                    .query_pairs()
+                                    .find_map(
+                                        |(key, value)| {
+                                            if key == "uname" {
+                                                Some(value)
+                                            } else {
+                                                None
+                                            }
+                                        },
+                                    )?
+                                    .into();
+
+                                Some(creator)
+                            })
                             .ok_or(FromHtmlError::MissingCreator)?,
                     );
                 }
@@ -183,7 +205,7 @@ impl HtmlPost {
             .map(|source| source.parse())
             .transpose()
             .map_err(FromHtmlError::InvalidPostSource)?;
-        let creator = creator.ok_or(FromHtmlError::MissingCreator)?.into();
+        let creator = creator.ok_or(FromHtmlError::MissingCreator)?;
 
         let options_header = html
             .select(&OPTIONS_HEADER_SELECTOR)
@@ -379,6 +401,14 @@ mod test {
     #[test]
     fn from_gif_html() {
         let html = Html::parse_document(GIF_HTML_STR);
-        HtmlPost::from_html(&html).expect("invalid gif post");
+        let post = HtmlPost::from_html(&html).expect("invalid gif post");
+
+        let creator = "Walivannay";
+        assert!(
+            &*post.creator == creator,
+            "{:?} != {:?}",
+            post.creator,
+            creator
+        );
     }
 }
