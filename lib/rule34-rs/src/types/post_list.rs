@@ -173,19 +173,19 @@ impl Rating {
 /// A Post Status
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum PostStatus {
-    /// Active, the default state
+    /// Active, the default state.
     #[serde(rename = "active")]
     Active,
 
-    /// Pending, probably waiting for moderator approval
+    /// Pending, probably waiting for moderator approval.
     #[serde(rename = "pending")]
     Pending,
 
-    /// Deleted
+    /// Deleted, the post has been deleted and metadata will soon be purged.
     #[serde(rename = "deleted")]
     Deleted,
 
-    /// Flagged
+    /// Flagged, the post is has been flagged for review by a moderator.
     #[serde(rename = "flagged")]
     Flagged,
 }
