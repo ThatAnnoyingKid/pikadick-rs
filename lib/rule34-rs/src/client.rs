@@ -258,4 +258,29 @@ mod test {
         assert!(!result.notes.is_empty());
         dbg!(result);
     }
+
+    #[tokio::test]
+    async fn source() {
+        let client = Client::new();
+
+        let response_1 = client
+            .list_posts()
+            .id(NonZeroU64::new(1))
+            .execute()
+            .await
+            .expect("failed to get post 1");
+        let post_1 = response_1.posts.first().expect("missing post");
+        assert!(post_1.id.get() == 1);
+        assert!(post_1.source.is_none());
+
+        let response_3 = client
+            .list_posts()
+            .id(NonZeroU64::new(3))
+            .execute()
+            .await
+            .expect("failed to get post 3");
+        let post_3 = response_3.posts.first().expect("missing post");
+        assert!(post_3.id.get() == 3);
+        assert!(post_3.source.as_deref() == Some("https://www.pixiv.net/en/artworks/12972758"));
+    }
 }

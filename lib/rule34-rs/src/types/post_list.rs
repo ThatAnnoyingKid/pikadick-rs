@@ -105,7 +105,7 @@ pub struct Post {
     /// The original source.
     ///
     /// May or may not be a url, it is filled manually by users.
-    #[serde(rename = "@source")]
+    #[serde(rename = "@source", with = "serde_empty_box_str_is_none")]
     pub source: Option<Box<str>>,
 
     /// Whether the post has notes.
@@ -188,6 +188,33 @@ pub enum PostStatus {
     /// Flagged, the post is has been flagged for review by a moderator.
     #[serde(rename = "flagged")]
     Flagged,
+}
+
+mod serde_empty_box_str_is_none {
+    use serde::Deserialize;
+
+    pub(super) fn serialize<S>(value: &Option<Box<str>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match value {
+            Some(value) if value.is_empty() => serializer.serialize_none(),
+            Some(value) => serializer.serialize_str(value),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub(super) fn deserialize<'de, D>(deserializer: D) -> Result<Option<Box<str>>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let string = Box::<str>::deserialize(deserializer)?;
+        if string.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(string))
+        }
+    }
 }
 
 mod serde_optional_str_non_zero_u64 {
