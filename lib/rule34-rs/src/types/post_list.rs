@@ -63,7 +63,7 @@ pub struct Post {
     /// A list of tag names.
     ///
     /// Tag names are separated by one or more spaces.
-    /// There may ore may not be a leading or trailing space.
+    /// There may or may not be a leading or trailing space.
     /// Tag names are always lowercase.
     #[serde(rename = "@tags")]
     pub tags: Box<str>,
@@ -126,7 +126,17 @@ pub struct Post {
 }
 
 impl Post {
-    /// Get the html post url for this.
+    /// Iter over the tags in this object.
+    ///
+    /// There may be duplicate tags included.
+    pub fn iter_tags(&self) -> impl Iterator<Item = &str> {
+        self.tags
+            .split(' ')
+            .map(|tag| tag.trim())
+            .filter(|tag| !tag.is_empty())
+    }
+
+    /// Get the html post url for this post.
     ///
     /// This allocates, so cache the result.
     pub fn get_html_post_url(&self) -> Url {
