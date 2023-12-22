@@ -95,103 +95,47 @@ fn extract_fields(data: &syn::Data) -> Result<Vec<Field>> {
                 .iter()
                 .filter(|field| matches!(field.style, syn::AttrStyle::Outer))
             {
-                let meta = attr.parse_meta()?;
+                if attr.path().is_ident("doc") {
+                    // doc comments show up here.
+                    // TODO: Consider doing something with them
+                    continue;
+                }
 
-                match meta {
-                    syn::Meta::List(list) => {
-                        if list
-                            .path
-                            .get_ident()
-                            .map_or(false, |ident| ident == "pikadick_slash_framework")
-                        {
-                            for nested in list.nested.iter() {
-                                match nested {
-                                    syn::NestedMeta::Meta(meta) => match meta {
-                                        syn::Meta::Path(path) => {
-                                            let message =
-                                                format!("unexpected meta path `{:?}`", path);
-                                            return Err(Error::new(meta.span(), message));
-                                        }
-                                        syn::Meta::List(list) => {
-                                            let message =
-                                                format!("unexpected meta list `{:?}`", list);
-                                            return Err(Error::new(meta.span(), message));
-                                        }
-                                        syn::Meta::NameValue(name_value) => {
-                                            let ident =
-                                                name_value.path.get_ident().ok_or_else(|| {
-                                                    Error::new(
-                                                        name_value.path.span(),
-                                                        "expected ident",
-                                                    )
-                                                })?;
+                if attr.path().is_ident("pikadick_slash_framework") {
+                    attr.parse_nested_meta(|meta| {
+                        if meta.path.is_ident("rename") {
+                            let value = meta.value()?;
+                            let value: syn::LitStr = value.parse()?;
 
-                                            if ident == "rename" {
-                                                match &name_value.lit {
-                                                    syn::Lit::Str(lit) => {
-                                                        if maybe_rename.is_some() {
-                                                            return Err(Error::new(
-                                                                name_value.lit.span(),
-                                                                "duplicate rename attribute",
-                                                            ));
-                                                        }
-
-                                                        // TODO: Consider validating name
-
-                                                        maybe_rename =
-                                                            Some((lit.value(), lit.span()));
-                                                    }
-                                                    _ => {
-                                                        return Err(Error::new(
-                                                            name_value.lit.span(),
-                                                            "unexpected literal type",
-                                                        ));
-                                                    }
-                                                }
-                                            } else if ident == "description" {
-                                                match &name_value.lit {
-                                                    syn::Lit::Str(lit) => {
-                                                        if maybe_description.is_some() {
-                                                            return Err(Error::new(
-                                                                name_value.lit.span(),
-                                                                "duplicate description attribute",
-                                                            ));
-                                                        }
-
-                                                        // TODO: Consider validating description
-
-                                                        maybe_description =
-                                                            Some((lit.value(), lit.span()));
-                                                    }
-                                                    _ => {
-                                                        return Err(Error::new(
-                                                            name_value.lit.span(),
-                                                            "unexpected literal type",
-                                                        ));
-                                                    }
-                                                }
-                                            } else {
-                                                return Err(Error::new(
-                                                    ident.span(),
-                                                    "unexpected ident",
-                                                ));
-                                            }
-                                        }
-                                    },
-                                    syn::NestedMeta::Lit(lit) => {
-                                        let message =
-                                            format!("unexpected nested meta literal `{:?}`", lit);
-                                        return Err(Error::new(nested.span(), message));
-                                    }
-                                }
+                            if maybe_rename.is_some() {
+                                return Err(Error::new(attr.span(), "duplicate rename attribute"));
                             }
+
+                            // TODO: Consider validating name
+                            maybe_rename = Some((value.value(), value.span()));
+
+                            return Ok(());
                         }
-                    }
-                    syn::Meta::NameValue(_name_value) => {
-                        // doc comments show up here.
-                        // TODO: Consider doing something with them
-                    }
-                    _ => {}
+
+                        if meta.path.is_ident("description") {
+                            let value = meta.value()?;
+                            let value: syn::LitStr = value.parse()?;
+
+                            if maybe_description.is_some() {
+                                return Err(Error::new(
+                                    attr.span(),
+                                    "duplicate description attribute",
+                                ));
+                            }
+
+                            // TODO: Consider validating description
+                            maybe_description = Some((value.value(), value.span()));
+
+                            return Ok(());
+                        }
+
+                        Err(Error::new(ident.span(), "unexpected ident"))
+                    })?;
                 }
             }
 
