@@ -18,7 +18,7 @@ pub struct PostList {
 
     /// The posts
     #[serde(rename = "post", default)]
-    pub posts: Vec<Post>,
+    pub posts: Box<[Post]>,
 }
 
 /// A Post
