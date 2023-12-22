@@ -1,11 +1,7 @@
-#![allow(clippy::uninlined_format_args)]
-
 mod commands;
 
-use anyhow::Context;
-
 #[derive(argh::FromArgs)]
-#[argh(description = "A utility to get rule34 images")]
+#[argh(description = "A CLI to interact with rule34.xxx")]
 pub struct Options {
     #[argh(subcommand)]
     subcommand: SubCommand,
@@ -19,25 +15,11 @@ enum SubCommand {
     Deleted(self::commands::deleted::Options),
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let options: Options = argh::from_env();
-    let exit_code = {
-        if let Err(e) = real_main(options) {
-            eprintln!("{:?}", e);
-            1
-        } else {
-            0
-        }
-    };
-
-    std::process::exit(exit_code);
-}
-
-fn real_main(options: Options) -> anyhow::Result<()> {
     let tokio_rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
-        .build()
-        .context("failed to start tokio runtime")?;
+        .build()?;
     tokio_rt.block_on(async_main(options))?;
     Ok(())
 }
