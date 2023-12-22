@@ -20,11 +20,11 @@ use camino::{
     Utf8Path,
     Utf8PathBuf,
 };
-pub use nd_util::DropRemovePath;
-use pikadick_util::{
+use nd_util::{
     ArcAnyhowError,
-    RequestMap,
+    DropRemovePath,
 };
+use pikadick_util::RequestMap;
 use serenity::{
     builder::{
         CreateAttachment,

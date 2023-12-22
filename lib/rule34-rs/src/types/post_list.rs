@@ -76,8 +76,9 @@ pub struct Post {
     #[serde(rename = "@width")]
     pub width: NonZeroU64,
 
-    /// The time of the last change?
+    /// The time of the last change.
     ///
+    /// This tracks at least the date of posting and tag edits.
     /// This is a unix timestamp.
     #[serde(rename = "@change", with = "time::serde::timestamp")]
     pub change: OffsetDateTime,
