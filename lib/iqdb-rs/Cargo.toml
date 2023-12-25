@@ -19,7 +19,7 @@ tokio-util = { version = "0.7.10", features = ["codec"] }
 url = "2.5.0"
 
 # Optional
-anyhow = { version = "1.0.75", optional = true }
+anyhow = { version = "1.0.76", optional = true }
 argh = { version = "0.1.12", optional = true }
 
 [dev-dependencies]

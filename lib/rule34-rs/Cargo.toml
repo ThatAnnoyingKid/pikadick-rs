@@ -27,7 +27,7 @@ scraper = { version = "0.18.1", default-features = false, optional = true }
 
 # cli
 argh = { version = "0.1.12", optional = true }
-anyhow = { version = "1.0.75", optional = true }
+anyhow = { version = "1.0.76", optional = true }
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path" ], optional = true }
 
 [dev-dependencies]
