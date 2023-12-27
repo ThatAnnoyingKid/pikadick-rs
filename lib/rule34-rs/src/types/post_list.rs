@@ -28,9 +28,9 @@ pub struct Post {
     #[serde(rename = "@height")]
     pub height: NonZeroU64,
 
-    /// The number of up-votes.
+    /// The number of up-votes minus the number of down-votes.
     #[serde(rename = "@score")]
-    pub score: u64,
+    pub score: i64,
 
     /// The main file url
     #[serde(rename = "@file_url")]
@@ -261,5 +261,19 @@ mod serde_optional_str_non_zero_u64 {
             }
             None => serializer.serialize_str(""),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const AOKURO_XML: &str = include_str!("../../test_data/aokuro.xml");
+
+    #[test]
+    fn aokuro() {
+        let mut deserializer = quick_xml::de::Deserializer::from_str(AOKURO_XML);
+        let _post_list: PostList =
+            serde_path_to_error::deserialize(&mut deserializer).expect("failed to parse");
     }
 }

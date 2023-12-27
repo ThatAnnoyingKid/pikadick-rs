@@ -77,10 +77,12 @@ pub struct HtmlPost {
     /// The post id
     pub id: NonZeroU64,
 
-    /// The post date
+    /// The post date.
+    ///
+    /// This appears to be GMT +2.
     pub date: Box<str>,
 
-    /// The post source
+    /// The post source.
     pub source: Option<Url>,
 
     /// Thumbnail Url
@@ -364,7 +366,7 @@ impl HtmlPost {
 
 #[derive(Debug, thiserror::Error)]
 pub enum SidebarTitleFromStrError {
-    #[error("invalid title '{0}'")]
+    #[error("invalid title \"{0}\"")]
     InvalidTitle(String),
 }
 

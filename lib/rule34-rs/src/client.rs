@@ -188,6 +188,7 @@ mod test {
         let response = client
             .list_posts()
             .tags(Some(query))
+            .limit(Some(crate::POST_LIST_LIMIT_MAX))
             .execute()
             .await
             .unwrap_or_else(|error| panic!("failed to search rule34 for \"{query}\": {error}"));
@@ -216,6 +217,7 @@ mod test {
             "sledge",
             "roadhog",
             "deep_space_waifu",
+            "aokuro",
         ];
 
         for item in list {
