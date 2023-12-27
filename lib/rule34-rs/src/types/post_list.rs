@@ -18,7 +18,7 @@ pub struct PostList {
 
     /// The posts
     #[serde(rename = "post", default)]
-    pub posts: Vec<Post>,
+    pub posts: Box<[Post]>,
 }
 
 /// A Post
@@ -28,9 +28,9 @@ pub struct Post {
     #[serde(rename = "@height")]
     pub height: NonZeroU64,
 
-    /// The number of up-votes.
+    /// The number of up-votes minus the number of down-votes.
     #[serde(rename = "@score")]
-    pub score: u64,
+    pub score: i64,
 
     /// The main file url
     #[serde(rename = "@file_url")]
@@ -63,7 +63,7 @@ pub struct Post {
     /// A list of tag names.
     ///
     /// Tag names are separated by one or more spaces.
-    /// There may ore may not be a leading or trailing space.
+    /// There may or may not be a leading or trailing space.
     /// Tag names are always lowercase.
     #[serde(rename = "@tags")]
     pub tags: Box<str>,
@@ -76,8 +76,9 @@ pub struct Post {
     #[serde(rename = "@width")]
     pub width: NonZeroU64,
 
-    /// The time of the last change?
+    /// The time of the last change.
     ///
+    /// This tracks at least the date of posting and tag edits.
     /// This is a unix timestamp.
     #[serde(rename = "@change", with = "time::serde::timestamp")]
     pub change: OffsetDateTime,
@@ -98,14 +99,14 @@ pub struct Post {
     #[serde(rename = "@created_at", with = "crate::util::asctime_with_offset")]
     pub created_at: OffsetDateTime,
 
-    /// ?
+    /// The status of the post.
     #[serde(rename = "@status")]
-    pub status: Box<str>,
+    pub status: PostStatus,
 
     /// The original source.
     ///
     /// May or may not be a url, it is filled manually by users.
-    #[serde(rename = "@source")]
+    #[serde(rename = "@source", with = "serde_empty_box_str_is_none")]
     pub source: Option<Box<str>>,
 
     /// Whether the post has notes.
@@ -126,7 +127,17 @@ pub struct Post {
 }
 
 impl Post {
-    /// Get the html post url for this.
+    /// Iter over the tags in this object.
+    ///
+    /// There may be duplicate tags included.
+    pub fn iter_tags(&self) -> impl Iterator<Item = &str> {
+        self.tags
+            .split(' ')
+            .map(|tag| tag.trim())
+            .filter(|tag| !tag.is_empty())
+    }
+
+    /// Get the html post url for this post.
     ///
     /// This allocates, so cache the result.
     pub fn get_html_post_url(&self) -> Url {
@@ -170,6 +181,53 @@ impl Rating {
     }
 }
 
+/// A Post Status
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
+pub enum PostStatus {
+    /// Active, the default state.
+    #[serde(rename = "active")]
+    Active,
+
+    /// Pending, probably waiting for moderator approval.
+    #[serde(rename = "pending")]
+    Pending,
+
+    /// Deleted, the post has been deleted and metadata will soon be purged.
+    #[serde(rename = "deleted")]
+    Deleted,
+
+    /// Flagged, the post is has been flagged for review by a moderator.
+    #[serde(rename = "flagged")]
+    Flagged,
+}
+
+mod serde_empty_box_str_is_none {
+    use serde::Deserialize;
+
+    pub(super) fn serialize<S>(value: &Option<Box<str>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match value {
+            Some(value) if value.is_empty() => serializer.serialize_none(),
+            Some(value) => serializer.serialize_str(value),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub(super) fn deserialize<'de, D>(deserializer: D) -> Result<Option<Box<str>>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let string = Box::<str>::deserialize(deserializer)?;
+        if string.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(string))
+        }
+    }
+}
+
 mod serde_optional_str_non_zero_u64 {
     use serde::de::Error;
     use std::{
@@ -203,5 +261,19 @@ mod serde_optional_str_non_zero_u64 {
             }
             None => serializer.serialize_str(""),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const AOKURO_XML: &str = include_str!("../../test_data/aokuro.xml");
+
+    #[test]
+    fn aokuro() {
+        let mut deserializer = quick_xml::de::Deserializer::from_str(AOKURO_XML);
+        let _post_list: PostList =
+            serde_path_to_error::deserialize(&mut deserializer).expect("failed to parse");
     }
 }

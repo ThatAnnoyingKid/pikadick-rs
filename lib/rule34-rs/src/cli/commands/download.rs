@@ -113,7 +113,7 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
                     break;
                 }
 
-                for result in page_results.posts {
+                for result in page_results.posts.iter() {
                     if !downloaded.contains(&result.id) {
                         queue.push_back(result.id);
                     }

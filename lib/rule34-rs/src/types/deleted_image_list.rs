@@ -6,7 +6,7 @@ use std::num::NonZeroU64;
 pub struct DeletedImageList {
     /// A list of deleted posts
     #[serde(alias = "post", default)]
-    pub posts: Vec<Post>,
+    pub posts: Box<[Post]>,
 }
 
 /// A deleted post

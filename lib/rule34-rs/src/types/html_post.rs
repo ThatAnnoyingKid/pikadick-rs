@@ -26,6 +26,10 @@ pub enum FromHtmlError {
     #[error("missing post date")]
     MissingPostDate,
 
+    /// Missing the creator
+    #[error("missing creator")]
+    MissingCreator,
+
     /// Invalid Post source
     #[error("invalid post source")]
     InvalidPostSource(#[source] url::ParseError),
@@ -73,10 +77,12 @@ pub struct HtmlPost {
     /// The post id
     pub id: NonZeroU64,
 
-    /// The post date
-    pub date: String,
+    /// The post date.
+    ///
+    /// This appears to be GMT +2.
+    pub date: Box<str>,
 
-    /// The post source
+    /// The post source.
     pub source: Option<Url>,
 
     /// Thumbnail Url
@@ -88,25 +94,28 @@ pub struct HtmlPost {
     pub image_url: Url,
 
     /// Copyright tags
-    pub copyright_tags: Vec<String>,
+    pub copyright_tags: Vec<Box<str>>,
 
     /// Character tags
-    pub character_tags: Vec<String>,
+    pub character_tags: Vec<Box<str>>,
 
     /// Artist tags
-    pub artist_tags: Vec<String>,
+    pub artist_tags: Vec<Box<str>>,
 
     /// General tags
-    pub general_tags: Vec<String>,
+    pub general_tags: Vec<Box<str>>,
 
     /// Meta tags
-    pub meta_tags: Vec<String>,
+    pub meta_tags: Vec<Box<str>>,
 
     /// Whether this post has child posts
     pub has_child_posts: bool,
 
     /// Whether this post has a parent post
     pub parent_post: Option<NonZeroU64>,
+
+    /// The creator's name
+    pub creator: Box<str>,
 }
 
 impl HtmlPost {
@@ -131,6 +140,7 @@ impl HtmlPost {
         let mut id_str = None;
         let mut date = None;
         let mut source_str = None;
+        let mut creator = None;
 
         let stats_header_element_iter = html
             .select(&STATS_SELECTOR)
@@ -147,6 +157,36 @@ impl HtmlPost {
 
                 if date.is_none() && text.starts_with("Posted: ") {
                     date = Some(text.trim_start_matches("Posted: "));
+
+                    creator = Some(
+                        element
+                            .select(&A_SELECTOR)
+                            .next()
+                            .and_then(|a| {
+                                let href = a.value().attr("href")?;
+
+                                // Extract from the href param to avoid issues with names.
+                                let base_url = Url::parse(crate::URL_INDEX).unwrap();
+                                // TODO: Consider making a failure here an error.
+                                let url =
+                                    Url::options().base_url(Some(&base_url)).parse(href).ok()?;
+                                let creator: Box<str> = url
+                                    .query_pairs()
+                                    .find_map(
+                                        |(key, value)| {
+                                            if key == "uname" {
+                                                Some(value)
+                                            } else {
+                                                None
+                                            }
+                                        },
+                                    )?
+                                    .into();
+
+                                Some(creator)
+                            })
+                            .ok_or(FromHtmlError::MissingCreator)?,
+                    );
                 }
 
                 if source_str.is_none() && text.starts_with("Source:") {
@@ -162,11 +202,12 @@ impl HtmlPost {
             .ok_or(FromHtmlError::MissingPostId)?
             .parse()
             .map_err(FromHtmlError::InvalidPostId)?;
-        let date = date.ok_or(FromHtmlError::MissingPostDate)?.to_string();
+        let date = date.ok_or(FromHtmlError::MissingPostDate)?.into();
         let source = source_str
             .map(|source| source.parse())
             .transpose()
             .map_err(FromHtmlError::InvalidPostSource)?;
+        let creator = creator.ok_or(FromHtmlError::MissingCreator)?;
 
         let options_header = html
             .select(&OPTIONS_HEADER_SELECTOR)
@@ -236,11 +277,11 @@ impl HtmlPost {
                     .and_then(|el| el.text().next())
                     .ok_or(FromHtmlError::MissingTag)?;
                 match sidebar_title {
-                    SidebarTitle::Copyright => copyright_tags.push(tag.to_string()),
-                    SidebarTitle::Character => character_tags.push(tag.to_string()),
-                    SidebarTitle::Artist => artist_tags.push(tag.to_string()),
-                    SidebarTitle::General => general_tags.push(tag.to_string()),
-                    SidebarTitle::Meta => meta_tags.push(tag.to_string()),
+                    SidebarTitle::Copyright => copyright_tags.push(tag.into()),
+                    SidebarTitle::Character => character_tags.push(tag.into()),
+                    SidebarTitle::Artist => artist_tags.push(tag.into()),
+                    SidebarTitle::General => general_tags.push(tag.into()),
+                    SidebarTitle::Meta => meta_tags.push(tag.into()),
                 }
             }
         }
@@ -306,6 +347,7 @@ impl HtmlPost {
             meta_tags,
             has_child_posts,
             parent_post,
+            creator,
         })
     }
 
@@ -324,7 +366,7 @@ impl HtmlPost {
 
 #[derive(Debug, thiserror::Error)]
 pub enum SidebarTitleFromStrError {
-    #[error("invalid title '{0}'")]
+    #[error("invalid title \"{0}\"")]
     InvalidTitle(String),
 }
 
@@ -361,6 +403,14 @@ mod test {
     #[test]
     fn from_gif_html() {
         let html = Html::parse_document(GIF_HTML_STR);
-        HtmlPost::from_html(&html).expect("invalid gif post");
+        let post = HtmlPost::from_html(&html).expect("invalid gif post");
+
+        let creator = "Walivannay";
+        assert!(
+            &*post.creator == creator,
+            "{:?} != {:?}",
+            post.creator,
+            creator
+        );
     }
 }

@@ -9,7 +9,7 @@ pub struct TagList {
 
     /// The list of tags
     #[serde(rename = "tag", default)]
-    pub tags: Vec<Tag>,
+    pub tags: Box<[Tag]>,
 }
 
 /// A Tag

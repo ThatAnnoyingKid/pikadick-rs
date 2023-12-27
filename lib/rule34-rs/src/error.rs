@@ -7,7 +7,7 @@ pub type HtmlPostError = crate::types::html_post::FromHtmlError;
 #[non_exhaustive]
 pub enum Error {
     /// Reqwest HTTP Error
-    #[error(transparent)]
+    #[error("reqwest http error")]
     Reqwest(#[from] reqwest::Error),
 
     /// Invalid URL Error
@@ -28,7 +28,7 @@ pub enum Error {
     TokioJoin(#[from] tokio::task::JoinError),
 
     /// XML deserialization error
-    #[error(transparent)]
+    #[error("xml deserialize error")]
     XmlDeserialize(#[from] quick_xml::DeError),
 
     /// The limit was too large

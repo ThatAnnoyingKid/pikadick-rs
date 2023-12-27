@@ -21,6 +21,7 @@ pub use crate::{
         NoteList,
         Post,
         PostList,
+        PostStatus,
         Rating,
         Tag,
         TagKind,

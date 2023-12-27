@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 pub struct NoteList {
     /// The list of notes
     #[serde(rename = "note", default)]
-    pub notes: Vec<Note>,
+    pub notes: Box<[Note]>,
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
