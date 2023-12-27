@@ -1,7 +1,7 @@
 # pikadick-rs 
-[![Rust](https://github.com/ThatAnnoyingKid/pikadick-rs/workflows/Rust/badge.svg)](https://github.com/ThatAnnoyingKid/pikadick-rs)
-[![RustDoc](https://github.com/ThatAnnoyingKid/pikadick-rs/workflows/RustDoc/badge.svg)](https://github.com/ThatAnnoyingKid/pikadick-rs)
-[![BuildRpi](https://github.com/ThatAnnoyingKid/pikadick-rs/workflows/BuildRpi/badge.svg)](https://github.com/ThatAnnoyingKid/pikadick-rs)
+[![Rust](https://github.com/ThatAnnoyingKid/pikadick-rs/workflows/CI.yml/badge.svg)](https://github.com/ThatAnnoyingKid/pikadick-rs)
+[![RustDoc](https://github.com/ThatAnnoyingKid/pikadick-rs/workflows/rustdoc.yml/badge.svg)](https://github.com/ThatAnnoyingKid/pikadick-rs)
+[![BuildRpi](https://github.com/ThatAnnoyingKid/pikadick-rs/workflows/BuildRpi.yml/badge.svg)](https://github.com/ThatAnnoyingKid/pikadick-rs)
 [![](https://tokei.rs/b1/github.com/ThatAnnoyingKid/pikadick-rs)](https://github.com/ThatAnnoyingKid/pikadick-rs)
 
 Yet another generic discord bot.
