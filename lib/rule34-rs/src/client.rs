@@ -258,6 +258,8 @@ mod test {
             "las_tres_niñas_(company)",
             "ooparts♥love",
             "almáriel",
+            "kingdom_hearts_union_χ_[cross]",
+            "gen¹³",
         ];
 
         let client = Client::new();
@@ -273,7 +275,7 @@ mod test {
 
             assert!(
                 tags_len == 1,
-                "tags does not have one tag, it has {tags_len} tags"
+                "failed to get tags for \"{expected_tag_name}\", tags does not have one tag, it has {tags_len} tags"
             );
             let tag = tags.first().expect("tag list is empty");
             let actual_tag_name = &*tag.name;

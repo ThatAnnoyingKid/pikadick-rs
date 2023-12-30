@@ -194,6 +194,9 @@ fn fix_tag_name(input: &str) -> String {
             'ñ' => output.push_str("&ntilde;"),
             '♥' => output.push_str("&hearts;"),
             'á' => output.push_str("&aacute;"),
+            'χ' => output.push_str("&chi;"),
+            '¹' => output.push_str("&sup1;"),
+            '³' => output.push_str("&sup3;"),
             _ => output.push(c),
         }
     }
