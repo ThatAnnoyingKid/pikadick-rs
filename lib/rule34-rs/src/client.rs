@@ -251,7 +251,12 @@ mod test {
 
     #[tokio::test]
     async fn bad_tags_list() {
-        let tags = ["swallow_(pokémon_move)", "akoúo̱_(rwby)", "miló_(rwby)"];
+        let tags = [
+            "swallow_(pokémon_move)",
+            "akoúo̱_(rwby)",
+            "miló_(rwby)",
+            "las_tres_niñas_(company)",
+        ];
 
         let client = Client::new();
         for expected_tag_name in tags {
