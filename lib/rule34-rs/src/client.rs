@@ -264,6 +264,7 @@ mod test {
             "…",
             "cleaning_&_clearing_(blue_archive)",
             "watashi_ga_suki_nara_\"suki\"_tte_itte!",
+            "<3",
         ];
 
         let client = Client::new();
