@@ -27,7 +27,8 @@ pub struct TagListQueryBuilder<'a> {
     /// The tag name to look up
     ///
     /// This is a single tag name.
-    /// This option is undocumented
+    /// This option is undocumented.
+    /// This option will attempt to circumvent rule34 bugs where possible by translating the tags into a form the api can understand.
     pub name: Option<&'a str>,
 
     /// The name pattern to look up using a SQL LIKE clause.
@@ -90,7 +91,8 @@ impl<'a> TagListQueryBuilder<'a> {
     /// The tag name to look up
     ///
     /// This is a single tag name.
-    /// This option is undocumented
+    /// This option is undocumented.
+    /// This option will attempt to circumvent rule34 bugs where possible by translating the tags into a form the api can understand.
     pub fn name(&'a mut self, name: Option<&'a str>) -> &'a mut Self {
         self.name = name;
         self
@@ -142,7 +144,8 @@ impl<'a> TagListQueryBuilder<'a> {
             }
 
             if let Some(name) = self.name {
-                query_pairs.append_pair("name", name);
+                let name = fix_tag_name(name);
+                query_pairs.append_pair("name", name.as_str());
             }
 
             if let Some(name_pattern) = self.name_pattern {
@@ -174,4 +177,20 @@ impl<'a> TagListQueryBuilder<'a> {
         // making all this optimizing a moot point.
         self.client.get_xml(url.as_str()).await
     }
+}
+
+/// Attempt to fix a tag name.
+///
+/// Rule34 fails to understand some urls with weird characters, like "'".
+/// However, it can understand some of these if they are encoded as an xml entity.
+/// This function uses a mapping, that is determined experimentally, to correctly escape these chars.
+fn fix_tag_name(input: &str) -> String {
+    let mut output = String::with_capacity(input.len());
+    for c in input.chars() {
+        match c {
+            'é' => output.push_str("&eacute;"),
+            _ => output.push(c),
+        }
+    }
+    output
 }
