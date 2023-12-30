@@ -3,13 +3,14 @@ use crate::{
     Error,
     TagList,
 };
+use std::num::NonZeroU64;
 use url::Url;
 
 /// A query builder to get tags
 #[derive(Debug)]
 pub struct TagListQueryBuilder<'a> {
     /// The id
-    pub id: Option<u64>,
+    pub id: Option<NonZeroU64>,
 
     /// The max number of tags to return.
     ///
@@ -64,7 +65,7 @@ impl<'a> TagListQueryBuilder<'a> {
     }
 
     /// Set the tag id
-    pub fn id(&mut self, id: Option<u64>) -> &mut Self {
+    pub fn id(&mut self, id: Option<NonZeroU64>) -> &mut Self {
         self.id = id;
         self
     }
@@ -130,7 +131,7 @@ impl<'a> TagListQueryBuilder<'a> {
 
             if let Some(id) = self.id {
                 let mut id_buffer = itoa::Buffer::new();
-                query_pairs.append_pair("id", id_buffer.format(id));
+                query_pairs.append_pair("id", id_buffer.format(id.get()));
             }
 
             if let Some(limit) = self.limit {
@@ -181,7 +182,7 @@ impl<'a> TagListQueryBuilder<'a> {
 
 /// Attempt to fix a tag name.
 ///
-/// Rule34 fails to understand some urls with weird characters, like "'".
+/// Rule34 fails to understand some urls with weird characters, like "é".
 /// However, it can understand some of these if they are encoded as an xml entity.
 /// This function uses a mapping, that is determined experimentally, to correctly escape these chars.
 fn fix_tag_name(input: &str) -> String {

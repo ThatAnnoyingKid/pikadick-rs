@@ -1,3 +1,6 @@
+
+use std::num::NonZeroU64;
+
 /// A list of tags
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct TagList {
@@ -35,7 +38,7 @@ pub struct Tag {
 
     /// The tag id.
     #[serde(rename = "@id")]
-    pub id: u64,
+    pub id: NonZeroU64,
 }
 
 /// The tag kind
