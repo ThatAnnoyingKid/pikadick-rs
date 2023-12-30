@@ -251,7 +251,7 @@ mod test {
 
     #[tokio::test]
     async fn bad_tags_list() {
-        let tags = ["swallow_(pokémon_move)", "akoúo̱_(rwby)"];
+        let tags = ["swallow_(pokémon_move)", "akoúo̱_(rwby)", "miló_(rwby)"];
 
         let client = Client::new();
         for expected_tag_name in tags {
@@ -260,10 +260,14 @@ mod test {
                 .name(Some(expected_tag_name))
                 .execute()
                 .await
-                .expect("failed to get tag").tags;
+                .expect("failed to get tag")
+                .tags;
             let tags_len = tags.len();
 
-            assert!(tags_len == 1, "tags does not have one tag, it has {tags_len} tags");
+            assert!(
+                tags_len == 1,
+                "tags does not have one tag, it has {tags_len} tags"
+            );
             let tag = tags.first().expect("tag list is empty");
             let actual_tag_name = &*tag.name;
 

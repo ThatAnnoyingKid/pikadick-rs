@@ -190,6 +190,7 @@ fn fix_tag_name(input: &str) -> String {
         match c {
             'é' => output.push_str("&eacute;"),
             'ú' => output.push_str("&uacute;"),
+            'ó' => output.push_str("&oacute;"),
             _ => output.push(c),
         }
     }
