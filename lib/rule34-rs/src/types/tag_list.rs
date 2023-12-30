@@ -1,4 +1,3 @@
-
 use std::num::NonZeroU64;
 
 /// A list of tags
