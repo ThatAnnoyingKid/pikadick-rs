@@ -256,6 +256,8 @@ mod test {
             "akoúo̱_(rwby)",
             "miló_(rwby)",
             "las_tres_niñas_(company)",
+            "ooparts♥love",
+            "almáriel",
         ];
 
         let client = Client::new();

@@ -192,6 +192,8 @@ fn fix_tag_name(input: &str) -> String {
             'ú' => output.push_str("&uacute;"),
             'ó' => output.push_str("&oacute;"),
             'ñ' => output.push_str("&ntilde;"),
+            '♥' => output.push_str("&hearts;"),
+            'á' => output.push_str("&aacute;"),
             _ => output.push(c),
         }
     }
