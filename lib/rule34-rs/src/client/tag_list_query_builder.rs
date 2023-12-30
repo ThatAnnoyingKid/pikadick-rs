@@ -199,6 +199,7 @@ fn fix_tag_name(input: &str) -> String {
             '³' => output.push_str("&sup3;"),
             '’' => output.push_str("&rsquo;"),
             '…' => output.push_str("&hellip;"),
+            '&' => output.push_str("&amp;"),
             _ => output.push(c),
         }
     }

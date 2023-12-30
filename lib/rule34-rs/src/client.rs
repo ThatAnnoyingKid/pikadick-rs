@@ -262,6 +262,7 @@ mod test {
             "gen¹³",
             "nancy’s_face_is_deeper_in_carrie’s_ass",
             "…",
+            "cleaning_&_clearing_(blue_archive)",
         ];
 
         let client = Client::new();
