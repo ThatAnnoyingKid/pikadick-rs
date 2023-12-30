@@ -197,6 +197,7 @@ fn fix_tag_name(input: &str) -> String {
             'χ' => output.push_str("&chi;"),
             '¹' => output.push_str("&sup1;"),
             '³' => output.push_str("&sup3;"),
+            '’' => output.push_str("&rsquo;"),
             _ => output.push(c),
         }
     }

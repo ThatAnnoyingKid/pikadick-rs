@@ -260,6 +260,7 @@ mod test {
             "almáriel",
             "kingdom_hearts_union_χ_[cross]",
             "gen¹³",
+            "nancy’s_face_is_deeper_in_carrie’s_ass",
         ];
 
         let client = Client::new();
