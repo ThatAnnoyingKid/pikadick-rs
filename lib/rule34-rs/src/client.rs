@@ -266,6 +266,7 @@ mod test {
             "watashi_ga_suki_nara_\"suki\"_tte_itte!",
             "<3",
             ">_<",
+            "dr—worm",
         ];
 
         let client = Client::new();

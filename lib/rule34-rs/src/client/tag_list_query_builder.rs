@@ -203,6 +203,7 @@ fn fix_tag_name(input: &str) -> String {
             '"' => output.push_str("&quot;"),
             '<' => output.push_str("&lt;"),
             '>' => output.push_str("&gt;"),
+            '—' => output.push_str("&mdash;"),
             _ => output.push(c),
         }
     }
