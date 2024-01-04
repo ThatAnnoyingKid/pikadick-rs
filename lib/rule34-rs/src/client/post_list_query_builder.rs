@@ -119,17 +119,6 @@ impl<'a> PostListQueryBuilder<'a> {
     /// Returns an empty list if there are no results.
     pub async fn execute(&self) -> Result<PostList, Error> {
         let url = self.get_url()?;
-
-        // When using JSON, the api sends "" on no results, and `serde_json` dies instead of giving an empty list.
-        // Therefore, we need to handle json parsing instead of `reqwest`.
-        // ```
-        // let text = self.client.get_text(url.as_str()).await?;
-        // if text.is_empty() {
-        //    return Ok(Vec::new());
-        // }
-        // Ok(serde_json::from_str(&text)?)
-        // ```
-
         self.client.get_xml(url.as_str()).await
     }
 }

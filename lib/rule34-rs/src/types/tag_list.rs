@@ -47,10 +47,15 @@ pub struct TagKind(pub u64);
 
 impl TagKind {
     // When adding more variants, make sure to update the Debug impl and and functions to test for it
+    /// The tag represents a generic tag.
     pub const GENERAL: Self = TagKind(0);
+    /// The tag represents the author of the post (the creator of the image, not the uploader).
     pub const AUTHOR: Self = TagKind(1);
+    /// The tag rperesents the copyright holder of characters in the post.
     pub const COPYRIGHT: Self = TagKind(3);
+    /// The tag represents a character in the post.
     pub const CHARACTER: Self = TagKind(4);
+    /// The tag represents some form of metadata, like the year the post was made.
     pub const METADATA: Self = TagKind(5);
 
     /// Returns true if this tag kind is general.
