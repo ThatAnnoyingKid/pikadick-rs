@@ -83,6 +83,60 @@ openssl = { version = "0.10.62", optional = true, features = [ "vendored" ] }
 # Note: This is needed for cross comp
 use-openssl-vendored = [ "openssl" ]
 
+[lints.clippy]
+# Deny
+exit = "deny"
+macro_use_imports = "deny"
+
+# Warn
+borrow_as_ptr = "warn"
+case_sensitive_file_extension_comparisons = "warn"
+cast_lossless = "warn"
+cast_ptr_alignment = "warn"
+cloned_instead_of_copied = "warn"
+filetype_is_file = "warn"
+filter_map_next = "warn"
+flat_map_option = "warn"
+fn_params_excessive_bools = "warn"
+from_iter_instead_of_collect = "warn"
+implicit_clone = "warn"
+inefficient_to_string = "warn"
+inconsistent_struct_constructor = "warn"
+items_after_statements = "warn"
+large_stack_arrays = "warn"
+large_types_passed_by_value = "warn"
+linkedlist = "warn"
+lossy_float_literal = "warn"
+manual_ok_or = "warn"
+match_bool = "warn"
+match_same_arms = "warn"
+mut_mut = "warn"
+mutex_atomic = "warn"
+mutex_integer = "warn"
+needless_for_each = "warn"
+nonstandard_macro_braces = "warn"
+path_buf_push_overwrite = "warn"
+ptr_as_ptr = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+redundant_else = "warn"
+ref_binding_to_reference = "warn"
+ref_option_ref = "warn"
+semicolon_if_nothing_returned = "warn"
+suboptimal_flops = "warn"
+todo = "warn"
+transmute_ptr_to_ptr = "warn"
+trivially_copy_pass_by_ref = "warn"
+try_err = "warn"
+type_repetition_in_bounds = "warn"
+unicode_not_nfc = "warn"
+unnecessary_join = "warn"
+unnested_or_patterns = "warn"
+zero_sized_map_values = "warn"
+
+# TODO: Consider if we want to deny this
+# uninlined_format_args = "warn"
+
 [patch.crates-io]
 # Fix security advisory.
 # heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }

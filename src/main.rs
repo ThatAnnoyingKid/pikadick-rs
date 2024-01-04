@@ -14,61 +14,9 @@
     rust_2018_idioms,
     future_incompatible,
     nonstandard_style,
-    clippy::all,
-    clippy::filter_map_next,
-    clippy::ptr_as_ptr,
-    clippy::cast_lossless,
-    clippy::exit,
-    clippy::filetype_is_file,
-    clippy::macro_use_imports
+    clippy::all
 )]
-#![warn(
-    clippy::borrow_as_ptr,
-    clippy::case_sensitive_file_extension_comparisons,
-    clippy::cast_ptr_alignment,
-    clippy::cloned_instead_of_copied,
-    clippy::filter_map_next,
-    clippy::flat_map_option,
-    clippy::fn_params_excessive_bools,
-    clippy::from_iter_instead_of_collect,
-    clippy::implicit_clone,
-    clippy::inefficient_to_string,
-    clippy::inconsistent_struct_constructor,
-    clippy::items_after_statements,
-    clippy::large_stack_arrays,
-    clippy::large_types_passed_by_value,
-    let_underscore_drop,
-    clippy::linkedlist,
-    clippy::lossy_float_literal,
-    clippy::manual_ok_or,
-    clippy::match_bool,
-    clippy::match_same_arms,
-    clippy::mut_mut,
-    clippy::mutex_atomic,
-    clippy::mutex_integer,
-    clippy::needless_for_each,
-    clippy::nonstandard_macro_braces,
-    clippy::path_buf_push_overwrite,
-    clippy::rc_buffer,
-    clippy::rc_mutex,
-    clippy::redundant_else,
-    clippy::ref_binding_to_reference,
-    clippy::ref_option_ref,
-    clippy::semicolon_if_nothing_returned,
-    clippy::suboptimal_flops,
-    clippy::todo,
-    clippy::transmute_ptr_to_ptr,
-    clippy::trivially_copy_pass_by_ref,
-    clippy::try_err,
-    clippy::type_repetition_in_bounds,
-    clippy::unicode_not_nfc,
-    clippy::unnecessary_join,
-    clippy::unnested_or_patterns,
-    clippy::zero_sized_map_values,
-    variant_size_differences
-)]
-// TODO: Consider if we want to deny this
-#![allow(clippy::uninlined_format_args)]
+#![warn(variant_size_differences, let_underscore_drop)]
 // TODO: Document everything properly
 // clippy::default_trait_access
 // clippy::use_self
