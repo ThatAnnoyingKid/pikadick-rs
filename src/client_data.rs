@@ -106,6 +106,8 @@ pub struct ClientData {
     pub sauce_nao_client: SauceNaoClient,
     /// The open ai client
     pub open_ai_client: open_ai::Client,
+    /// The yodaspeak client
+    pub yodaspeak: yodaspeak::Client,
     /// TikTokData
     pub tiktok_data: TikTokData,
     /// Encoder Task
@@ -157,6 +159,7 @@ impl ClientData {
             iqdb_client: Default::default(),
             sauce_nao_client: SauceNaoClient::new(config.sauce_nao.api_key.as_str()),
             open_ai_client: open_ai::Client::new(config.open_ai.api_key.as_str()),
+            yodaspeak: yodaspeak::Client::new(),
             tiktok_data,
             encoder_task,
 

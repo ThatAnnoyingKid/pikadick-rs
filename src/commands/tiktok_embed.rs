@@ -301,8 +301,8 @@ impl TikTokData {
                                             // warn!("unknown ffmpeg line: `{}`", line);
                                             // We don't care about unkown lines
                                         }
-                                        Err(e) => {
-                                            warn!("{:?}", e);
+                                        Err(error) => {
+                                            warn!("{error:?}");
                                         }
                                     }
                                 }
@@ -345,8 +345,8 @@ impl TikTokData {
                                             // warn!("unknown ffmpeg line: `{}`", line);
                                             // We don't care about unkown lines
                                         }
-                                        Err(e) => {
-                                            warn!("{:?}", e);
+                                        Err(error) => {
+                                            warn!("{error:?}");
                                         }
                                     }
                                 }

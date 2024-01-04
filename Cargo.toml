@@ -73,6 +73,7 @@ uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs", default-features = false, features = [ "rustls-tls" ] }
 url = "2.5.0"
 xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls-tls" ] }
+yodaspeak = { path = "lib/yodaspeak-rs", default-features = false, features = [ "rustls-tls" ] }
 zalgo = { git = "https://github.com/nathaniel-daniel/zalgo-rs", default-features = false }
 
 # Optional

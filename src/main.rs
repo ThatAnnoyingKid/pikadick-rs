@@ -495,12 +495,13 @@ async fn process_dispatch_error_future<'fut>(
     _cmd_name: &'fut str,
 ) {
     match error {
-        DispatchError::Ratelimited(s) => {
+        DispatchError::Ratelimited(duration) => {
+            let seconds = duration.as_secs();
             let _ = msg
                 .channel_id
                 .say(
                     &ctx.http,
-                    format!("Wait {} seconds to use that command again", s.as_secs()),
+                    format!("Wait {seconds} seconds to use that command again"),
                 )
                 .await
                 .is_ok();
@@ -559,6 +560,7 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
         .command(self::commands::rule34::create_slash_command()?)
         .command(self::commands::tiktok_embed::create_slash_command()?)
         .command(self::commands::chat::create_slash_command()?)
+        .command(self::commands::yodaspeak::create_slash_command()?)
         .build()?;
 
     // Create second prefix that is uppercase so we are case-insensitive

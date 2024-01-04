@@ -26,6 +26,7 @@ pub mod urban;
 pub mod uwuify;
 pub mod vaporwave;
 pub mod xkcd;
+pub mod yodaspeak;
 pub mod zalgo;
 
 pub use crate::commands::{
