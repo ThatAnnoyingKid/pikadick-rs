@@ -1579,7 +1579,7 @@ dependencies = [
  "mach",
  "nix 0.23.2",
  "pin-utils",
- "uom",
+ "uom 0.31.1",
  "winapi",
 ]
 
@@ -1695,7 +1695,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.5",
  "tokio",
  "tower-service",
  "tracing",
@@ -2754,7 +2754,7 @@ dependencies = [
  "tracing-opentelemetry",
  "tracing-subscriber",
  "ttf-parser",
- "uom",
+ "uom 0.35.0",
  "urban-dictionary",
  "url",
  "xkcd",
@@ -4884,6 +4884,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1ee6bfd0a27bf614353809a035cf6880b74239ec6c5e39a7b2860ca16809137"
 dependencies = [
  "num-rational",
+ "num-traits",
+ "typenum",
+]
+
+[[package]]
+name = "uom"
+version = "0.35.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8362194c7a9845a7a7f3562173d6e1da3f24f7132018cb78fe77a5b4474187b2"
+dependencies = [
  "num-traits",
  "typenum",
 ]
