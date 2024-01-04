@@ -25,7 +25,6 @@ indexmap = "2.1.0"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }
 itoa = "1.0.10"
-lazy_static = "1.4.0"
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path", "drop-remove-path", "arc-anyhow-error" ] }
 nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls-tls" ] }
 once_cell = "1.19.0"
@@ -156,4 +155,5 @@ start = true
 [package.metadata.rpi-deploy]
 targets = [
     "aarch64-unknown-linux-gnu",
+    "armv7-unknown-linux-gnueabihf",
 ]
