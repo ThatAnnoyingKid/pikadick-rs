@@ -106,7 +106,7 @@ pub struct Post {
     /// The original source.
     ///
     /// May or may not be a url, it is filled manually by users.
-    #[serde(rename = "@source", with = "serde_empty_box_str_is_none")]
+    #[serde(rename = "@source", with = "serde_empty_str_is_none")]
     pub source: Option<Box<str>>,
 
     /// Whether the post has notes.
@@ -201,26 +201,26 @@ pub enum PostStatus {
     Flagged,
 }
 
-mod serde_empty_box_str_is_none {
-    use serde::Deserialize;
-
-    pub(super) fn serialize<S>(value: &Option<Box<str>>, serializer: S) -> Result<S::Ok, S::Error>
+mod serde_empty_str_is_none {
+    pub(super) fn serialize<S, T>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
+        T: AsRef<str>,
     {
-        match value {
+        match value.as_ref().map(|value| value.as_ref()) {
             Some(value) if value.is_empty() => serializer.serialize_none(),
-            Some(value) => serializer.serialize_str(value),
+            Some(value) => serializer.serialize_str(value.as_ref()),
             None => serializer.serialize_none(),
         }
     }
 
-    pub(super) fn deserialize<'de, D>(deserializer: D) -> Result<Option<Box<str>>, D::Error>
+    pub(super) fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
     where
         D: serde::Deserializer<'de>,
+        T: serde::Deserialize<'de> + AsRef<str>,
     {
-        let string = Box::<str>::deserialize(deserializer)?;
-        if string.is_empty() {
+        let string = T::deserialize(deserializer)?;
+        if string.as_ref().is_empty() {
             Ok(None)
         } else {
             Ok(Some(string))

@@ -250,6 +250,51 @@ mod test {
     }
 
     #[tokio::test]
+    async fn bad_tags_list() {
+        let tags = [
+            "swallow_(pokémon_move)",
+            "akoúo̱_(rwby)",
+            "miló_(rwby)",
+            "las_tres_niñas_(company)",
+            "ooparts♥love",
+            "almáriel",
+            "kingdom_hearts_union_χ_[cross]",
+            "gen¹³",
+            "nancy’s_face_is_deeper_in_carrie’s_ass",
+            "…",
+            "cleaning_&_clearing_(blue_archive)",
+            "watashi_ga_suki_nara_\"suki\"_tte_itte!",
+            "<3",
+            ">_<",
+            "dr—worm",
+        ];
+
+        let client = Client::new();
+        for expected_tag_name in tags {
+            let tags = client
+                .list_tags()
+                .name(Some(expected_tag_name))
+                .execute()
+                .await
+                .expect("failed to get tag")
+                .tags;
+            let tags_len = tags.len();
+
+            assert!(
+                tags_len == 1,
+                "failed to get tags for \"{expected_tag_name}\", tags does not have one tag, it has {tags_len} tags"
+            );
+            let tag = tags.first().expect("tag list is empty");
+            let actual_tag_name = &*tag.name;
+
+            assert!(
+                actual_tag_name == expected_tag_name,
+                "\"{actual_tag_name}\" != \"{expected_tag_name}\""
+            );
+        }
+    }
+
+    #[tokio::test]
     async fn notes_list() {
         let client = Client::new();
         let result = client

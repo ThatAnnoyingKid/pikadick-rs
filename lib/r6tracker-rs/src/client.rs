@@ -114,7 +114,7 @@ impl Default for Client {
 mod test {
     use super::*;
 
-    const VALID_USER: &str = "ALEX-_-SAGAS";
+    const VALID_USER: &str = "smack.jjfozzil";
     const INVALID_USER: &str = "aaaaabbaaaa";
 
     #[tokio::test]

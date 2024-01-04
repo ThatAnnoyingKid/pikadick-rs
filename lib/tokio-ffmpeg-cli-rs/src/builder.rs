@@ -51,6 +51,9 @@ pub struct Builder {
     /// The output format
     pub output_format: Option<String>,
 
+    /// The pass # for two pass
+    pub pass: Option<u8>,
+
     /// The # of video frames to read from the input
     pub video_frames: Option<u64>,
 
@@ -78,6 +81,8 @@ impl Builder {
 
             input_format: None,
             output_format: None,
+
+            pass: None,
 
             video_frames: None,
 
@@ -131,6 +136,12 @@ impl Builder {
         self
     }
 
+    /// The pass # for 2 pass
+    pub fn pass(&mut self, pass: u8) -> &mut Self {
+        self.pass = Some(pass);
+        self
+    }
+
     /// The # of video frames to accept from the input
     pub fn video_frames(&mut self, video_frames: impl Into<u64>) -> &mut Self {
         self.video_frames = Some(video_frames.into());
@@ -171,6 +182,8 @@ impl Builder {
 
         let input_format = self.input_format.take();
         let output_format = self.output_format.take();
+
+        let pass = self.pass.take();
 
         let video_frames = self.video_frames.take();
 
@@ -216,6 +229,10 @@ impl Builder {
             command.args(["-preset", preset]);
         }
 
+        if let Some(pass) = pass {
+            command.args(["-pass", &pass.to_string()]);
+        }
+
         command.args(["-progress", "-"]);
         command.arg(if overwrite { "-y" } else { "-n" });
 
@@ -225,12 +242,6 @@ impl Builder {
 
         let output = output.ok_or(Error::MissingOutput)?;
         command.arg(output.as_os_str());
-
-        command
-            .kill_on_drop(true)
-            .stdout(Stdio::piped())
-            .stdin(Stdio::null())
-            .stderr(Stdio::piped());
 
         Ok(command)
     }
@@ -252,6 +263,11 @@ impl Builder {
     /// Spawn the stream
     pub fn spawn(&mut self) -> Result<impl Stream<Item = Result<Event, Error>> + Unpin, Error> {
         let mut command = self.build_command()?;
+        command
+            .kill_on_drop(true)
+            .stdout(Stdio::piped())
+            .stdin(Stdio::null())
+            .stderr(Stdio::piped());
 
         trace!("built ffmpeg command for spawning: {:?}", command);
 
