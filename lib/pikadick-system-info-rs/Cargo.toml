@@ -16,7 +16,7 @@ bitflags = "2.4.1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 nix = { version = "0.27.1", features = [ "hostname", "feature" ], default-features = false }
-libc = "0.2.151"
+libc = "0.2.152"
 
 [dev-dependencies]
 time = { version = "0.3.31", features = [ "local-offset" ] }
