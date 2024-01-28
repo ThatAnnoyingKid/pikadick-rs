@@ -5,21 +5,24 @@ use std::num::NonZeroU64;
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct DeletedImageList {
     /// A list of deleted posts
-    #[serde(alias = "post", default)]
+    #[serde(rename = "post", default)]
     pub posts: Box<[Post]>,
 }
 
 /// A deleted post
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct Post {
-    /// The deleted post id
-    #[serde(alias = "@deleted")]
+    /// The number of the deleted post.
+    /// 
+    /// Note that this is NOT the deleted post id.
+    /// This is the deleted post entry number.
+    #[serde(rename = "@deleted")]
     pub deleted: NonZeroU64,
 
     /// The md5 hash of the deleted post.
     ///
     /// This can be None sometimes for an unknown reason.
-    #[serde(alias = "@md5", with = "serde_md5_digest")]
+    #[serde(rename = "@md5", with = "serde_md5_digest")]
     pub md5: Option<Md5Digest>,
 }
 
