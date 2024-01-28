@@ -13,7 +13,7 @@ pub struct DeletedImageList {
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct Post {
     /// The number of the deleted post.
-    /// 
+    ///
     /// Note that this is NOT the deleted post id.
     /// This is the deleted post entry number.
     #[serde(rename = "@deleted")]
