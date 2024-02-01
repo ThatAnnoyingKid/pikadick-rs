@@ -13,7 +13,7 @@ path = "src/cli/main.rs"
 [dependencies]
 itoa = "1.0.10"
 quick-xml = { version = "0.31.0", features = [ "serialize" ] }
-reqwest = { version = "0.11.23", default-features = false, features = [ "json", "brotli" ] }
+reqwest = { version = "0.11.24", default-features = false, features = [ "json", "brotli" ] }
 serde = { version = "1.0.194", features = [ "derive" ] }
 thiserror = "1.0.56"
 time = { version = "0.3.31", features = [ "serde", "parsing", "formatting", "macros" ], default-features = false }
