@@ -6,14 +6,14 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-reqwest = { version = "0.11.23", default-features = false, features = [ "json" ] }
-serde = { version = "1.0.194", features = [ "derive" ] }
-serde_json = "1.0.110"
+reqwest = { version = "0.11.24", default-features = false, features = [ "json" ] }
+serde = { version = "1.0.196", features = [ "derive" ] }
+serde_json = "1.0.113"
 thiserror = "1.0.56"
 url = { version = "2.5.0", features = [ "serde" ] }
 
 [dev-dependencies]
-tokio = { version = "1.35.1", features = [ "macros" ] }
+tokio = { version = "1.36.0", features = [ "macros" ] }
 
 [features]
 default = [ "reqwest/default-tls" ]

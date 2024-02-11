@@ -267,6 +267,7 @@ mod test {
             "<3",
             ">_<",
             "dr—worm",
+            "master_hen'tai",
         ];
 
         let client = Client::new();

@@ -205,6 +205,9 @@ fn fix_tag_name(input: &str) -> String {
             '<' => output.push_str("&lt;"),
             '>' => output.push_str("&gt;"),
             '—' => output.push_str("&mdash;"),
+            // Yes, this is not &apos;, even though it looks like it should be.
+            // Yes, there needs to be exactly one leading zero for some reason.
+            '\'' => output.push_str("&#039;"),
             _ => output.push(c),
         }
     }
