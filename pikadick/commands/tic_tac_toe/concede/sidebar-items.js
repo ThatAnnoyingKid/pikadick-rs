@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["concede"],"static":["CONCEDE_COMMAND","CONCEDE_COMMAND_OPTIONS"]};

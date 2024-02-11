@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["scoreboard"],"static":["SCOREBOARD_COMMAND","SCOREBOARD_COMMAND_OPTIONS"]};

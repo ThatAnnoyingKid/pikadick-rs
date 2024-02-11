@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["overwolf","platform","sessions_data","stat","user_data"]};

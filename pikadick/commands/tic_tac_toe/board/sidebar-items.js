@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["board"],"static":["BOARD_COMMAND","BOARD_COMMAND_OPTIONS"]};

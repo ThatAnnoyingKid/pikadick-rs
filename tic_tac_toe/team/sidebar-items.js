@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["InvalidStrError","Team"],"struct":["InvalidCharError"]};

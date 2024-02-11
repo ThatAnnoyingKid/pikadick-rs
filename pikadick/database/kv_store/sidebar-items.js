@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["GET_STORE_SQL","PUT_STORE_SQL"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ApiResponse","Rank"],"mod":["season"],"struct":["ApiError","InvalidApiResponseError","Metadata","UserData"]};

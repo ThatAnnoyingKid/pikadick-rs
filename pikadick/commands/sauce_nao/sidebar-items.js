@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["sauce_nao"],"static":["SAUCE_NAO_COMMAND","SAUCE_NAO_COMMAND_OPTIONS"],"struct":["SauceNaoClient"]};

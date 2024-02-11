@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["POST_LIST_LIMIT_MAX","TAGS_LIST_LIMIT_MAX"],"enum":["Error","PostStatus","Rating"],"struct":["Client","DeletedImageList","Note","NoteList","NotesListQueryBuilder","Post","PostList","PostListQueryBuilder","SearchQueryBuilder","Tag","TagKind","TagList","TagListQueryBuilder","Url"]};

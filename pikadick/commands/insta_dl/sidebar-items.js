@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["download_post","get_extension_from_url","insta_dl"],"static":["INSTA_DL_COMMAND","INSTA_DL_COMMAND_OPTIONS"]};

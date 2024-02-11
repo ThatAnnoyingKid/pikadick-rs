@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["CacheStatsBuilder","ClientData"],"trait":["CacheStatsProvider"]};

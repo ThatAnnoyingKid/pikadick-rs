@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["across","async_rusqlite","fml","insta","iqdb","nekos","open_ai","open_graph","pikadick","pikadick_slash_framework","pikadick_slash_framework_derive","pikadick_system_info","pikadick_util","quizizz","r6stats","r6tracker","reddit_tube","rpi_deploy","rule34","tic_tac_toe","tokio_ffmpeg_cli","urban_dictionary","xkcd","yodaspeak"];
