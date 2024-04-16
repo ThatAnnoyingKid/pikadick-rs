@@ -208,7 +208,7 @@ mod serde_empty_str_is_none {
         T: AsRef<str>,
     {
         match value.as_ref().map(|value| value.as_ref()) {
-            Some(value) if value.is_empty() => serializer.serialize_none(),
+            Some("") => serializer.serialize_none(),
             Some(value) => serializer.serialize_str(value.as_ref()),
             None => serializer.serialize_none(),
         }

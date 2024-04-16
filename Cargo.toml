@@ -145,9 +145,6 @@ heim = { git = "https://github.com/vectordotdev/heim", branch = "update-nix" }
 # Fix ntapi 0.3.0 not compiling on newer Rust versions
 ntapi3 = { version = "0.3.0", git = "https://github.com/MSxDOS/ntapi", rev = "2148881c30e8da6a3ff585efd1c7d8ad125ccd2c", package = "ntapi" }
 
-# Updated for reqwest 12
-reqwest_cookie_store = { git = "https://github.com/nathaniel-daniel/reqwest_cookie_store", branch = "reqwest-12" }
-
 # To make image drawing times sane
 [profile.dev.package.tiny-skia]
 opt-level = 3

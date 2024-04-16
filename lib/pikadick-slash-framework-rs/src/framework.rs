@@ -260,7 +260,7 @@ impl FrameworkBuilder {
         }
 
         // Don't overwrite commands
-        if self.commands.get(&command_name).is_some() {
+        if self.commands.contains_key(&command_name) {
             self.error = Some(BuilderError::Duplicate(command_name));
             return self;
         }

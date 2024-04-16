@@ -1,6 +1,4 @@
 #![deny(
-    unused_qualifications,
-    unused_qualifications,
     unused_import_braces,
     unused_lifetimes,
     unreachable_pub,
@@ -29,6 +27,9 @@
 // clippy::fn_to_numeric_cast_any
 // clippy::redundant_closure_for_method_calls
 // clippy::too_many_lines
+
+// TODO: Switch to poise
+#![allow(deprecated)]
 
 //! # Pikadick
 
@@ -219,7 +220,7 @@ impl EventHandler for Handler {
 
             // Extract urls.
             // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
-            let urls: Vec<Url> = crate::util::extract_urls(&msg.content).collect();
+            let urls: Vec<Url> = util::extract_urls(&msg.content).collect();
 
             // Check to see if it we will even try to embed
             let will_try_embedding = urls.iter().any(|url| {
@@ -501,14 +502,14 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
         .check(self::checks::enabled::create_slash_check)
         .help_command(create_slash_help_command()?)
-        .command(self::commands::nekos::create_slash_command()?)
-        .command(self::commands::ping::create_slash_command()?)
-        .command(self::commands::r6stats::create_slash_command()?)
-        .command(self::commands::r6tracker::create_slash_command()?)
-        .command(self::commands::rule34::create_slash_command()?)
-        .command(self::commands::tiktok_embed::create_slash_command()?)
-        .command(self::commands::chat::create_slash_command()?)
-        .command(self::commands::yodaspeak::create_slash_command()?)
+        .command(nekos::create_slash_command()?)
+        .command(ping::create_slash_command()?)
+        .command(r6stats::create_slash_command()?)
+        .command(r6tracker::create_slash_command()?)
+        .command(rule34::create_slash_command()?)
+        .command(tiktok_embed::create_slash_command()?)
+        .command(chat::create_slash_command()?)
+        .command(yodaspeak::create_slash_command()?)
         .build()?;
 
     // Create second prefix that is uppercase so we are case-insensitive
@@ -590,7 +591,7 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
         .build()
         .context("failed to start tokio runtime")?;
 
-    let config = crate::setup::load_config(&cli_options.config)
+    let config = setup::load_config(&cli_options.config)
         .map(Arc::new)
         .context("failed to load config")?;
 
@@ -645,7 +646,7 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
     let _enter_guard = tokio_rt.handle().enter();
 
     eprintln!("setting up logger...");
-    let worker_guard = crate::logger::setup(&config).context("failed to initialize logger")?;
+    let worker_guard = logger::setup(&config).context("failed to initialize logger")?;
 
     eprintln!();
     Ok(SetupData {
