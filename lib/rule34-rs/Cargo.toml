@@ -11,15 +11,15 @@ required-features = [ "cli" ]
 path = "src/cli/main.rs"
 
 [dependencies]
-itoa = "1.0.10"
+itoa = "1.0.11"
 quick-xml = { version = "0.31.0", features = [ "serialize" ] }
-reqwest = { version = "0.12.0", default-features = false, features = [ "json", "brotli" ] }
-serde = { version = "1.0.196", features = [ "derive" ] }
-thiserror = "1.0.56"
-time = { version = "0.3.34", features = [ "serde", "parsing", "formatting", "macros" ], default-features = false }
-tokio = "1.36.0"
+reqwest = { version = "0.12.3", default-features = false, features = [ "json", "brotli" ] }
+serde = { version = "1.0.197", features = [ "derive" ] }
+thiserror = "1.0.58"
+time = { version = "0.3.36", features = [ "serde", "parsing", "formatting", "macros" ], default-features = false }
+tokio = "1.37.0"
 url = { version = "2.5.0", features = [ "serde" ] }
-serde_json = "1.0.113"
+serde_json = "1.0.116"
 
 # scrape
 once_cell = { version = "1.19.0", features = [ "std" ], default-features = false, optional = true }
@@ -27,12 +27,12 @@ scraper = { version = "0.19.0", default-features = false, optional = true }
 
 # cli
 argh = { version = "0.1.12", optional = true }
-anyhow = { version = "1.0.79", optional = true }
+anyhow = { version = "1.0.82", optional = true }
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path" ], optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.36.0", features = [ "macros" ] }
-serde_path_to_error = "0.1.15"
+tokio = { version = "1.37.0", features = [ "macros" ] }
+serde_path_to_error = "0.1.16"
 
 [features]
 # Use reqwest's default by default.
