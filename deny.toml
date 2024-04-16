@@ -1,3 +1,4 @@
+[graph]
 targets = [
     { triple = "x86_64-unknown-linux-gnu" },
     { triple = "x86_64-unknown-linux-musl" },
@@ -8,20 +9,13 @@ targets = [
 ]
 
 [advisories]
-vulnerability = "deny"
-unmaintained = "deny"
-notice = "deny"
 ignore = [    
     # Blocked on removing heim
     "RUSTSEC-2020-0168",
 ]
 
 [licenses]
-unlicensed = "deny"
-copyleft = "deny"
-allow-osi-fsf-free = "neither"
 confidence-threshold = 0.93
-default = "deny"
 private = { ignore = true }
 allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0", "Unicode-DFS-2016" ]
 exceptions = [
