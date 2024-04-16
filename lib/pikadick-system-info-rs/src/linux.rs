@@ -175,7 +175,9 @@ mod test {
     #[test]
     fn sysconf_sc_n_processors_onln_does_not_block() {
         let start = Instant::now();
-        let _logical_cpus = sysconf_n_processors_onln().expect("failed to get logical cpus");
+        let _logical_cpus = sysconf(SysconfVar::_NPROCESSORS_ONLN)
+            .expect("failed to get logical cpus")
+            .expect("missing logical cpus");
         assert!(start.elapsed() < Duration::from_millis(1));
     }
 
