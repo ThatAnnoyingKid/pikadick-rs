@@ -121,6 +121,21 @@ skip = [
     { name = "windows_x86_64_gnu", version = "0.48.0" },
     { name = "windows-targets", version = "0.48.5" },
     { name = "windows-sys", version = "0.48.0" },
+    
+    # Blocked on serenity updating reqwest
+    { name = "winreg", version = "0.50.0" },
+    { name = "webpki-roots", version = "0.25.4" },
+    { name = "tokio-rustls", version = "0.24.1" },
+    { name = "rustls-webpki", version = "0.101.7" },
+    { name = "rustls-pemfile", version = "1.0.4" },
+    { name = "rustls", version = "0.21.10" },
+    { name = "reqwest", version = "0.11.27" },
+    { name = "hyper-rustls", version = "0.24.2" },
+    { name = "hyper", version = "0.14.28" },
+    { name = "http-body", version = "0.4.6" },
+    { name = "http", version = "0.2.12" },
+    { name = "h2", version = "0.3.26" },
+    { name = "base64", version = "0.21.7" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
