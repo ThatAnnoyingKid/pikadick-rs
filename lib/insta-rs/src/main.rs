@@ -71,7 +71,7 @@ impl std::error::Error for BoxError {}
 
 /// Config
 pub struct Config {
-    document: toml_edit::Document,
+    document: toml_edit::DocumentMut,
 }
 
 impl Config {
@@ -120,25 +120,12 @@ impl Config {
     }
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let options = argh::from_env();
-    let code = match real_main(options) {
-        Ok(()) => 0,
-        Err(e) => {
-            eprintln!("Error: {:?}", e);
-            1
-        }
-    };
-
-    std::process::exit(code);
-}
-
-fn real_main(options: Options) -> anyhow::Result<()> {
     let tokio_rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .context("failed to build tokio runtime")?;
-
     tokio_rt.block_on(async_main(options))?;
 
     Ok(())
