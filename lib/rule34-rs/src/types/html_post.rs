@@ -226,7 +226,7 @@ impl HtmlPost {
 
         let thumb_url = html
             .select(&THUMB_URL_SELECTOR)
-            .last()
+            .next_back()
             .and_then(|element| element.value().attr("src"))
             .map(Url::parse)
             .transpose()
