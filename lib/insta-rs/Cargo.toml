@@ -11,14 +11,14 @@ path = "src/main.rs"
 required-features = [ "cli" ]
 
 [dependencies]
-cookie_store = "0.20.0"
+cookie_store = "0.22.0"
 once_cell = "1.21.3"
 regex = "1.11.1"
 reqwest = { version = "0.12.23", features = [ "cookies", "gzip", "json" ], default-features = false }
-reqwest_cookie_store = "0.7.0"
+reqwest_cookie_store = "0.9.0"
 serde = { version = "1.0.219", features = [ "derive" ] }
 serde_json = "1.0.143"
-thiserror = "1.0.69"
+thiserror = "2.0.16"
 url = { version = "2.5.4", features = [ "serde" ] }
 
 # Optional

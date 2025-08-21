@@ -1,12 +1,14 @@
 use crate::Error;
-use reqwest::header::HeaderMap;
+use reqwest::header::{
+    HeaderMap,
+    HeaderValue,
+    ACCEPT,
+};
 use scraper::{
     Html,
     Selector,
 };
 use std::sync::LazyLock;
-use reqwest::header::ACCEPT;
-use reqwest::header::HeaderValue;
 
 static ACCEPT_VALUE: HeaderValue = HeaderValue::from_static("*/*");
 
@@ -22,13 +24,13 @@ impl Client {
     pub fn new() -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, ACCEPT_VALUE.clone());
-        
+
         let client = reqwest::Client::builder()
             .user_agent("yodaspeak-rs")
             .default_headers(headers)
             .build()
             .expect("failed to build client");
-            
+
         Self { client }
     }
 

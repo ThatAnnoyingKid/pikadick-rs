@@ -11,8 +11,8 @@ path = "src/main.rs"
 required-features = [ "cli" ]
 
 [dependencies]
-scraper = { version = "0.19.1", default-features = false }
-thiserror = "1.0.69"
+scraper = { version = "0.24.0", default-features = false }
+thiserror = "2.0.16"
 url = "2.5.4"
 
 # Optional
