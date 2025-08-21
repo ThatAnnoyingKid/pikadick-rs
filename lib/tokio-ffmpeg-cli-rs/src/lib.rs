@@ -105,7 +105,7 @@ mod tests {
 
     // https://ottverse.com/free-hls-m3u8-test-urls/
     const SAMPLE_M3U8: &str =
-        "https://devimages.apple.com.edgekey.net/iphone/samples/bipbop/bipbopall.m3u8";
+        "http://devimages.apple.com.edgekey.net/iphone/samples/bipbop/bipbopall.m3u8";
 
     #[tokio::test]
     async fn transcode_m3u8() {

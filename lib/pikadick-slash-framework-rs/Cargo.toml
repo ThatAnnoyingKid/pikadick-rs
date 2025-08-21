@@ -6,6 +6,6 @@ license = "MIT"
 
 [dependencies]
 pikadick-slash-framework-derive = { path = "../pikadick-slash-framework-derive-rs" }
-serenity = { version = "0.12.1", features = [ "client", "rustls_backend", "builder", "gateway", "model", "unstable_discord_api" ], default-features = false }
-thiserror = "1.0.58"
-tracing = "0.1.40"
+serenity = { version = "0.12.4", features = [ "client", "rustls_backend", "builder", "gateway", "model", "unstable_discord_api" ], default-features = false }
+thiserror = "1.0.69"
+tracing = "0.1.41"

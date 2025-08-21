@@ -4,8 +4,8 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.82"
-argh = "0.1.12"
+anyhow = "1.0.99"
+argh = "0.1.13"
 cargo_metadata = "0.18.1"
-serde = { version = "1.0.197", features = [ "derive" ] }
-toml = "0.8.12"
+serde = { version = "1.0.219", features = [ "derive" ] }
+toml = "0.8.23"

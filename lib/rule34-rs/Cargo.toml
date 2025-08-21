@@ -11,28 +11,28 @@ required-features = [ "cli" ]
 path = "src/cli/main.rs"
 
 [dependencies]
-itoa = "1.0.11"
+itoa = "1.0.15"
 quick-xml = { version = "0.31.0", features = [ "serialize" ] }
-reqwest = { version = "0.12.3", default-features = false, features = [ "json", "brotli" ] }
-serde = { version = "1.0.197", features = [ "derive" ] }
-thiserror = "1.0.58"
-time = { version = "0.3.36", features = [ "serde", "parsing", "formatting", "macros" ], default-features = false }
-tokio = "1.37.0"
-url = { version = "2.5.0", features = [ "serde" ] }
-serde_json = "1.0.116"
+reqwest = { version = "0.12.23", default-features = false, features = [ "json", "brotli" ] }
+serde = { version = "1.0.219", features = [ "derive" ] }
+thiserror = "1.0.69"
+time = { version = "0.3.41", features = [ "serde", "parsing", "formatting", "macros" ], default-features = false }
+tokio = "1.47.1"
+url = { version = "2.5.4", features = [ "serde" ] }
+serde_json = "1.0.143"
 
 # scrape
-once_cell = { version = "1.19.0", features = [ "std" ], default-features = false, optional = true }
-scraper = { version = "0.19.0", default-features = false, optional = true }
+once_cell = { version = "1.21.3", features = [ "std" ], default-features = false, optional = true }
+scraper = { version = "0.19.1", default-features = false, optional = true }
 
 # cli
-argh = { version = "0.1.12", optional = true }
-anyhow = { version = "1.0.82", optional = true }
+argh = { version = "0.1.13", optional = true }
+anyhow = { version = "1.0.99", optional = true }
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path" ], optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.37.0", features = [ "macros", "rt-multi-thread" ] }
-serde_path_to_error = "0.1.16"
+tokio = { version = "1.47.1", features = [ "macros", "rt-multi-thread" ] }
+serde_path_to_error = "0.1.17"
 
 [features]
 # Use reqwest's default by default.

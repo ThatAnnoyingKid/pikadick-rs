@@ -6,11 +6,11 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-reqwest = { version = "0.12.3", default-features = false }
-thiserror = "1.0.58"
+reqwest = { version = "0.12.23", default-features = false }
+thiserror = "1.0.69"
 
 [dev-dependencies]
-tokio = { version = "1.37.0", features = [ "macros" ] }
+tokio = { version = "1.47.1", features = [ "macros" ] }
 
 [features]
 default = [ "reqwest/default-tls" ]
