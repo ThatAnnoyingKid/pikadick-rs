@@ -156,7 +156,7 @@ fn real_main(options: Options) -> anyhow::Result<()> {
             // TODO: Don't assume /tmp is the temp dir
             let remote_package_file_path = format!("/tmp/{file_name}");
             let mut remote_package_file = sftp.open_mode(
-                remote_package_file_path.as_ref(),
+                &remote_package_file_path,
                 ssh2::OpenFlags::WRITE | ssh2::OpenFlags::TRUNCATE,
                 0o600, // Prevent users from tampering with the file.
                 ssh2::OpenType::File,

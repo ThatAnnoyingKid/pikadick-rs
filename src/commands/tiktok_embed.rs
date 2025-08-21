@@ -121,8 +121,7 @@ impl TikTokData {
                 .iter()
                 .position(|name| **name == *encoder.name)
             {
-                if best_encoder_index.map_or(true, |best_encoder_index| best_encoder_index > index)
-                {
+                if best_encoder_index.is_none_or(|best_encoder_index| best_encoder_index > index) {
                     best_encoder_index = Some(index);
                 }
             }

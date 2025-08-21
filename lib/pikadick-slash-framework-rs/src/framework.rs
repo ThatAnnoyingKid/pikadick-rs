@@ -194,11 +194,10 @@ impl Framework {
                 }
             }
             Err(error) => {
-                let content = if let Some(user) = error.user.as_deref() {
-                    user
-                } else {
-                    "check failed for unknown reason"
-                };
+                let content = error
+                    .user
+                    .as_deref()
+                    .unwrap_or("check failed for unknown reason");
 
                 if let Some(log) = error.log {
                     warn!("{log}");

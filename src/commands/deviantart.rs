@@ -81,7 +81,7 @@ impl DeviantartClient {
     ) -> anyhow::Result<()> {
         if !self.client.is_logged_in_online().await? {
             info!("re-signing in");
-            self.client.sign_in(username, password).await?;
+            self.client.login(username, password).await?;
 
             // Store the new cookies
             let cookie_store = self.client.cookie_store.clone();

@@ -15,32 +15,12 @@ use serenity::builder::{
     CreateInteractionResponse,
     CreateInteractionResponseMessage,
 };
-use std::{
-    str::FromStr,
-    sync::Arc,
-};
+use std::sync::Arc;
 use tracing::error;
 use url::Url;
 
 /// Max images per single request
 const BUFFER_SIZE: u8 = 100;
-
-#[derive(Debug)]
-struct NsfwArgParseError;
-
-struct NsfwArg;
-
-impl FromStr for NsfwArg {
-    type Err = NsfwArgParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s == "nsfw" {
-            Ok(NsfwArg)
-        } else {
-            Err(NsfwArgParseError)
-        }
-    }
-}
 
 /// A nekos cache
 #[derive(Clone, Debug)]

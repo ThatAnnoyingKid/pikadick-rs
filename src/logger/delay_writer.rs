@@ -35,10 +35,7 @@ where
         let buffer = match self {
             Self::Buffer(bytes) => bytes,
             Self::Writer(_) => {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "already initalized",
-                ));
+                return Err(std::io::Error::other("already initalized"));
             }
         };
 

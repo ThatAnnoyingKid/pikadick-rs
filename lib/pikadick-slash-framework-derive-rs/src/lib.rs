@@ -49,7 +49,7 @@ pub fn derive_from_options(input: proc_macro::TokenStream) -> proc_macro::TokenS
 }
 
 /// Extract Field s from a derive object
-fn extract_fields(data: &syn::Data) -> Result<Vec<Field>> {
+fn extract_fields(data: &syn::Data) -> Result<Vec<Field<'_>>> {
     let fields = match data {
         Data::Struct(data) => &data.fields,
         Data::Enum(data) => {
