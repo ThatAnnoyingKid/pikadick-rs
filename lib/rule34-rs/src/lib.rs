@@ -196,6 +196,9 @@ mod test {
             ">_<",
             "dr—worm",
             "master_hen'tai",
+            "ne-α_parasite",
+            "ne-α_type",
+            "lützow_(azur_lane)",
         ];
 
         RUNTIME.block_on(async move {
