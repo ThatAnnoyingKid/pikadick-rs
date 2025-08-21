@@ -15,4 +15,5 @@ tokio-stream = { version = "0.1.17", features = [ "io-util" ] }
 tracing = "0.1.41"
 
 [dev-dependencies]
+anyhow = "1.0.99"
 tokio = { version = "1.47.1", features = [ "rt", "macros" ] }

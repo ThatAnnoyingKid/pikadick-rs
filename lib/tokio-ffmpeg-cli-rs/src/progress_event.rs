@@ -22,7 +22,7 @@ pub enum LineBuilderError {
     InvalidKeyValuePair,
 
     /// Invalid integer value for a key
-    #[error("invalid integer value for key '{key}' with value '{value}'")]
+    #[error("invalid integer value for key \"{key}\" with value \"{value}\"")]
     InvalidIntegerValue {
         key: &'static str,
         value: Box<str>,
@@ -31,11 +31,11 @@ pub enum LineBuilderError {
     },
 
     /// Invalid float value for a key
-    #[error("invalid float value for key '{0}'")]
+    #[error("invalid float value for key \"{0}\"")]
     InvalidFloatValue(&'static str, #[source] std::num::ParseFloatError),
 
     /// Got a duplicate key
-    #[error("duplicate key '{key}'")]
+    #[error("duplicate key \"{key}\"")]
     DuplicateKey {
         /// The duplicate key
         key: Box<str>,
@@ -46,7 +46,7 @@ pub enum LineBuilderError {
     },
 
     /// Missing a key=value pair
-    #[error("missing key value pair for key '{0}'")]
+    #[error("missing key value pair for key \"{0}\"")]
     MissingKeyValuePair(&'static str),
 }
 
