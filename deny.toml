@@ -15,6 +15,9 @@ ignore = [
     
     # Blocked on songbird removing derivative
     "RUSTSEC-2024-0388",
+    
+    # Blocked on scraper updating selectors.
+    "RUSTSEC-2025-0057",
 ]
 
 [licenses]
@@ -80,9 +83,6 @@ skip = [
     # Blocked on ecosystem moving to syn 2
     { name = "syn", version = "1.0.109" },
     
-    # Blocked on tracing subscriber updating their deps
-    { name = "regex-syntax", version = "0.6.29" },
-    
     # Blocked on ecosystem moving to bitflags 2
     { name = "bitflags", version = "1.3.2" },
     
@@ -95,9 +95,6 @@ skip = [
     # Blocked on ecosystem moving to rustix 0.38.x
     { name = "rustix", version = "0.37.23" },
     { name = "linux-raw-sys", version = "0.3.8" },
-    
-    # Blocked on matchers updating regex-automata 
-    { name = "regex-automata", version = "0.1.10" },
     
     # Blocked on ecosystem moving to indexmap 2
     { name = "indexmap", version = "1.9.3" },
@@ -146,7 +143,6 @@ skip = [
     { name = "rustls-webpki", version = "0.102.8" },
     { name = "rustls", version = "0.22.4" },
     { name = "rustix", version = "0.38.44" },
-    { name = "reqwest_cookie_store", version = "0.8.2" },
     { name = "ordered-float", version = "2.10.1" },
     { name = "match_token", version = "0.1.0" },
     { name = "markup5ever", version = "0.14.1" },
@@ -157,6 +153,10 @@ skip = [
     { name = "derive_more", version = "0.99.20" },
     { name = "cssparser", version = "0.34.0" },
     { name = "cookie_store", version = "0.21.1" },
+    { name = "windows-sys", version = "0.60.2" },
+    { name = "rand_core", version = "0.6.4" },
+    { name = "rand_chacha", version = "0.3.1" },
+    { name = "rand", version = "0.8.5" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
