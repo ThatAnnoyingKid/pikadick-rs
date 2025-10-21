@@ -199,6 +199,7 @@ mod test {
             "ne-α_parasite",
             "ne-α_type",
             "lützow_(azur_lane)",
+            "ä",
         ];
 
         RUNTIME.block_on(async move {
