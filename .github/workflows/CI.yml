@@ -97,6 +97,9 @@ jobs:
       - name: Install Protobuf Compiler
         run: sudo apt-get install -y protobuf-compiler
         
+      - name: Print FFMpeg Version
+        run: ffmpeg -version
+        
       - name: Build Pikadick
         run: cargo build --verbose
         
