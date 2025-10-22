@@ -86,18 +86,12 @@ skip = [
     # Blocked on ecosystem moving to bitflags 2
     { name = "bitflags", version = "1.3.2" },
     
-    # Blocked on ecosystem moving to hashbrown 0.13.x
-    { name = "hashbrown", version = "0.12.3" },
-    
     # Blocked on ecosystem moving to socket 0.5.x
     { name = "socket2", version = "0.4.9" },
     
     # Blocked on ecosystem moving to rustix 0.38.x
     { name = "rustix", version = "0.37.23" },
     { name = "linux-raw-sys", version = "0.3.8" },
-    
-    # Blocked on ecosystem moving to indexmap 2
-    { name = "indexmap", version = "1.9.3" },
     
     # Blocked on ecosystem moving to fastrand 2
     { name = "fastrand", version = "1.9.0" },
@@ -115,7 +109,6 @@ skip = [
     { name = "webpki-roots", version = "0.25.4" },
     { name = "tokio-rustls", version = "0.24.1" },
     { name = "rustls-webpki", version = "0.101.7" },
-    { name = "rustls-pemfile", version = "1.0.4" },
     { name = "rustls", version = "0.21.10" },
     { name = "reqwest", version = "0.11.27" },
     { name = "hyper-rustls", version = "0.24.2" },
@@ -132,7 +125,6 @@ skip = [
     { name = "windows-sys", version = "0.52.0" }, 
     { name = "windows-sys", version = "0.59.0" },
     { name = "webpki-roots", version = "0.26.11" },
-    { name = "tower", version = "0.4.13" },
     { name = "tokio-rustls", version = "0.25.0" },
     { name = "thiserror-impl", version = "1.0.69" },
     { name = "thiserror", version = "1.0.69" },
@@ -143,7 +135,6 @@ skip = [
     { name = "rustls-webpki", version = "0.102.8" },
     { name = "rustls", version = "0.22.4" },
     { name = "rustix", version = "0.38.44" },
-    { name = "ordered-float", version = "2.10.1" },
     { name = "match_token", version = "0.1.0" },
     { name = "markup5ever", version = "0.14.1" },
     { name = "linux-raw-sys", version = "0.4.15" },
@@ -161,6 +152,7 @@ skip = [
     { name = "tokio-tungstenite", version = "0.21.0" },
     { name = "tungstenite", version = "0.21.0" },
     { name = "dashmap", version = "5.5.3" },
+    { name = "core-foundation", version = "0.9.4" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
