@@ -69,7 +69,7 @@ tracing-log = "0.2.0"
 tracing-opentelemetry = "0.23.0"
 tracing-subscriber = { version = "0.3.19", features = [ "env-filter", "fmt", "parking_lot" ] }
 ttf-parser = "0.20.0"
-uom = "0.31.1"
+uom = "0.37.0"
 urban-dictionary = { path = "./lib/urban-dictionary-rs", default-features = false, features = [ "rustls-tls" ] }
 url = "2.5.4"
 xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls-tls" ] }
