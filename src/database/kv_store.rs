@@ -32,7 +32,9 @@ impl Database {
 
         match maybe_bytes {
             Some(bytes) => Ok(Some(
-                bincode::deserialize(&bytes).context("failed to decode value")?,
+                bincode::serde::decode_from_slice(&bytes, bincode::config::legacy())
+                    .context("failed to decode value")?
+                    .0,
             )),
             None => Ok(None),
         }
@@ -47,7 +49,8 @@ impl Database {
     {
         let prefix = prefix.as_ref().to_vec();
         let key = key.as_ref().to_vec();
-        let value = bincode::serialize(&value).context("failed to serialize value")?;
+        let value = bincode::serde::encode_to_vec(&value, bincode::config::legacy())
+            .context("failed to serialize value")?;
 
         self.access_db(move |db| {
             let txn = db.transaction()?;
@@ -85,11 +88,14 @@ impl Database {
                 .optional()
                 .context("failed to get value")?
                 .map(|bytes: Vec<u8>| {
-                    bincode::deserialize(&bytes).context("failed to decode value")
+                    bincode::serde::decode_from_slice(&bytes, bincode::config::legacy())
+                        .context("failed to decode value")
+                        .map(|(value, _)| value)
                 })
                 .transpose()?;
             let value = update_func(maybe_value);
-            let value = bincode::serialize(&value).context("failed to serialize value")?;
+            let value = bincode::serde::encode_to_vec(&value, bincode::config::legacy())
+                .context("failed to serialize value")?;
 
             txn.prepare_cached(PUT_STORE_SQL)?
                 .execute(params![prefix, key, value])?;

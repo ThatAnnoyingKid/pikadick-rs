@@ -19,7 +19,7 @@ use anyhow::{
     Context as _,
 };
 use dashmap::DashMap;
-use rand::seq::SliceRandom;
+use rand::prelude::IndexedRandom;
 use reddit_tube::types::get_video_response::GetVideoResponseOk;
 use serenity::{
     framework::standard::{

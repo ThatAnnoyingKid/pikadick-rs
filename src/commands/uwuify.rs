@@ -1,5 +1,5 @@
 use crate::checks::ENABLED_CHECK;
-use rand::prelude::SliceRandom;
+use rand::prelude::IndexedRandom;
 use serenity::{
     client::Context,
     framework::standard::{
@@ -122,7 +122,7 @@ pub fn uwuify_str(input: &str) -> String {
                     // it might make sense to add a feature that does that here
                 }
 
-                let face = FACES.choose(&mut rand::thread_rng()).expect("Valid Face");
+                let face = FACES.choose(&mut rand::thread_rng()).expect("missing face");
                 output.reserve(face.len() + 2);
 
                 output.push(' ');

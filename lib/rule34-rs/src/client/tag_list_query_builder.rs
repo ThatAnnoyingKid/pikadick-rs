@@ -216,6 +216,7 @@ fn fix_tag_name(input: &str) -> String {
             'α' => output.push_str("&alpha;"),
             'ü' => output.push_str("&uuml;"),
             'ä' => output.push_str("&auml;"),
+            'ö' => output.push_str("&ouml;"),
             _ => output.push(c),
         }
     }

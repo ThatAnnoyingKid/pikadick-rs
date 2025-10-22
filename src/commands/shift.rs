@@ -7,7 +7,7 @@ use crate::{
     util::TimedCache,
     ClientDataKey,
 };
-use rand::seq::SliceRandom;
+use rand::prelude::IndexedRandom;
 use serenity::{
     framework::standard::{
         macros::command,

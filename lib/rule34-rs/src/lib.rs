@@ -179,13 +179,13 @@ mod test {
     #[test]
     fn bad_tags_list() {
         let tags = [
-            // TODO: I think this tag was deleted
+            // TODO: I think these tags were deleted
             // "swallow_(pokémon_move)",
+            // "almáriel",
             "akoúo̱_(rwby)",
             "miló_(rwby)",
             "las_tres_niñas_(company)",
             "ooparts♥love",
-            "almáriel",
             "kingdom_hearts_union_χ_[cross]",
             "gen¹³",
             "nancy’s_face_is_deeper_in_carrie’s_ass",
@@ -200,6 +200,7 @@ mod test {
             "ne-α_type",
             "lützow_(azur_lane)",
             "ä",
+            "göll_(shuumatsu_no_valkyrie)",
         ];
 
         RUNTIME.block_on(async move {
@@ -215,7 +216,7 @@ mod test {
 
                 assert!(
                     tags_len == 1,
-                    "failed to get tags for \"{expected_tag_name}\", tags does not have one tag, it has {tags_len} tags"
+                    "failed to get tags for \"{expected_tag_name}\", tags does not have 1 tag, it has {tags_len} tags"
                 );
                 let tag = tags.first().expect("tag list is empty");
                 let actual_tag_name = &*tag.name;

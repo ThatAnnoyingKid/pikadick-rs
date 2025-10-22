@@ -3,7 +3,13 @@ mod delay_writer;
 pub use self::delay_writer::DelayWriter;
 use crate::config::Config;
 use anyhow::Context;
-use opentelemetry_otlp::WithExportConfig;
+use opentelemetry::trace::TracerProvider;
+use opentelemetry_otlp::{
+    SpanExporter,
+    WithExportConfig,
+    WithTonicConfig,
+};
+use opentelemetry_sdk::trace::SdkTracerProvider;
 use tonic::metadata::{
     MetadataKey,
     MetadataMap,
@@ -40,12 +46,15 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
     let opentelemetry_layer = if config.log.opentelemetry {
         eprintln!("setting up opentelemetry...");
 
+        // TODO: Re-add this when opentelemetry re-adds support for this.
+        /*
         opentelemetry::global::set_error_handler(|error| {
             // Print to stderr.
             // There was an error logging something, so we avoid using the logging system.
             eprintln!("opentelemetry error: {:?}", anyhow::Error::from(error));
         })
         .context("failed to set opentelemetry error handler")?;
+        */
 
         let mut map = MetadataMap::with_capacity(config.log.headers.len());
         for (k, v) in config.log.headers.iter() {
@@ -54,8 +63,8 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
         }
 
         let exporter = {
-            let mut exporter = opentelemetry_otlp::new_exporter()
-                .tonic()
+            let mut exporter = SpanExporter::builder()
+                .with_tonic()
                 .with_metadata(map)
                 .with_tls_config(Default::default());
 
@@ -64,13 +73,15 @@ pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
             }
 
             exporter
+                .build()
+                .context("failed to build opentelemetry SpanExporter")?
         };
 
-        let tracer = opentelemetry_otlp::new_pipeline()
-            .tracing()
-            .with_exporter(exporter)
-            .install_batch(opentelemetry_sdk::runtime::Tokio)
-            .context("failed to install otlp opentelemetry exporter")?;
+        let tracer_provider = SdkTracerProvider::builder()
+            .with_batch_exporter(exporter)
+            .build();
+        let tracer = tracer_provider.tracer("pikadick");
+        //.context("failed to install otlp opentelemetry exporter")?;
 
         Some(tracing_opentelemetry::layer().with_tracer(tracer))
     } else {
