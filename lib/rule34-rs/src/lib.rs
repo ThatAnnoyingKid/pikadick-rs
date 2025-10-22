@@ -200,7 +200,7 @@ mod test {
             "ne-α_type",
             "lützow_(azur_lane)",
             "ä",
-            // "göll_(shuumatsu_no_valkyrie)",
+            "göll_(shuumatsu_no_valkyrie)",
         ];
 
         RUNTIME.block_on(async move {
@@ -216,7 +216,7 @@ mod test {
 
                 assert!(
                     tags_len == 1,
-                    "failed to get tags for \"{expected_tag_name}\", tags does not have one tag, it has {tags_len} tags"
+                    "failed to get tags for \"{expected_tag_name}\", tags does not have 1 tag, it has {tags_len} tags"
                 );
                 let tag = tags.first().expect("tag list is empty");
                 let actual_tag_name = &*tag.name;
