@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["setup"],"mod":["delay_writer"],"struct":["DelayWriter"]};

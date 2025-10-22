@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"derive":["FromOptions"],"enum":["BuilderError","ConvertError","DataType"],"struct":["ArgumentParam","ArgumentParamBuilder","Command","CommandBuilder","Framework","FrameworkBuilder","HelpCommand","HelpCommandBuilder","Reason"],"trait":["FromOptionValue","FromOptions"],"type":["ArgumentKind","BoxError","BoxFuture","BoxResult","CheckFn","OnProcessFuture"]};

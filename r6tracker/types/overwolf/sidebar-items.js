@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["OverwolfResponse"],"mod":["lifetime_stats"],"struct":["InvalidOverwolfResponseError","OverwolfOperator","OverwolfPlayer","OverwolfRank","OverwolfSeason","SeasonalOperators"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAX_FILE_SIZE"],"enum":["Error","Image"],"struct":["Body","BytesCodec","Client","FramedRead","Html","SearchResults"]};

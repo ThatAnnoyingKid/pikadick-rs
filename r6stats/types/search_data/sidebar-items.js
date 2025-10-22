@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["generic_stats"],"struct":["ApiResponse","ProgressionStats","SeasonalStats","UserData"]};

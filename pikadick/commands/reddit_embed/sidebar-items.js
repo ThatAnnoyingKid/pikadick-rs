@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["parse_post_url","reddit_embed"],"static":["REDDIT_EMBED_COMMAND","REDDIT_EMBED_COMMAND_OPTIONS"],"struct":["RedditEmbedData"],"type":["LinkVec","PostId","SubReddit"]};

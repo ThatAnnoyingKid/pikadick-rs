@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["CheckRoomJsonRequest","GenericResponse","GenericResponseError","GroupsInfo","GroupsInfoData","Room","RoomOptions","RoomSubscription","RoomVersion","Traits"]};

@@ -1,0 +1,1 @@
+searchState.loadedDescShard("xkcd", 0, "An XKCD client\nLibrary Error type\nInvalid HTTP StatusCode\nRewqwest HTTP Error\nReturns the argument unchanged.\nReturns the argument unchanged.\nGet a random xkcd comic url.\nCalls <code>U::from(self)</code>.\nCalls <code>U::from(self)</code>.\nMake a new <code>Client</code>.\n<code>ToString::to_string</code>, but without panic on OOM.")

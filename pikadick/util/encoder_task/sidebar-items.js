@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Message"],"fn":["encoder_task_impl"],"struct":["EncoderTask","EncoderTaskEncodeBuilder"]};

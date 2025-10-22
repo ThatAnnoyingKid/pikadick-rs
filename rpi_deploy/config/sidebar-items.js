@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CARGO_TOML_CONFIG_METADATA_KEY","FILE_CONFIG_FILE_NAME"],"struct":["CargoTomlConfig","FileConfig","MachineConfig"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["FONT_BYTES","HALF_SQUARE_SIZE_F32","MAX_PARALLEL_RENDER_LIMIT","RENDERED_SIZE","SQUARE_SIZE","SQUARE_SIZE_F32","SQUARE_SIZE_USIZE"],"fn":["draw_winning_line"],"static":["FONT_FACE"],"struct":["Renderer","SkiaBuilder"]};

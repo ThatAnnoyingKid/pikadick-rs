@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["vaporwave","vaporwave_str"],"static":["VAPORWAVE_COMMAND","VAPORWAVE_COMMAND_OPTIONS"]};

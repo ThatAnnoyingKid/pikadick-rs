@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["create_slash_command"],"struct":["R6StatsClient","R6StatsOptions"]};
