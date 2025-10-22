@@ -16,7 +16,7 @@ use anyhow::{
     Context as _,
 };
 pub use camino;
-use rand::distributions::DistString;
+use rand::distr::SampleString;
 use std::{
     fs::File,
     io::Write,
@@ -138,8 +138,8 @@ fn real_main(options: Options) -> anyhow::Result<()> {
 
                 // Push RNG string to randomize tmp file
                 let mut file_stem_extension = String::from("-");
-                rand::distributions::Alphanumeric.append_string(
-                    &mut rand::thread_rng(),
+                rand::distr::Alphanumeric.append_string(
+                    &mut rand::rng(),
                     &mut file_stem_extension,
                     10,
                 );
