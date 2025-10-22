@@ -5,14 +5,14 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-anyhow = { version = "1.0.99", optional = true }
+anyhow = { version = "1.0.100", optional = true }
 # fslock = { version = "0.2.1", optional = true }
 fslock = { git = "https://github.com/adumbidiot/fslock", optional = true }
 futures = { version = "0.3.31", features = ["std"], default-features = false, optional = true }
-tokio = { version = "1.47.1", default-features = false, optional = true }
+tokio = { version = "1.48.0", default-features = false, optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.47.1", features = [ "macros" ] }
+tokio = { version = "1.48.0", features = [ "macros" ] }
 
 [features]
 async_lock_file = ["anyhow", "fslock", "tokio", "tokio/sync", "tokio/rt"]
