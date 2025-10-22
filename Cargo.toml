@@ -16,7 +16,7 @@ bitflags = "2.10.0"
 bytes = "1.10.1"
 camino = { version = "1.2.1", features = [ "serde1" ] }
 crossbeam = "0.8.4"
-dashmap = "5.5.3"
+dashmap = "6.1.0"
 deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
 futures = { version = "0.3.31", features = [ "std" ], default-features = false }
@@ -51,7 +51,7 @@ sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-featur
 serde = { version = "1.0.228", features = [ "derive" ] }
 serenity = { version = "0.12.4", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
 shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
-songbird = "0.4.6"
+songbird = "0.5.0"
 systemstat = "0.2.5"
 thiserror = "2.0.17"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
@@ -68,7 +68,7 @@ tracing-appender = "0.2.3"
 tracing-log = "0.2.0"
 tracing-opentelemetry = "0.23.0"
 tracing-subscriber = { version = "0.3.20", features = [ "env-filter", "fmt", "parking_lot" ] }
-ttf-parser = "0.20.0"
+ttf-parser = "0.25.1"
 uom = "0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs", default-features = false, features = [ "rustls-tls" ] }
 url = "2.5.7"
