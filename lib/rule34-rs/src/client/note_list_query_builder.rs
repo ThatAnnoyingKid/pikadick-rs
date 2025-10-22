@@ -46,11 +46,16 @@ impl<'a> NotesListQueryBuilder<'a> {
         )?;
 
         {
-            let mut query_pairs = url.query_pairs_mut();
+            let mut query_pairs_mut = url.query_pairs_mut();
+
+            let auth = self.client.get_auth();
+            let auth = auth.as_ref().ok_or(Error::MissingAuth)?;
+            query_pairs_mut.append_pair("user_id", itoa::Buffer::new().format(auth.user_id));
+            query_pairs_mut.append_pair("api_key", &auth.api_key);
 
             if let Some(post_id) = self.post_id {
                 let mut buffer = itoa::Buffer::new();
-                query_pairs.append_pair("post_id", buffer.format(post_id.get()));
+                query_pairs_mut.append_pair("post_id", buffer.format(post_id.get()));
             }
         }
 

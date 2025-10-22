@@ -181,14 +181,15 @@ async fn encoder_task_impl(mut rx: tokio::sync::mpsc::Receiver<Message>) {
                                 .output_format("null")
                                 .video_codec(&*encoder.name)
                                 .video_frames(1_u64)
-                                .ffmpeg_status()
-                                .await?;
+                                .ffmpeg_output()
+                                .await?
+                                .status;
 
                             // If it passed, add it to the output
                             if status.success() {
                                 encoders.push(encoder);
                             } else {
-                                info!("skipping '{}' as it failed a sanity check", encoder.name);
+                                info!("skipping \"{}\" as it failed a sanity check", encoder.name);
                             }
                         }
 

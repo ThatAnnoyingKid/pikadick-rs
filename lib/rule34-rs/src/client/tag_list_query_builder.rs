@@ -127,34 +127,39 @@ impl<'a> TagListQueryBuilder<'a> {
         )?;
 
         {
-            let mut query_pairs = url.query_pairs_mut();
+            let mut query_pairs_mut = url.query_pairs_mut();
+
+            let auth = self.client.get_auth();
+            let auth = auth.as_ref().ok_or(Error::MissingAuth)?;
+            query_pairs_mut.append_pair("user_id", itoa::Buffer::new().format(auth.user_id));
+            query_pairs_mut.append_pair("api_key", &auth.api_key);
 
             if let Some(id) = self.id {
                 let mut id_buffer = itoa::Buffer::new();
-                query_pairs.append_pair("id", id_buffer.format(id.get()));
+                query_pairs_mut.append_pair("id", id_buffer.format(id.get()));
             }
 
             if let Some(limit) = self.limit {
                 let mut limit_buffer = itoa::Buffer::new();
-                query_pairs.append_pair("limit", limit_buffer.format(limit));
+                query_pairs_mut.append_pair("limit", limit_buffer.format(limit));
             }
 
             if let Some(pid) = self.pid {
                 let mut pid_buffer = itoa::Buffer::new();
-                query_pairs.append_pair("pid", pid_buffer.format(pid));
+                query_pairs_mut.append_pair("pid", pid_buffer.format(pid));
             }
 
             if let Some(name) = self.name {
                 let name = fix_tag_name(name);
-                query_pairs.append_pair("name", name.as_str());
+                query_pairs_mut.append_pair("name", name.as_str());
             }
 
             if let Some(name_pattern) = self.name_pattern {
-                query_pairs.append_pair("name_pattern", name_pattern);
+                query_pairs_mut.append_pair("name_pattern", name_pattern);
             }
 
             if let Some(order) = self.order {
-                query_pairs.append_pair("order", order);
+                query_pairs_mut.append_pair("order", order);
             }
         }
 
@@ -205,9 +210,12 @@ fn fix_tag_name(input: &str) -> String {
             '<' => output.push_str("&lt;"),
             '>' => output.push_str("&gt;"),
             '—' => output.push_str("&mdash;"),
-            // Yes, this is not &apos;, even though it looks like it should be.
+            // Yes, this is not "&apos;", even though it looks like it should be.
             // Yes, there needs to be exactly one leading zero for some reason.
             '\'' => output.push_str("&#039;"),
+            'α' => output.push_str("&alpha;"),
+            'ü' => output.push_str("&uuml;"),
+            'ä' => output.push_str("&auml;"),
             _ => output.push(c),
         }
     }

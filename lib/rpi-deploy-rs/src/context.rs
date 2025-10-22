@@ -21,7 +21,7 @@ pub struct Context {
     pub cargo_toml_config: CargoTomlConfig,
     pub file_config: FileConfig,
 
-    pub rustup_toolchain: String,
+    // pub rustup_toolchain: String,
     pub rustup_installed_targets: Vec<String>,
 
     metadata: cargo_metadata::Metadata,
@@ -64,7 +64,7 @@ impl Context {
             cargo_toml_config,
             file_config,
 
-            rustup_toolchain,
+            // rustup_toolchain,
             rustup_installed_targets,
 
             metadata,

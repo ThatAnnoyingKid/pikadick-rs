@@ -77,9 +77,9 @@ async fn insta_dl(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
 // TODO: Cache results
 /// Download an instagram post
-async fn download_post<'a>(
+async fn download_post(
     client: &reqwest::Client,
-    post_page: &'a insta::AdditionalDataLoaded,
+    post_page: &'_ insta::AdditionalDataLoaded,
 ) -> anyhow::Result<(Bytes, String)> {
     let post_page_item = post_page.items.first().context("missing post item")?;
 

@@ -89,6 +89,11 @@ impl<'a> PostListQueryBuilder<'a> {
         {
             let mut query_pairs_mut = url.query_pairs_mut();
 
+            let auth = self.client.get_auth();
+            let auth = auth.as_ref().ok_or(Error::MissingAuth)?;
+            query_pairs_mut.append_pair("user_id", itoa::Buffer::new().format(auth.user_id));
+            query_pairs_mut.append_pair("api_key", &auth.api_key);
+
             if let Some(tags) = self.tags {
                 query_pairs_mut.append_pair("tags", tags);
             }

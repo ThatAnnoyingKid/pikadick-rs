@@ -77,8 +77,8 @@ mod test {
 
                     match File::open(session_file_path).map(BufReader::new) {
                         Ok(file) => {
-                            let cookie_store =
-                                CookieStore::load_json(file).expect("failed to load session file");
+                            let cookie_store = cookie_store::serde::json::load(file)
+                                .expect("failed to load session file");
                             Client::with_cookie_store(Arc::new(CookieStoreMutex::new(cookie_store)))
                         }
                         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
@@ -97,12 +97,11 @@ mod test {
                             let mut session_file = File::create(session_file_path)
                                 .expect("failed to open session file");
 
-                            client
-                                .cookie_store
-                                .lock()
-                                .expect("cookie jar poisoned")
-                                .save_json(&mut session_file)
-                                .expect("failed to save to session file");
+                            cookie_store::serde::json::save(
+                                &client.cookie_store.lock().expect("cookie jar poisoned"),
+                                &mut session_file,
+                            )
+                            .expect("failed to save to session file");
 
                             client
                         }

@@ -1,3 +1,4 @@
+[graph]
 targets = [
     { triple = "x86_64-unknown-linux-gnu" },
     { triple = "x86_64-unknown-linux-musl" },
@@ -8,22 +9,32 @@ targets = [
 ]
 
 [advisories]
-vulnerability = "deny"
-unmaintained = "deny"
-notice = "deny"
 ignore = [    
     # Blocked on removing heim
     "RUSTSEC-2020-0168",
+    
+    # Blocked on songbird removing derivative
+    "RUSTSEC-2024-0388",
+    
+    # Blocked on scraper updating selectors.
+    "RUSTSEC-2025-0057",
 ]
 
 [licenses]
-unlicensed = "deny"
-copyleft = "deny"
-allow-osi-fsf-free = "neither"
 confidence-threshold = 0.93
-default = "deny"
 private = { ignore = true }
-allow = [ "Apache-2.0", "MIT", "ISC", "Unlicense", "Zlib", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0", "Unicode-DFS-2016" ]
+allow = [
+    "Apache-2.0",
+    "MIT",
+    "ISC",
+    "Unlicense",
+    "Zlib",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "CDLA-Permissive-2.0",
+]
 exceptions = [
     { name = "ring", allow = [ "MIT", "ISC", "OpenSSL" ] },
 ]
@@ -60,36 +71,17 @@ license-files = [
 multiple-versions = "warn"
 highlight = "all"
 skip = [    
-    # Blocked on updates to cssparser
-    { name = "phf_shared", version = "0.10.0" },
-    
-    # Blocked on markup5ever updating phf_codegen
-    { name = "phf_generator", version = "0.10.0" },
-    
-    # Blocked on cssparser updating phf
-    { name = "phf", version = "0.10.0" },
-    { name = "phf_codegen", version = "0.10.0" },
-    
     # Blocked on removing heim
     { name = "nix", version = "0.23.1" },
-    { name = "memoffset", version = "0.6.5" },
     { name = "polling", version = "2.8.0" },
     { name = "futures-lite", version = "1.13.0" },
     { name = "event-listener", version = "3.1.0" },
     { name = "async-lock", version = "2.8.0" },
     { name = "async-io", version = "1.13.0" },
     { name = "async-channel", version = "1.9.0" },
-    { name = "event-listener", version = "4.0.3" },
-    { name = "event-listener-strategy", version = "0.4.0" },
     
     # Blocked on ecosystem moving to syn 2
     { name = "syn", version = "1.0.109" },
-    
-    # Blocked on tracing subscriber updating their deps
-    { name = "regex-syntax", version = "0.6.29" },
-    
-    # Blocked on ecosystem moving to idna 0.4.x
-    { name = "idna", version = "0.3.0" },
     
     # Blocked on ecosystem moving to bitflags 2
     { name = "bitflags", version = "1.3.2" },
@@ -103,9 +95,6 @@ skip = [
     # Blocked on ecosystem moving to rustix 0.38.x
     { name = "rustix", version = "0.37.23" },
     { name = "linux-raw-sys", version = "0.3.8" },
-    
-    # Blocked on matchers updating regex-automata 
-    { name = "regex-automata", version = "0.1.10" },
     
     # Blocked on ecosystem moving to indexmap 2
     { name = "indexmap", version = "1.9.3" },
@@ -121,6 +110,53 @@ skip = [
     { name = "windows_x86_64_gnu", version = "0.48.0" },
     { name = "windows-targets", version = "0.48.5" },
     { name = "windows-sys", version = "0.48.0" },
+    
+    # Blocked on serenity updating reqwest
+    { name = "webpki-roots", version = "0.25.4" },
+    { name = "tokio-rustls", version = "0.24.1" },
+    { name = "rustls-webpki", version = "0.101.7" },
+    { name = "rustls-pemfile", version = "1.0.4" },
+    { name = "rustls", version = "0.21.10" },
+    { name = "reqwest", version = "0.11.27" },
+    { name = "hyper-rustls", version = "0.24.2" },
+    { name = "hyper", version = "0.14.28" },
+    { name = "http-body", version = "0.4.6" },
+    { name = "http", version = "0.2.12" },
+    { name = "h2", version = "0.3.26" },
+    { name = "base64", version = "0.21.7" },
+    
+    
+    { name = "windows_x86_64_msvc", version = "0.52.6" },
+    { name = "windows_x86_64_gnu", version = "0.52.6" },
+    { name = "windows-targets", version = "0.52.6" },
+    { name = "windows-sys", version = "0.52.0" }, 
+    { name = "windows-sys", version = "0.59.0" },
+    { name = "webpki-roots", version = "0.26.11" },
+    { name = "tower", version = "0.4.13" },
+    { name = "tokio-rustls", version = "0.25.0" },
+    { name = "thiserror-impl", version = "1.0.69" },
+    { name = "thiserror", version = "1.0.69" },
+    { name = "sync_wrapper", version = "0.1.2" },
+    { name = "socket2", version = "0.5.10" },
+    { name = "selectors", version = "0.26.0" },
+    { name = "scraper", version = "0.22.0" },
+    { name = "rustls-webpki", version = "0.102.8" },
+    { name = "rustls", version = "0.22.4" },
+    { name = "rustix", version = "0.38.44" },
+    { name = "ordered-float", version = "2.10.1" },
+    { name = "match_token", version = "0.1.0" },
+    { name = "markup5ever", version = "0.14.1" },
+    { name = "linux-raw-sys", version = "0.4.15" },
+    { name = "html5ever", version = "0.29.1" },
+    { name = "hashbrown", version = "0.14.5" },
+    { name = "getrandom", version = "0.2.16" },
+    { name = "derive_more", version = "0.99.20" },
+    { name = "cssparser", version = "0.34.0" },
+    { name = "cookie_store", version = "0.21.1" },
+    { name = "windows-sys", version = "0.60.2" },
+    { name = "rand_core", version = "0.6.4" },
+    { name = "rand_chacha", version = "0.3.1" },
+    { name = "rand", version = "0.8.5" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs

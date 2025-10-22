@@ -151,7 +151,7 @@ impl Match {
 }
 
 /// Fixup a url for parsing
-fn fixup_url(link: &str) -> Cow<str> {
+fn fixup_url(link: &str) -> Cow<'_, str> {
     let mut link = Cow::Borrowed(link);
 
     // Fixup no protocol
