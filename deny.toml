@@ -209,4 +209,5 @@ allow-git = [
 github = [
     "adumbidiot",
     "nathaniel-daniel",
+    "ThatAnnoyingKid",
 ]

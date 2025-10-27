@@ -149,19 +149,6 @@ impl EventHandler for Handler {
         }
 
         info!("logged in as \"{}\"", ready.user.name);
-
-        /*
-        // TODO: Consider shutting down the bot. It might be possible to use old data though.
-        if let Err(error) = slash_framework
-            .register(ctx.clone(), config.test_guild)
-            .await
-            .context("failed to register slash commands")
-        {
-            error!("{error:?}");
-        }
-
-        info!("registered slash commands");
-        */
     }
 
     async fn resume(&self, _ctx: Context, _resumed: ResumedEvent) {
