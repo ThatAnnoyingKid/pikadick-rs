@@ -42,6 +42,7 @@ pub use self::{
     latency::LATENCY_COMMAND,
     leave::LEAVE_COMMAND,
     nekos::nekos,
+    ping::ping,
     quizizz::QUIZIZZ_COMMAND,
     reddit::REDDIT_COMMAND,
     reddit_embed::REDDIT_EMBED_COMMAND,

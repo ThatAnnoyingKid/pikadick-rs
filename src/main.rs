@@ -486,8 +486,6 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     /*
     // Setup slash framework
     let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
-        .command(nekos::create_slash_command()?)
-        .command(ping::create_slash_command()?)
         .command(r6stats::create_slash_command()?)
         .command(r6tracker::create_slash_command()?)
         .command(rule34::create_slash_command()?)
@@ -536,7 +534,11 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     let test_guild_id = config.test_guild;
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![self::commands::help(), self::commands::nekos()],
+            commands: vec![
+                self::commands::help(),
+                self::commands::nekos(),
+                self::commands::ping(),
+            ],
             on_error: |error| {
                 (async move {
                     error!("{error}");
