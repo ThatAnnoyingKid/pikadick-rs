@@ -361,8 +361,8 @@ async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
             shard_manager.shutdown_all().await;
         }
         Err(error) => {
-            warn!("{error}");
-            // The default "kill everything" handler is probably still installed, so this isn't a problem?
+            error!("{error}");
+            shard_manager.shutdown_all().await;
         }
     };
 }
