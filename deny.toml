@@ -153,6 +153,10 @@ skip = [
     { name = "tungstenite", version = "0.21.0" },
     { name = "dashmap", version = "5.5.3" },
     { name = "core-foundation", version = "0.9.4" },
+    { name = "strsim", version = "0.9.3" },
+    { name = "darling_macro", version = "0.10.2" },
+    { name = "darling_core", version = "0.10.2" },
+    { name = "darling", version = "0.10.2" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs

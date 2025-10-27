@@ -177,7 +177,6 @@ impl ClientData {
 
         let cache_stat_providers: &[&dyn CacheStatsProvider] = &[
             &self.fml_client,
-            &self.nekos_client,
             &self.r6stats_client,
             &self.r6tracker_client,
             &self.reddit_embed_data,

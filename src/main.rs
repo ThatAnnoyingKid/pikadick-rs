@@ -1,20 +1,20 @@
 #![deny(
     unused_import_braces,
     unused_lifetimes,
-    unreachable_pub,
     trivial_numeric_casts,
-    missing_debug_implementations,
-    missing_copy_implementations,
     deprecated_in_future,
     meta_variable_misuse,
     non_ascii_idents,
     rust_2018_compatibility,
     rust_2018_idioms,
     future_incompatible,
-    nonstandard_style,
-    clippy::all
+    nonstandard_style
 )]
-#![warn(variant_size_differences, let_underscore_drop)]
+#![warn(
+    variant_size_differences,
+    let_underscore_drop,
+    missing_debug_implementations
+)]
 // TODO: Document everything properly
 // clippy::default_trait_access
 // clippy::use_self
@@ -65,7 +65,6 @@ use anyhow::{
 use pikadick_util::AsyncLockFile;
 use serenity::{
     framework::standard::{
-        buckets::BucketBuilder,
         help_commands,
         macros::{
             group,
@@ -74,21 +73,13 @@ use serenity::{
         Args,
         CommandGroup,
         CommandResult,
-        Configuration as StandardFrameworkConfiguration,
-        DispatchError,
         HelpOptions,
-        Reason,
-        StandardFramework,
     },
-    futures::future::BoxFuture,
     gateway::{
         ActivityData,
         ShardManager,
     },
-    model::{
-        application::Interaction,
-        prelude::*,
-    },
+    model::prelude::*,
     prelude::*,
     FutureExt,
 };
@@ -114,6 +105,11 @@ const TOKIO_RT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
 
 struct Handler;
 
+#[derive(Debug)]
+pub struct PoiseData {}
+type PoiseError = Box<dyn std::error::Error + Send + Sync>;
+type PoiseContext<'a> = poise::Context<'a, PoiseData, PoiseError>;
+
 #[serenity::async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
@@ -121,10 +117,6 @@ impl EventHandler for Handler {
         let client_data = data_lock
             .get::<ClientDataKey>()
             .expect("missing client data");
-        let slash_framework = data_lock
-            .get::<SlashFrameworkKey>()
-            .expect("missing slash framework")
-            .clone();
         let config = client_data.config.clone();
         drop(data_lock);
 
@@ -158,6 +150,7 @@ impl EventHandler for Handler {
 
         info!("logged in as \"{}\"", ready.user.name);
 
+        /*
         // TODO: Consider shutting down the bot. It might be possible to use old data though.
         if let Err(error) = slash_framework
             .register(ctx.clone(), config.test_guild)
@@ -168,6 +161,7 @@ impl EventHandler for Handler {
         }
 
         info!("registered slash commands");
+        */
     }
 
     async fn resume(&self, _ctx: Context, _resumed: ResumedEvent) {
@@ -292,17 +286,6 @@ impl EventHandler for Handler {
             tiktok_data.post_page_cache.trim();
         }
     }
-
-    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        let data_lock = ctx.data.read().await;
-        let framework = data_lock
-            .get::<SlashFrameworkKey>()
-            .expect("missing slash framework")
-            .clone();
-        drop(data_lock);
-
-        framework.process_interaction_create(ctx, interaction).await;
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -384,6 +367,7 @@ async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
     };
 }
 
+/*
 #[tracing::instrument(skip(_ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
 fn before_handler<'fut>(
     _ctx: &'fut Context,
@@ -495,13 +479,13 @@ async fn process_dispatch_error_future<'fut>(
         }
     };
 }
+*/
 
 /// Set up a serenity client
 async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
+    /*
     // Setup slash framework
     let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
-        .check(self::checks::enabled::create_slash_check)
-        .help_command(create_slash_help_command()?)
         .command(nekos::create_slash_command()?)
         .command(ping::create_slash_command()?)
         .command(r6stats::create_slash_command()?)
@@ -511,11 +495,15 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
         .command(chat::create_slash_command()?)
         .command(yodaspeak::create_slash_command()?)
         .build()?;
+        */
 
+    /*
     // Create second prefix that is uppercase so we are case-insensitive
     let config_prefix = config.prefix.clone();
     let uppercase_prefix = config_prefix.to_uppercase();
+    */
 
+    /*
     // Build the standard framework
     info!("using prefix \"{config_prefix}\"");
     let framework_config = StandardFrameworkConfiguration::new()
@@ -544,6 +532,36 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
         .after(after_handler)
         .unrecognised_command(unrecognised_command_handler)
         .on_dispatch_error(process_dispatch_error);
+    */
+    let test_guild_id = config.test_guild;
+    let framework = poise::Framework::builder()
+        .options(poise::FrameworkOptions {
+            commands: vec![self::commands::help(), self::commands::nekos()],
+            on_error: |error| {
+                (async move {
+                    error!("{error}");
+                })
+                .boxed()
+            },
+            ..Default::default()
+        })
+        .setup(move |ctx, _ready, framework| {
+            Box::pin(async move {
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                if let Some(test_guild_id) = test_guild_id {
+                    poise::builtins::register_in_guild(
+                        ctx,
+                        &framework.options().commands,
+                        test_guild_id,
+                    )
+                    .await?;
+                }
+                info!("registered commands");
+
+                Ok::<PoiseData, PoiseError>(PoiseData {})
+            })
+        })
+        .build();
 
     // Build the client
     let config_token = config.token.clone();
@@ -557,14 +575,6 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     .register_songbird()
     .await
     .context("failed to create client")?;
-
-    {
-        client
-            .data
-            .write()
-            .await
-            .insert::<SlashFrameworkKey>(slash_framework);
-    }
 
     // TODO: Spawn a task for this earlier?
     // Spawn the ctrl-c handler

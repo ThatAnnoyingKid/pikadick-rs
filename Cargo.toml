@@ -78,6 +78,8 @@ zalgo = { git = "https://github.com/nathaniel-daniel/zalgo-rs", default-features
 
 # Optional
 openssl = { version = "0.10.74", optional = true, features = [ "vendored" ] }
+poise = "0.6.1"
+bewu-util = { git = "https://github.com/ThatAnnoyingKid/Bewu", version = "0.0.0", features = ["async-timed-cache-cell"] }
 
 [features]
 # Note: This is needed for cross comp
