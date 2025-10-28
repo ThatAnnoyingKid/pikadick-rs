@@ -44,6 +44,7 @@ pub use self::{
     nekos::nekos,
     ping::ping,
     quizizz::QUIZIZZ_COMMAND,
+    r6stats::r6stats,
     reddit::REDDIT_COMMAND,
     reddit_embed::REDDIT_EMBED_COMMAND,
     sauce_nao::SAUCE_NAO_COMMAND,

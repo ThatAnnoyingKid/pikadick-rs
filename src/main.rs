@@ -63,6 +63,7 @@ use anyhow::{
     Context as _,
 };
 use pikadick_util::AsyncLockFile;
+use poise::structs::FrameworkError;
 use serenity::{
     framework::standard::{
         help_commands,
@@ -473,7 +474,6 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     /*
     // Setup slash framework
     let slash_framework = pikadick_slash_framework::FrameworkBuilder::new()
-        .command(r6stats::create_slash_command()?)
         .command(r6tracker::create_slash_command()?)
         .command(rule34::create_slash_command()?)
         .command(tiktok_embed::create_slash_command()?)
@@ -525,10 +525,34 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
                 self::commands::help(),
                 self::commands::nekos(),
                 self::commands::ping(),
+                self::commands::r6stats(),
             ],
             on_error: |error| {
                 (async move {
-                    error!("{error}");
+                    match error {
+                        FrameworkError::CommandCheckFailed { ctx, .. } => {
+                            if let Err(error) = ctx.reply("Command is disabled").await {
+                                error!("{error}");
+                            }
+                        }
+                        FrameworkError::NsfwOnly { ctx, .. } => {
+                            if let Err(error) = ctx
+                                .reply("This command can only be used in nsfw channels")
+                                .await
+                            {
+                                error!("{error}");
+                            }
+                        }
+                        FrameworkError::Command { ctx, error, .. } => {
+                            warn!("{error:?}");
+                            if let Err(error) = ctx.reply(format!("{error}")).await {
+                                error!("{error}");
+                            }
+                        }
+                        _ => {
+                            error!("{error}");
+                        }
+                    }
                 })
                 .boxed()
             },

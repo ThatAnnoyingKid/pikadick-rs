@@ -1,21 +1,16 @@
 use crate::{
-    client_data::{
-        CacheStatsBuilder,
-        CacheStatsProvider,
-    },
     util::{
         TimedCache,
         TimedCacheEntry,
     },
     ClientDataKey,
+    PoiseContext,
+    PoiseError,
 };
 use anyhow::Context as _;
+use poise::reply::CreateReply;
 use r6stats::UserData;
-use serenity::builder::{
-    CreateEmbed,
-    CreateInteractionResponse,
-    CreateInteractionResponseMessage,
-};
+use serenity::builder::CreateEmbed;
 use std::sync::Arc;
 use tracing::{
     error,
@@ -59,108 +54,77 @@ impl R6StatsClient {
     }
 }
 
-impl CacheStatsProvider for R6StatsClient {
-    fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("r6stats", "search_cache", self.search_cache.len() as f32);
-    }
-}
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Get r6 stats for a user from r6stats"),
+    check = "crate::checks::enabled"
+)]
+pub async fn r6stats(
+    ctx: PoiseContext<'_>,
+    #[description = "The name of the user"] name: String,
+) -> Result<(), PoiseError> {
+    let data_lock = ctx.serenity_context().data.read().await;
+    let client_data = data_lock
+        .get::<ClientDataKey>()
+        .expect("missing client data");
+    let client = client_data.r6stats_client.clone();
+    drop(data_lock);
 
-/// Options for r6stats
-#[derive(Debug, pikadick_slash_framework::FromOptions)]
-struct R6StatsOptions {
-    /// The user name
-    name: String,
-}
+    info!("getting r6 stats for \"{name}\" using r6stats");
 
-/// Create a slash command
-pub fn create_slash_command() -> anyhow::Result<pikadick_slash_framework::Command> {
-    pikadick_slash_framework::CommandBuilder::new()
-        .name("r6stats")
-        .description("Get r6 stats for a user from r6stats")
-        .argument(
-            pikadick_slash_framework::ArgumentParamBuilder::new()
-                .name("name")
-                .description("The name of the user")
-                .kind(pikadick_slash_framework::ArgumentKind::String)
-                .required(true)
-                .build()?,
-        )
-        .on_process(|ctx, interaction, args: R6StatsOptions| async move {
-            let data_lock = ctx.data.read().await;
-            let client_data = data_lock
-                .get::<ClientDataKey>()
-                .expect("missing client data");
-            let client = client_data.r6stats_client.clone();
-            drop(data_lock);
+    ctx.defer().await?;
+    let result = client
+        .get_stats(&name)
+        .await
+        .with_context(|| format!("failed to get stats for \"{name}\" using r6stats"));
 
-            let name = args.name.as_str();
+    let mut create_reply = CreateReply::default().reply(true);
+    match result {
+        Ok(Some(entry)) => {
+            let data = entry.data();
 
-            info!("getting r6 stats for \"{name}\" using r6stats");
+            let mut embed_builder = CreateEmbed::new();
+            embed_builder = embed_builder
+                .title(&data.username)
+                .image(data.avatar_url_256.as_str());
 
-            let result = client
-                .get_stats(name)
-                .await
-                .with_context(|| format!("failed to get stats for \"{name}\" using r6stats"));
-
-            let mut message_builder = CreateInteractionResponseMessage::new();
-            match result {
-                Ok(Some(entry)) => {
-                    let data = entry.data();
-
-                    let mut embed_builder = CreateEmbed::new();
-                    embed_builder = embed_builder
-                        .title(&data.username)
-                        .image(data.avatar_url_256.as_str());
-
-                    if let Some(stats) = data.seasonal_stats.as_ref() {
-                        embed_builder =
-                            embed_builder.field("MMR", ryu::Buffer::new().format(stats.mmr), true);
-                        embed_builder = embed_builder.field(
-                            "Max MMR",
-                            ryu::Buffer::new().format(stats.max_mmr),
-                            true,
-                        );
-                        embed_builder = embed_builder.field(
-                            "Mean Skill",
-                            ryu::Buffer::new().format(stats.skill_mean),
-                            true,
-                        );
-                    }
-
-                    if let Some(kd) = data.kd() {
-                        embed_builder = embed_builder.field(
-                            "Overall Kill / Death",
-                            ryu::Buffer::new().format(kd),
-                            true,
-                        );
-                    }
-
-                    if let Some(wl) = data.wl() {
-                        embed_builder = embed_builder.field(
-                            "Overall Win / Loss",
-                            ryu::Buffer::new().format(wl),
-                            true,
-                        );
-                    }
-
-                    message_builder = message_builder.embed(embed_builder);
-                }
-                Ok(None) => message_builder = message_builder.content("No results"),
-                Err(error) => {
-                    error!("{error:?}");
-                    message_builder = message_builder.content(format!("{error:?}"));
-                }
+            if let Some(stats) = data.seasonal_stats.as_ref() {
+                embed_builder =
+                    embed_builder.field("MMR", ryu::Buffer::new().format(stats.mmr), true);
+                embed_builder =
+                    embed_builder.field("Max MMR", ryu::Buffer::new().format(stats.max_mmr), true);
+                embed_builder = embed_builder.field(
+                    "Mean Skill",
+                    ryu::Buffer::new().format(stats.skill_mean),
+                    true,
+                );
             }
-            let response_builder = CreateInteractionResponse::Message(message_builder);
 
-            interaction
-                .create_response(&ctx.http, response_builder)
-                .await?;
+            if let Some(kd) = data.kd() {
+                embed_builder = embed_builder.field(
+                    "Overall Kill / Death",
+                    ryu::Buffer::new().format(kd),
+                    true,
+                );
+            }
 
-            client.search_cache.trim();
+            if let Some(wl) = data.wl() {
+                embed_builder =
+                    embed_builder.field("Overall Win / Loss", ryu::Buffer::new().format(wl), true);
+            }
 
-            Ok(())
-        })
-        .build()
-        .context("failed to build r6stats command")
+            create_reply = create_reply.embed(embed_builder);
+        }
+        Ok(None) => create_reply = create_reply.content("No results"),
+        Err(error) => {
+            error!("{error:?}");
+            create_reply = create_reply.content(format!("{error:?}"));
+        }
+    }
+
+    poise::reply::send_reply(ctx, create_reply).await?;
+
+    client.search_cache.trim();
+
+    Ok(())
 }
