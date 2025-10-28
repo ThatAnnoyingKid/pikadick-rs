@@ -157,6 +157,7 @@ skip = [
     { name = "darling_macro", version = "0.10.2" },
     { name = "darling_core", version = "0.10.2" },
     { name = "darling", version = "0.10.2" },
+    { name = "foldhash", version = "0.1.5" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs

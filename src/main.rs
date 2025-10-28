@@ -499,8 +499,6 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
     let framework = framework
         .help(&HELP)
         .group(&GENERAL_GROUP)
-        .bucket("r6stats", BucketBuilder::new_channel().delay(7))
-        .await
         .bucket("r6tracker", BucketBuilder::new_channel().delay(7))
         .await
         .bucket("system", BucketBuilder::new_channel().delay(30))
@@ -525,7 +523,6 @@ async fn setup_client(config: Arc<Config>) -> anyhow::Result<Client> {
                 self::commands::help(),
                 self::commands::nekos(),
                 self::commands::ping(),
-                self::commands::r6stats(),
             ],
             on_error: |error| {
                 (async move {

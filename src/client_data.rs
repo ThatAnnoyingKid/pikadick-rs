@@ -6,7 +6,6 @@ use crate::{
         iqdb::IqdbClient,
         nekos::NekosClient,
         quizizz::QuizizzClient,
-        r6stats::R6StatsClient,
         r6tracker::R6TrackerClient,
         reddit_embed::RedditEmbedData,
         rule34::Rule34Client,
@@ -74,8 +73,6 @@ pub struct ClientData {
 
     /// The client for nekos
     pub nekos_client: NekosClient,
-    /// The R6Stats client
-    pub r6stats_client: R6StatsClient,
     /// The r6tracker client
     pub r6tracker_client: R6TrackerClient,
     /// The rule34 client
@@ -143,7 +140,6 @@ impl ClientData {
             shard_manager,
 
             nekos_client: Default::default(),
-            r6stats_client: Default::default(),
             r6tracker_client: Default::default(),
             rule34_client: Default::default(),
             quizizz_client: Default::default(),

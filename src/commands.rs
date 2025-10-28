@@ -12,7 +12,6 @@ pub mod leave;
 pub mod nekos;
 pub mod ping;
 pub mod quizizz;
-pub mod r6stats;
 pub mod r6tracker;
 pub mod reddit;
 pub mod reddit_embed;
@@ -44,7 +43,6 @@ pub use self::{
     nekos::nekos,
     ping::ping,
     quizizz::QUIZIZZ_COMMAND,
-    r6stats::r6stats,
     reddit::REDDIT_COMMAND,
     reddit_embed::REDDIT_EMBED_COMMAND,
     sauce_nao::SAUCE_NAO_COMMAND,

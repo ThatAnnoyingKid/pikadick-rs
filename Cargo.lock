@@ -3214,6 +3214,7 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
+ "parking_lot",
  "pikadick-slash-framework",
  "pikadick-system-info",
  "pikadick-util",
