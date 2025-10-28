@@ -10,7 +10,7 @@ use crate::{
     ClientDataKey,
 };
 use anyhow::Context as _;
-use rand::seq::SliceRandom;
+use rand::prelude::IndexedRandom;
 use serenity::builder::{
     CreateInteractionResponse,
     CreateInteractionResponseMessage,
