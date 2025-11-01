@@ -12,7 +12,7 @@ path = "src/cli/main.rs"
 
 [dependencies]
 itoa = "1.0.15"
-quick-xml = { version = "0.31.0", features = [ "serialize" ] }
+quick-xml = { version = "0.38.3", features = [ "serialize" ] }
 reqwest = { version = "0.12.23", default-features = false, features = [ "json", "brotli" ] }
 serde = { version = "1.0.219", features = [ "derive" ] }
 thiserror = "2.0.16"
