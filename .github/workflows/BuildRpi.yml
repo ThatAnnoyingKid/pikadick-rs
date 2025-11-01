@@ -34,7 +34,7 @@ jobs:
       run: make pkg-ci
       
     - name: Upload Binary
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: pikadick
         path: target/armv7-unknown-linux-gnueabihf/release/pikadick
