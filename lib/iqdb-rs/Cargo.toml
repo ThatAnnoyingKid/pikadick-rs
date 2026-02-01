@@ -12,18 +12,18 @@ required-features = [ "cli" ]
 [dependencies]
 lazy_static = "1.5.0"
 reqwest = { version = "0.12.23", default-features = false, features = [ "multipart", "stream" ] }
-scraper = { version = "0.24.0", default-features = false }
-thiserror = "2.0.16"
-tokio = { version = "1.47.1", features = [ "fs", "rt" ] }
-tokio-util = { version = "0.7.16", features = ["codec"] }
-url = "2.5.4"
+scraper = { version = "0.25.0", default-features = false }
+thiserror = "2.0.18"
+tokio = { version = "1.49.0", features = [ "fs", "rt" ] }
+tokio-util = { version = "0.7.18", features = ["codec"] }
+url = "2.5.8"
 
 # Optional
 anyhow = { version = "1.0.99", optional = true }
 argh = { version = "0.1.13", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.47.1", features = [ "macros" ] }
+tokio = { version = "1.49.0", features = [ "macros" ] }
 
 [features]
 default = [ "reqwest/default-tls" ]
