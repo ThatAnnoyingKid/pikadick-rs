@@ -11,13 +11,13 @@ path = "src/main.rs"
 required-features = [ "cli" ]
 
 [dependencies]
-scraper = { version = "0.24.0", default-features = false }
+scraper = { version = "0.25.0", default-features = false }
 thiserror = "2.0.16"
 url = "2.5.4"
 
 # Optional
-anyhow = { version = "1.0.99", optional = true }
-argh = { version = "0.1.13", optional = true }
+anyhow = { version = "1.0.102", optional = true }
+argh = { version = "0.1.14", optional = true }
 reqwest = { version = "0.12.23", default-features = false, optional = true }
 tokio = { version = "1.47.1", optional = true }
 
