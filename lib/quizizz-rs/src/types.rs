@@ -159,9 +159,6 @@ pub struct Room {
     /// Room options
     pub options: Option<RoomOptions>,
 
-    /// Versions
-    pub version: Vec<RoomVersion>,
-
     /// Whether this game is a simulation
     #[serde(rename = "simGame")]
     pub sim_game: Option<bool>,

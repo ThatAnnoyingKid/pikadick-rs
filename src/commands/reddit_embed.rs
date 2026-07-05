@@ -1,31 +1,27 @@
 use crate::{
+    ClientDataKey,
     checks::{
         ADMIN_CHECK,
         ENABLED_CHECK,
-    },
-    client_data::{
-        CacheStatsBuilder,
-        CacheStatsProvider,
     },
     util::{
         LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
-    ClientDataKey,
 };
 use anyhow::{
-    bail,
     Context as _,
+    bail,
 };
 use dashmap::DashMap;
-use rand::seq::SliceRandom;
+use rand::prelude::IndexedRandom;
 use reddit_tube::types::get_video_response::GetVideoResponseOk;
 use serenity::{
     framework::standard::{
-        macros::command,
         Args,
         CommandResult,
+        macros::command,
     },
     model::prelude::*,
     prelude::*,
@@ -244,7 +240,7 @@ impl RedditEmbedData {
                 if entry.0.elapsed() > Duration::from_secs(10 * 60) {
                     return None;
                 }
-                entry.1.choose(&mut rand::thread_rng()).cloned()
+                entry.1.choose(&mut rand::rng()).cloned()
             }) {
                 let url = self.reddit_link_to_embed_url(&link).await?;
                 return Ok(Some(url));
@@ -273,7 +269,7 @@ impl RedditEmbedData {
                 .map(|link| Arc::new(*link))
                 .collect();
 
-            let maybe_link = posts.choose(&mut rand::thread_rng()).cloned();
+            let maybe_link = posts.choose(&mut rand::rng()).cloned();
             if let Some(link) = maybe_link {
                 maybe_url = Some(self.reddit_link_to_embed_url(&link).await?);
             }
@@ -301,25 +297,6 @@ impl RedditEmbedData {
             }
             _ => Ok(link.url.clone().into()),
         }
-    }
-}
-
-impl CacheStatsProvider for RedditEmbedData {
-    fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("reddit_embed", "link_cache", self.cache.len() as f32);
-        cache_stats_builder.publish_stat(
-            "reddit_embed",
-            "video_data_cache",
-            self.video_data_cache.len() as f32,
-        );
-        cache_stats_builder.publish_stat(
-            "reddit_embed",
-            "random_post_cache",
-            self.random_post_cache
-                .iter()
-                .map(|v| v.value().1.len())
-                .sum::<usize>() as f32,
-        );
     }
 }
 

@@ -1,10 +1,10 @@
 use crate::{
+    ClientDataKey,
     checks::ENABLED_CHECK,
     database::{
-        model::TicTacToePlayer,
         TicTacToeCreateGameError,
+        model::TicTacToePlayer,
     },
-    ClientDataKey,
 };
 use serenity::{
     builder::{
@@ -13,9 +13,9 @@ use serenity::{
     },
     client::Context,
     framework::standard::{
-        macros::command,
         Args,
         CommandResult,
+        macros::command,
     },
     model::prelude::*,
 };

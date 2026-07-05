@@ -124,6 +124,8 @@ impl<'a> PostListQueryBuilder<'a> {
     /// Returns an empty list if there are no results.
     pub async fn execute(&self) -> Result<PostList, Error> {
         let url = self.get_url()?;
-        self.client.get_xml(url.as_str()).await
+        self.client
+            .ratelimited(|| async { self.client.get_xml(url.as_str()).await })
+            .await
     }
 }

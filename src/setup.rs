@@ -3,8 +3,8 @@ use crate::config::{
     Severity,
 };
 use anyhow::{
-    ensure,
     Context,
+    ensure,
 };
 use camino::Utf8Path;
 

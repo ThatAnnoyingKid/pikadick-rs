@@ -3,8 +3,8 @@ use anyhow::Context as _;
 use serenity::{
     client::Context,
     framework::standard::{
-        macros::command,
         CommandResult,
+        macros::command,
     },
     model::prelude::*,
 };

@@ -1,15 +1,15 @@
 use crate::{
+    ClientDataKey,
     checks::{
         ADMIN_CHECK,
         ENABLED_CHECK,
     },
-    ClientDataKey,
 };
 use serenity::{
     framework::standard::{
-        macros::command,
         Args,
         CommandResult,
+        macros::command,
     },
     model::prelude::*,
     prelude::*,
@@ -140,9 +140,5 @@ pub async fn list(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 }
 
 fn status_to_str(status: bool) -> &'static str {
-    if status {
-        "disabled"
-    } else {
-        "enabled"
-    }
+    if status { "disabled" } else { "enabled" }
 }

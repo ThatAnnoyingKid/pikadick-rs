@@ -2,7 +2,7 @@
 name = "rule34"
 version = "0.0.0"
 authors = [ "ProfessionalProgrammers <rusty.bois.bios.rusty@gmail.com>" ]
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [[bin]]
@@ -11,28 +11,28 @@ required-features = [ "cli" ]
 path = "src/cli/main.rs"
 
 [dependencies]
-itoa = "1.0.15"
-quick-xml = { version = "0.31.0", features = [ "serialize" ] }
-reqwest = { version = "0.12.23", default-features = false, features = [ "json", "brotli" ] }
-serde = { version = "1.0.219", features = [ "derive" ] }
-thiserror = "2.0.16"
-time = { version = "0.3.41", features = [ "serde", "parsing", "formatting", "macros" ], default-features = false }
-tokio = "1.47.1"
-url = { version = "2.5.4", features = [ "serde" ] }
-serde_json = "1.0.143"
+itoa = "1.0.18"
+quick-xml = { version = "0.41.0", features = [ "serialize" ] }
+reqwest = { version = "0.13.4", default-features = false, features = [ "json", "brotli", "http2" ] }
+serde = { version = "1.0.228", features = [ "derive" ] }
+thiserror = "2.0.18"
+time = { version = "0.3.51", features = [ "serde", "parsing", "formatting", "macros" ], default-features = false }
+tokio = "1.52.3"
+url = { version = "2.5.8", features = [ "serde" ] }
+serde_json = "1.0.150"
 
 # scrape
-once_cell = { version = "1.21.3", features = [ "std" ], default-features = false, optional = true }
-scraper = { version = "0.24.0", default-features = false, optional = true }
+once_cell = { version = "1.21.4", features = [ "std" ], default-features = false, optional = true }
+scraper = { version = "0.27.0", default-features = false, optional = true }
 
 # cli
-argh = { version = "0.1.13", optional = true }
-anyhow = { version = "1.0.99", optional = true }
+argh = { version = "0.1.19", optional = true }
+anyhow = { version = "1.0.103", optional = true }
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path" ], optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.47.1", features = [ "macros", "rt-multi-thread" ] }
-serde_path_to_error = "0.1.17"
+tokio = { version = "1.52.3", features = [ "macros", "rt-multi-thread" ] }
+serde_path_to_error = "0.1.20"
 
 [features]
 # Use reqwest's default by default.
@@ -46,7 +46,7 @@ default-tls = ["reqwest/default-tls"]
 native-tls = ["reqwest/native-tls"]
 
 # Use rustls for TLS
-rustls-tls = ["reqwest/rustls-tls"]
+rustls = ["reqwest/rustls"]
 
 # Whether to include API functions that use scraping.
 # Omitting this feature reduces the number of dependencies.

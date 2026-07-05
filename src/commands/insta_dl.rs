@@ -1,11 +1,11 @@
 use crate::{
+    ClientDataKey,
     checks::ENABLED_CHECK,
     util::LoadingReaction,
-    ClientDataKey,
 };
 use anyhow::{
-    bail,
     Context as _,
+    bail,
 };
 use bytes::Bytes;
 use insta::MediaType;
@@ -15,9 +15,9 @@ use serenity::{
         CreateMessage,
     },
     framework::standard::{
-        macros::command,
         Args,
         CommandResult,
+        macros::command,
     },
     model::prelude::*,
     prelude::*,

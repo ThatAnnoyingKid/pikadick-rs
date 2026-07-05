@@ -1,14 +1,14 @@
 use crate::{
+    ClientDataKey,
     checks::ENABLED_CHECK,
     util::AsciiTable,
-    ClientDataKey,
 };
 use anyhow::Context as _;
 use serenity::{
     framework::standard::{
-        macros::command,
         Args,
         CommandResult,
+        macros::command,
     },
     model::prelude::*,
     prelude::*,

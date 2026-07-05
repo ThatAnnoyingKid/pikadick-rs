@@ -14,13 +14,13 @@ pub use self::{
     stats::STATS_COMMAND,
 };
 use crate::{
+    ClientDataKey,
     checks::ENABLED_CHECK,
     database::{
-        model::TicTacToePlayer,
         TicTacToeTryMoveError,
         TicTacToeTryMoveResponse,
+        model::TicTacToePlayer,
     },
-    ClientDataKey,
 };
 use serenity::{
     builder::{
@@ -29,9 +29,9 @@ use serenity::{
     },
     client::Context,
     framework::standard::{
-        macros::command,
         Args,
         CommandResult,
+        macros::command,
     },
     model::{
         channel::Message,
@@ -116,7 +116,9 @@ pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> Comman
     let mut move_index = match args.trimmed().single::<u8>() {
         Ok(num) => num,
         Err(error) => {
-            let response = format!("That move is not a number: {error}\nUse `tic-tac-toe play <computer/@user> <X/O> to start a game.`");
+            let response = format!(
+                "That move is not a number: {error}\nUse `tic-tac-toe play <computer/@user> <X/O> to start a game.`"
+            );
             msg.channel_id.say(&ctx.http, response).await?;
             return Ok(());
         }

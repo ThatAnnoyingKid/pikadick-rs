@@ -1,18 +1,23 @@
 use crate::database::{
-    model::TikTokEmbedFlags,
     Database,
+    model::TikTokEmbedFlags,
 };
 use anyhow::Context;
 use rusqlite::{
-    named_params,
     OptionalExtension,
     TransactionBehavior,
+    named_params,
 };
 use serenity::model::prelude::*;
 
-// Tiktok Embed SQL
-const GET_TIKTOK_EMBED_FLAGS_SQL: &str = include_str!("../../sql/get_tiktok_embed_flags.sql");
-const SET_TIKTOK_EMBED_FLAGS_SQL: &str = include_str!("../../sql/set_tiktok_embed_flags.sql");
+const GET_TIKTOK_EMBED_FLAGS_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/get_tiktok_embed_flags.sql"
+));
+const SET_TIKTOK_EMBED_FLAGS_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/set_tiktok_embed_flags.sql"
+));
 
 impl Database {
     /// Set the flags for tiktok embeds.
@@ -25,9 +30,9 @@ impl Database {
         set_flags: TikTokEmbedFlags,
         unset_flags: TikTokEmbedFlags,
     ) -> anyhow::Result<(TikTokEmbedFlags, TikTokEmbedFlags)> {
-        self.access_db(move |db| {
-            let txn = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
-            let old_flags: TikTokEmbedFlags = txn
+        self.write(move |database| {
+            let transaction = database.transaction_with_behavior(TransactionBehavior::Immediate)?;
+            let old_flags: TikTokEmbedFlags = transaction
                 .prepare_cached(GET_TIKTOK_EMBED_FLAGS_SQL)?
                 .query_row(
                     named_params! {
@@ -42,13 +47,14 @@ impl Database {
             new_flags.insert(set_flags);
             new_flags.remove(unset_flags);
 
-            txn.prepare_cached(SET_TIKTOK_EMBED_FLAGS_SQL)?
+            transaction
+                .prepare_cached(SET_TIKTOK_EMBED_FLAGS_SQL)?
                 .execute(named_params! {
                     ":guild_id": i64::from(guild_id),
                     ":flags": new_flags,
                 })?;
 
-            txn.commit().context("failed to set tiktok embed")?;
+            transaction.commit().context("failed to set tiktok embed")?;
 
             Ok((old_flags, new_flags))
         })
@@ -60,8 +66,9 @@ impl Database {
         &self,
         guild_id: GuildId,
     ) -> anyhow::Result<TikTokEmbedFlags> {
-        self.access_db(move |db| {
-            db.prepare_cached(GET_TIKTOK_EMBED_FLAGS_SQL)?
+        self.read(move |database| {
+            database
+                .prepare_cached(GET_TIKTOK_EMBED_FLAGS_SQL)?
                 .query_row(
                     named_params! {
                         ":guild_id": i64::from(guild_id),
@@ -70,7 +77,7 @@ impl Database {
                 )
                 .optional()
                 .context("failed to read database")
-                .map(|v| v.unwrap_or_default())
+                .map(|v| v.unwrap_or_else(TikTokEmbedFlags::default))
         })
         .await?
     }

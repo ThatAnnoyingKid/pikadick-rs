@@ -1,6 +1,6 @@
 use crate::{
-    checks::ENABLED_CHECK,
     ClientDataKey,
+    checks::ENABLED_CHECK,
 };
 use serenity::{
     builder::{
@@ -9,9 +9,9 @@ use serenity::{
     },
     client::Context,
     framework::standard::{
-        macros::command,
         Args,
         CommandResult,
+        macros::command,
     },
     model::prelude::*,
 };

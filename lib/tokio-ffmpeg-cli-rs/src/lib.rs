@@ -1,13 +1,12 @@
 #![allow(clippy::uninlined_format_args)]
 
-/// Progress event
-mod progress_event;
-
 /// The command builder
 mod builder;
-
 /// Encoder info
 mod encoder;
+/// Progress event
+mod progress_event;
+mod util;
 
 pub use self::{
     builder::Builder,
@@ -20,7 +19,10 @@ pub use self::{
         ProgressEvent,
     },
 };
-use std::process::ExitStatus;
+use std::{
+    collections::HashMap,
+    process::ExitStatus,
+};
 
 /// The error type
 #[derive(Debug, thiserror::Error)]
@@ -50,7 +52,7 @@ pub enum Error {
     InvalidProgressEvent(#[from] crate::progress_event::LineBuilderError),
 
     /// An exit status was invalid
-    #[error("invalid exit status '{0}'")]
+    #[error("invalid exit status \"{0}\"")]
     InvalidExitStatus(ExitStatus),
 
     /// Failed to convert bytes to a str
@@ -60,6 +62,14 @@ pub enum Error {
     /// Invalid encoder
     #[error("failed to parse encoder line")]
     InvalidEncoderLine(#[from] EncoderFromLineError),
+
+    /// Json error
+    #[error("json error")]
+    Json(#[from] serde_json::Error),
+
+    /// Utf8 error
+    #[error("utf8 error")]
+    Utf8(#[from] std::str::Utf8Error),
 }
 
 /// An Event
@@ -96,6 +106,79 @@ pub async fn get_encoders() -> Result<Vec<Encoder>, Error> {
         .skip(1)
         .map(Encoder::from_line)
         .collect::<Result<_, _>>()?)
+}
+
+/// Result of ffprobe
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct ProbeResult {
+    /// Format info
+    pub format: Format,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+/// Format info.
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct Format {
+    /// The # of programs
+    pub nb_programs: u32,
+
+    /// The start time, as a string?
+    pub start_time: String,
+
+    /// The file name
+    pub filename: String,
+
+    /// The bit rate, as a string?
+    pub bit_rate: String,
+
+    /// The format name
+    pub format_name: String,
+
+    /// The # of streams, as a string
+    pub nb_streams: u32,
+
+    /// The long name of the format
+    pub format_long_name: String,
+
+    /// The size of the data?
+    pub size: String,
+
+    /// The video duration, in seconds.
+    #[serde(with = "crate::util::serde::from_str")]
+    pub duration: f64,
+
+    /// ?
+    pub probe_score: u32,
+
+    /// Extra k/v
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+/// ffprobe a media source.
+pub async fn probe(input: &str) -> Result<ProbeResult, Error> {
+    let output = tokio::process::Command::new("ffprobe")
+        .args(["-v", "error"])
+        .arg("-hide_banner")
+        .arg(input)
+        .args(["-of", "default=noprint_wrappers=0"])
+        .args(["-print_format", "json"])
+        .arg("-show_format")
+        // .args(["-show_entries", "stream"])
+        // .arg("-show_programs")
+        .output()
+        .await
+        .map_err(Error::Io)?;
+
+    if !output.status.success() {
+        return Err(Error::InvalidExitStatus(output.status));
+    }
+
+    let stdout = std::str::from_utf8(&output.stdout)?;
+
+    Ok(serde_json::from_str(stdout)?)
 }
 
 #[cfg(test)]
@@ -186,6 +269,13 @@ mod tests {
         let encoders = get_encoders().await.context("failed to get encoders")?;
         dbg!(encoders);
 
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn probe_m3u8() -> anyhow::Result<()> {
+        let result = probe(SAMPLE_M3U8).await?;
+        dbg!(&result);
         Ok(())
     }
 }

@@ -5,11 +5,11 @@ use std::{
 };
 use tokio::sync::oneshot;
 use tokio_stream::{
-    wrappers::ReceiverStream,
     Stream,
     StreamExt,
+    wrappers::ReceiverStream,
 };
-use tracing::info;
+use tracing::debug;
 
 /// A message for the encoder task
 enum Message {
@@ -189,7 +189,7 @@ async fn encoder_task_impl(mut rx: tokio::sync::mpsc::Receiver<Message>) {
                             if status.success() {
                                 encoders.push(encoder);
                             } else {
-                                info!("skipping \"{}\" as it failed a sanity check", encoder.name);
+                                debug!("skipping \"{}\" as it failed a sanity check", encoder.name);
                             }
                         }
 
@@ -295,8 +295,9 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
     /// Try to send the message, exiting it it is at capacity
     pub async fn try_send(
         &self,
-    ) -> anyhow::Result<impl Stream<Item = Result<tokio_ffmpeg_cli::Event, tokio_ffmpeg_cli::Error>>>
-    {
+    ) -> anyhow::Result<
+        impl Stream<Item = Result<tokio_ffmpeg_cli::Event, tokio_ffmpeg_cli::Error>> + use<>,
+    > {
         let (tx, rx) = oneshot::channel();
         self.task
             .tx

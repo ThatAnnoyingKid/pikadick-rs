@@ -2,117 +2,115 @@ mod disabled_commands;
 mod kv_store;
 pub mod model;
 mod reddit_embed;
+mod rule34;
 mod tic_tac_toe;
 mod tiktok_embed;
 
-pub use self::tic_tac_toe::{
-    TicTacToeCreateGameError,
-    TicTacToeTryMoveError,
-    TicTacToeTryMoveResponse,
+pub use self::{
+    model::{
+        JiffTimestampWrapper,
+        Rule34Post,
+        Rule34QueryStat,
+    },
+    tic_tac_toe::{
+        TicTacToeCreateGameError,
+        TicTacToeTryMoveError,
+        TicTacToeTryMoveResponse,
+    },
 };
 use anyhow::Context;
-use camino::{
-    Utf8Path,
-    Utf8PathBuf,
-};
-use once_cell::sync::Lazy;
-use std::{
-    os::raw::c_int,
-    sync::Arc,
-};
+use camino::Utf8PathBuf;
+use nd_async_rusqlite::WalPool;
+use std::num::NonZero;
 use tracing::{
+    debug,
     error,
-    warn,
 };
 
 // Setup
-const SETUP_TABLES_SQL: &str = include_str!("../sql/setup_tables.sql");
-
-static LOGGER_INIT: Lazy<Result<(), Arc<rusqlite::Error>>> = Lazy::new(|| {
-    // Safety:
-    // 1. `sqlite_logger_func` is threadsafe.
-    // 2. This is called only once.
-    // 3. This is called before any sqlite functions are used
-    // 4. sqlite functions cannot be used until the logger initializes.
-    unsafe { rusqlite::trace::config_log(Some(sqlite_logger_func)).map_err(Arc::new) }
-});
-
-fn sqlite_logger_func(error_code: c_int, msg: &str) {
-    warn!("sqlite error code ({}): {}", error_code, msg);
-}
+const SETUP_TABLES_SQL: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/sql/setup_tables.sql"));
 
 /// The database
 #[derive(Clone, Debug)]
 pub struct Database {
-    db: async_rusqlite::Database,
+    database: nd_async_rusqlite::WalPool,
 }
 
 impl Database {
     //// Make a new [`Database`].
-    ///
-    /// # Safety
-    /// This must be called before any other sqlite functions are called.
-    pub async unsafe fn new<P>(path: P, create_if_missing: bool) -> anyhow::Result<Self>
+    pub async fn new<P>(path: P) -> anyhow::Result<Self>
     where
         P: Into<Utf8PathBuf>,
     {
         let path = path.into();
-        tokio::task::spawn_blocking(move || Self::blocking_new(&path, create_if_missing))
+
+        let num_cores = std::thread::available_parallelism().unwrap_or(NonZero::new(4).unwrap());
+        let database = WalPool::builder()
+            .readers(num_cores.into())
+            .writer_setup(|database| {
+                debug!("Setting up writer");
+
+                database.execute_batch(SETUP_TABLES_SQL)?;
+                Ok(())
+            })
+            .reader_setup(|_database| {
+                debug!("Setting up reader");
+                Ok(())
+            })
+            .open(path)
             .await
-            .context("failed to join tokio task")?
+            .context("Failed to open database")?;
+
+        Ok(Self { database })
     }
 
-    /// Make a new [`Database`] in a blocking manner.
-    ///
-    /// # Safety
-    /// This must be called before any other sqlite functions are called.
-    pub unsafe fn blocking_new<P>(path: P, create_if_missing: bool) -> anyhow::Result<Self>
+    /// Read from the database.
+    async fn read<F, R>(&self, func: F) -> anyhow::Result<R>
     where
-        P: AsRef<Utf8Path>,
+        F: FnOnce(&mut rusqlite::Connection) -> R + Send + 'static,
+        R: Send + 'static,
     {
-        LOGGER_INIT
-            .clone()
-            .context("failed to init sqlite logger")?;
-
-        let db = async_rusqlite::Database::blocking_open(path.as_ref(), create_if_missing, |db| {
-            db.execute_batch(SETUP_TABLES_SQL)
-                .context("failed to setup database")?;
-            Ok(())
-        })
-        .context("failed to open database")?;
-
-        Ok(Database { db })
+        Ok(self.database.read(move |database| func(database)).await?)
     }
 
-    /// Access the db
+    /// Write to the database.
+    async fn write<F, R>(&self, func: F) -> anyhow::Result<R>
+    where
+        F: FnOnce(&mut rusqlite::Connection) -> R + Send + 'static,
+        R: Send + 'static,
+    {
+        Ok(self.database.write(move |database| func(database)).await?)
+    }
+
+    // Compat
     async fn access_db<F, R>(&self, func: F) -> anyhow::Result<R>
     where
         F: FnOnce(&mut rusqlite::Connection) -> R + Send + 'static,
         R: Send + 'static,
     {
-        Ok(self.db.access_db(move |db| func(db)).await?)
+        self.write(func).await
     }
 
-    /// Close the db
+    /// Close the database
     pub async fn close(&self) -> anyhow::Result<()> {
         // Failing to run shutdown commands is not critical and should not prevent shutdown.
-        if let Err(e) = self
-            .db
-            .access_db(|db| {
-                db.execute("PRAGMA OPTIMIZE;", [])?;
-                db.execute("VACUUM;", [])
+        if let Err(error) = self
+            .database
+            .write(|database| {
+                database.execute("PRAGMA OPTIMIZE;", [])?;
+                database.execute("VACUUM;", [])
             })
             .await
-            .context("failed to access db")
-            .and_then(|v| v.context("failed to execute shutdown commands"))
+            .context("Failed to access database")
+            .and_then(|v| v.context("Failed to execute shutdown commands"))
         {
-            error!("{}", e);
+            error!("{error:?}");
         }
-        self.db
+        self.database
             .close()
             .await
-            .context("failed to send close request to db")?;
-        self.db.join().await.context("failed to join db thread")?;
+            .context("Failed to close database")?;
 
         Ok(())
     }

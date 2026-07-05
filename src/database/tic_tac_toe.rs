@@ -1,4 +1,5 @@
 use crate::database::{
+    Database,
     model::{
         MaybeGuildString,
         TicTacToeGame,
@@ -6,14 +7,13 @@ use crate::database::{
         TicTacToeScore,
         TicTacToeTopPlayerScore,
     },
-    Database,
 };
 use anyhow::Context;
 use rusqlite::{
-    named_params,
-    params,
     OptionalExtension,
     TransactionBehavior,
+    named_params,
+    params,
 };
 use serenity::model::prelude::*;
 use tic_tac_toe::Board;

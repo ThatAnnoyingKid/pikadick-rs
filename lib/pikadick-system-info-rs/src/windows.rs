@@ -9,60 +9,49 @@ use std::{
         SystemTime,
     },
 };
-use windows_sys::Win32::{
-    Foundation::{
-        NTSTATUS,
-        STATUS_SUCCESS,
-    },
-    System::{
-        SystemInformation::{
-            ComputerNameDnsDomain,
-            ComputerNameDnsFullyQualified,
-            ComputerNameDnsHostname,
-            ComputerNameNetBIOS,
-            ComputerNamePhysicalDnsDomain,
-            ComputerNamePhysicalDnsFullyQualified,
-            ComputerNamePhysicalDnsHostname,
-            ComputerNamePhysicalNetBIOS,
-            GetComputerNameExW,
-            GetNativeSystemInfo,
-            GetTickCount64,
-            GetVersionExW,
-            GlobalMemoryStatusEx,
-            MEMORYSTATUSEX,
-            OSVERSIONINFOEXW,
-            OSVERSIONINFOW,
-            PROCESSOR_ARCHITECTURE,
-            PROCESSOR_ARCHITECTURE_AMD64,
-            PROCESSOR_ARCHITECTURE_ARM,
-            PROCESSOR_ARCHITECTURE_IA64,
-            PROCESSOR_ARCHITECTURE_INTEL,
-            PROCESSOR_ARCHITECTURE_UNKNOWN,
-            SYSTEM_INFO,
-        },
-        SystemServices::{
-            VER_NT_DOMAIN_CONTROLLER,
-            VER_NT_SERVER,
-            VER_NT_WORKSTATION,
-            VER_SUITE_WH_SERVER,
-        },
-        Threading::GetActiveProcessorCount,
-        WindowsProgramming::{
-            uaw_wcslen,
-            MAX_COMPUTERNAME_LENGTH,
+use windows_sys::{
+    Wdk::System::SystemServices::RtlGetVersion,
+    Win32::{
+        Foundation::STATUS_SUCCESS,
+        System::{
+            SystemInformation::{
+                ComputerNameDnsDomain,
+                ComputerNameDnsFullyQualified,
+                ComputerNameDnsHostname,
+                ComputerNameNetBIOS,
+                ComputerNamePhysicalDnsDomain,
+                ComputerNamePhysicalDnsFullyQualified,
+                ComputerNamePhysicalDnsHostname,
+                ComputerNamePhysicalNetBIOS,
+                GetComputerNameExW,
+                GetNativeSystemInfo,
+                GetTickCount64,
+                GetVersionExW,
+                GlobalMemoryStatusEx,
+                MEMORYSTATUSEX,
+                OSVERSIONINFOEXW,
+                PROCESSOR_ARCHITECTURE_AMD64,
+                PROCESSOR_ARCHITECTURE_ARM,
+                PROCESSOR_ARCHITECTURE_ARM64,
+                PROCESSOR_ARCHITECTURE_IA64,
+                PROCESSOR_ARCHITECTURE_INTEL,
+                PROCESSOR_ARCHITECTURE_UNKNOWN,
+                SYSTEM_INFO,
+            },
+            SystemServices::{
+                VER_NT_DOMAIN_CONTROLLER,
+                VER_NT_SERVER,
+                VER_NT_WORKSTATION,
+                VER_SUITE_WH_SERVER,
+            },
+            Threading::GetActiveProcessorCount,
+            WindowsProgramming::{
+                uaw_wcslen,
+                MAX_COMPUTERNAME_LENGTH,
+            },
         },
     },
 };
-
-// This is not in `windows_sys`.
-const PROCESSOR_ARCHITECTURE_ARM64: PROCESSOR_ARCHITECTURE = 12;
-#[allow(non_camel_case_types)]
-type PRTL_OSVERSIONINFOW = *mut OSVERSIONINFOW;
-
-#[link(name = "ntdll")]
-extern "system" {
-    fn RtlGetVersion(_lpVersionInformation: PRTL_OSVERSIONINFOW) -> NTSTATUS;
-}
 
 /// A cache for system data
 #[derive(Debug)]
@@ -187,13 +176,19 @@ impl CacheContext {
     /// Get the total amount of swap in the computer, in bytes
     pub fn get_total_swap(&self) -> Result<u64, Error> {
         let memory_info_ex = self.get_memory_status_ex()?;
-        Ok(memory_info_ex.total_page_file() - memory_info_ex.total_physical())
+        memory_info_ex
+            .total_page_file()
+            .checked_sub(memory_info_ex.total_physical())
+            .ok_or(Error::Generic("failed to calculate total swap size"))
     }
 
     /// Get the available amount of swap in the computer, in bytes
     pub fn get_available_swap(&self) -> Result<u64, Error> {
         let memory_info_ex = self.get_memory_status_ex()?;
-        Ok(memory_info_ex.available_page_file() - memory_info_ex.available_physical())
+        memory_info_ex
+            .available_page_file()
+            .checked_sub(memory_info_ex.available_physical())
+            .ok_or(Error::Generic("failed to calculate available swap size"))
     }
 
     /// Get the number of logical cpu cores.
@@ -212,7 +207,7 @@ fn get_tick_count_64() -> Duration {
 }
 
 /// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/ne-sysinfoapi-computer_name_format
-#[allow(dead_code)]
+#[expect(dead_code)]
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 enum ComputerNameFormat {
@@ -566,7 +561,7 @@ impl std::fmt::Debug for MemoryStatusEx {
             .field("total_page_file", &self.total_page_file())
             .field("available_page_file", &self.available_page_file())
             .field("total_virtual", &self.total_virtual())
-            .field("total_virtual", &self.available_virtual())
+            .field("available_virtual", &self.available_virtual())
             .finish()
     }
 }

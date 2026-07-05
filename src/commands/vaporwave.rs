@@ -1,39 +1,33 @@
-use crate::checks::ENABLED_CHECK;
-use serenity::{
-    client::Context,
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::channel::Message,
+use crate::{
+    PoiseContext,
+    PoiseError,
 };
 
-#[command]
-#[description("Vaporwave a phrase")]
-#[usage("\"<phrase>\"")]
-#[example("\"Hello World!\"")]
-#[min_args(1)]
-#[max_args(1)]
-#[checks(Enabled)]
-#[bucket("default")]
-pub async fn vaporwave(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let phrase = args.single_quoted::<String>()?;
-    msg.channel_id
-        .say(&ctx.http, vaporwave_str(&phrase))
-        .await?;
-    Ok(())
-}
-
-pub fn vaporwave_str(data: &str) -> String {
+fn vaporwave_str(data: &str) -> String {
     data.chars()
-        .filter_map(|c| {
-            let c = c as u32;
-            if (33..=270).contains(&c) {
-                std::char::from_u32(c + 65248) // unwrap or c ?
+        .map(|ch| {
+            let ch_u32 = u32::from(ch);
+            if (33..=270).contains(&ch_u32) {
+                ch_u32
+                    .checked_add(65_248)
+                    .and_then(char::from_u32)
+                    .unwrap_or(ch)
             } else {
-                Some(32 as char)
+                ' '
             }
         })
         .collect()
+}
+
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Vaporwave a phrase"),
+    check = "crate::checks::enabled"
+)]
+pub async fn vaporwave(
+    ctx: PoiseContext<'_>,
+    #[description = "The phrase to vaporwave."] phrase: String,
+) -> Result<(), PoiseError> {
+    ctx.reply(vaporwave_str(&phrase)).await?;
+    Ok(())
 }

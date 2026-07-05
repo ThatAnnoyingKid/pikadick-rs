@@ -62,7 +62,7 @@ where
             .cache
             .iter()
             .filter(|entry| entry.is_fresh(self.0.expiry_time))
-            .choose(&mut rand::thread_rng())
+            .choose(&mut rand::rng())
             .map(|v| v.value().clone())
     }
 

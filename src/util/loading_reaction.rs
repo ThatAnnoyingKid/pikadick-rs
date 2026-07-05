@@ -50,7 +50,7 @@ impl LoadingReaction {
         ret
     }
 
-    /// Send a reaction.
+    /// Send a reaction, not waiting for it to finish.
     pub fn send_reaction<T>(&self, reaction: T)
     where
         T: Into<ReactionType>,

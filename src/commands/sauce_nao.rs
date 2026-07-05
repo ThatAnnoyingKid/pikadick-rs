@@ -1,15 +1,11 @@
 use crate::{
+    ClientDataKey,
     checks::ENABLED_CHECK,
-    client_data::{
-        CacheStatsBuilder,
-        CacheStatsProvider,
-    },
     util::{
         LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
-    ClientDataKey,
 };
 use anyhow::Context as _;
 use serenity::{
@@ -18,9 +14,9 @@ use serenity::{
         CreateMessage,
     },
     framework::standard::{
-        macros::command,
         Args,
         CommandResult,
+        macros::command,
     },
     model::prelude::*,
     prelude::*,
@@ -66,20 +62,12 @@ impl SauceNaoClient {
     }
 }
 
-impl CacheStatsProvider for SauceNaoClient {
-    fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat(
-            "sauce-nao",
-            "search_cache",
-            self.search_cache.len() as f32,
-        );
-    }
-}
-
 #[command("sauce-nao")]
 #[description("Search SauceNao for an image at a url")]
 #[usage("<img_url>")]
-#[example("https://konachan.com/image/5982d8946ae503351e960f097f84cd90/Konachan.com%20-%20330136%20animal%20nobody%20original%20signed%20yutaka_kana.jpg")]
+#[example(
+    "https://konachan.com/image/5982d8946ae503351e960f097f84cd90/Konachan.com%20-%20330136%20animal%20nobody%20original%20signed%20yutaka_kana.jpg"
+)]
 #[checks(Enabled)]
 #[min_args(1)]
 #[max_args(1)]

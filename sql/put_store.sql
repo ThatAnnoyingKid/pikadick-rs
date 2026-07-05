@@ -3,7 +3,7 @@ INSERT OR REPLACE INTO kv_store (
     key_name, 
     key_value
 ) VALUES (
-    ?, 
-    ?, 
-    ?
+    :prefix, 
+    :key,
+    JSONB(:value)
 );

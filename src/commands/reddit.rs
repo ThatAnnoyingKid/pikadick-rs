@@ -1,54 +1,42 @@
 use crate::{
-    checks::ENABLED_CHECK,
-    util::LoadingReaction,
     ClientDataKey,
+    PoiseContext,
+    PoiseError,
 };
 use anyhow::Context as _;
-use serenity::{
-    client::Context,
-    framework::standard::{
-        macros::*,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-};
+use tracing::error;
 
-#[command]
-#[description("Get a random post from a subreddit")]
-#[bucket("default")]
-#[min_args(1)]
-#[max_args(1)]
-#[usage("<subreddit_name>")]
-#[example("dogpictures")]
-#[checks(Enabled)]
-async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Get a random post from a subreddit"),
+    check = "crate::checks::enabled"
+)]
+pub async fn reddit(
+    ctx: PoiseContext<'_>,
+    #[description = "The name of the subreddit"] subreddit: String,
+) -> Result<(), PoiseError> {
+    let data_lock = ctx.serenity_context().data.read().await;
     let client_data = data_lock
         .get::<ClientDataKey>()
         .expect("missing client data");
     let reddit_embed_data = client_data.reddit_embed_data.clone();
     drop(data_lock);
 
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
+    ctx.defer().await?;
 
-    let subreddit = args.single::<String>().expect("missing arg");
-    match reddit_embed_data
+    let content = match reddit_embed_data
         .get_random_post(&subreddit)
         .await
         .context("failed fetching posts")
     {
-        Ok(Some(url)) => {
-            msg.channel_id.say(&ctx.http, url).await?;
-            loading.send_ok();
+        Ok(Some(url)) => url,
+        Ok(None) => "No posts found".into(),
+        Err(error) => {
+            error!("{error:?}");
+            format!("{error:?}")
         }
-        Ok(None) => {
-            msg.channel_id.say(&ctx.http, "No posts found").await?;
-        }
-        Err(e) => {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
-        }
-    }
+    };
+    ctx.reply(content).await?;
 
     Ok(())
 }

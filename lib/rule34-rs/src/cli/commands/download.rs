@@ -89,6 +89,7 @@ pub async fn exec(client: &rule34::Client, options: Options) -> anyhow::Result<(
             nd_util::download_to_path(&client.client, post.image_url.as_str(), &out_path).await?;
         }
 
+        #[expect(clippy::collapsible_if)]
         if options.download_parent {
             if let Some(id) = post.parent_post {
                 if !downloaded.contains(&id) {

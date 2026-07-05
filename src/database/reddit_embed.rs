@@ -1,9 +1,9 @@
 use crate::database::Database;
 use anyhow::Context;
 use rusqlite::{
-    params,
     OptionalExtension,
     TransactionBehavior,
+    params,
 };
 use serenity::model::prelude::GuildId;
 

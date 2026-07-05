@@ -1,11 +1,11 @@
 use crate::checks::ENABLED_CHECK;
 use anyhow::Context as _;
 use heim::units::{
+    Frequency,
     frequency::{
         gigahertz,
         hertz,
     },
-    Frequency,
 };
 use serenity::{
     builder::{
@@ -14,9 +14,9 @@ use serenity::{
         CreateMessage,
     },
     framework::standard::{
-        macros::command,
         Args,
         CommandResult,
+        macros::command,
     },
     model::{
         colour::Colour,
@@ -29,8 +29,8 @@ use std::time::{
     Instant,
 };
 use systemstat::{
-    platform::common::Platform,
     System,
+    platform::common::Platform,
 };
 use time::format_description::well_known::Rfc2822;
 use tracing::warn;
