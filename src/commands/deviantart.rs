@@ -1,9 +1,9 @@
 use crate::{
-    ClientDataKey,
+    Config,
     Database,
-    checks::ENABLED_CHECK,
+    PoiseContext,
+    PoiseError,
     util::{
-        LoadingReaction,
         TimedCache,
         TimedCacheEntry,
     },
@@ -11,16 +11,8 @@ use crate::{
 use anyhow::Context as _;
 use deviantart::Deviation;
 use rand::seq::IteratorRandom;
-use serenity::{
-    framework::standard::{
-        Args,
-        CommandResult,
-        macros::command,
-    },
-    model::prelude::*,
-    prelude::*,
-};
 use std::{
+    io::BufReader,
     sync::Arc,
     time::Instant,
 };
@@ -33,20 +25,21 @@ const DATA_STORE_NAME: &str = "deviantart";
 const COOKIE_KEY: &str = "cookie-store";
 
 /// A caching deviantart client
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct DeviantartClient {
+    username: String,
+    password: String,
     client: deviantart::Client,
+    database: Database,
     search_cache: TimedCache<String, Vec<Deviation>>,
 }
 
 impl DeviantartClient {
     /// Make a new [`DeviantartClient`].
-    pub async fn new(db: &Database) -> anyhow::Result<Self> {
-        use std::io::BufReader;
-
+    pub async fn new(config: &Config, database: Database) -> anyhow::Result<Self> {
         let client = deviantart::Client::new();
 
-        let cookie_data: Option<Vec<u8>> = db
+        let cookie_data: Option<Vec<u8>> = database
             .store_get(DATA_STORE_NAME, COOKIE_KEY)
             .await
             .context("Failed to get cookie data")?;
@@ -63,21 +56,19 @@ impl DeviantartClient {
         }
 
         Ok(DeviantartClient {
+            username: config.deviantart.username.clone(),
+            password: config.deviantart.password.clone(),
             client,
+            database,
             search_cache: TimedCache::new(),
         })
     }
 
     /// Signs in if necessary
-    pub async fn sign_in(
-        &self,
-        db: &Database,
-        username: &str,
-        password: &str,
-    ) -> anyhow::Result<()> {
+    pub async fn sign_in(&self) -> anyhow::Result<()> {
         if !self.client.is_logged_in_online().await? {
             info!("Re-signing in");
-            self.client.login(username, password).await?;
+            self.client.login(&self.username, &self.password).await?;
 
             // Store the new cookies
             let cookie_store = self.client.cookie_store.clone();
@@ -88,10 +79,11 @@ impl DeviantartClient {
                     .expect("Cookie store is poisoned")
                     .save_json(&mut cookie_data)
                     .map_err(deviantart::WrapBoxError)?;
-                anyhow::Result::<_>::Ok(cookie_data)
+                anyhow::Ok(cookie_data)
             })
             .await??;
-            db.store_put(DATA_STORE_NAME, COOKIE_KEY, &cookie_data)
+            self.database
+                .store_put(DATA_STORE_NAME, COOKIE_KEY, &cookie_data)
                 .await?;
         }
 
@@ -101,9 +93,6 @@ impl DeviantartClient {
     /// Search for deviantart images with a cache.
     pub async fn search(
         &self,
-        db: &Database,
-        username: &str,
-        password: &str,
         query: &str,
     ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<Deviation>>>> {
         if let Some(entry) = self.search_cache.get_if_fresh(query) {
@@ -111,59 +100,40 @@ impl DeviantartClient {
         }
 
         let start = Instant::now();
-        self.sign_in(db, username, password)
+        self.sign_in()
             .await
-            .context("failed to log in to deviantart")?;
+            .context("Failed to log in to deviantart")?;
         let mut search_cursor = self.client.search(query, None);
         search_cursor
             .next_page()
             .await
-            .context("failed to search")?;
+            .context("Failed to search")?;
         let list = search_cursor
             .take_current_deviations()
-            .expect("missing page")
-            .context("failed to process results")?;
+            .expect("Missing page")
+            .context("Failed to process results")?;
         let ret = self.search_cache.insert_and_get(String::from(query), list);
 
-        info!("searched deviantart in {:?}", start.elapsed());
+        info!("Searched deviantart in {:?}", start.elapsed());
 
         Ok(ret)
     }
 }
 
-#[command]
-#[description("Get art from deviantart")]
-#[usage("<query>")]
-#[example("sun")]
-#[min_args(1)]
-#[max_args(1)]
-#[checks(Enabled)]
-#[bucket("default")]
-async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing clientdata");
-    let client = client_data.deviantart_client.clone();
-    let db = client_data.db.clone();
-    let config = client_data.config.clone();
-    drop(data_lock);
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Search for art on deviantart"),
+    check = "crate::checks::enabled"
+)]
+pub async fn deviantart(
+    ctx: PoiseContext<'_>,
+    #[description = "The deviantart search query."] query: String,
+) -> Result<(), PoiseError> {
+    ctx.defer().await?;
 
-    let query = args.trimmed().quoted().current().expect("missing query");
-
-    info!("Searching for '{}' on deviantart", query);
-
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
-
-    match client
-        .search(
-            &db,
-            &config.deviantart.username,
-            &config.deviantart.password,
-            query,
-        )
-        .await
-    {
+    info!("Searching for \"{query}\" on deviantart");
+    let result = ctx.data().deviantart_client.search(&query).await;
+    match result {
         Ok(entry) => {
             let data = entry.data();
             let choice = data
@@ -185,28 +155,24 @@ async fn deviantart(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 
             if let Some(choice) = choice {
                 if let Some(url) = choice {
-                    loading.send_ok();
-                    msg.channel_id.say(&ctx.http, url).await?;
+                    ctx.reply(url).await?;
                 } else {
-                    msg.channel_id
-                        .say(&ctx.http, "Missing url. This is probably a bug.")
-                        .await?;
-                    error!("DeviantArt deviation missing asset url: {:?}", choice);
+                    ctx.reply("Missing url. This is probably a bug.").await?;
+                    error!("DeviantArt deviation missing asset url");
                 }
             } else {
-                msg.channel_id.say(&ctx.http, "No Results").await?;
+                ctx.reply("No Results").await?;
             }
         }
-        Err(e) => {
-            msg.channel_id
-                .say(&ctx.http, format!("Failed to search '{}': {:?}", query, e))
+        Err(error) => {
+            ctx.reply(format!("Failed to search \"{query}\": {error:?}"))
                 .await?;
 
-            error!("Failed to search for {} on deviantart: {:?}", query, e);
+            error!("Failed to search for \"{query}\" on deviantart: {error:?}");
         }
     }
 
-    client.search_cache.trim();
+    ctx.data().deviantart_client.search_cache.trim();
 
     Ok(())
 }

@@ -140,7 +140,7 @@ impl EventHandler for Handler {
         let data_lock = ctx.data.read().await;
         let client_data = data_lock
             .get::<ClientDataKey>()
-            .expect("missing client data");
+            .expect("Missing client data");
         let config = client_data.config.clone();
         drop(data_lock);
 
@@ -153,7 +153,7 @@ impl EventHandler for Handler {
                     let result: Result<_, anyhow::Error> = async {
                         let activity = ActivityData::streaming(
                             status,
-                            config.status_url().context("failed to get status url")?,
+                            config.status_url().context("Failed to get status url")?,
                         )?;
 
                         ctx.set_activity(Some(activity));
@@ -162,7 +162,7 @@ impl EventHandler for Handler {
                     }
                     .await;
 
-                    if let Err(error) = result.context("failed to set activity") {
+                    if let Err(error) = result.context("Failed to set activity") {
                         error!("{error:?}");
                     }
                 }
@@ -172,11 +172,11 @@ impl EventHandler for Handler {
             }
         }
 
-        info!("logged in as \"{}\"", ready.user.name);
+        info!("Logged in as \"{}\"", ready.user.name);
     }
 
     async fn resume(&self, _ctx: Context, _resumed: ResumedEvent) {
-        warn!("resumed connection");
+        warn!("Resumed connection");
     }
 
     #[tracing::instrument(skip(self, ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
@@ -185,7 +185,7 @@ impl EventHandler for Handler {
         let data_lock = ctx.data.read().await;
         let client_data = data_lock
             .get::<ClientDataKey>()
-            .expect("missing client data");
+            .expect("Missing client data");
         let reddit_embed_data = client_data.reddit_embed_data.clone();
         let tiktok_data = client_data.tiktok_data.clone();
         let db = client_data.db.clone();
@@ -210,7 +210,7 @@ impl EventHandler for Handler {
             let reddit_embed_is_enabled_for_guild = db
                 .get_reddit_embed_enabled(guild_id)
                 .await
-                .with_context(|| format!("failed to get reddit-embed server data for {guild_id}"))
+                .with_context(|| format!("Failed to get reddit-embed server data for {guild_id}"))
                 .unwrap_or_else(|error| {
                     error!("{error:?}");
                     false
@@ -218,7 +218,7 @@ impl EventHandler for Handler {
             let tiktok_embed_flags = db
                 .get_tiktok_embed_flags(guild_id)
                 .await
-                .with_context(|| format!("failed to get tiktok-embed server data for {guild_id}"))
+                .with_context(|| format!("Failed to get tiktok-embed server data for {guild_id}"))
                 .unwrap_or_else(|error| {
                     error!("{error:?}");
                     TikTokEmbedFlags::empty()
@@ -265,7 +265,7 @@ impl EventHandler for Handler {
                             let result = reddit_embed_data
                                 .try_embed_url(&ctx, &msg, url, &mut loading_reaction)
                                 .await
-                                .context("failed to generate reddit embed");
+                                .context("Failed to generate reddit embed");
                             if let Err(error) = result {
                                 error!("{error:?}");
                             }
@@ -282,7 +282,7 @@ impl EventHandler for Handler {
                                     tiktok_embed_flags.contains(TikTokEmbedFlags::DELETE_LINK),
                                 )
                                 .await
-                                .context("failed to generate tiktok embed");
+                                .context("Failed to generate tiktok embed");
                             if let Err(error) = result {
                                 error!("{error:?}");
                             }
@@ -313,7 +313,6 @@ impl TypeMapKey for ClientDataKey {
     cmd,
     latency,
     insta_dl,
-    deviantart,
     tic_tac_toe,
     iqdb,
     leave,
@@ -325,11 +324,11 @@ struct General;
 async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
     match tokio::signal::ctrl_c()
         .await
-        .context("failed to set ctrl-c handler")
+        .context("Failed to set ctrl-c handler")
     {
         Ok(_) => {
-            info!("shutting down...");
-            info!("stopping client...");
+            info!("Shutting down...");
+            info!("Stopping client...");
             shard_manager.shutdown_all().await;
         }
         Err(error) => {
@@ -345,14 +344,15 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
 
     let framework_options = poise::FrameworkOptions {
         commands: vec![
+            self::commands::deviantart(),
             self::commands::help(),
             self::commands::nekos(),
             self::commands::ping(),
-            self::commands::tiktok_embed(),
             self::commands::quizizz(),
             self::commands::r6tracker(),
             self::commands::reddit(),
             self::commands::rule34(),
+            self::commands::tiktok_embed(),
             self::commands::urban(),
             self::commands::uwuify(),
             self::commands::vaporwave(),
@@ -432,7 +432,7 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
                         )
                         .await?;
                     }
-                    info!("registered commands");
+                    info!("Registered commands");
 
                     Ok::<PoiseData, PoiseError>(poise_data)
                 })
@@ -450,7 +450,7 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
     .framework(framework)
     .register_songbird()
     .await
-    .context("failed to create client")?;
+    .context("Failed to create client")?;
 
     // TODO: Spawn a task for this earlier?
     // Spawn the ctrl-c handler
@@ -474,18 +474,18 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
         .enable_all()
         .thread_name("pikadick-tokio-worker")
         .build()
-        .context("failed to start tokio runtime")?;
+        .context("Failed to start tokio runtime")?;
 
     let config = setup::load_config(&cli_options.config)
         .map(Arc::new)
         .context("failed to load config")?;
 
-    eprintln!("opening data directory...");
+    eprintln!("Opening data directory...");
     let data_dir_metadata = match std::fs::metadata(&config.data_dir) {
         Ok(metadata) => Some(metadata),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
         Err(e) => {
-            return Err(e).context("failed to get metadata for the data dir");
+            return Err(e).context("Failed to get metadata for the data dir");
         }
     };
 
@@ -493,34 +493,34 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
     match data_dir_metadata.as_ref() {
         Some(metadata) => {
             if metadata.is_dir() {
-                eprintln!("data directory already exists.");
+                eprintln!("Data directory already exists.");
             } else if metadata.is_file() {
-                bail!("failed to create or open data directory, the path is a file");
+                bail!("Failed to create or open data directory, the path is a file");
             }
         }
         None => {
-            eprintln!("data directory does not exist. creating...");
-            std::fs::create_dir_all(&config.data_dir).context("failed to create data directory")?;
+            eprintln!("Data directory does not exist. creating...");
+            std::fs::create_dir_all(&config.data_dir).context("Failed to create data directory")?;
         }
     }
 
-    eprintln!("creating lockfile...");
+    eprintln!("Creating lockfile...");
     let lock_file_path = config.data_dir.join("pikadick.lock");
     let lock_file = AsyncLockFile::blocking_open(lock_file_path.as_std_path())
-        .context("failed to open lockfile")?;
+        .context("Failed to open lockfile")?;
     let lock_file_locked = lock_file
         .try_lock_with_pid_blocking()
-        .context("failed to try to lock the lockfile")?;
-    ensure!(lock_file_locked, "another process has locked the lockfile");
+        .context("Failed to try to lock the lockfile")?;
+    ensure!(lock_file_locked, "Another process has locked the lockfile");
 
-    std::fs::create_dir_all(config.log_file_dir()).context("failed to create log file dir")?;
-    std::fs::create_dir_all(config.cache_dir()).context("failed to create cache dir")?;
+    std::fs::create_dir_all(config.log_file_dir()).context("Failed to create log file dir")?;
+    std::fs::create_dir_all(config.cache_dir()).context("Failed to create cache dir")?;
 
     // Everything past here is assumed to need tokio
     let _enter_guard = tokio_rt.handle().enter();
 
-    eprintln!("setting up logger...");
-    let worker_guard = logger::setup(&config).context("failed to initialize logger")?;
+    eprintln!("Setting up logger...");
+    let worker_guard = logger::setup(&config).context("Failed to initialize logger")?;
 
     eprintln!();
     Ok(SetupData {
@@ -571,7 +571,7 @@ async fn async_main(config: Arc<Config>) -> anyhow::Result<()> {
     drop(client_data);
 
     info!("Closing database...");
-    database.close().await.context("failed to close database")?;
+    database.close().await.context("Failed to close database")?;
 
     Ok(())
 }
@@ -586,21 +586,21 @@ fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
 
     let shutdown_start = Instant::now();
     info!(
-        "shutting down tokio runtime (shutdown timeout is {:?})...",
+        "Shutting down tokio runtime (shutdown timeout is {:?})...",
         TOKIO_RT_SHUTDOWN_TIMEOUT
     );
     setup_data
         .tokio_rt
         .shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
-    info!("shutdown tokio runtime in {:?}", shutdown_start.elapsed());
+    info!("Shutdown tokio runtime in {:?}", shutdown_start.elapsed());
 
-    info!("unlocking lockfile...");
+    info!("Unlocking lockfile...");
     setup_data
         .lock_file
         .blocking_unlock()
-        .context("failed to unlock lockfile")?;
+        .context("Failed to unlock lockfile")?;
 
-    info!("successful shutdown");
+    info!("Successful shutdown");
 
     // Logging no longer reliable past this point
     drop(setup_data.worker_guard);
@@ -626,7 +626,7 @@ fn main() -> anyhow::Result<()> {
     // 3. The logging callback is threadsafe.
     unsafe {
         nd_async_rusqlite::rusqlite::trace::config_log(Some(rusqlite_log_handler))
-            .context("failed to install sqlite log handler")?;
+            .context("Failed to install sqlite log handler")?;
     }
 
     let setup_data = setup(cli_options)?;

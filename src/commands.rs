@@ -26,7 +26,7 @@ pub mod zalgo;
 
 pub use self::{
     cmd::CMD_COMMAND,
-    deviantart::DEVIANTART_COMMAND,
+    deviantart::deviantart,
     help::help,
     insta_dl::INSTA_DL_COMMAND,
     iqdb::IQDB_COMMAND,

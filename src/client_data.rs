@@ -1,7 +1,6 @@
 use crate::{
     checks::EnabledCheckData,
     commands::{
-        deviantart::DeviantartClient,
         iqdb::IqdbClient,
         reddit_embed::RedditEmbedData,
         sauce_nao::SauceNaoClient,
@@ -32,8 +31,6 @@ pub struct ClientData {
     pub enabled_check_data: EnabledCheckData,
     /// The insta client data
     pub insta_client: insta::Client,
-    /// The deviantart client
-    pub deviantart_client: DeviantartClient,
     /// The tic tac toe data
     pub tic_tac_toe_data: TicTacToeData,
     /// The iqdb client
@@ -64,9 +61,6 @@ impl ClientData {
         let cache_dir = config.cache_dir();
         let encoder_task = EncoderTask::new();
 
-        let deviantart_client = DeviantartClient::new(&db)
-            .await
-            .context("failed to init deviantart client")?;
         let tiktok_data = TikTokData::new(&cache_dir, encoder_task.clone())
             .await
             .context("failed to init tiktok data")?;
@@ -77,7 +71,6 @@ impl ClientData {
             reddit_embed_data: Default::default(),
             enabled_check_data: Default::default(),
             insta_client: insta::Client::new(),
-            deviantart_client,
             tic_tac_toe_data: Default::default(),
             iqdb_client: Default::default(),
             sauce_nao_client: SauceNaoClient::new(config.sauce_nao.api_key.as_str()),
