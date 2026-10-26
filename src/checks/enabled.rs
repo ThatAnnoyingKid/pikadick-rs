@@ -1,7 +1,3 @@
-use crate::{
-    PoiseContext,
-    PoiseError,
-};
 use parking_lot::Mutex;
 use serenity::{
     client::Context,
@@ -135,9 +131,4 @@ pub async fn enabled_check(
     _opts: &CommandOptions,
 ) -> Result<(), Reason> {
     Ok(())
-}
-
-/// Check if a command is enabled
-pub async fn enabled(_ctx: PoiseContext<'_>) -> Result<bool, PoiseError> {
-    Ok(true)
 }

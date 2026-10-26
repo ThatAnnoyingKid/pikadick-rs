@@ -52,8 +52,7 @@ impl Default for IqdbClient {
 
 #[poise::command(
     slash_command,
-    description_localized("en-US", "Search IQDB for an image at a url."),
-    check = "crate::checks::enabled"
+    description_localized("en-US", "Search IQDB for an image at a url.")
 )]
 pub async fn iqdb(
     ctx: PoiseContext<'_>,

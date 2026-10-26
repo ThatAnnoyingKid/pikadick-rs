@@ -440,7 +440,6 @@ fn bool_to_str(value: bool) -> &'static str {
     slash_command,
     rename = "tiktok-embed",
     description_localized("en-US", "Configure tiktok embeds for this server"),
-    check = "crate::checks::enabled",
     default_member_permissions = "ADMINISTRATOR"
 )]
 pub async fn tiktok_embed(

@@ -128,8 +128,7 @@ impl DeviantartClient {
 
 #[poise::command(
     slash_command,
-    description_localized("en-US", "Search for art on deviantart"),
-    check = "crate::checks::enabled"
+    description_localized("en-US", "Search for art on deviantart")
 )]
 pub async fn deviantart(
     ctx: PoiseContext<'_>,

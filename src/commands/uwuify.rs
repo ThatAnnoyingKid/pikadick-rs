@@ -116,14 +116,10 @@ pub fn uwuify_str(input: &str) -> String {
     output
 }
 
-#[poise::command(
-    slash_command,
-    description_localized("en-US", "UwUify as phrase"),
-    check = "crate::checks::enabled"
-)]
+#[poise::command(slash_command, description_localized("en-US", "UwUify as phrase."))]
 pub async fn uwuify(
     ctx: PoiseContext<'_>,
-    #[description = "The phrase to uwuify"] phrase: String,
+    #[description = "The phrase to uwuify."] phrase: String,
 ) -> Result<(), PoiseError> {
     ctx.reply(uwuify_str(&phrase)).await?;
     Ok(())

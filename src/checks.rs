@@ -8,6 +8,5 @@ pub use self::{
     enabled::{
         ENABLED_CHECK,
         EnabledCheckData,
-        enabled,
     },
 };

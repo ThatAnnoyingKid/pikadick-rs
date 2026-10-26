@@ -6,8 +6,7 @@ use tracing::warn;
 
 #[poise::command(
     slash_command,
-    description_localized("en-US", "Get the bot's latency in this server."),
-    check = "crate::checks::enabled"
+    description_localized("en-US", "Get the bot's latency in this server.")
 )]
 pub async fn latency(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     ctx.defer().await?;

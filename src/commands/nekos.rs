@@ -71,11 +71,7 @@ impl Default for NekosClient {
 // TODO:
 // Consider adding https://nekos.life/api/v2/endpoints
 
-#[poise::command(
-    slash_command,
-    description_localized("en-US", "Get a random neko"),
-    check = "crate::checks::enabled"
-)]
+#[poise::command(slash_command, description_localized("en-US", "Get a random neko."))]
 pub async fn nekos(
     ctx: PoiseContext<'_>,
     #[description = "Whether this should use nsfw results. Not specifying includes both."]

@@ -209,8 +209,7 @@ impl Default for R6TrackerClient {
 
 #[poise::command(
     slash_command,
-    description_localized("en-US", "Get r6 stats for a user from r6tracker"),
-    check = "crate::checks::enabled"
+    description_localized("en-US", "Get r6 stats for a user from r6tracker.")
 )]
 pub async fn r6tracker(
     ctx: PoiseContext<'_>,

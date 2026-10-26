@@ -46,7 +46,7 @@ impl UrbanClient {
                 self.client
                     .lookup(&query)
                     .await
-                    .context("failed to search urban dictionary")
+                    .context("Failed to search urban dictionary")
                     .map(Arc::new)
                     .map_err(ArcAnyhowError::new)
             })
@@ -74,7 +74,7 @@ fn populate_embed(
         .field("👍", entry.thumbs_up.to_string(), true)
         .field("👎", thumbs_down_buf.format(entry.thumbs_down), true);
 
-    match Timestamp::parse(entry.written_on.as_str()).context("failed to parse timestamp") {
+    match Timestamp::parse(entry.written_on.as_str()).context("Failed to parse timestamp") {
         Ok(timestamp) => {
             embed_builder = embed_builder.timestamp(timestamp);
         }
@@ -88,8 +88,7 @@ fn populate_embed(
 
 #[poise::command(
     slash_command,
-    description_localized("en-US", "Get the top definition from urbandictionary.com"),
-    check = "crate::checks::enabled"
+    description_localized("en-US", "Get the top definition from https://urbandictionary.com.")
 )]
 pub async fn urban(
     ctx: PoiseContext<'_>,

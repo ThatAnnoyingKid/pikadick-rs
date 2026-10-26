@@ -4,11 +4,7 @@ use crate::{
 };
 use serenity::model::prelude::GuildId;
 
-#[poise::command(
-    slash_command,
-    description_localized("en-US", "Stop playing a song."),
-    check = "crate::checks::enabled"
-)]
+#[poise::command(slash_command, description_localized("en-US", "Stop playing a song."))]
 pub async fn stop(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     ctx.defer().await?;
 

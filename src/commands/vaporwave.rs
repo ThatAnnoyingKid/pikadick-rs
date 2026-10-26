@@ -19,11 +19,7 @@ fn vaporwave_str(data: &str) -> String {
         .collect()
 }
 
-#[poise::command(
-    slash_command,
-    description_localized("en-US", "Vaporwave a phrase"),
-    check = "crate::checks::enabled"
-)]
+#[poise::command(slash_command, description_localized("en-US", "Vaporwave a phrase."))]
 pub async fn vaporwave(
     ctx: PoiseContext<'_>,
     #[description = "The phrase to vaporwave."] phrase: String,

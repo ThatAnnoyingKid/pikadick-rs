@@ -234,8 +234,7 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
 
 #[poise::command(
     slash_command,
-    description_localized("en-US", "Locate a quizizz code"),
-    check = "crate::checks::enabled"
+    description_localized("en-US", "Locate a quizizz code.")
 )]
 pub async fn quizizz(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     ctx.defer().await?;

@@ -4,11 +4,7 @@ use crate::{
 };
 use zalgo::ZalgoBuilder;
 
-#[poise::command(
-    slash_command,
-    description_localized("en-US", "Zalgoify a phrase"),
-    check = "crate::checks::enabled"
-)]
+#[poise::command(slash_command, description_localized("en-US", "Zalgoify a phrase."))]
 pub async fn zalgo(
     ctx: PoiseContext<'_>,
     #[description = "The phrase to zalgoify."] phrase: String,

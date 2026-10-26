@@ -3,11 +3,7 @@ use crate::{
     PoiseError,
 };
 
-#[poise::command(
-    slash_command,
-    description_localized("en-US", "Respond with pong"),
-    check = "crate::checks::enabled"
-)]
+#[poise::command(slash_command, description_localized("en-US", "Respond with pong."))]
 pub async fn ping(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     ctx.reply("Pong").await?;
     Ok(())

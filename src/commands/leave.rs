@@ -9,8 +9,7 @@ use tracing::warn;
 
 #[poise::command(
     slash_command,
-    description_localized("en-US", "Leave the voice channel."),
-    check = "crate::checks::enabled"
+    description_localized("en-US", "Leave the voice channel.")
 )]
 pub async fn leave(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     ctx.defer().await?;

@@ -199,8 +199,7 @@ async fn autocomplete_query(ctx: PoiseContext<'_>, partial: &str) -> CreateAutoc
 
 #[poise::command(
     slash_command,
-    description_localized("en-US", "Look up rule34 images from rule34.xxx"),
-    check = "crate::checks::enabled"
+    description_localized("en-US", "Look up rule34 images from https://rule34.xxx.")
 )]
 pub async fn rule34(
     ctx: PoiseContext<'_>,
