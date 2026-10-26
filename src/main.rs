@@ -186,7 +186,6 @@ impl EventHandler for Handler {
         let client_data = data_lock
             .get::<ClientDataKey>()
             .expect("Missing client data");
-        let reddit_embed_data = client_data.reddit_embed_data.clone();
         let tiktok_data = client_data.tiktok_data.clone();
         let db = client_data.db.clone();
         drop(data_lock);
@@ -206,15 +205,6 @@ impl EventHandler for Handler {
                 return;
             }
 
-            // Get enabled data for embeds
-            let reddit_embed_is_enabled_for_guild = db
-                .get_reddit_embed_enabled(guild_id)
-                .await
-                .with_context(|| format!("Failed to get reddit-embed server data for {guild_id}"))
-                .unwrap_or_else(|error| {
-                    error!("{error:?}");
-                    false
-                });
             let tiktok_embed_flags = db
                 .get_tiktok_embed_flags(guild_id)
                 .await
@@ -235,16 +225,12 @@ impl EventHandler for Handler {
                     None => return false,
                 };
 
-                let reddit_url =
-                    matches!(url_host, url::Host::Domain("www.reddit.com" | "reddit.com"));
-
                 let tiktok_url = matches!(
                     url_host,
                     url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")
                 );
 
-                (reddit_url && reddit_embed_is_enabled_for_guild)
-                    || (tiktok_url && tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED))
+                tiktok_url && tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED)
             });
 
             // Return if we won't try embedding
@@ -255,22 +241,14 @@ impl EventHandler for Handler {
             let mut loading_reaction = Some(LoadingReaction::new(ctx.http.clone(), &msg));
 
             // Embed for each url
-            // NOTE: we short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem,
+            // NOTE: We short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem,
             // especially since serenity retries each req once
             for url in urls.iter() {
+                #[expect(
+                    clippy::single_match,
+                    reason = "Allow for adding other host processing."
+                )]
                 match url.host() {
-                    Some(url::Host::Domain("www.reddit.com" | "reddit.com")) => {
-                        // Don't process if it isn't enabled
-                        if reddit_embed_is_enabled_for_guild {
-                            let result = reddit_embed_data
-                                .try_embed_url(&ctx, &msg, url, &mut loading_reaction)
-                                .await
-                                .context("Failed to generate reddit embed");
-                            if let Err(error) = result {
-                                error!("{error:?}");
-                            }
-                        }
-                    }
                     Some(url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")) => {
                         if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
                             let result = tiktok_data
@@ -291,10 +269,6 @@ impl EventHandler for Handler {
                     _ => {}
                 }
             }
-
-            // Trim caches
-            reddit_embed_data.cache.trim();
-            reddit_embed_data.video_data_cache.trim();
         }
     }
 }
@@ -307,7 +281,7 @@ impl TypeMapKey for ClientDataKey {
 }
 
 #[group]
-#[commands(system, reddit_embed, cmd, latency, insta_dl, tic_tac_toe, leave, stop)]
+#[commands(system, cmd, latency, insta_dl, tic_tac_toe, leave, stop)]
 struct General;
 
 async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {

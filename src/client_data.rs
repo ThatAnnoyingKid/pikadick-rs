@@ -1,7 +1,6 @@
 use crate::{
     checks::EnabledCheckData,
     commands::{
-        reddit_embed::RedditEmbedData,
         tic_tac_toe::TicTacToeData,
         tiktok_embed::TikTokData,
     },
@@ -23,8 +22,6 @@ pub struct ClientData {
     /// The discord shard_manager
     pub shard_manager: Arc<ShardManager>,
 
-    /// The reddit embed data
-    pub reddit_embed_data: RedditEmbedData,
     /// The enabled check data
     pub enabled_check_data: EnabledCheckData,
     /// The insta client data
@@ -60,7 +57,6 @@ impl ClientData {
         Ok(ClientData {
             shard_manager,
 
-            reddit_embed_data: Default::default(),
             enabled_check_data: Default::default(),
             insta_client: insta::Client::new(),
             tic_tac_toe_data: Default::default(),

@@ -8,7 +8,6 @@ pub mod nekos;
 pub mod ping;
 pub mod quizizz;
 pub mod r6tracker;
-pub mod reddit_embed;
 pub mod rule34;
 pub mod sauce_nao;
 pub mod stop;
@@ -33,7 +32,6 @@ pub use self::{
     ping::ping,
     quizizz::quizizz,
     r6tracker::r6tracker,
-    reddit_embed::REDDIT_EMBED_COMMAND,
     rule34::rule34,
     sauce_nao::sauce_nao,
     stop::STOP_COMMAND,
