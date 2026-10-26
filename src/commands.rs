@@ -22,7 +22,7 @@ pub mod zalgo;
 pub use self::{
     deviantart::deviantart,
     iqdb::iqdb,
-    latency::LATENCY_COMMAND,
+    latency::latency,
     leave::leave,
     nekos::nekos,
     ping::ping,

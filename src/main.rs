@@ -280,7 +280,7 @@ impl TypeMapKey for ClientDataKey {
 }
 
 #[group]
-#[commands(system, latency, tic_tac_toe)]
+#[commands(system, tic_tac_toe)]
 struct General;
 
 async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
@@ -308,6 +308,7 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
         commands: vec![
             self::commands::deviantart(),
             self::commands::iqdb(),
+            self::commands::latency(),
             self::commands::leave(),
             self::commands::nekos(),
             self::commands::ping(),
