@@ -56,7 +56,7 @@ fn post_id_to_html_post_url(id: NonZeroU64) -> Url {
     // It shouldn't be possible to make this function fail for any valid id.
     Url::parse_with_params(
         crate::URL_INDEX,
-        &[
+        [
             ("id", itoa::Buffer::new().format(id.get())),
             ("page", "post"),
             ("s", "view"),
@@ -79,8 +79,8 @@ mod test {
     impl Config {
         fn load() -> Self {
             let raw =
-                std::fs::read_to_string("./config.json").expect("failed to read \"config.json\"");
-            let config: Config = serde_json::from_str(&raw).expect("failed to parse config");
+                std::fs::read_to_string("./config.json").expect("Failed to read \"config.json\"");
+            let config: Config = serde_json::from_str(&raw).expect("Failed to parse config");
 
             config
         }

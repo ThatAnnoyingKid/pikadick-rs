@@ -25,7 +25,7 @@ iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls"
 itoa = "1.0.18"
 jiff = "0.2.29"
 mimalloc = "0.1.52"
-nd-async-rusqlite = { git = "https://github.com/nathaniel-daniel/nd-async-rusqlite-rs", version = "0.0.0", features = [ "bundled", "trace", "wal-pool", "fallible_uint" ] }
+nd-async-rusqlite = { version = "0.1.0", features = [ "bundled", "trace", "wal-pool", "fallible_uint" ] }
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path", "drop-remove-path", "arc-anyhow-error" ] }
 nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls" ] }
 parking_lot = "0.12.5"
@@ -42,7 +42,7 @@ reqwest = { version = "0.13.4", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls" ] }
 rusqlite = { version = "0.40.1", features = [ "blob" ] }
 ryu = "1.0.23"
-sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-features = false, features = [ "rustls-tls" ] }
+sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-features = false, features = [ "rustls" ] }
 serde = { version = "1.0.228", features = [ "derive" ] }
 serenity = { version = "0.12.5", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
 songbird = { version = "0.6.0", features = [ "backend-mousiki" ] }

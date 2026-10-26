@@ -42,7 +42,7 @@ impl<'a> NotesListQueryBuilder<'a> {
     pub fn get_url(&self) -> Result<Url, Error> {
         let mut url = Url::parse_with_params(
             crate::API_BASE_URL,
-            &[("page", "dapi"), ("s", "note"), ("q", "index")],
+            [("page", "dapi"), ("s", "note"), ("q", "index")],
         )?;
 
         {

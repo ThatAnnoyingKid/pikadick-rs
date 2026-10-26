@@ -23,7 +23,7 @@ impl Client {
     pub async fn lookup(&self, term: &str) -> Result<DefinitionList, Error> {
         let url = Url::parse_with_params(
             "https://api.urbandictionary.com/v0/define",
-            &[("term", term)],
+            [("term", term)],
         )?;
         Ok(self
             .client

@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 #![deny(
     unused_import_braces,
     unused_lifetimes,

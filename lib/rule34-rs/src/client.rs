@@ -93,7 +93,7 @@ impl Client {
             .default_headers(default_headers)
             .connect_timeout(Duration::from_secs(10))
             .build()
-            .expect("failed to build rule34 client");
+            .expect("Failed to build rule34 client");
 
         Client {
             client,
@@ -267,7 +267,7 @@ impl Client {
     ) -> Result<DeletedImageList, Error> {
         let mut url = Url::parse_with_params(
             crate::API_BASE_URL,
-            &[
+            [
                 ("page", "dapi"),
                 ("s", "post"),
                 ("q", "index"),
@@ -311,7 +311,7 @@ impl Client {
     /// Autocomplete a tag.
     pub async fn autocomplete(&self, query: &str) -> Result<Vec<AutocompleteResult>, Error> {
         let url =
-            Url::parse_with_params("https://api.rule34.xxx/autocomplete.php", &[("q", query)])?;
+            Url::parse_with_params("https://api.rule34.xxx/autocomplete.php", [("q", query)])?;
         let response = self
             .client
             .get(url.as_str())
