@@ -19,6 +19,7 @@ use std::{
 use tracing::{
     error,
     info,
+    warn,
 };
 
 const DATA_STORE_NAME: &str = "deviantart";
@@ -46,9 +47,14 @@ impl DeviantartClient {
 
         match cookie_data {
             Some(cookie_data) => {
-                client
+                // Ignore cookies if they fail to parse.
+                if let Err(error) = client
                     .load_json_cookies(BufReader::new(std::io::Cursor::new(cookie_data)))
-                    .await?;
+                    .await
+                    .context("Failed to load JSON cookies")
+                {
+                    warn!("{error:?}");
+                }
             }
             None => {
                 info!("Could not load cookie data");
