@@ -85,7 +85,6 @@ use std::{
         Instant,
     },
 };
-use tokio::runtime::Builder as RuntimeBuilder;
 use tracing::{
     error,
     info,
@@ -233,7 +232,7 @@ impl EventHandler for Handler {
                 tiktok_url && tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED)
             });
 
-            // Return if we won't try embedding
+            // Return if we won't try embedding.
             if !will_try_embedding {
                 return;
             }
@@ -434,16 +433,15 @@ struct SetupData {
 
 /// Pre-main setup
 fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
-    eprintln!("starting tokio runtime...");
-    let tokio_rt = RuntimeBuilder::new_multi_thread()
+    eprintln!("Starting tokio runtime...");
+    let tokio_rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
-        .thread_name("pikadick-tokio-worker")
         .build()
         .context("Failed to start tokio runtime")?;
 
     let config = setup::load_config(&cli_options.config)
         .map(Arc::new)
-        .context("failed to load config")?;
+        .context("Failed to load config")?;
 
     eprintln!("Opening data directory...");
     let data_dir_metadata = match std::fs::metadata(&config.data_dir) {
@@ -545,19 +543,17 @@ async fn async_main(config: Arc<Config>) -> anyhow::Result<()> {
 fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
     // We spawn this is a seperate thread/task as the main thread does not have enough stack space
     let _enter_guard = setup_data.tokio_rt.enter();
-    let ret = setup_data
+    let result = setup_data
         .tokio_rt
         .block_on(tokio::spawn(async_main(setup_data.config)));
 
     let shutdown_start = Instant::now();
-    info!(
-        "Shutting down tokio runtime (shutdown timeout is {:?})...",
-        TOKIO_RT_SHUTDOWN_TIMEOUT
-    );
+    info!("Shutting down tokio runtime (shutdown timeout is {TOKIO_RT_SHUTDOWN_TIMEOUT:?})...");
     setup_data
         .tokio_rt
         .shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
-    info!("Shutdown tokio runtime in {:?}", shutdown_start.elapsed());
+    let elapsed = shutdown_start.elapsed();
+    info!("Shutdown tokio runtime in {:?}", elapsed);
 
     info!("Unlocking lockfile...");
     setup_data
@@ -570,7 +566,7 @@ fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
     // Logging no longer reliable past this point
     drop(setup_data.worker_guard);
 
-    ret?
+    result?
 }
 
 /// The main entry.
