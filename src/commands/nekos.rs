@@ -41,7 +41,7 @@ impl NekosClient {
                 self.client
                     .get_random(nsfw, NUM_IMAGES)
                     .await
-                    .context("failed to get nekos")
+                    .context("Failed to get nekos")
                     .map(|image_list| {
                         image_list
                             .images
@@ -55,7 +55,7 @@ impl NekosClient {
 
         let url = urls
             .choose(&mut rand::rng())
-            .context("no urls found")?
+            .context("No urls found")?
             .clone();
 
         Ok(url)

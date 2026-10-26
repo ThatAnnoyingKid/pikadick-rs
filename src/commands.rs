@@ -32,7 +32,6 @@ pub use self::{
     r6tracker::r6tracker,
     rule34::rule34,
     sauce_nao::sauce_nao,
-    stop::STOP_COMMAND,
     system::SYSTEM_COMMAND,
     tic_tac_toe::TIC_TAC_TOE_COMMAND,
     tiktok_embed::tiktok_embed,
@@ -42,4 +41,5 @@ pub use self::{
     xkcd::xkcd,
     yodaspeak::yodaspeak,
     zalgo::zalgo,
+    stop::stop,
 };
