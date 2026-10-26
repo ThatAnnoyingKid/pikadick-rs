@@ -1,5 +1,4 @@
 use crate::{
-    ClientDataKey,
     PoiseContext,
     PoiseError,
 };
@@ -20,7 +19,6 @@ use std::{
     collections::HashMap,
     sync::Arc,
 };
-use tracing::error;
 
 type MutexGuard<'a, T> = parking_lot::lock_api::MutexGuard<'a, parking_lot::RawMutex, T>;
 
@@ -131,74 +129,15 @@ fn checks_are_same(check1: &Check, check2: &Check) -> bool {
 #[check]
 #[name("Enabled")]
 pub async fn enabled_check(
-    ctx: &Context,
-    msg: &Message,
+    _ctx: &Context,
+    _msg: &Message,
     _args: &mut Args,
-    opts: &CommandOptions,
+    _opts: &CommandOptions,
 ) -> Result<(), Reason> {
-    let guild_id = match msg.guild_id {
-        Some(id) => id,
-        None => {
-            // Let's not care about dms for now.
-            // They'll probably need special handling anyways.
-            // This will also probably only be useful in Group DMs,
-            // which I don't think bots can participate in anyways.
-            return Ok(());
-        }
-    };
-
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let enabled_check_data = client_data.enabled_check_data.clone();
-    let db = client_data.db.clone();
-    drop(data_lock);
-
-    let command_name = match enabled_check_data.get_command_name_from_options(opts) {
-        Some(name) => name,
-        None => {
-            // The name is not present.
-            // This is fine, as that just means we haven't added it to the translation map
-            // aka it is not disable-able
-            return Ok(());
-        }
-    };
-
-    match db.is_command_disabled(guild_id, &command_name).await {
-        Ok(true) => Err(Reason::User("Command Disabled".to_string())),
-        Ok(false) => Ok(()),
-        Err(e) => {
-            error!("failed to read disabled commands: {}", e);
-            // DB failure, return false to be safe.
-            // Avoid being specific with error to prevent users from spamming knowingly.
-            Err(Reason::Unknown)
-        }
-    }
+    Ok(())
 }
 
 /// Check if a command is enabled
-pub async fn enabled(ctx: PoiseContext<'_>) -> Result<bool, PoiseError> {
-    let guild_id = match ctx.guild_id() {
-        Some(id) => id,
-        None => {
-            // Let's not care about dms for now.
-            // They'll probably need special handling anyways.
-            // This will also probably only be useful in Group DMs,
-            // which I don't think bots can participate in anyways.
-            return Ok(true);
-        }
-    };
-
-    let data_lock = ctx.serenity_context().data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let db = client_data.db.clone();
-    drop(data_lock);
-
-    let command_name = &ctx.command().name;
-
-    let command_disabled = db.is_command_disabled(guild_id, command_name).await?;
-    Ok(!command_disabled)
+pub async fn enabled(_ctx: PoiseContext<'_>) -> Result<bool, PoiseError> {
+    Ok(true)
 }

@@ -1,4 +1,3 @@
-mod disabled_commands;
 mod kv_store;
 pub mod model;
 mod reddit_embed;

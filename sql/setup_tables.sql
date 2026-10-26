@@ -10,14 +10,6 @@ CREATE TABLE IF NOT EXISTS kv_store (
     PRIMARY KEY (key_prefix, key_name)
 ) STRICT;
 
-CREATE TABLE IF NOT EXISTS disabled_commands (
-    guild_id INTEGER NOT NULL CHECK(TYPEOF(guild_id) = 'integer'),
-    name TEXT NOT NULL CHECK(TYPEOF(name) = 'text'),
-    disabled INTEGER NOT NULL CHECK(TYPEOF(disabled) = 'integer' AND disabled IN (0, 1)),
-    PRIMARY KEY (guild_id, name),
-    UNIQUE (guild_id, name)
-);
-
 CREATE TABLE IF NOT EXISTS reddit_embed_guild_settings (
     guild_id INTEGER NOT NULL PRIMARY KEY UNIQUE,
     enabled INTEGER NOT NULL CHECK(enabled IN (0, 1))
