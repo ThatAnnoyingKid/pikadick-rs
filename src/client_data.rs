@@ -52,7 +52,7 @@ impl ClientData {
 
         let tiktok_data = TikTokData::new(&cache_dir, encoder_task.clone())
             .await
-            .context("failed to init tiktok data")?;
+            .context("Failed to init tiktok data")?;
 
         Ok(ClientData {
             shard_manager,

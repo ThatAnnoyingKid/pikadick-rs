@@ -281,7 +281,7 @@ impl TypeMapKey for ClientDataKey {
 }
 
 #[group]
-#[commands(system, cmd, latency, insta_dl, tic_tac_toe, leave, stop)]
+#[commands(system, cmd, latency, tic_tac_toe, leave, stop)]
 struct General;
 
 async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
