@@ -47,6 +47,7 @@ impl SauceNaoClient {
 
 #[poise::command(
     slash_command,
+    rename = "sauce-nao",
     description_localized("en-US", "Search SauceNao for an image at a url."),
     check = "crate::checks::enabled"
 )]

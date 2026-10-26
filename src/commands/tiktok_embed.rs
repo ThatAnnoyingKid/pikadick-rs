@@ -76,17 +76,17 @@ struct UrlData {
 
 /// Parse a tiktok url.
 fn parse_tiktok_url(url: &Url) -> anyhow::Result<UrlData> {
-    let host_str = url.host_str().context("missing host")?;
+    let host_str = url.host_str().context("Missing host")?;
     ensure!(host_str == "www.tiktok.com" || host_str == "tiktok.com");
 
-    let mut path_segments = url.path_segments().context("missing path")?;
-    let _user = path_segments.next().context("missing user")?;
+    let mut path_segments = url.path_segments().context("Missing path")?;
+    let _user = path_segments.next().context("Missing user")?;
     ensure!(path_segments.next() == Some("video"));
     let id = path_segments
         .next()
-        .context("missing id")?
+        .context("Missing id")?
         .parse()
-        .context("failed to parse id")?;
+        .context("Failed to parse id")?;
 
     Ok(UrlData { id })
 }
@@ -95,11 +95,11 @@ async fn select_best_encoder(encoder_task: &EncoderTask) -> anyhow::Result<&'sta
     let mut encoders = encoder_task
         .get_encoders(true)
         .await
-        .context("failed to get encoders")?;
+        .context("Failed to get encoders")?;
 
     // Keep only h264 encoders
     encoders.retain(|encoder| encoder.description.ends_with("(codec h264)"));
-    debug!("found h264 encoders: {encoders:#?}");
+    debug!("Found h264 encoders: {encoders:#?}");
 
     let mut best_encoder_index = None;
     for encoder in encoders {
@@ -115,7 +115,7 @@ async fn select_best_encoder(encoder_task: &EncoderTask) -> anyhow::Result<&'sta
         }
     }
 
-    let best_encoder_index = best_encoder_index.context("failed to select an encoder")?;
+    let best_encoder_index = best_encoder_index.context("Failed to select an encoder")?;
     let best_encoder = ENCODER_PREFERENCE_LIST[best_encoder_index];
 
     Ok(best_encoder)
@@ -157,10 +157,10 @@ impl TikTokData {
         // TODO: Expand into proper filecache manager
         tokio::fs::create_dir_all(&video_download_cache_path)
             .await
-            .context("failed to create tiktok cache dir")?;
+            .context("Failed to create tiktok cache dir")?;
 
         let best_encoder = select_best_encoder(&encoder_task).await?;
-        info!("selected encoder \"{best_encoder}\"");
+        info!("Selected encoder \"{best_encoder}\"");
 
         Ok(Self {
             inner: Arc::new(InnerTikTokData {
@@ -189,7 +189,7 @@ impl TikTokData {
 
         if tokio::fs::try_exists(&reencoded_file_path)
             .await
-            .context("failed to get metadata of re-encoded file")?
+            .context("Failed to get metadata of re-encoded file")?
         {
             // The reencoded file is present. Use it.
             return Ok(reencoded_file_path);
@@ -201,14 +201,14 @@ impl TikTokData {
             Ok(Some(metadata)) => metadata,
             Ok(None) => {
                 // File not present. Download it.
-                info!("downloading tiktok video {id:?} from tikwm");
+                info!("Downloading tiktok video {id:?} from tikwm");
 
                 let create_download_response = self
                     .inner
                     .tikwm_client
                     .create_download_task(itoa::Buffer::new().format(id))
                     .await
-                    .context("failed to create video download")?;
+                    .context("Failed to create video download")?;
                 ensure!(create_download_response.id == id);
 
                 let download_task_result = self
@@ -216,10 +216,10 @@ impl TikTokData {
                     .tikwm_client
                     .get_task_result(&create_download_response.task_id)
                     .await
-                    .context("failed to create video download")?;
+                    .context("Failed to create video download")?;
 
                 info!(
-                    "downloading tikwm from {:?}",
+                    "Downloading tikwm from {:?}",
                     download_task_result.download_url.as_str()
                 );
                 ensure!(
@@ -238,10 +238,10 @@ impl TikTokData {
                 .await?;
                 tokio::fs::metadata(&file_path)
                     .await
-                    .context("failed to get file metadata")?
+                    .context("Failed to get file metadata")?
             }
             Err(e) => {
-                return Err(e).context("failed to get metadata of file");
+                return Err(e).context("Failed to get metadata of file");
             }
         };
 
@@ -252,7 +252,7 @@ impl TikTokData {
 
         let ffprobe_result = tokio_ffmpeg_cli::probe(file_path.as_str())
             .await
-            .context("failed to ffprobe")?;
+            .context("Failed to ffprobe")?;
         let video_duration = Duration::from_secs_f64(ffprobe_result.format.duration);
 
         // We target half of the maximum size to give ourselves some lee-way.
@@ -263,7 +263,7 @@ impl TikTokData {
             DropRemovePath::new(reencoded_file_path.with_extension("1.tmp"));
 
         info!(
-            "re-encoding tiktok video {:?} to {:?} @ video bitrate {}",
+            "Re-encoding tiktok video {:?} to {:?} @ video bitrate {}",
             file_path,
             reencoded_file_path_tmp_1.display(),
             target_bitrate
@@ -282,11 +282,11 @@ impl TikTokData {
                 .output_format("mp4")
                 .try_send()
                 .await
-                .context("failed to start re-encoding")?;
+                .context("Failed to start re-encoding")?;
 
             let mut maybe_exit_status = None;
             while let Some(msg) = stream.next().await {
-                match msg.context("ffmpeg stream error") {
+                match msg.context("FFMpeg stream error") {
                     Ok(tokio_ffmpeg_cli::Event::ExitStatus(exit_status)) => {
                         maybe_exit_status = Some(exit_status);
                     }
@@ -303,10 +303,10 @@ impl TikTokData {
                 }
             }
 
-            let exit_status = maybe_exit_status.context("stream did not report an exit status")?;
+            let exit_status = maybe_exit_status.context("Stream did not report an exit status")?;
 
             // Validate exit status
-            ensure!(exit_status.success(), "invalid exit status");
+            ensure!(exit_status.success(), "Invalid exit status");
         }
 
         // The RPI's ffmpeg produces invalid mp4 files.
@@ -347,10 +347,10 @@ impl TikTokData {
                 }
             }
 
-            let exit_status = maybe_exit_status.context("stream did not report an exit status")?;
+            let exit_status = maybe_exit_status.context("Stream did not report an exit status")?;
 
             // Validate exit status
-            ensure!(exit_status.success(), "invalid exit status");
+            ensure!(exit_status.success(), "Invalid exit status");
         }
 
         let mut reencoded_file_path_tmp = reencoded_file_path_tmp_2;
@@ -358,17 +358,17 @@ impl TikTokData {
         // Validate file size
         let metadata = tokio::fs::metadata(&reencoded_file_path_tmp)
             .await
-            .context("failed to get metadata of encoded file")?;
+            .context("Failed to get metadata of encoded file")?;
         let metadata_len = metadata.len();
         ensure!(
             metadata_len < FILE_SIZE_LIMIT_BYTES,
-            "re-encoded file size ({metadata_len}) is larger than the limit {FILE_SIZE_LIMIT_BYTES}",
+            "Re-encoded file size ({metadata_len}) is larger than the limit {FILE_SIZE_LIMIT_BYTES}",
         );
 
         // Rename the tmp file to be the actual name.
         tokio::fs::rename(&*reencoded_file_path_tmp, &reencoded_file_path)
             .await
-            .context("failed to rename temp file")?;
+            .context("Failed to rename temp file")?;
 
         // "Persist" the tmp file, as in don't try to remove it
         reencoded_file_path_tmp.persist();
@@ -409,7 +409,7 @@ impl TikTokData {
         let video_path = self
             .get_video_data_cached(url_data.id)
             .await
-            .context("failed to download tiktok video")?;
+            .context("Failed to download tiktok video")?;
 
         let file = CreateAttachment::path(video_path.as_std_path()).await?;
         let message_builder = CreateMessage::new().add_file(file);
@@ -423,7 +423,7 @@ impl TikTokData {
             if delete_link {
                 msg.delete(&ctx.http)
                     .await
-                    .context("failed to delete original message")?;
+                    .context("Failed to delete original message")?;
             }
         }
 

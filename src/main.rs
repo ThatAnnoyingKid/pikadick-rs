@@ -308,17 +308,7 @@ impl TypeMapKey for ClientDataKey {
 }
 
 #[group]
-#[commands(
-    system,
-    reddit_embed,
-    cmd,
-    latency,
-    insta_dl,
-    tic_tac_toe,
-    iqdb,
-    leave,
-    stop
-)]
+#[commands(system, reddit_embed, cmd, latency, insta_dl, tic_tac_toe, leave, stop)]
 struct General;
 
 async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
@@ -351,6 +341,7 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
             self::commands::r6tracker(),
             self::commands::reddit(),
             self::commands::rule34(),
+            self::commands::sauce_nao(),
             self::commands::tiktok_embed(),
             self::commands::urban(),
             self::commands::uwuify(),
