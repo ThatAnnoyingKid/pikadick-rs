@@ -5121,7 +5121,7 @@ dependencies = [
 [[package]]
 name = "sauce-nao"
 version = "0.0.0"
-source = "git+https://github.com/adumbidiot/sauce-nao-rs#4c158e501169d614447788b5c50293b4e00fe2de"
+source = "git+https://github.com/adumbidiot/sauce-nao-rs#89c41b5721d5d09b92818a49a675f42ee0913903"
 dependencies = [
  "itoa",
  "reqwest 0.13.5",
@@ -5642,8 +5642,8 @@ dependencies = [
 
 [[package]]
 name = "songbird"
-version = "0.6.0"
-source = "git+https://github.com/adumbidiot/songbird?branch=opus2-backends#da9de6a34f319aa0d8d2518bc65b9447a640e784"
+version = "0.6.1"
+source = "git+https://github.com/adumbidiot/songbird?branch=opus2-backends#1e0a06dd5c9c992303e675436234c200a0ef0104"
 dependencies = [
  "aead",
  "aes-gcm",

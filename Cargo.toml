@@ -8,22 +8,22 @@ description = "Yet another Discord bot"
 authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 
 [dependencies]
-anyhow = "1.0.103"
+anyhow = "1.0.104"
 argh = "0.1.19"
 bewu-util = { git = "https://github.com/ThatAnnoyingKid/Bewu", version = "0.0.0", features = [ "async-timed-cache-cell", "async-timed-lru-cache", "async-mutex-map" ] }
-bitflags = "2.13.0"
-bytes = "1.12.0"
-camino = { version = "1.2.4", features = [ "serde1" ] }
-crossbeam = "0.8.4"
+bitflags = "2.13.2"
+bytes = "1.12.1"
+camino = { version = "1.2.6", features = [ "serde1" ] }
+crossbeam = "0.8.5"
 dashmap = "6.2.1"
 deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
-futures = { version = "0.3.32", features = [ "std" ], default-features = false }
+futures = { version = "0.3.34", features = [ "std" ], default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
-indexmap = "2.14.0"
+indexmap = "2.14.2"
 insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls" ] }
 itoa = "1.0.18"
-jiff = "0.2.29"
+jiff = "0.2.38"
 mimalloc = "0.1.52"
 nd-async-rusqlite = { version = "0.1.0", features = [ "bundled", "trace", "wal-pool", "fallible_uint" ] }
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path", "drop-remove-path", "arc-anyhow-error" ] }
@@ -34,28 +34,28 @@ pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "async_lock_file
 pikadick-system-info = { path = "./lib/pikadick-system-info-rs" }
 quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "rustls" ] }
 r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = [ "rustls" ] }
-rand = "0.10.1"
+rand = "0.10.3"
 reddit = { git = "https://github.com/nathaniel-daniel/reddit-rs", features = [ "rustls-tls" ], default-features = false }
 reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls" ] }
-regex = "1.12.4"
-reqwest = { version = "0.13.4", default-features = false }
+regex = "1.13.1"
+reqwest = { version = "0.13.5", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls" ] }
-rusqlite = { version = "0.40.1", features = [ "blob" ] }
+rusqlite = { version = "0.40.2", features = [ "blob" ] }
 ryu = "1.0.23"
 sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-features = false, features = [ "rustls" ] }
-serde = { version = "1.0.228", features = [ "derive" ] }
+serde = { version = "1.0.229", features = [ "derive" ] }
 serenity = { version = "0.12.5", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
-songbird = { version = "0.6.0", features = [ "backend-mousiki" ] }
+songbird = { version = "0.6.1", features = [ "backend-mousiki" ] }
 systemstat = "0.2.7"
-thiserror = "2.0.18"
+thiserror = "2.0.21"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
 tikwm = { git = "https://github.com/adumbidiot/tiktok-rs", default-features = false, features = [ "rustls" ] }
-time = "0.3.51"
+time = "0.3.55"
 tiny-skia = { version = "0.12.0", features = [ "std", "simd", "png-format" ], default-features = false }
-tokio = { version = "1.52.3", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tokio = { version = "1.54.1", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
-tokio-stream = "0.1.18"
-toml = "1.1.2"
+tokio-stream = "0.1.19"
+toml = "1.1.8"
 tracing = "0.1.44"
 tracing-appender = "0.2.5"
 tracing-log = "0.2.0"
@@ -69,7 +69,7 @@ zalgo = { git = "https://github.com/nathaniel-daniel/zalgo-rs", default-features
 
 # Optional
 openssl = { version = "0.10.81", optional = true, features = [ "vendored" ] }
-serde_json = "1.0.150"
+serde_json = "1.0.154"
 skrifa = "0.44.0"
 
 [features]

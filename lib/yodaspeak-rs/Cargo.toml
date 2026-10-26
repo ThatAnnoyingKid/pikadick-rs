@@ -5,13 +5,13 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-reqwest = { version = "0.13.4", features = [ "http2" ], default-features = false }
+reqwest = { version = "0.13.5", features = [ "http2" ], default-features = false }
 scraper = { version = "0.27.0", default-features = false}
-thiserror = "2.0.18"
-tokio = { version = "1.52.3", features = [ "rt" ] }
+thiserror = "2.0.21"
+tokio = { version = "1.54.1", features = [ "rt" ] }
 
 [dev-dependencies]
-tokio = { version = "1.52.3", features = [ "macros" ] }
+tokio = { version = "1.54.1", features = [ "macros" ] }
 
 [features]
 default = [ "rustls", "system-proxy" ]
