@@ -16,9 +16,6 @@ ignore = [
     # Blocked on songbird removing derivative
     "RUSTSEC-2024-0388",
     
-    # Blocked on serenity moving to reqwests 0.13
-    "RUSTSEC-2025-0134",
-    
     # Blocked on serenity
     "RUSTSEC-2026-0104",
     "RUSTSEC-2026-0099",
@@ -27,6 +24,30 @@ ignore = [
     
     # Blocked on songbird
     "RUSTSEC-2024-0384",
+    
+    # Blocked on serenity 13.
+    # Serenity devs claim this can be ignored.
+    # Joy.
+    "RUSTSEC-2026-0382",
+    
+    # Blocked on serenity 13.
+    # Joy.
+    "RUSTSEC-2026-0349",
+    "RUSTSEC-2026-0346",
+    
+    # Blocked on songbird updating ringbuf.
+    # Joy.
+    "RUSTSEC-2026-0293",
+    
+    # Blocked on davey updating openmls_rust_crypto.
+    # Joy.
+    "RUSTSEC-2026-0207",
+    "RUSTSEC-2026-0208",
+    "RUSTSEC-2026-0212",
+    
+    # Blocked on davey updating p256.
+    # Joy.
+    "RUSTSEC-2026-0387",
 ]
 
 [licenses]
@@ -40,7 +61,7 @@ allow = [
     "ISC",
     "MIT",
     "MPL-2.0",
-    "OpenSSL",
+    # "OpenSSL",
     "Unicode-3.0",
     "Unlicense",
     "Zlib",
@@ -117,19 +138,6 @@ skip = [
     { name = "windows-targets", version = "0.48.5" },
     { name = "windows-sys", version = "0.48.0" },
     
-    # Blocked on serenity updating reqwest
-    { name = "webpki-roots", version = "0.25.4" },
-    { name = "tokio-rustls", version = "0.24.1" },
-    { name = "rustls-webpki", version = "0.101.7" },
-    { name = "rustls", version = "0.21.10" },
-    { name = "reqwest", version = "0.11.27" },
-    { name = "hyper-rustls", version = "0.24.2" },
-    { name = "hyper", version = "0.14.28" },
-    { name = "http-body", version = "0.4.6" },
-    { name = "http", version = "0.2.12" },
-    { name = "h2", version = "0.3.26" },
-    { name = "base64", version = "0.21.7" },
-    
     
     { name = "windows_x86_64_msvc", version = "0.52.6" },
     { name = "windows_x86_64_gnu", version = "0.52.6" },
@@ -140,7 +148,6 @@ skip = [
     { name = "tokio-rustls", version = "0.25.0" },
     { name = "thiserror-impl", version = "1.0.69" },
     { name = "thiserror", version = "1.0.69" },
-    { name = "sync_wrapper", version = "0.1.2" },
     { name = "socket2", version = "0.5.10" },
     { name = "rustls-webpki", version = "0.102.8" },
     { name = "rustls", version = "0.22.4" },
@@ -168,6 +175,12 @@ skip = [
     { name = "chacha20", version = "0.9.1" },
     { name = "parking_lot_core", version = "0.8.6" },
     { name = "parking_lot", version = "0.11.2" },
+    { name = "syn", version = "2.0.119" },
+    { name = "parking_lot_core", version = "0.9.12" },
+    { name = "parking_lot", version = "0.12.5" },
+    { name = "miniz_oxide", version = "0.8.9" },
+    { name = "lock_api", version = "0.4.14" },
+    { name = "base64", version = "0.22.1" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
