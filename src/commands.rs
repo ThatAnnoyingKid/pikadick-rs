@@ -1,4 +1,3 @@
-pub mod cmd;
 pub mod deviantart;
 pub mod iqdb;
 pub mod latency;
@@ -21,7 +20,6 @@ pub mod yodaspeak;
 pub mod zalgo;
 
 pub use self::{
-    cmd::CMD_COMMAND,
     deviantart::deviantart,
     iqdb::iqdb,
     latency::LATENCY_COMMAND,
