@@ -1,6 +1,5 @@
 #![recursion_limit = "256"]
 #![deny(
-    unused_import_braces,
     unused_lifetimes,
     trivial_numeric_casts,
     deprecated_in_future,
@@ -14,12 +13,12 @@
 #![warn(
     variant_size_differences,
     let_underscore_drop,
-    missing_debug_implementations
+    missing_debug_implementations,
+    clippy::undocumented_unsafe_blocks
 )]
 // TODO: Document everything properly
 // clippy::default_trait_access
 // clippy::use_self
-// clippy::undocumented_unsafe_blocks
 // clippy::allow_attributes_without_reason
 // clippy::as_underscore
 // clippy::cast_possible_truncation
@@ -335,6 +334,7 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
     let framework_options = poise::FrameworkOptions {
         commands: vec![
             self::commands::deviantart(),
+            self::commands::iqdb(),
             self::commands::nekos(),
             self::commands::ping(),
             self::commands::quizizz(),

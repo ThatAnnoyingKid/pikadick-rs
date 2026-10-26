@@ -1,9 +1,7 @@
 use crate::{
     checks::EnabledCheckData,
     commands::{
-        iqdb::IqdbClient,
         reddit_embed::RedditEmbedData,
-        sauce_nao::SauceNaoClient,
         tic_tac_toe::TicTacToeData,
         tiktok_embed::TikTokData,
     },
@@ -33,10 +31,6 @@ pub struct ClientData {
     pub insta_client: insta::Client,
     /// The tic tac toe data
     pub tic_tac_toe_data: TicTacToeData,
-    /// The iqdb client
-    pub iqdb_client: IqdbClient,
-    /// The sauce nao client
-    pub sauce_nao_client: SauceNaoClient,
     /// TikTokData
     pub tiktok_data: TikTokData,
     /// Encoder Task
@@ -56,8 +50,6 @@ impl ClientData {
         config: Arc<Config>,
         db: Database,
     ) -> anyhow::Result<Self> {
-        // TODO: Standardize an async init system with allocated data per command somehow. Maybe boxes?
-
         let cache_dir = config.cache_dir();
         let encoder_task = EncoderTask::new();
 
@@ -72,8 +64,6 @@ impl ClientData {
             enabled_check_data: Default::default(),
             insta_client: insta::Client::new(),
             tic_tac_toe_data: Default::default(),
-            iqdb_client: Default::default(),
-            sauce_nao_client: SauceNaoClient::new(config.sauce_nao.api_key.as_str()),
             tiktok_data,
             encoder_task,
 

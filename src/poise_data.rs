@@ -3,6 +3,7 @@ use crate::{
     Database,
     commands::{
         deviantart::DeviantartClient,
+        iqdb::IqdbClient,
         nekos::NekosClient,
         quizizz::QuizizzClient,
         r6tracker::R6TrackerClient,
@@ -17,6 +18,7 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct PoiseData {
     pub deviantart_client: DeviantartClient,
+    pub iqdb_client: IqdbClient,
     pub nekos_client: NekosClient,
     pub quizizz_client: QuizizzClient,
     pub r6tracker_client: R6TrackerClient,
@@ -38,6 +40,7 @@ impl PoiseData {
 
         Ok(Self {
             deviantart_client,
+            iqdb_client: IqdbClient::new(),
             nekos_client: NekosClient::new(),
             quizizz_client: QuizizzClient::new(),
             r6tracker_client: R6TrackerClient::new(),

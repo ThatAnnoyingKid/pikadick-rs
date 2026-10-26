@@ -76,6 +76,10 @@ openssl = { version = "0.10.81", optional = true, features = [ "vendored" ] }
 # Note: This is needed for cross comp
 use-openssl-vendored = [ "openssl" ]
 
+[lints.rust]
+# Warn
+unused_import_braces = "warn"
+
 [lints.clippy]
 # Deny
 exit = "deny"

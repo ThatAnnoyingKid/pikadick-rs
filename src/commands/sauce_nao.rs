@@ -15,18 +15,17 @@ use tracing::error;
 
 const FIVE_MINUTES: Duration = Duration::from_secs(60 * 5);
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct SauceNaoClient {
     client: sauce_nao::Client,
-    search_cache:
-        Arc<AsyncTimedLruCache<String, Result<Arc<sauce_nao::OkResponse>, ArcAnyhowError>>>,
+    search_cache: AsyncTimedLruCache<String, Result<Arc<sauce_nao::OkResponse>, ArcAnyhowError>>,
 }
 
 impl SauceNaoClient {
     pub fn new(api_key: &str) -> Self {
         Self {
             client: sauce_nao::Client::new(api_key),
-            search_cache: AsyncTimedLruCache::new(100, FIVE_MINUTES).into(),
+            search_cache: AsyncTimedLruCache::new(100, FIVE_MINUTES),
         }
     }
 

@@ -27,6 +27,7 @@ pub use self::{
     cmd::CMD_COMMAND,
     deviantart::deviantart,
     insta_dl::INSTA_DL_COMMAND,
+    iqdb::iqdb,
     latency::LATENCY_COMMAND,
     leave::LEAVE_COMMAND,
     nekos::nekos,
