@@ -197,7 +197,7 @@ pub async fn enabled(ctx: PoiseContext<'_>) -> Result<bool, PoiseError> {
     let db = client_data.db.clone();
     drop(data_lock);
 
-    let command_name = ctx.command().name.as_str();
+    let command_name = &ctx.command().name;
 
     let command_disabled = db.is_command_disabled(guild_id, command_name).await?;
     Ok(!command_disabled)

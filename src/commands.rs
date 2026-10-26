@@ -1,6 +1,5 @@
 pub mod cmd;
 pub mod deviantart;
-pub mod help;
 pub mod insta_dl;
 pub mod iqdb;
 pub mod latency;
@@ -27,7 +26,6 @@ pub mod zalgo;
 pub use self::{
     cmd::CMD_COMMAND,
     deviantart::deviantart,
-    help::help,
     insta_dl::INSTA_DL_COMMAND,
     iqdb::IQDB_COMMAND,
     latency::LATENCY_COMMAND,

@@ -346,7 +346,6 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
     let framework_options = poise::FrameworkOptions {
         commands: vec![
             self::commands::deviantart(),
-            self::commands::help(),
             self::commands::nekos(),
             self::commands::ping(),
             self::commands::quizizz(),

@@ -14,6 +14,7 @@ use poise::{
     CreateReply,
     serenity_prelude::{
         Color,
+        CreateAutocompleteResponse,
         CreateEmbed,
         CreateEmbedAuthor,
         CreateEmbedFooter,
@@ -161,7 +162,7 @@ impl Rule34Client {
     }
 }
 
-async fn autocomplete_query(ctx: PoiseContext<'_>, partial: &str) -> Vec<String> {
+async fn autocomplete_query(ctx: PoiseContext<'_>, partial: &str) -> CreateAutocompleteResponse {
     // TODO: Use a full rule34 tag parser here.
     let (head, partial_tag) = partial
         .rsplit_once(' ')
@@ -177,7 +178,7 @@ async fn autocomplete_query(ctx: PoiseContext<'_>, partial: &str) -> Vec<String>
         Ok(tags) => tags,
         Err(error) => {
             warn!("{error:?}");
-            return Vec::new();
+            return CreateAutocompleteResponse::new();
         }
     };
 
@@ -190,10 +191,10 @@ async fn autocomplete_query(ctx: PoiseContext<'_>, partial: &str) -> Vec<String>
         }
         query.push_str(tag);
 
-        queries.push(query);
+        queries.push(query.into());
     }
 
-    queries
+    CreateAutocompleteResponse::new().set_choices(queries)
 }
 
 #[poise::command(
