@@ -317,8 +317,7 @@ impl TypeMapKey for ClientDataKey {
     tic_tac_toe,
     iqdb,
     leave,
-    stop,
-    sauce_nao
+    stop
 )]
 struct General;
 

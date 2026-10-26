@@ -37,7 +37,6 @@ pub use self::{
     reddit::reddit,
     reddit_embed::REDDIT_EMBED_COMMAND,
     rule34::rule34,
-    sauce_nao::SAUCE_NAO_COMMAND,
     stop::STOP_COMMAND,
     system::SYSTEM_COMMAND,
     tic_tac_toe::TIC_TAC_TOE_COMMAND,

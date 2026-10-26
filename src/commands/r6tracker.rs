@@ -194,7 +194,7 @@ impl R6TrackerClient {
                         Err(error) if error.is_missing() => Ok(None),
                         Err(error) => Err(r6tracker::Error::from(error)),
                     })
-                    .context("failed to get profile data")
+                    .context("Failed to get profile data")
                     .map_err(ArcAnyhowError::new)
             })
             .await
@@ -224,7 +224,7 @@ pub async fn r6tracker(
         .r6tracker_client
         .get_stats(&name)
         .await
-        .with_context(|| format!("failed to get r6tracker stats for \"{name}\""));
+        .with_context(|| format!("Failed to get r6tracker stats for \"{name}\""));
     let mut create_reply = CreateReply::default();
     match result.as_ref() {
         Ok(Some(stats)) => {
