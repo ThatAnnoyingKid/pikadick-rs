@@ -339,7 +339,6 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
             self::commands::ping(),
             self::commands::quizizz(),
             self::commands::r6tracker(),
-            self::commands::reddit(),
             self::commands::rule34(),
             self::commands::sauce_nao(),
             self::commands::tiktok_embed(),
