@@ -21,6 +21,7 @@ use serenity::{
 use std::time::{
     Duration,
     Instant,
+    SystemTime,
 };
 use systemstat::{
     System,
@@ -49,6 +50,27 @@ async fn get_cpu_usage() -> Result<f32, heim::Error> {
     Ok((end - start).get::<heim::units::ratio::percent>())
 }
 
+fn format_boot_time(value: SystemTime) -> anyhow::Result<String> {
+    let timestamp = jiff::Timestamp::try_from(value).context("Failed to make timestamp")?;
+    Ok(timestamp.strftime("%e %b %Y, %I:%M:%S %p UTC").to_string())
+}
+
+fn format_uptime(value: Duration) -> anyhow::Result<String> {
+    let printer = jiff::fmt::friendly::SpanPrinter::new()
+        .spacing(jiff::fmt::friendly::Spacing::BetweenUnitsAndDesignators)
+        .designator(jiff::fmt::friendly::Designator::Verbose);
+
+    let now = jiff::Timestamp::now().to_zoned(jiff::tz::TimeZone::UTC);
+    let span = jiff::Span::try_from(value).context("Failed to create span")?;
+    let round_options = jiff::SpanRound::new()
+        .smallest(jiff::Unit::Second)
+        .largest(jiff::Unit::Year)
+        .relative(&now);
+    let span_rounded = span.round(round_options).context("Failed to round")?;
+
+    Ok(printer.span_to_string(&span_rounded))
+}
+
 #[derive(Debug)]
 struct SystemStats {
     hostname: Option<String>,
@@ -56,6 +78,7 @@ struct SystemStats {
     system_version: Option<String>,
     architecture: Option<&'static str>,
     boot_time: Option<String>,
+    uptime: Option<String>,
 }
 
 impl SystemStats {
@@ -113,10 +136,21 @@ impl SystemStats {
         let boot_time = match cache_context
             .get_boot_time()
             .context("Failed to get boot time")
-            .and_then(|value| jiff::Timestamp::try_from(value).context("Failed to make timestamp"))
-            .map(|boot_time| boot_time.strftime("%e %b %Y, %I:%M:%S %p UTC").to_string())
+            .and_then(format_boot_time)
         {
             Ok(boot_time) => Some(boot_time),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let uptime = match cache_context
+            .get_uptime()
+            .context("Failed to get uptime")
+            .and_then(format_uptime)
+        {
+            Ok(uptime) => Some(uptime),
             Err(error) => {
                 warn!("{error:?}");
                 None
@@ -129,6 +163,7 @@ impl SystemStats {
             system_version,
             architecture,
             boot_time,
+            uptime,
         }
     }
 
@@ -139,6 +174,7 @@ impl SystemStats {
             ("OS Version", self.system_version.as_deref()),
             ("Architecture", self.architecture),
             ("Boot Time", self.boot_time.as_deref()),
+            ("Uptime", self.uptime.as_deref()),
         ];
 
         for (key, value) in fields {
@@ -172,14 +208,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 
     // End Legacy data gathering
     let cache_context = pikadick_system_info::CacheContext::new();
-
-    let uptime = match cache_context.get_uptime().context("Failed to get uptime") {
-        Ok(uptime) => Some(uptime),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
 
     let total_memory = match cache_context
         .get_total_memory()
@@ -283,56 +311,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         create_embed = create_embed.thumbnail(icon);
     }
     create_embed = system_stats.populate_embed(create_embed);
-
-    if let Some(uptime) = uptime {
-        let raw_secs = uptime.as_secs();
-
-        let days = raw_secs / (60 * 60 * 24);
-        let hours = (raw_secs % (60 * 60 * 24)) / (60 * 60);
-        let minutes = (raw_secs % (60 * 60)) / 60;
-        let seconds = raw_secs % 60;
-
-        let mut value = String::with_capacity(64);
-        if days != 0 {
-            value.push_str(itoa::Buffer::new().format(days));
-            value.push_str(" day");
-            if days > 1 {
-                value.push('s');
-            }
-        }
-
-        if hours != 0 {
-            value.push(' ');
-
-            value.push_str(itoa::Buffer::new().format(hours));
-            value.push_str(" hour");
-            if hours > 1 {
-                value.push('s');
-            }
-        }
-
-        if minutes != 0 {
-            value.push(' ');
-
-            value.push_str(itoa::Buffer::new().format(minutes));
-            value.push_str(" minute");
-            if minutes > 1 {
-                value.push('s');
-            }
-        }
-
-        if seconds != 0 {
-            value.push(' ');
-
-            value.push_str(itoa::Buffer::new().format(seconds));
-            value.push_str(" second");
-            if seconds > 1 {
-                value.push('s');
-            }
-        }
-
-        create_embed = create_embed.field("Uptime", value, true);
-    }
 
     // Currently reports incorrectly on Windows
     if let Some(cpu_frequency) = cpu_frequency {
