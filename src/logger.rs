@@ -18,15 +18,18 @@ use tracing_subscriber::{
 
 const LOG_PREFIX: &str = "log";
 const LOG_SUFFIX: &str = "txt";
+// TODO: This should probably be smaller.
+const MAX_LOG_FILES: usize = 100;
 
 /// Try to setup a logger.
 ///
 /// Must be called from a tokio runtime.
 pub fn setup(config: &Config) -> anyhow::Result<WorkerGuard> {
     let file_writer = RollingFileAppender::builder()
-        .rotation(Rotation::HOURLY)
         .filename_prefix(LOG_PREFIX)
         .filename_suffix(LOG_SUFFIX)
+        .max_log_files(MAX_LOG_FILES)
+        .rotation(Rotation::DAILY)
         .build(config.log_file_dir())?;
     let (nonblocking_file_writer, guard) = tracing_appender::non_blocking(file_writer);
 
