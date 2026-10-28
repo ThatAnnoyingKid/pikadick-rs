@@ -50,29 +50,10 @@ async fn get_cpu_usage() -> Result<f32, heim::Error> {
     Ok((end - start).get::<heim::units::ratio::percent>())
 }
 
-/*
-#[command]
-#[description("Get System Stats")]
-#[bucket("system")]
-#[checks(Enabled)]
-async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-
-
-
-
-
-
-    let message_builder = CreateMessage::new().embed(create_embed);
-    msg.channel_id
-        .send_message(&ctx.http, message_builder)
-        .await?;
-
-    Ok(())
-}
-*/
-
 #[poise::command(slash_command, description_localized("en-US", "Get system stats."))]
 pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    ctx.defer().await?;
+
     let start = Instant::now();
 
     let profile_avatar_url = ctx.cache().current_user().avatar_url();

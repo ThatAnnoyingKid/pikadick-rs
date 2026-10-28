@@ -1,9 +1,12 @@
 use super::Error;
 use bitflags::bitflags;
+use core::ffi::c_void;
 use once_cell::sync::OnceCell;
 use platforms::Arch;
 use std::{
+    any::Any,
     fmt::Write,
+    mem::MaybeUninit,
     time::{
         Duration,
         SystemTime,
@@ -12,8 +15,18 @@ use std::{
 use windows_sys::{
     Wdk::System::SystemServices::RtlGetVersion,
     Win32::{
-        Foundation::STATUS_SUCCESS,
+        Foundation::{
+            FALSE,
+            STATUS_SUCCESS,
+            TRUE,
+        },
         System::{
+            ProcessStatus::{
+                ENUM_PAGE_FILE_INFORMATION,
+                EnumPageFilesW,
+                GetPerformanceInfo,
+                PERFORMANCE_INFORMATION,
+            },
             SystemInformation::{
                 ComputerNameDnsDomain,
                 ComputerNameDnsFullyQualified,
@@ -51,6 +64,7 @@ use windows_sys::{
             },
         },
     },
+    core::BOOL,
 };
 
 /// A wrapper for `GetTickCount64`.
@@ -82,7 +96,7 @@ fn get_computer_name(computer_name_format: ComputerNameFormat) -> Result<String,
     const MAX_COMPUTERNAME_LENGTH_USIZE: usize = MAX_COMPUTERNAME_LENGTH as usize;
 
     let buffer: &mut [std::mem::MaybeUninit<u16>] =
-        &mut [std::mem::MaybeUninit::uninit(); MAX_COMPUTERNAME_LENGTH_USIZE];
+        &mut [MaybeUninit::uninit(); MAX_COMPUTERNAME_LENGTH_USIZE];
     let mut size = MAX_COMPUTERNAME_LENGTH;
 
     let code = unsafe {
@@ -162,7 +176,7 @@ unsafe impl Send for SystemInfo {}
 ///
 /// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getnativesysteminfo
 fn get_system_info() -> SystemInfo {
-    let mut raw_system_info = std::mem::MaybeUninit::uninit();
+    let mut raw_system_info = MaybeUninit::uninit();
     unsafe {
         GetNativeSystemInfo(raw_system_info.as_mut_ptr());
         SystemInfo(raw_system_info.assume_init())
@@ -328,9 +342,8 @@ bitflags! {
 fn get_version_ex() -> Result<OsVersionInfoEx, Error> {
     const OS_VERSION_INFO_SIZE: u32 = std::mem::size_of::<OSVERSIONINFOEXW>() as u32;
 
-    let mut os_version_info: std::mem::MaybeUninit<OSVERSIONINFOEXW> = unsafe {
-        let mut os_version_info: std::mem::MaybeUninit<OSVERSIONINFOEXW> =
-            std::mem::MaybeUninit::zeroed();
+    let mut os_version_info: MaybeUninit<OSVERSIONINFOEXW> = unsafe {
+        let mut os_version_info: MaybeUninit<OSVERSIONINFOEXW> = MaybeUninit::zeroed();
         std::ptr::addr_of_mut!((*os_version_info.as_mut_ptr()).dwOSVersionInfoSize)
             .write(OS_VERSION_INFO_SIZE);
         os_version_info
@@ -352,9 +365,8 @@ fn get_version_ex() -> Result<OsVersionInfoEx, Error> {
 fn rtl_get_version() -> OsVersionInfoEx {
     const OS_VERSION_INFO_SIZE: u32 = std::mem::size_of::<OSVERSIONINFOEXW>() as u32;
 
-    let mut os_version_info: std::mem::MaybeUninit<OSVERSIONINFOEXW> = unsafe {
-        let mut os_version_info: std::mem::MaybeUninit<OSVERSIONINFOEXW> =
-            std::mem::MaybeUninit::zeroed();
+    let mut os_version_info: MaybeUninit<OSVERSIONINFOEXW> = unsafe {
+        let mut os_version_info: MaybeUninit<OSVERSIONINFOEXW> = MaybeUninit::zeroed();
         std::ptr::addr_of_mut!((*os_version_info.as_mut_ptr()).dwOSVersionInfoSize)
             .write(OS_VERSION_INFO_SIZE);
         os_version_info
@@ -428,9 +440,8 @@ impl std::fmt::Debug for MemoryStatusEx {
 fn global_memory_status_ex() -> Result<MemoryStatusEx, Error> {
     const MEMORY_STATUS_EX_SIZE: u32 = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
 
-    let mut memory_status_ex: std::mem::MaybeUninit<MEMORYSTATUSEX> = unsafe {
-        let mut memory_status_ex: std::mem::MaybeUninit<MEMORYSTATUSEX> =
-            std::mem::MaybeUninit::uninit();
+    let mut memory_status_ex: MaybeUninit<MEMORYSTATUSEX> = unsafe {
+        let mut memory_status_ex: MaybeUninit<MEMORYSTATUSEX> = MaybeUninit::uninit();
         std::ptr::addr_of_mut!((*memory_status_ex.as_mut_ptr()).dwLength)
             .write(MEMORY_STATUS_EX_SIZE);
         memory_status_ex
@@ -465,12 +476,184 @@ fn get_last_error() -> u32 {
 }
 */
 
+struct PerformanceInformation(PERFORMANCE_INFORMATION);
+
+impl PerformanceInformation {
+    /// The number of pages currently committed by the system.
+    ///
+    /// Note that committing pages (using VirtualAlloc with MEM_COMMIT) changes this value immediately;
+    /// however, the physical memory is not charged until the pages are accessed.
+    pub fn commit_total(&self) -> usize {
+        self.0.CommitTotal
+    }
+
+    /// The current maximum number of pages that can be committed by the system without extending the paging file(s).
+    ///
+    /// This number can change if memory is added or deleted,
+    /// or if pagefiles have grown, shrunk, or been added.
+    /// If the paging file can be extended, this is a soft limit.
+    pub fn commit_limit(&self) -> usize {
+        self.0.CommitLimit
+    }
+
+    /// The amount of actual physical memory, in pages.
+    pub fn physical_total(&self) -> usize {
+        self.0.PhysicalTotal
+    }
+
+    /// The amount of actual physical memory, in bytes.
+    pub fn physical_total_bytes(&self) -> Option<usize> {
+        self.physical_total().checked_mul(self.page_size())
+    }
+
+    /// The amount of physical memory currently available, in pages.
+    ///
+    /// This is the amount of physical memory that can be immediately
+    /// reused without having to write its contents to disk first.
+    /// It is the sum of the size of the standby, free, and zero lists.
+    pub fn physical_available(&self) -> usize {
+        self.0.PhysicalAvailable
+    }
+
+    /// The amount of physical memory currently available, in bytes.
+    ///
+    /// This is the amount of physical memory that can be immediately
+    /// reused without having to write its contents to disk first.
+    /// It is the sum of the size of the standby, free, and zero lists.
+    pub fn physical_available_bytes(&self) -> Option<usize> {
+        self.physical_available().checked_mul(self.page_size())
+    }
+
+    /// The size of a page, in bytes.
+    pub fn page_size(&self) -> usize {
+        self.0.PageSize
+    }
+}
+
+impl std::fmt::Debug for PerformanceInformation {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PerformanceInformation")
+            .field("commit_total", &self.commit_total())
+            .field("commit_limit", &self.commit_limit())
+            .field("physical_total", &self.physical_total())
+            .field("physical_total_bytes", &self.physical_total_bytes())
+            .field("physical_available", &self.physical_available())
+            .field("physical_available_bytes", &self.physical_available_bytes())
+            .field("page_size", &self.page_size())
+            .finish()
+    }
+}
+
+fn get_performance_info() -> Result<PerformanceInformation, Error> {
+    const SIZE: u32 = std::mem::size_of::<PERFORMANCE_INFORMATION>() as u32;
+
+    let mut performance_info = MaybeUninit::uninit();
+    let result = unsafe { GetPerformanceInfo(performance_info.as_mut_ptr(), SIZE) };
+    if result == FALSE {
+        return Err(Error::Io(std::io::Error::last_os_error()));
+    }
+    let performance_info = unsafe { performance_info.assume_init() };
+
+    Ok(PerformanceInformation(performance_info))
+}
+
+struct EnumPageFileInformation(*mut ENUM_PAGE_FILE_INFORMATION);
+
+impl EnumPageFileInformation {
+    /// The total size of the pagefile, in pages.
+    fn total_size(&self) -> usize {
+        unsafe { self.0.as_ref_unchecked() }.TotalSize
+    }
+
+    /// The current pagefile usage, in pages.
+    fn total_in_use(&self) -> usize {
+        unsafe { self.0.as_ref_unchecked() }.TotalInUse
+    }
+}
+
+impl std::fmt::Debug for EnumPageFileInformation {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("EnumPageFileInformation")
+            .field("total_size", &self.total_size())
+            .field("total_in_use", &self.total_in_use())
+            .finish()
+    }
+}
+
+fn enum_page_files<F, D>(user_data: D, func: F) -> Result<D, Error>
+where
+    F: FnMut(&mut D, EnumPageFileInformation, &WCStr) -> bool,
+{
+    struct Context<F, D> {
+        user_data: D,
+        func: F,
+        panic_data: Option<Box<dyn Any + Send + 'static>>,
+    }
+
+    unsafe extern "system" fn callback<F, D>(
+        context: *mut c_void,
+        page_file_info: *mut ENUM_PAGE_FILE_INFORMATION,
+        page_file_name: *const u16,
+    ) -> BOOL
+    where
+        F: FnMut(&mut D, EnumPageFileInformation, &WCStr) -> bool,
+    {
+        let context = unsafe { context.cast::<Context<F, D>>().as_mut_unchecked() };
+        let page_file_info = EnumPageFileInformation(page_file_info);
+        let page_file_name = unsafe { WCStr::from_ptr(page_file_name) };
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            (context.func)(&mut context.user_data, page_file_info, page_file_name)
+        }));
+        match result {
+            Ok(true) => TRUE,
+            Ok(false) => FALSE,
+            Err(panic_data) => {
+                // Store the panic and fail-fast.
+                // We resume the panic outside the callback.
+                context.panic_data = Some(panic_data);
+                FALSE
+            }
+        }
+    }
+
+    let mut context = Box::new(Context {
+        func,
+        user_data,
+        panic_data: None,
+    });
+
+    let result = unsafe {
+        let context_ptr = Box::as_mut_ptr(&mut context).cast::<c_void>();
+        EnumPageFilesW(Some(callback::<F, D>), context_ptr)
+    };
+    // Panics are more important than errors.
+    if let Some(panic_data) = context.panic_data {
+        std::panic::resume_unwind(panic_data);
+    }
+    if result == FALSE {
+        return Err(Error::Io(std::io::Error::last_os_error()));
+    }
+
+    Ok(context.user_data)
+}
+
+#[derive(Debug)]
+struct PageFileStats {
+    /// The total size of all page files, in pages.
+    total: usize,
+
+    /// The total usage of all page files, in pages.
+    used: usize,
+}
+
 /// A cache for system data
 #[derive(Debug)]
 pub(crate) struct CacheContext {
     system_info: OnceCell<SystemInfo>,
     memory_status_ex: OnceCell<MemoryStatusEx>,
     os_version_info_ex: OnceCell<OsVersionInfoEx>,
+    performance_info: OnceCell<PerformanceInformation>,
+    page_file_stats: OnceCell<PageFileStats>,
 }
 
 impl CacheContext {
@@ -480,6 +663,8 @@ impl CacheContext {
             system_info: OnceCell::new(),
             memory_status_ex: OnceCell::new(),
             os_version_info_ex: OnceCell::new(),
+            performance_info: OnceCell::new(),
+            page_file_stats: OnceCell::new(),
         }
     }
 
@@ -494,6 +679,23 @@ impl CacheContext {
 
     fn get_os_version_info(&self) -> &OsVersionInfoEx {
         self.os_version_info_ex.get_or_init(rtl_get_version)
+    }
+
+    fn get_performance_info(&self) -> Result<&PerformanceInformation, Error> {
+        self.performance_info.get_or_try_init(get_performance_info)
+    }
+
+    fn get_page_file_stats(&self) -> Result<&PageFileStats, Error> {
+        self.page_file_stats.get_or_try_init(|| {
+            enum_page_files(
+                PageFileStats { total: 0, used: 0 },
+                |stats, info, _file_name| {
+                    stats.total += info.total_size();
+                    stats.used += info.total_in_use();
+                    true
+                },
+            )
+        })
     }
 
     /// Get the time the system was booted
@@ -562,7 +764,7 @@ impl CacheContext {
         Ok(Some(system_name.to_string()))
     }
 
-    /// Get the os version
+    /// Get the os version.
     pub fn get_system_version(&self) -> Result<String, Error> {
         let os_version_info = self.get_os_version_info();
 
@@ -573,33 +775,44 @@ impl CacheContext {
         Ok(format!("{major_version}.{minor_version}.{build_number}"))
     }
 
-    /// Get the total amount of memory in the computer, in bytes
+    /// Get the total amount of memory in the computer, in bytes.
     pub fn get_total_memory(&self) -> Result<u64, Error> {
         let memory_info_ex = self.get_memory_status_ex()?;
         Ok(memory_info_ex.total_physical())
     }
 
-    /// Get the available amount of memory in the computer, in bytes
+    /// Get the available amount of memory in the computer, in bytes.
     pub fn get_available_memory(&self) -> Result<u64, Error> {
         let memory_info_ex = self.get_memory_status_ex()?;
         Ok(memory_info_ex.available_physical())
     }
 
-    /// Get the total amount of swap in the computer, in bytes
+    /// Get the total amount of swap in the computer, in bytes.
     pub fn get_total_swap(&self) -> Result<u64, Error> {
-        let memory_info_ex = self.get_memory_status_ex()?;
-        memory_info_ex
-            .total_page_file()
-            .checked_sub(memory_info_ex.total_physical())
+        let performance_info = self.get_performance_info()?;
+        let page_file_stats = self.get_page_file_stats()?;
+
+        let page_size = performance_info.page_size();
+
+        page_file_stats
+            .total
+            .checked_mul(page_size)
+            .and_then(|value| u64::try_from(value).ok())
             .ok_or(Error::Generic("Failed to calculate total swap size"))
     }
 
-    /// Get the available amount of swap in the computer, in bytes
+    /// Get the available amount of swap in the computer, in bytes.
     pub fn get_available_swap(&self) -> Result<u64, Error> {
-        let memory_info_ex = self.get_memory_status_ex()?;
-        memory_info_ex
-            .available_page_file()
-            .checked_sub(memory_info_ex.available_physical())
+        let performance_info = self.get_performance_info()?;
+        let page_file_stats = self.get_page_file_stats()?;
+
+        let page_size = performance_info.page_size();
+
+        page_file_stats
+            .total
+            .checked_sub(page_file_stats.used)
+            .and_then(|value| value.checked_mul(page_size))
+            .and_then(|value| u64::try_from(value).ok())
             .ok_or(Error::Generic("Failed to calculate available swap size"))
     }
 
@@ -616,6 +829,8 @@ mod test {
     use super::*;
     use std::time::Instant;
 
+    const BLOCKING_DURATION: Duration = Duration::from_millis(1);
+
     fn assert_impl_send<T>()
     where
         T: Send,
@@ -626,14 +841,14 @@ mod test {
     fn get_tick_count_64_does_not_block() {
         let start = Instant::now();
         let _boot_time = CacheContext::new().get_boot_time();
-        assert!(start.elapsed() < Duration::from_millis(1));
+        assert!(start.elapsed() < BLOCKING_DURATION);
     }
 
     #[test]
     fn get_computer_name_does_not_block() {
         let start = Instant::now();
         let _hostname = get_computer_name(ComputerNameFormat::PhysicalDnsHostname);
-        assert!(start.elapsed() < Duration::from_millis(1));
+        assert!(start.elapsed() < BLOCKING_DURATION);
     }
 
     #[test]
@@ -641,7 +856,7 @@ mod test {
         let start = Instant::now();
         let _system_info = get_system_info();
         let elapsed = start.elapsed();
-        assert!(elapsed < Duration::from_millis(1));
+        assert!(elapsed < BLOCKING_DURATION);
     }
 
     #[test]
@@ -649,7 +864,7 @@ mod test {
         let start = Instant::now();
         let version = rtl_get_version();
         let elapsed = start.elapsed();
-        assert!(elapsed < Duration::from_millis(1));
+        assert!(elapsed < BLOCKING_DURATION);
 
         dbg!(version);
     }
@@ -659,7 +874,7 @@ mod test {
         let start = Instant::now();
         let memory_status = global_memory_status_ex().expect("Failed to get global memory status");
         let elapsed = start.elapsed();
-        assert!(elapsed < Duration::from_millis(1));
+        assert!(elapsed < BLOCKING_DURATION);
 
         dbg!(memory_status);
     }
@@ -669,7 +884,33 @@ mod test {
         let start = Instant::now();
         let _logical_cpus = get_active_processor_count(u16::MAX);
         let elapsed = start.elapsed();
-        assert!(elapsed < Duration::from_millis(1));
+        assert!(elapsed < BLOCKING_DURATION);
+    }
+
+    #[test]
+    fn get_performance_info_works() {
+        let start = Instant::now();
+        let _performance_info = get_performance_info();
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+    }
+
+    #[test]
+    fn enum_page_files_works() {
+        let start = Instant::now();
+        let _page_file_info = enum_page_files((0, 0), |(total, used), info, _name| {
+            *total = info.total_size();
+            *used = info.total_in_use();
+            true
+        });
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
     }
 
     #[test]
