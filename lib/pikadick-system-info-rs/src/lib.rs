@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 cfg_if::cfg_if! {
     if #[cfg(target_os = "windows")] {
         mod windows;
@@ -22,15 +20,15 @@ use std::time::{
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// An io error occured
-    #[error(transparent)]
+    #[error("IO error")]
     Io(#[from] std::io::Error),
 
     /// Invalid UTF8 string
-    #[error(transparent)]
+    #[error("Invalid Utf8 string")]
     InvalidUtf8String(#[from] std::string::FromUtf8Error),
 
     /// Invalid UTF16 string
-    #[error(transparent)]
+    #[error("Invalid Utf16 string")]
     InvalidUtf16String(#[from] std::string::FromUtf16Error),
 
     /// Invalid Utf8 OsStr

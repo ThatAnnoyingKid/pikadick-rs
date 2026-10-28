@@ -106,25 +106,25 @@ impl CacheContext {
         Ok(version.to_string())
     }
 
-    /// Get the total amount of memory in the computer, in bytes
+    /// Get the total amount of memory in the computer, in bytes.
     pub fn get_total_memory(&self) -> Result<u64, Error> {
         let sysinfo = self.get_sysinfo()?;
         Ok(sysinfo.ram_total())
     }
 
-    /// Get the available amount of memory in the computer, in bytes
+    /// Get the available amount of memory in the computer, in bytes.
     pub fn get_available_memory(&self) -> Result<u64, Error> {
         let sysinfo = self.get_sysinfo()?;
         Ok(sysinfo.ram_unused())
     }
 
-    /// Get the total amount of swap in the computer, in bytes
+    /// Get the total amount of swap in the computer, in bytes.
     pub fn get_total_swap(&self) -> Result<u64, Error> {
         let sysinfo = self.get_sysinfo()?;
         Ok(sysinfo.swap_total())
     }
 
-    /// Get the available amount of swap in the computer, in bytes
+    /// Get the available amount of swap in the computer, in bytes.
     pub fn get_available_swap(&self) -> Result<u64, Error> {
         let sysinfo = self.get_sysinfo()?;
         Ok(sysinfo.swap_free())

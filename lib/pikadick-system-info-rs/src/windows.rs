@@ -616,14 +616,14 @@ where
         }
     }
 
-    let mut context = Box::new(Context {
+    let mut context = Context {
         func,
         user_data,
         panic_data: None,
-    });
+    };
 
     let result = unsafe {
-        let context_ptr = Box::as_mut_ptr(&mut context).cast::<c_void>();
+        let context_ptr = (&mut context as *mut Context<F, D>).cast::<c_void>();
         EnumPageFilesW(Some(callback::<F, D>), context_ptr)
     };
     // Panics are more important than errors.
@@ -698,7 +698,7 @@ impl CacheContext {
         })
     }
 
-    /// Get the time the system was booted
+    /// Get the time the system was booted.
     pub fn get_boot_time(&self) -> Result<SystemTime, Error> {
         Ok(SystemTime::now() - self.get_uptime()?)
     }

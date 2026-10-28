@@ -253,18 +253,21 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         }
     };
 
-    let cpu_frequency = match heim::cpu::frequency().await {
-        Ok(cpu_frequency) => Some(cpu_frequency),
+    let cpu_logical_count = match cache_context
+        .count_logical_cpus()
+        .context("Failed to count number of logical cpus")
+    {
+        Ok(cpu_logical_count) => Some(cpu_logical_count),
         Err(error) => {
-            warn!("Failed to get cpu frequency: {error}");
+            warn!("Failed to get logical cpu count: {error}");
             None
         }
     };
 
-    let cpu_logical_count = match heim::cpu::logical_count().await {
-        Ok(cpu_logical_count) => Some(cpu_logical_count),
+    let cpu_frequency = match heim::cpu::frequency().await {
+        Ok(cpu_frequency) => Some(cpu_frequency),
         Err(error) => {
-            warn!("Failed to get logical cpu count: {error}");
+            warn!("Failed to get cpu frequency: {error}");
             None
         }
     };
@@ -293,9 +296,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 
     // Reports Cpu time since boot.
     // let cpu_time = heim::cpu::time().await.unwrap();
-
-    // Reports some cpu stats
-    // let cpu_stats = heim::cpu::stats().await.unwrap();
 
     // Reports temps from all sensors
     // let temperatures = heim::sensors::temperatures().collect::<Vec<_>>().await;
@@ -400,7 +400,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         "Retrieved system data in {:.2} second(s)",
         data_retrieval_time.as_secs_f32()
     ));
-
     create_embed = create_embed.footer(footer);
 
     let create_reply = CreateReply::new().embed(create_embed);
