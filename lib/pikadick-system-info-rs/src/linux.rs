@@ -2,18 +2,18 @@ use super::Error;
 use nix::{
     sys::{
         sysinfo::{
-            sysinfo,
             SysInfo,
+            sysinfo,
         },
         utsname::{
-            uname,
             UtsName,
+            uname,
         },
     },
     unistd::{
+        SysconfVar,
         gethostname,
         sysconf,
-        SysconfVar,
     },
 };
 use once_cell::sync::OnceCell;

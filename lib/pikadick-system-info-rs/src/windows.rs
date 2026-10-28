@@ -46,8 +46,8 @@ use windows_sys::{
             },
             Threading::GetActiveProcessorCount,
             WindowsProgramming::{
-                uaw_wcslen,
                 MAX_COMPUTERNAME_LENGTH,
+                uaw_wcslen,
             },
         },
     },
@@ -412,16 +412,18 @@ impl WCStr {
     /// * The ptr must be terminated by a nul byte.
     /// * The memory behing the ptr must not be changed while the reference is alive.
     unsafe fn from_ptr<'a>(ptr: *const u16) -> &'a WCStr {
-        let len = uaw_wcslen(ptr);
-        let slice = std::slice::from_raw_parts(ptr, len + 1);
-        Self::from_bytes_with_nul_unchecked(slice)
+        unsafe {
+            let len = uaw_wcslen(ptr);
+            let slice = std::slice::from_raw_parts(ptr, len + 1);
+            Self::from_bytes_with_nul_unchecked(slice)
+        }
     }
 
     /// # Safety
     /// * The slice must contain only one nul
     /// * The nul must be the last element in the slice
     unsafe fn from_bytes_with_nul_unchecked(slice: &[u16]) -> &Self {
-        &*(slice as *const [u16] as *const Self)
+        unsafe { &*(slice as *const [u16] as *const Self) }
     }
 
     /// Get this as a slice, excluding the NUL.
