@@ -12,14 +12,10 @@ anyhow = "1.0.104"
 argh = "0.1.19"
 bewu-util = { git = "https://github.com/ThatAnnoyingKid/Bewu", version = "0.0.0", features = [ "async-timed-cache-cell", "async-timed-lru-cache", "async-mutex-map" ] }
 bitflags = "2.13.2"
-bytes = "1.12.1"
 camino = { version = "1.2.6", features = [ "serde1" ] }
-crossbeam = "0.8.5"
-dashmap = "6.2.1"
 deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
-futures = { version = "0.3.34", features = [ "std" ], default-features = false }
+# This is needed as we still use some stats from this library.
 heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
-indexmap = "2.14.2"
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls" ] }
 itoa = "1.0.18"
 jiff = "0.2.38"
@@ -36,16 +32,16 @@ r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = 
 rand = "0.10.3"
 reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls" ] }
 regex = "1.13.1"
-reqwest = { version = "0.13.5", default-features = false }
 rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls" ] }
+# This is needed as some database models refer to rusqlite directly, and nd-async-rusqlite lacks a "blob" feature.
 rusqlite = { version = "=0.40.2", features = [ "blob" ] }
-ryu = "1.0.23"
 sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-features = false, features = [ "rustls" ] }
 serde = { version = "1.0.229", features = [ "derive" ] }
 serenity = { version = "0.12.5", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache" ], default-features = false }
 serde_json = "1.0.154"
 skrifa = "0.49.0"
 songbird = { version = "0.6.1", features = [ "backend-mousiki" ] }
+# This is needed as we use this libary to get temperature data.
 systemstat = "0.2.7"
 thiserror = "2.0.21"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
@@ -59,6 +55,7 @@ tracing = "0.1.44"
 tracing-appender = "0.2.5"
 tracing-log = "0.2.0"
 tracing-subscriber = { version = "0.3.23", features = [ "env-filter", "fmt" ] }
+# This is needed as heim doesn't re-export some types needed for formatting.
 uom = "=0.31.1"
 urban-dictionary = { path = "./lib/urban-dictionary-rs", default-features = false, features = [ "rustls" ] }
 url = "2.5.8"
