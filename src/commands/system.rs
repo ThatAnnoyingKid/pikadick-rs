@@ -26,7 +26,6 @@ use systemstat::{
     System,
     platform::common::Platform,
 };
-use time::format_description::well_known::Rfc2822;
 use tracing::warn;
 use uom::{
     fmt::DisplayStyle,
@@ -114,12 +113,9 @@ impl SystemStats {
         let boot_time = match cache_context
             .get_boot_time()
             .context("Failed to get boot time")
-            .map(time::OffsetDateTime::from)
-            .and_then(|boot_time| {
-                boot_time
-                    .format(&Rfc2822)
-                    .context("Failed to format boot time date")
-            }) {
+            .and_then(|value| jiff::Timestamp::try_from(value).context("Failed to make timestamp"))
+            .map(|boot_time| boot_time.strftime("%e %b %Y, %I:%M:%S %p UTC").to_string())
+        {
             Ok(boot_time) => Some(boot_time),
             Err(error) => {
                 warn!("{error:?}");
