@@ -50,6 +50,111 @@ async fn get_cpu_usage() -> Result<f32, heim::Error> {
     Ok((end - start).get::<heim::units::ratio::percent>())
 }
 
+#[derive(Debug)]
+struct SystemStats {
+    hostname: Option<String>,
+    system_name: Option<String>,
+    system_version: Option<String>,
+    architecture: Option<&'static str>,
+    boot_time: Option<String>,
+}
+
+impl SystemStats {
+    fn new() -> Self {
+        let cache_context = pikadick_system_info::CacheContext::new();
+
+        let hostname = match cache_context
+            .get_hostname()
+            .context("Failed to get hostname")
+        {
+            Ok(hostname) => Some(hostname),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let system_name = match cache_context
+            .get_system_name()
+            .context("Failed to get system name")
+        {
+            Ok(system_name) => system_name,
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let system_version = match cache_context
+            .get_system_version()
+            .context("Failed to get system version")
+        {
+            Ok(system_name) => Some(system_name),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let architecture = match cache_context
+            .get_architecture()
+            .context("Failed to get architecture")
+        {
+            Ok(architecture) => Some(
+                architecture
+                    .map(|architecture| architecture.as_str())
+                    .unwrap_or("Unknown"),
+            ),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let boot_time = match cache_context
+            .get_boot_time()
+            .context("Failed to get boot time")
+            .map(time::OffsetDateTime::from)
+            .and_then(|boot_time| {
+                boot_time
+                    .format(&Rfc2822)
+                    .context("Failed to format boot time date")
+            }) {
+            Ok(boot_time) => Some(boot_time),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        Self {
+            hostname,
+            system_name,
+            system_version,
+            architecture,
+            boot_time,
+        }
+    }
+
+    fn populate_embed(&self, mut create_embed: CreateEmbed) -> CreateEmbed {
+        let fields = [
+            ("Hostname", self.hostname.as_deref()),
+            ("OS", self.system_name.as_deref()),
+            ("OS Version", self.system_version.as_deref()),
+            ("Architecture", self.architecture),
+            ("Boot Time", self.boot_time.as_deref()),
+        ];
+
+        for (key, value) in fields {
+            if let Some(value) = value {
+                create_embed = create_embed.field(key, value, true);
+            }
+        }
+
+        create_embed
+    }
+}
+
 #[poise::command(slash_command, description_localized("en-US", "Get system stats."))]
 pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     ctx.defer().await?;
@@ -72,72 +177,8 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     // End Legacy data gathering
     let cache_context = pikadick_system_info::CacheContext::new();
 
-    let boot_time = match cache_context
-        .get_boot_time()
-        .context("Failed to get boot time")
-        .map(time::OffsetDateTime::from)
-        .and_then(|boot_time| {
-            boot_time
-                .format(&Rfc2822)
-                .context("Failed to format boot time date")
-        }) {
-        Ok(boot_time) => Some(boot_time),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
     let uptime = match cache_context.get_uptime().context("Failed to get uptime") {
         Ok(uptime) => Some(uptime),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let hostname = match cache_context
-        .get_hostname()
-        .context("failed to get hostname")
-    {
-        Ok(hostname) => Some(hostname),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let architecture = match cache_context
-        .get_architecture()
-        .context("Failed to get architecture")
-    {
-        Ok(architecture) => Some(
-            architecture
-                .map(|architecture| architecture.as_str())
-                .unwrap_or("unknown"),
-        ),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let system_name = match cache_context
-        .get_system_name()
-        .context("Failed to get system name")
-    {
-        Ok(system_name) => system_name,
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let system_version = match cache_context
-        .get_system_version()
-        .context("Failed to get system version")
-    {
-        Ok(system_name) => Some(system_name),
         Err(error) => {
             warn!("{error:?}");
             None
@@ -237,32 +278,15 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 
     // End WIP
 
+    let system_stats = SystemStats::new();
+
     let mut create_embed = CreateEmbed::new()
         .title("System Status")
         .color(Colour::from_rgb(255, 0, 0));
     if let Some(icon) = profile_avatar_url {
         create_embed = create_embed.thumbnail(icon);
     }
-
-    if let Some(hostname) = hostname {
-        create_embed = create_embed.field("Hostname", hostname, true);
-    }
-
-    if let Some(system_name) = system_name {
-        create_embed = create_embed.field("OS", system_name, true);
-    }
-
-    if let Some(system_version) = system_version {
-        create_embed = create_embed.field("OS Version", system_version, true);
-    }
-
-    if let Some(architecture) = architecture {
-        create_embed = create_embed.field("Architecture", architecture, true);
-    }
-
-    if let Some(boot_time) = boot_time {
-        create_embed = create_embed.field("Boot Time", boot_time, true);
-    }
+    create_embed = system_stats.populate_embed(create_embed);
 
     if let Some(uptime) = uptime {
         let raw_secs = uptime.as_secs();
