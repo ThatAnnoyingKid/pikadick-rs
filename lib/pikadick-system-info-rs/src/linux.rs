@@ -136,7 +136,7 @@ impl CacheContext {
             .map_err(|error| Error::Io(std::io::Error::from(error)))?
             .ok_or(Error::MissingValue)?
             .try_into()
-            .expect("the number of cores cannot fit in a `usize`"))
+            .expect("The number of cores cannot fit in a `usize`"))
     }
 }
 

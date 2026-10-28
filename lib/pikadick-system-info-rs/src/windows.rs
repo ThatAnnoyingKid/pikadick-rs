@@ -53,152 +53,6 @@ use windows_sys::{
     },
 };
 
-/// A cache for system data
-#[derive(Debug)]
-pub(crate) struct CacheContext {
-    system_info: OnceCell<SystemInfo>,
-    memory_status_ex: OnceCell<MemoryStatusEx>,
-    os_version_info_ex: OnceCell<OsVersionInfoEx>,
-}
-
-impl CacheContext {
-    /// Make a new cache context
-    pub fn new() -> Self {
-        Self {
-            system_info: OnceCell::new(),
-            memory_status_ex: OnceCell::new(),
-            os_version_info_ex: OnceCell::new(),
-        }
-    }
-
-    fn get_system_info(&self) -> &SystemInfo {
-        self.system_info.get_or_init(get_system_info)
-    }
-
-    fn get_memory_status_ex(&self) -> Result<&MemoryStatusEx, Error> {
-        self.memory_status_ex
-            .get_or_try_init(global_memory_status_ex)
-    }
-
-    fn get_os_version_info(&self) -> &OsVersionInfoEx {
-        self.os_version_info_ex.get_or_init(rtl_get_version)
-    }
-
-    /// Get the time the system was booted
-    pub fn get_boot_time(&self) -> Result<SystemTime, Error> {
-        Ok(SystemTime::now() - self.get_uptime()?)
-    }
-
-    /// Get the uptime.
-    pub fn get_uptime(&self) -> Result<Duration, Error> {
-        Ok(get_tick_count_64())
-    }
-
-    /// Get the hostname
-    pub fn get_hostname(&self) -> Result<String, Error> {
-        get_computer_name(ComputerNameFormat::PhysicalDnsHostname)
-    }
-
-    /// Get the architecture.
-    pub fn get_architecture(&self) -> Result<Option<Arch>, Error> {
-        let system_info = self.get_system_info();
-        match system_info.processor_architecture() {
-            Ok(ProcessorArchitecture::Amd64) => Ok(Some(Arch::X86_64)),
-            Ok(ProcessorArchitecture::Arm) => Ok(Some(Arch::Arm)),
-            Ok(ProcessorArchitecture::Arm64) => Ok(Some(Arch::AArch64)),
-            // Rust doesn't currently support Itanium, so I don't see how we could possibly get this value here?
-            Ok(ProcessorArchitecture::Ia64) => Ok(None),
-            Ok(ProcessorArchitecture::Intel) => Ok(Some(Arch::X86)),
-            Ok(ProcessorArchitecture::Unknown) => Ok(None),
-            Err(_e) => Ok(None),
-        }
-    }
-
-    /// Get the system name
-    pub fn get_system_name(&self) -> Result<Option<String>, Error> {
-        let os_version_info = self.get_os_version_info();
-
-        // https://www.lifewire.com/windows-version-numbers-2625171
-        // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ns-wdm-_osversioninfoexw
-        let system_name = match (
-            os_version_info.major_version(),
-            os_version_info.minor_version(),
-            os_version_info.build_number(),
-            os_version_info.product_type(),
-            os_version_info.suite_mask(),
-        ) {
-            (10, 0, build, Ok(ProductType::Workstation), _) if build >= 22000 => "Windows 11",
-            (10, 0, build, _, _) if build >= 22000 => "Windows Server 2022",
-            (10, 0, _, Ok(ProductType::Workstation), _) => "Windows 10",
-            (10, 0, _, _, _) => "Windows Server 2016",
-            (6, 3, _, Ok(ProductType::Workstation), _) => "Windows 8.1",
-            (6, 3, _, _, _) => "Windows Server 2012 R2",
-            (6, 2, _, Ok(ProductType::Workstation), _) => "Windows 8",
-            (6, 2, _, _, _) => "Windows Server 2012",
-            (6, 1, _, Ok(ProductType::Workstation), _) => "Windows 7",
-            (6, 1, _, _, _) => "Windows Server 2008 R2",
-            (6, 0, _, Ok(ProductType::Workstation), _) => "Windows Vista",
-            (6, 0, _, _, _) => "Windows Server 2008",
-            (5, 2, _, _, ProductSuite::WH_SERVER) => "Windows Home Server",
-            (5, 2, _, Ok(ProductType::Workstation), _) => "Windows XP Professional x64 Edition",
-            (5, 2, _, _, _) => "Windows Server 2003",
-            (5, 1, _, _, _) => "Windows XP",
-            (5, 0, _, _, _) => "Windows 2000",
-            _ => return Ok(None),
-        };
-
-        Ok(Some(system_name.to_string()))
-    }
-
-    /// Get the os version
-    pub fn get_system_version(&self) -> Result<String, Error> {
-        let os_version_info = self.get_os_version_info();
-
-        let major_version = os_version_info.major_version();
-        let minor_version = os_version_info.minor_version();
-        let build_number = os_version_info.build_number();
-
-        Ok(format!("{major_version}.{minor_version}.{build_number}"))
-    }
-
-    /// Get the total amount of memory in the computer, in bytes
-    pub fn get_total_memory(&self) -> Result<u64, Error> {
-        let memory_info_ex = self.get_memory_status_ex()?;
-        Ok(memory_info_ex.total_physical())
-    }
-
-    /// Get the available amount of memory in the computer, in bytes
-    pub fn get_available_memory(&self) -> Result<u64, Error> {
-        let memory_info_ex = self.get_memory_status_ex()?;
-        Ok(memory_info_ex.available_physical())
-    }
-
-    /// Get the total amount of swap in the computer, in bytes
-    pub fn get_total_swap(&self) -> Result<u64, Error> {
-        let memory_info_ex = self.get_memory_status_ex()?;
-        memory_info_ex
-            .total_page_file()
-            .checked_sub(memory_info_ex.total_physical())
-            .ok_or(Error::Generic("failed to calculate total swap size"))
-    }
-
-    /// Get the available amount of swap in the computer, in bytes
-    pub fn get_available_swap(&self) -> Result<u64, Error> {
-        let memory_info_ex = self.get_memory_status_ex()?;
-        memory_info_ex
-            .available_page_file()
-            .checked_sub(memory_info_ex.available_physical())
-            .ok_or(Error::Generic("failed to calculate available swap size"))
-    }
-
-    /// Get the number of logical cpu cores.
-    pub fn count_logical_cpus(&self) -> Result<usize, Error> {
-        Ok(get_active_processor_count(u16::MAX)?
-            .try_into()
-            .expect("windows is 16 bit"))
-    }
-}
-
 /// A wrapper for `GetTickCount64`.
 ///
 /// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount64
@@ -239,7 +93,7 @@ fn get_computer_name(computer_name_format: ComputerNameFormat) -> Result<String,
         )
     };
     if code != 0 {
-        let len = size.try_into().expect("failed to convert len to `usize`");
+        let len = size.try_into().expect("Failed to convert len to `usize`");
         let slice: &[u16] = unsafe { std::slice::from_raw_parts(buffer.as_ptr().cast(), len) };
         Ok(String::from_utf16(slice)?)
     } else {
@@ -611,6 +465,152 @@ fn get_last_error() -> u32 {
 }
 */
 
+/// A cache for system data
+#[derive(Debug)]
+pub(crate) struct CacheContext {
+    system_info: OnceCell<SystemInfo>,
+    memory_status_ex: OnceCell<MemoryStatusEx>,
+    os_version_info_ex: OnceCell<OsVersionInfoEx>,
+}
+
+impl CacheContext {
+    /// Make a new cache context
+    pub fn new() -> Self {
+        Self {
+            system_info: OnceCell::new(),
+            memory_status_ex: OnceCell::new(),
+            os_version_info_ex: OnceCell::new(),
+        }
+    }
+
+    fn get_system_info(&self) -> &SystemInfo {
+        self.system_info.get_or_init(get_system_info)
+    }
+
+    fn get_memory_status_ex(&self) -> Result<&MemoryStatusEx, Error> {
+        self.memory_status_ex
+            .get_or_try_init(global_memory_status_ex)
+    }
+
+    fn get_os_version_info(&self) -> &OsVersionInfoEx {
+        self.os_version_info_ex.get_or_init(rtl_get_version)
+    }
+
+    /// Get the time the system was booted
+    pub fn get_boot_time(&self) -> Result<SystemTime, Error> {
+        Ok(SystemTime::now() - self.get_uptime()?)
+    }
+
+    /// Get the uptime.
+    pub fn get_uptime(&self) -> Result<Duration, Error> {
+        Ok(get_tick_count_64())
+    }
+
+    /// Get the hostname
+    pub fn get_hostname(&self) -> Result<String, Error> {
+        get_computer_name(ComputerNameFormat::PhysicalDnsHostname)
+    }
+
+    /// Get the architecture.
+    pub fn get_architecture(&self) -> Result<Option<Arch>, Error> {
+        let system_info = self.get_system_info();
+        match system_info.processor_architecture() {
+            Ok(ProcessorArchitecture::Amd64) => Ok(Some(Arch::X86_64)),
+            Ok(ProcessorArchitecture::Arm) => Ok(Some(Arch::Arm)),
+            Ok(ProcessorArchitecture::Arm64) => Ok(Some(Arch::AArch64)),
+            // Rust doesn't currently support Itanium, so I don't see how we could possibly get this value here?
+            Ok(ProcessorArchitecture::Ia64) => Ok(None),
+            Ok(ProcessorArchitecture::Intel) => Ok(Some(Arch::X86)),
+            Ok(ProcessorArchitecture::Unknown) => Ok(None),
+            Err(_e) => Ok(None),
+        }
+    }
+
+    /// Get the system name
+    pub fn get_system_name(&self) -> Result<Option<String>, Error> {
+        let os_version_info = self.get_os_version_info();
+
+        // https://www.lifewire.com/windows-version-numbers-2625171
+        // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ns-wdm-_osversioninfoexw
+        let system_name = match (
+            os_version_info.major_version(),
+            os_version_info.minor_version(),
+            os_version_info.build_number(),
+            os_version_info.product_type(),
+            os_version_info.suite_mask(),
+        ) {
+            (10, 0, build, Ok(ProductType::Workstation), _) if build >= 22000 => "Windows 11",
+            (10, 0, build, _, _) if build >= 22000 => "Windows Server 2022",
+            (10, 0, _, Ok(ProductType::Workstation), _) => "Windows 10",
+            (10, 0, _, _, _) => "Windows Server 2016",
+            (6, 3, _, Ok(ProductType::Workstation), _) => "Windows 8.1",
+            (6, 3, _, _, _) => "Windows Server 2012 R2",
+            (6, 2, _, Ok(ProductType::Workstation), _) => "Windows 8",
+            (6, 2, _, _, _) => "Windows Server 2012",
+            (6, 1, _, Ok(ProductType::Workstation), _) => "Windows 7",
+            (6, 1, _, _, _) => "Windows Server 2008 R2",
+            (6, 0, _, Ok(ProductType::Workstation), _) => "Windows Vista",
+            (6, 0, _, _, _) => "Windows Server 2008",
+            (5, 2, _, _, ProductSuite::WH_SERVER) => "Windows Home Server",
+            (5, 2, _, Ok(ProductType::Workstation), _) => "Windows XP Professional x64 Edition",
+            (5, 2, _, _, _) => "Windows Server 2003",
+            (5, 1, _, _, _) => "Windows XP",
+            (5, 0, _, _, _) => "Windows 2000",
+            _ => return Ok(None),
+        };
+
+        Ok(Some(system_name.to_string()))
+    }
+
+    /// Get the os version
+    pub fn get_system_version(&self) -> Result<String, Error> {
+        let os_version_info = self.get_os_version_info();
+
+        let major_version = os_version_info.major_version();
+        let minor_version = os_version_info.minor_version();
+        let build_number = os_version_info.build_number();
+
+        Ok(format!("{major_version}.{minor_version}.{build_number}"))
+    }
+
+    /// Get the total amount of memory in the computer, in bytes
+    pub fn get_total_memory(&self) -> Result<u64, Error> {
+        let memory_info_ex = self.get_memory_status_ex()?;
+        Ok(memory_info_ex.total_physical())
+    }
+
+    /// Get the available amount of memory in the computer, in bytes
+    pub fn get_available_memory(&self) -> Result<u64, Error> {
+        let memory_info_ex = self.get_memory_status_ex()?;
+        Ok(memory_info_ex.available_physical())
+    }
+
+    /// Get the total amount of swap in the computer, in bytes
+    pub fn get_total_swap(&self) -> Result<u64, Error> {
+        let memory_info_ex = self.get_memory_status_ex()?;
+        memory_info_ex
+            .total_page_file()
+            .checked_sub(memory_info_ex.total_physical())
+            .ok_or(Error::Generic("Failed to calculate total swap size"))
+    }
+
+    /// Get the available amount of swap in the computer, in bytes
+    pub fn get_available_swap(&self) -> Result<u64, Error> {
+        let memory_info_ex = self.get_memory_status_ex()?;
+        memory_info_ex
+            .available_page_file()
+            .checked_sub(memory_info_ex.available_physical())
+            .ok_or(Error::Generic("Failed to calculate available swap size"))
+    }
+
+    /// Get the number of logical cpu cores.
+    pub fn count_logical_cpus(&self) -> Result<usize, Error> {
+        Ok(get_active_processor_count(u16::MAX)?
+            .try_into()
+            .expect("Windows is 16 bit"))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -657,7 +657,7 @@ mod test {
     #[test]
     fn global_memory_status_ex_works() {
         let start = Instant::now();
-        let memory_status = global_memory_status_ex().expect("failed to get global memory status");
+        let memory_status = global_memory_status_ex().expect("Failed to get global memory status");
         let elapsed = start.elapsed();
         assert!(elapsed < Duration::from_millis(1));
 
