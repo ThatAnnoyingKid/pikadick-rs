@@ -31,7 +31,7 @@ pub use self::{
     rule34::rule34,
     sauce_nao::sauce_nao,
     stop::stop,
-    system::SYSTEM_COMMAND,
+    system::system,
     tic_tac_toe::TIC_TAC_TOE_COMMAND,
     tiktok_embed::tiktok_embed,
     urban::urban,

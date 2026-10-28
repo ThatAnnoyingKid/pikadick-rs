@@ -9,7 +9,6 @@ use crate::{
     util::EncoderTask,
 };
 use anyhow::Context;
-use serenity::gateway::ShardManager;
 use std::{
     fmt::Debug,
     sync::Arc,
@@ -19,13 +18,8 @@ use tracing::error;
 /// The [`ClientData`].
 #[derive(Debug)]
 pub struct ClientData {
-    /// The discord shard_manager
-    pub shard_manager: Arc<ShardManager>,
-
     /// The enabled check data
     pub enabled_check_data: EnabledCheckData,
-    /// The insta client data
-    pub insta_client: insta::Client,
     /// The tic tac toe data
     pub tic_tac_toe_data: TicTacToeData,
     /// TikTokData
@@ -42,11 +36,7 @@ pub struct ClientData {
 
 impl ClientData {
     /// Init this client data
-    pub async fn init(
-        shard_manager: Arc<ShardManager>,
-        config: Arc<Config>,
-        db: Database,
-    ) -> anyhow::Result<Self> {
+    pub async fn init(config: Arc<Config>, db: Database) -> anyhow::Result<Self> {
         let cache_dir = config.cache_dir();
         let encoder_task = EncoderTask::new();
 
@@ -54,12 +44,11 @@ impl ClientData {
             .await
             .context("Failed to init tiktok data")?;
 
-        Ok(ClientData {
-            shard_manager,
+        let tic_tac_toe_data = TicTacToeData::new();
 
+        Ok(ClientData {
             enabled_check_data: Default::default(),
-            insta_client: insta::Client::new(),
-            tic_tac_toe_data: Default::default(),
+            tic_tac_toe_data,
             tiktok_data,
             encoder_task,
 

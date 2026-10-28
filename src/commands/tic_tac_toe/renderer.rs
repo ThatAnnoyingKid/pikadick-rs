@@ -253,7 +253,6 @@ impl Renderer {
         &self,
         board: tic_tac_toe::Board,
     ) -> anyhow::Result<Vec<u8>> {
-        // TODO: LRU cache
         let _permit = self.render_semaphore.acquire().await?;
         let self_clone = self.clone();
         tokio::task::spawn_blocking(move || self_clone.render_board(board)).await?
@@ -323,12 +322,12 @@ mod test {
 
     #[test]
     fn render_board() {
-        let renderer = Renderer::new().expect("failed to make renderer");
+        let renderer = Renderer::new().expect("Failed to make renderer");
         let board = tic_tac_toe::Board::new()
             .set(0, Some(Team::X))
             .set(4, Some(Team::X))
             .set(8, Some(Team::X));
-        let img = renderer.render_board(board).expect("failed to render");
-        std::fs::write("ttt-render-test.png", img).expect("failed to save");
+        let img = renderer.render_board(board).expect("Failed to render");
+        std::fs::write("ttt-render-test.png", img).expect("Failed to save");
     }
 }

@@ -1,4 +1,7 @@
-use crate::checks::ENABLED_CHECK;
+use crate::{
+    PoiseContext,
+    PoiseError,
+};
 use anyhow::Context as _;
 use heim::units::{
     Frequency,
@@ -7,22 +10,13 @@ use heim::units::{
         hertz,
     },
 };
+use poise::CreateReply;
 use serenity::{
     builder::{
         CreateEmbed,
         CreateEmbedFooter,
-        CreateMessage,
     },
-    framework::standard::{
-        Args,
-        CommandResult,
-        macros::command,
-    },
-    model::{
-        colour::Colour,
-        prelude::*,
-    },
-    prelude::*,
+    model::colour::Colour,
 };
 use std::time::{
     Duration,
@@ -56,14 +50,32 @@ async fn get_cpu_usage() -> Result<f32, heim::Error> {
     Ok((end - start).get::<heim::units::ratio::percent>())
 }
 
+/*
 #[command]
 #[description("Get System Stats")]
 #[bucket("system")]
 #[checks(Enabled)]
 async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
+
+
+
+
+
+
+    let message_builder = CreateMessage::new().embed(create_embed);
+    msg.channel_id
+        .send_message(&ctx.http, message_builder)
+        .await?;
+
+    Ok(())
+}
+*/
+
+#[poise::command(slash_command, description_localized("en-US", "Get system stats."))]
+pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     let start = Instant::now();
 
-    let profile_avatar_url = ctx.cache.current_user().avatar_url();
+    let profile_avatar_url = ctx.cache().current_user().avatar_url();
 
     // Start Legacy data gathering
     let sys = System::new();
@@ -81,12 +93,12 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     let boot_time = match cache_context
         .get_boot_time()
-        .context("failed to get boot time")
+        .context("Failed to get boot time")
         .map(time::OffsetDateTime::from)
         .and_then(|boot_time| {
             boot_time
                 .format(&Rfc2822)
-                .context("failed to format boot time date")
+                .context("Failed to format boot time date")
         }) {
         Ok(boot_time) => Some(boot_time),
         Err(error) => {
@@ -95,7 +107,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         }
     };
 
-    let uptime = match cache_context.get_uptime().context("failed to get uptime") {
+    let uptime = match cache_context.get_uptime().context("Failed to get uptime") {
         Ok(uptime) => Some(uptime),
         Err(error) => {
             warn!("{error:?}");
@@ -116,7 +128,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     let architecture = match cache_context
         .get_architecture()
-        .context("failed to get architecture")
+        .context("Failed to get architecture")
     {
         Ok(architecture) => Some(
             architecture
@@ -131,7 +143,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     let system_name = match cache_context
         .get_system_name()
-        .context("failed to get system name")
+        .context("Failed to get system name")
     {
         Ok(system_name) => system_name,
         Err(error) => {
@@ -142,7 +154,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     let system_version = match cache_context
         .get_system_version()
-        .context("failed to get system version")
+        .context("Failed to get system version")
     {
         Ok(system_name) => Some(system_name),
         Err(error) => {
@@ -153,7 +165,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     let total_memory = match cache_context
         .get_total_memory()
-        .context("failed to get total memory")
+        .context("Failed to get total memory")
     {
         Ok(memory) => Some(memory),
         Err(error) => {
@@ -164,7 +176,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     let available_memory = match cache_context
         .get_available_memory()
-        .context("failed to get available memory")
+        .context("Failed to get available memory")
     {
         Ok(memory) => Some(memory),
         Err(error) => {
@@ -175,7 +187,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     let total_swap = match cache_context
         .get_total_swap()
-        .context("failed to get total swap")
+        .context("Failed to get total swap")
     {
         Ok(memory) => Some(memory),
         Err(error) => {
@@ -186,7 +198,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     let available_swap = match cache_context
         .get_available_swap()
-        .context("failed to get available swap")
+        .context("Failed to get available swap")
     {
         Ok(memory) => Some(memory),
         Err(error) => {
@@ -244,31 +256,31 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     // End WIP
 
-    let mut embed_builder = CreateEmbed::new()
+    let mut create_embed = CreateEmbed::new()
         .title("System Status")
         .color(Colour::from_rgb(255, 0, 0));
     if let Some(icon) = profile_avatar_url {
-        embed_builder = embed_builder.thumbnail(icon);
+        create_embed = create_embed.thumbnail(icon);
     }
 
     if let Some(hostname) = hostname {
-        embed_builder = embed_builder.field("Hostname", hostname, true);
+        create_embed = create_embed.field("Hostname", hostname, true);
     }
 
     if let Some(system_name) = system_name {
-        embed_builder = embed_builder.field("OS", system_name, true);
+        create_embed = create_embed.field("OS", system_name, true);
     }
 
     if let Some(system_version) = system_version {
-        embed_builder = embed_builder.field("OS Version", system_version, true);
+        create_embed = create_embed.field("OS Version", system_version, true);
     }
 
     if let Some(architecture) = architecture {
-        embed_builder = embed_builder.field("Architecture", architecture, true);
+        create_embed = create_embed.field("Architecture", architecture, true);
     }
 
     if let Some(boot_time) = boot_time {
-        embed_builder = embed_builder.field("Boot Time", boot_time, true);
+        create_embed = create_embed.field("Boot Time", boot_time, true);
     }
 
     if let Some(uptime) = uptime {
@@ -318,46 +330,46 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
             }
         }
 
-        embed_builder = embed_builder.field("Uptime", value, true);
+        create_embed = create_embed.field("Uptime", value, true);
     }
 
     // Currently reports incorrectly on Windows
     if let Some(cpu_frequency) = cpu_frequency {
-        embed_builder =
-            embed_builder.field("Cpu Freq", fmt_cpu_frequency(cpu_frequency.current()), true);
+        create_embed =
+            create_embed.field("Cpu Freq", fmt_cpu_frequency(cpu_frequency.current()), true);
 
         if let Some(min_cpu_frequency) = cpu_frequency.min() {
-            embed_builder =
-                embed_builder.field("Min Cpu Freq", fmt_cpu_frequency(min_cpu_frequency), true);
+            create_embed =
+                create_embed.field("Min Cpu Freq", fmt_cpu_frequency(min_cpu_frequency), true);
         }
 
         if let Some(max_cpu_frequency) = cpu_frequency.max() {
-            embed_builder =
-                embed_builder.field("Max Cpu Freq", fmt_cpu_frequency(max_cpu_frequency), true);
+            create_embed =
+                create_embed.field("Max Cpu Freq", fmt_cpu_frequency(max_cpu_frequency), true);
         }
     }
 
     match (cpu_logical_count, cpu_physical_count) {
         (Some(logical_count), Some(physical_count)) => {
-            embed_builder = embed_builder.field(
+            create_embed = create_embed.field(
                 "Cpu Core Count",
                 format!("{logical_count} logical, {physical_count} physical"),
                 true,
             );
         }
         (Some(logical_count), None) => {
-            embed_builder =
-                embed_builder.field("Cpu Core Count", format!("{logical_count} logical"), true);
+            create_embed =
+                create_embed.field("Cpu Core Count", format!("{logical_count} logical"), true);
         }
         (None, Some(physical_count)) => {
-            embed_builder =
-                embed_builder.field("Cpu Core Count", format!("{physical_count} physical"), true);
+            create_embed =
+                create_embed.field("Cpu Core Count", format!("{physical_count} physical"), true);
         }
         (None, None) => {}
     }
 
     if let (Some(total_memory), Some(available_memory)) = (total_memory, available_memory) {
-        embed_builder = embed_builder.field(
+        create_embed = create_embed.field(
             "Memory Usage",
             format!(
                 "{:.2} GB / {:.2} GB",
@@ -369,7 +381,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     }
 
     if let (Some(total_swap), Some(available_swap)) = (total_swap, available_swap) {
-        embed_builder = embed_builder.field(
+        create_embed = create_embed.field(
             "Swap Usage",
             format!(
                 "{:.2} GB / {:.2} GB",
@@ -384,10 +396,10 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         Some(virtualization) => virtualization.as_str(),
         None => "None",
     };
-    embed_builder = embed_builder.field("Virtualization", virtualization_field, true);
+    create_embed = create_embed.field("Virtualization", virtualization_field, true);
 
     if let (Some(cpu_usage), Some(cpu_logical_count)) = (cpu_usage, cpu_logical_count) {
-        embed_builder = embed_builder.field(
+        create_embed = create_embed.field(
             "Cpu Usage",
             format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),
             true,
@@ -402,7 +414,7 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     // TODO: This can probably be replaced with temprature readings from heim.
     // It doesn't support Windows, but this never worked there anyways as Windows has no simple way to get temps
     if let Some(cpu_temp) = cpu_temp {
-        embed_builder = embed_builder.field("Cpu Temp", format!("{cpu_temp} °C"), true);
+        create_embed = create_embed.field("Cpu Temp", format!("{cpu_temp} °C"), true);
     }
 
     let footer = CreateEmbedFooter::new(format!(
@@ -410,12 +422,10 @@ async fn system(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         data_retrieval_time.as_secs_f32()
     ));
 
-    embed_builder = embed_builder.footer(footer);
+    create_embed = create_embed.footer(footer);
 
-    let message_builder = CreateMessage::new().embed(embed_builder);
-    msg.channel_id
-        .send_message(&ctx.http, message_builder)
-        .await?;
+    let create_reply = CreateReply::new().embed(create_embed);
+    ctx.send(create_reply).await?;
 
     Ok(())
 }

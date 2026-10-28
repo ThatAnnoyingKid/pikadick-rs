@@ -54,7 +54,7 @@ impl Database {
                     ":flags": new_flags,
                 })?;
 
-            transaction.commit().context("failed to set tiktok embed")?;
+            transaction.commit().context("Failed to set tiktok embed")?;
 
             Ok((old_flags, new_flags))
         })
@@ -76,7 +76,7 @@ impl Database {
                     |row| row.get(0),
                 )
                 .optional()
-                .context("failed to read database")
+                .context("Failed to read database")
                 .map(|v| v.unwrap_or_else(TikTokEmbedFlags::default))
         })
         .await?

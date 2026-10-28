@@ -280,7 +280,7 @@ impl TypeMapKey for ClientDataKey {
 }
 
 #[group]
-#[commands(system, tic_tac_toe)]
+#[commands(tic_tac_toe)]
 struct General;
 
 async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
@@ -317,6 +317,7 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
             self::commands::rule34(),
             self::commands::sauce_nao(),
             self::commands::stop(),
+            self::commands::system(),
             self::commands::tiktok_embed(),
             self::commands::urban(),
             self::commands::uwuify(),
@@ -508,7 +509,7 @@ async fn async_main(config: Arc<Config>) -> anyhow::Result<()> {
         .await
         .context("Failed to set up client")?;
 
-    let client_data = ClientData::init(client.shard_manager.clone(), config, database.clone())
+    let client_data = ClientData::init(config, database.clone())
         .await
         .context("Client data initialization failed")?;
 

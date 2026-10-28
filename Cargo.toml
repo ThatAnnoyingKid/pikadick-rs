@@ -20,7 +20,6 @@ deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-feat
 futures = { version = "0.3.34", features = [ "std" ], default-features = false }
 heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
 indexmap = "2.14.2"
-insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls" ] }
 itoa = "1.0.18"
 jiff = "0.2.38"

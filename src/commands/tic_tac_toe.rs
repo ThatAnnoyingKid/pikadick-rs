@@ -50,7 +50,7 @@ pub struct TicTacToeData {
 impl TicTacToeData {
     /// Make a new [`TicTacToeData`].
     pub fn new() -> Self {
-        let renderer = Renderer::new().expect("failed to init renderer");
+        let renderer = Renderer::new().expect("Failed to init renderer");
 
         Self {
             renderer: Arc::new(renderer),

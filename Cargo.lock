@@ -3980,7 +3980,6 @@ dependencies = [
  "futures",
  "heim",
  "indexmap",
- "insta",
  "iqdb",
  "itoa",
  "jiff",
