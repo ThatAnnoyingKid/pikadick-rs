@@ -1,16 +1,11 @@
 mod ascii_table;
 mod encoder_task;
 mod loading_reaction;
-mod timed_cache;
 
 pub use self::{
     ascii_table::AsciiTable,
     encoder_task::EncoderTask,
     loading_reaction::LoadingReaction,
-    timed_cache::{
-        TimedCache,
-        TimedCacheEntry,
-    },
 };
 use regex::Regex;
 use std::{

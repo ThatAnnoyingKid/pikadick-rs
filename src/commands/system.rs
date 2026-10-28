@@ -294,9 +294,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 
     // Start WIP
 
-    // Reports Cpu time since boot.
-    // let cpu_time = heim::cpu::time().await.unwrap();
-
     // Reports temps from all sensors
     // let temperatures = heim::sensors::temperatures().collect::<Vec<_>>().await;
 

@@ -3,18 +3,19 @@ use crate::{
     Database,
     PoiseContext,
     PoiseError,
-    util::{
-        TimedCache,
-        TimedCacheEntry,
-    },
 };
 use anyhow::Context as _;
+use bewu_util::AsyncTimedLruCache;
 use deviantart::Deviation;
+use nd_util::ArcAnyhowError;
 use rand::seq::IteratorRandom;
 use std::{
     io::BufReader,
     sync::Arc,
-    time::Instant,
+    time::{
+        Duration,
+        Instant,
+    },
 };
 use tracing::{
     error,
@@ -25,6 +26,8 @@ use tracing::{
 const DATA_STORE_NAME: &str = "deviantart";
 const COOKIE_KEY: &str = "cookie-store";
 
+const FIVE_MINUTES: Duration = Duration::from_secs(60 * 5);
+
 /// A caching deviantart client
 #[derive(Debug)]
 pub struct DeviantartClient {
@@ -32,7 +35,7 @@ pub struct DeviantartClient {
     password: String,
     client: deviantart::Client,
     database: Database,
-    search_cache: TimedCache<String, Vec<Deviation>>,
+    search_cache: AsyncTimedLruCache<String, Result<Arc<[Deviation]>, ArcAnyhowError>>,
 }
 
 impl DeviantartClient {
@@ -61,12 +64,14 @@ impl DeviantartClient {
             }
         }
 
+        let search_cache = AsyncTimedLruCache::new(100, FIVE_MINUTES);
+
         Ok(DeviantartClient {
             username: config.deviantart.username.clone(),
             password: config.deviantart.password.clone(),
             client,
             database,
-            search_cache: TimedCache::new(),
+            search_cache,
         })
     }
 
@@ -97,32 +102,38 @@ impl DeviantartClient {
     }
 
     /// Search for deviantart images with a cache.
-    pub async fn search(
-        &self,
-        query: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<Vec<Deviation>>>> {
-        if let Some(entry) = self.search_cache.get_if_fresh(query) {
-            return Ok(entry);
-        }
+    pub async fn search(&self, query: &str) -> Result<Arc<[Deviation]>, ArcAnyhowError> {
+        self.search_cache
+            .get(query.to_string(), || async {
+                let start = Instant::now();
+                let result = async {
+                    self.sign_in()
+                        .await
+                        .context("Failed to log in to deviantart")?;
 
-        let start = Instant::now();
-        self.sign_in()
+                    let mut search_cursor = self.client.search(query, None);
+                    search_cursor
+                        .next_page()
+                        .await
+                        .context("Failed to search")?;
+
+                    let list = search_cursor
+                        .take_current_deviations()
+                        .expect("Missing page")
+                        .context("Failed to process results")?;
+
+                    anyhow::Ok(list)
+                }
+                .await
+                .map(Arc::from)
+                .map_err(ArcAnyhowError::new);
+
+                let elapsed = start.elapsed();
+                info!("Searched deviantart in {elapsed:?}");
+
+                result
+            })
             .await
-            .context("Failed to log in to deviantart")?;
-        let mut search_cursor = self.client.search(query, None);
-        search_cursor
-            .next_page()
-            .await
-            .context("Failed to search")?;
-        let list = search_cursor
-            .take_current_deviations()
-            .expect("Missing page")
-            .context("Failed to process results")?;
-        let ret = self.search_cache.insert_and_get(String::from(query), list);
-
-        info!("Searched deviantart in {:?}", start.elapsed());
-
-        Ok(ret)
     }
 }
 
@@ -139,8 +150,7 @@ pub async fn deviantart(
     info!("Searching for \"{query}\" on deviantart");
     let result = ctx.data().deviantart_client.search(&query).await;
     match result {
-        Ok(entry) => {
-            let data = entry.data();
+        Ok(data) => {
             let choice = data
                 .iter()
                 .filter_map(|deviation| {
@@ -176,8 +186,6 @@ pub async fn deviantart(
             error!("Failed to search for \"{query}\" on deviantart: {error:?}");
         }
     }
-
-    ctx.data().deviantart_client.search_cache.trim();
 
     Ok(())
 }

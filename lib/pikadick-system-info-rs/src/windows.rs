@@ -1,17 +1,15 @@
 use super::Error;
 use bitflags::bitflags;
-use core::ffi::c_void;
-use once_cell::sync::OnceCell;
-use platforms::Arch;
-use std::{
+use core::{
     any::Any,
+    ffi::c_void,
     fmt::Write,
     mem::MaybeUninit,
-    time::{
-        Duration,
-        SystemTime,
-    },
+    time::Duration,
 };
+use once_cell::sync::OnceCell;
+use platforms::Arch;
+use std::time::SystemTime;
 use windows_sys::{
     Wdk::System::SystemServices::RtlGetVersion,
     Win32::{
@@ -64,7 +62,10 @@ use windows_sys::{
             },
         },
     },
-    core::BOOL,
+    core::{
+        BOOL,
+        PCWSTR,
+    },
 };
 
 /// A wrapper for `GetTickCount64`.
@@ -593,7 +594,7 @@ where
     unsafe extern "system" fn callback<F, D>(
         context: *mut c_void,
         page_file_info: *mut ENUM_PAGE_FILE_INFORMATION,
-        page_file_name: *const u16,
+        page_file_name: PCWSTR,
     ) -> BOOL
     where
         F: FnMut(&mut D, EnumPageFileInformation, &WCStr) -> bool,
