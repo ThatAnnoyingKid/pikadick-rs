@@ -157,10 +157,6 @@ impl std::fmt::Display for GamePlayerMention {
     }
 }
 
-/*
-#[sub_commands("")]
-*/
-
 #[poise::command(
     slash_command,
     rename = "tic-tac-toe",

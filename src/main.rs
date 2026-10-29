@@ -29,11 +29,10 @@
 // clippy::too_many_lines
 
 // TODO: Switch to poise
-#![expect(deprecated)]
+// #![expect(deprecated)]
 
 //! # Pikadick
 
-pub mod checks;
 pub mod cli_options;
 pub mod client_data;
 pub mod commands;

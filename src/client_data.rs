@@ -1,9 +1,5 @@
 use crate::{
-    checks::EnabledCheckData,
-    commands::{
-        tic_tac_toe::TicTacToeData,
-        tiktok_embed::TikTokData,
-    },
+    commands::tiktok_embed::TikTokData,
     config::Config,
     database::Database,
     util::EncoderTask,
@@ -18,10 +14,6 @@ use tracing::error;
 /// The [`ClientData`].
 #[derive(Debug)]
 pub struct ClientData {
-    /// The enabled check data
-    pub enabled_check_data: EnabledCheckData,
-    /// The tic tac toe data
-    pub tic_tac_toe_data: TicTacToeData,
     /// TikTokData
     pub tiktok_data: TikTokData,
     /// Encoder Task
@@ -44,11 +36,7 @@ impl ClientData {
             .await
             .context("Failed to init tiktok data")?;
 
-        let tic_tac_toe_data = TicTacToeData::new(db.clone());
-
         Ok(ClientData {
-            enabled_check_data: Default::default(),
-            tic_tac_toe_data,
             tiktok_data,
             encoder_task,
 
