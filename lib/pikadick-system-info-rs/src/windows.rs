@@ -1,208 +1,72 @@
 use super::Error;
 use bitflags::bitflags;
+use core::{
+    any::Any,
+    ffi::c_void,
+    fmt::Write,
+    mem::MaybeUninit,
+    time::Duration,
+};
 use once_cell::sync::OnceCell;
 use platforms::Arch;
-use std::{
-    fmt::Write,
-    time::{
-        Duration,
-        SystemTime,
+use std::time::SystemTime;
+use windows_sys::{
+    Wdk::System::SystemServices::RtlGetVersion,
+    Win32::{
+        Foundation::{
+            FALSE,
+            STATUS_SUCCESS,
+            TRUE,
+        },
+        System::{
+            ProcessStatus::{
+                ENUM_PAGE_FILE_INFORMATION,
+                EnumPageFilesW,
+                GetPerformanceInfo,
+                PERFORMANCE_INFORMATION,
+            },
+            SystemInformation::{
+                ComputerNameDnsDomain,
+                ComputerNameDnsFullyQualified,
+                ComputerNameDnsHostname,
+                ComputerNameNetBIOS,
+                ComputerNamePhysicalDnsDomain,
+                ComputerNamePhysicalDnsFullyQualified,
+                ComputerNamePhysicalDnsHostname,
+                ComputerNamePhysicalNetBIOS,
+                GetComputerNameExW,
+                GetNativeSystemInfo,
+                GetTickCount64,
+                GetVersionExW,
+                GlobalMemoryStatusEx,
+                MEMORYSTATUSEX,
+                OSVERSIONINFOEXW,
+                PROCESSOR_ARCHITECTURE_AMD64,
+                PROCESSOR_ARCHITECTURE_ARM,
+                PROCESSOR_ARCHITECTURE_ARM64,
+                PROCESSOR_ARCHITECTURE_IA64,
+                PROCESSOR_ARCHITECTURE_INTEL,
+                PROCESSOR_ARCHITECTURE_UNKNOWN,
+                SYSTEM_INFO,
+            },
+            SystemServices::{
+                VER_NT_DOMAIN_CONTROLLER,
+                VER_NT_SERVER,
+                VER_NT_WORKSTATION,
+                VER_SUITE_WH_SERVER,
+            },
+            Threading::GetActiveProcessorCount,
+            WindowsProgramming::{
+                MAX_COMPUTERNAME_LENGTH,
+                uaw_wcslen,
+            },
+        },
+    },
+    core::{
+        BOOL,
+        PCWSTR,
     },
 };
-use windows_sys::Win32::{
-    Foundation::{
-        NTSTATUS,
-        STATUS_SUCCESS,
-    },
-    System::{
-        SystemInformation::{
-            ComputerNameDnsDomain,
-            ComputerNameDnsFullyQualified,
-            ComputerNameDnsHostname,
-            ComputerNameNetBIOS,
-            ComputerNamePhysicalDnsDomain,
-            ComputerNamePhysicalDnsFullyQualified,
-            ComputerNamePhysicalDnsHostname,
-            ComputerNamePhysicalNetBIOS,
-            GetComputerNameExW,
-            GetNativeSystemInfo,
-            GetTickCount64,
-            GetVersionExW,
-            GlobalMemoryStatusEx,
-            MEMORYSTATUSEX,
-            OSVERSIONINFOEXW,
-            OSVERSIONINFOW,
-            PROCESSOR_ARCHITECTURE,
-            PROCESSOR_ARCHITECTURE_AMD64,
-            PROCESSOR_ARCHITECTURE_ARM,
-            PROCESSOR_ARCHITECTURE_IA64,
-            PROCESSOR_ARCHITECTURE_INTEL,
-            PROCESSOR_ARCHITECTURE_UNKNOWN,
-            SYSTEM_INFO,
-        },
-        SystemServices::{
-            VER_NT_DOMAIN_CONTROLLER,
-            VER_NT_SERVER,
-            VER_NT_WORKSTATION,
-            VER_SUITE_WH_SERVER,
-        },
-        Threading::GetActiveProcessorCount,
-        WindowsProgramming::{
-            uaw_wcslen,
-            MAX_COMPUTERNAME_LENGTH,
-        },
-    },
-};
-
-// This is not in `windows_sys`.
-const PROCESSOR_ARCHITECTURE_ARM64: PROCESSOR_ARCHITECTURE = 12;
-#[allow(non_camel_case_types)]
-type PRTL_OSVERSIONINFOW = *mut OSVERSIONINFOW;
-
-#[link(name = "ntdll")]
-extern "system" {
-    fn RtlGetVersion(_lpVersionInformation: PRTL_OSVERSIONINFOW) -> NTSTATUS;
-}
-
-/// A cache for system data
-#[derive(Debug)]
-pub(crate) struct CacheContext {
-    system_info: OnceCell<SystemInfo>,
-    memory_status_ex: OnceCell<MemoryStatusEx>,
-    os_version_info_ex: OnceCell<OsVersionInfoEx>,
-}
-
-impl CacheContext {
-    /// Make a new cache context
-    pub fn new() -> Self {
-        Self {
-            system_info: OnceCell::new(),
-            memory_status_ex: OnceCell::new(),
-            os_version_info_ex: OnceCell::new(),
-        }
-    }
-
-    fn get_system_info(&self) -> &SystemInfo {
-        self.system_info.get_or_init(get_system_info)
-    }
-
-    fn get_memory_status_ex(&self) -> Result<&MemoryStatusEx, Error> {
-        self.memory_status_ex
-            .get_or_try_init(global_memory_status_ex)
-    }
-
-    fn get_os_version_info(&self) -> &OsVersionInfoEx {
-        self.os_version_info_ex.get_or_init(rtl_get_version)
-    }
-
-    /// Get the time the system was booted
-    pub fn get_boot_time(&self) -> Result<SystemTime, Error> {
-        Ok(SystemTime::now() - self.get_uptime()?)
-    }
-
-    /// Get the uptime.
-    pub fn get_uptime(&self) -> Result<Duration, Error> {
-        Ok(get_tick_count_64())
-    }
-
-    /// Get the hostname
-    pub fn get_hostname(&self) -> Result<String, Error> {
-        get_computer_name(ComputerNameFormat::PhysicalDnsHostname)
-    }
-
-    /// Get the architecture.
-    pub fn get_architecture(&self) -> Result<Option<Arch>, Error> {
-        let system_info = self.get_system_info();
-        match system_info.processor_architecture() {
-            Ok(ProcessorArchitecture::Amd64) => Ok(Some(Arch::X86_64)),
-            Ok(ProcessorArchitecture::Arm) => Ok(Some(Arch::Arm)),
-            Ok(ProcessorArchitecture::Arm64) => Ok(Some(Arch::AArch64)),
-            // Rust doesn't currently support Itanium, so I don't see how we could possibly get this value here?
-            Ok(ProcessorArchitecture::Ia64) => Ok(None),
-            Ok(ProcessorArchitecture::Intel) => Ok(Some(Arch::X86)),
-            Ok(ProcessorArchitecture::Unknown) => Ok(None),
-            Err(_e) => Ok(None),
-        }
-    }
-
-    /// Get the system name
-    pub fn get_system_name(&self) -> Result<Option<String>, Error> {
-        let os_version_info = self.get_os_version_info();
-
-        // https://www.lifewire.com/windows-version-numbers-2625171
-        // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ns-wdm-_osversioninfoexw
-        let system_name = match (
-            os_version_info.major_version(),
-            os_version_info.minor_version(),
-            os_version_info.build_number(),
-            os_version_info.product_type(),
-            os_version_info.suite_mask(),
-        ) {
-            (10, 0, build, Ok(ProductType::Workstation), _) if build >= 22000 => "Windows 11",
-            (10, 0, build, _, _) if build >= 22000 => "Windows Server 2022",
-            (10, 0, _, Ok(ProductType::Workstation), _) => "Windows 10",
-            (10, 0, _, _, _) => "Windows Server 2016",
-            (6, 3, _, Ok(ProductType::Workstation), _) => "Windows 8.1",
-            (6, 3, _, _, _) => "Windows Server 2012 R2",
-            (6, 2, _, Ok(ProductType::Workstation), _) => "Windows 8",
-            (6, 2, _, _, _) => "Windows Server 2012",
-            (6, 1, _, Ok(ProductType::Workstation), _) => "Windows 7",
-            (6, 1, _, _, _) => "Windows Server 2008 R2",
-            (6, 0, _, Ok(ProductType::Workstation), _) => "Windows Vista",
-            (6, 0, _, _, _) => "Windows Server 2008",
-            (5, 2, _, _, ProductSuite::WH_SERVER) => "Windows Home Server",
-            (5, 2, _, Ok(ProductType::Workstation), _) => "Windows XP Professional x64 Edition",
-            (5, 2, _, _, _) => "Windows Server 2003",
-            (5, 1, _, _, _) => "Windows XP",
-            (5, 0, _, _, _) => "Windows 2000",
-            _ => return Ok(None),
-        };
-
-        Ok(Some(system_name.to_string()))
-    }
-
-    /// Get the os version
-    pub fn get_system_version(&self) -> Result<String, Error> {
-        let os_version_info = self.get_os_version_info();
-
-        let major_version = os_version_info.major_version();
-        let minor_version = os_version_info.minor_version();
-        let build_number = os_version_info.build_number();
-
-        Ok(format!("{major_version}.{minor_version}.{build_number}"))
-    }
-
-    /// Get the total amount of memory in the computer, in bytes
-    pub fn get_total_memory(&self) -> Result<u64, Error> {
-        let memory_info_ex = self.get_memory_status_ex()?;
-        Ok(memory_info_ex.total_physical())
-    }
-
-    /// Get the available amount of memory in the computer, in bytes
-    pub fn get_available_memory(&self) -> Result<u64, Error> {
-        let memory_info_ex = self.get_memory_status_ex()?;
-        Ok(memory_info_ex.available_physical())
-    }
-
-    /// Get the total amount of swap in the computer, in bytes
-    pub fn get_total_swap(&self) -> Result<u64, Error> {
-        let memory_info_ex = self.get_memory_status_ex()?;
-        Ok(memory_info_ex.total_page_file() - memory_info_ex.total_physical())
-    }
-
-    /// Get the available amount of swap in the computer, in bytes
-    pub fn get_available_swap(&self) -> Result<u64, Error> {
-        let memory_info_ex = self.get_memory_status_ex()?;
-        Ok(memory_info_ex.available_page_file() - memory_info_ex.available_physical())
-    }
-
-    /// Get the number of logical cpu cores.
-    pub fn count_logical_cpus(&self) -> Result<usize, Error> {
-        Ok(get_active_processor_count(u16::MAX)?
-            .try_into()
-            .expect("windows is 16 bit"))
-    }
-}
 
 /// A wrapper for `GetTickCount64`.
 ///
@@ -212,7 +76,7 @@ fn get_tick_count_64() -> Duration {
 }
 
 /// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/ne-sysinfoapi-computer_name_format
-#[allow(dead_code)]
+#[expect(dead_code)]
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 enum ComputerNameFormat {
@@ -233,7 +97,7 @@ fn get_computer_name(computer_name_format: ComputerNameFormat) -> Result<String,
     const MAX_COMPUTERNAME_LENGTH_USIZE: usize = MAX_COMPUTERNAME_LENGTH as usize;
 
     let buffer: &mut [std::mem::MaybeUninit<u16>] =
-        &mut [std::mem::MaybeUninit::uninit(); MAX_COMPUTERNAME_LENGTH_USIZE];
+        &mut [MaybeUninit::uninit(); MAX_COMPUTERNAME_LENGTH_USIZE];
     let mut size = MAX_COMPUTERNAME_LENGTH;
 
     let code = unsafe {
@@ -244,7 +108,7 @@ fn get_computer_name(computer_name_format: ComputerNameFormat) -> Result<String,
         )
     };
     if code != 0 {
-        let len = size.try_into().expect("failed to convert len to `usize`");
+        let len = size.try_into().expect("Failed to convert len to `usize`");
         let slice: &[u16] = unsafe { std::slice::from_raw_parts(buffer.as_ptr().cast(), len) };
         Ok(String::from_utf16(slice)?)
     } else {
@@ -313,7 +177,7 @@ unsafe impl Send for SystemInfo {}
 ///
 /// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getnativesysteminfo
 fn get_system_info() -> SystemInfo {
-    let mut raw_system_info = std::mem::MaybeUninit::uninit();
+    let mut raw_system_info = MaybeUninit::uninit();
     unsafe {
         GetNativeSystemInfo(raw_system_info.as_mut_ptr());
         SystemInfo(raw_system_info.assume_init())
@@ -417,16 +281,18 @@ impl WCStr {
     /// * The ptr must be terminated by a nul byte.
     /// * The memory behing the ptr must not be changed while the reference is alive.
     unsafe fn from_ptr<'a>(ptr: *const u16) -> &'a WCStr {
-        let len = uaw_wcslen(ptr);
-        let slice = std::slice::from_raw_parts(ptr, len + 1);
-        Self::from_bytes_with_nul_unchecked(slice)
+        unsafe {
+            let len = uaw_wcslen(ptr);
+            let slice = std::slice::from_raw_parts(ptr, len + 1);
+            Self::from_bytes_with_nul_unchecked(slice)
+        }
     }
 
     /// # Safety
     /// * The slice must contain only one nul
     /// * The nul must be the last element in the slice
     unsafe fn from_bytes_with_nul_unchecked(slice: &[u16]) -> &Self {
-        &*(slice as *const [u16] as *const Self)
+        unsafe { &*(slice as *const [u16] as *const Self) }
     }
 
     /// Get this as a slice, excluding the NUL.
@@ -477,9 +343,8 @@ bitflags! {
 fn get_version_ex() -> Result<OsVersionInfoEx, Error> {
     const OS_VERSION_INFO_SIZE: u32 = std::mem::size_of::<OSVERSIONINFOEXW>() as u32;
 
-    let mut os_version_info: std::mem::MaybeUninit<OSVERSIONINFOEXW> = unsafe {
-        let mut os_version_info: std::mem::MaybeUninit<OSVERSIONINFOEXW> =
-            std::mem::MaybeUninit::zeroed();
+    let mut os_version_info: MaybeUninit<OSVERSIONINFOEXW> = unsafe {
+        let mut os_version_info: MaybeUninit<OSVERSIONINFOEXW> = MaybeUninit::zeroed();
         std::ptr::addr_of_mut!((*os_version_info.as_mut_ptr()).dwOSVersionInfoSize)
             .write(OS_VERSION_INFO_SIZE);
         os_version_info
@@ -501,9 +366,8 @@ fn get_version_ex() -> Result<OsVersionInfoEx, Error> {
 fn rtl_get_version() -> OsVersionInfoEx {
     const OS_VERSION_INFO_SIZE: u32 = std::mem::size_of::<OSVERSIONINFOEXW>() as u32;
 
-    let mut os_version_info: std::mem::MaybeUninit<OSVERSIONINFOEXW> = unsafe {
-        let mut os_version_info: std::mem::MaybeUninit<OSVERSIONINFOEXW> =
-            std::mem::MaybeUninit::zeroed();
+    let mut os_version_info: MaybeUninit<OSVERSIONINFOEXW> = unsafe {
+        let mut os_version_info: MaybeUninit<OSVERSIONINFOEXW> = MaybeUninit::zeroed();
         std::ptr::addr_of_mut!((*os_version_info.as_mut_ptr()).dwOSVersionInfoSize)
             .write(OS_VERSION_INFO_SIZE);
         os_version_info
@@ -566,7 +430,7 @@ impl std::fmt::Debug for MemoryStatusEx {
             .field("total_page_file", &self.total_page_file())
             .field("available_page_file", &self.available_page_file())
             .field("total_virtual", &self.total_virtual())
-            .field("total_virtual", &self.available_virtual())
+            .field("available_virtual", &self.available_virtual())
             .finish()
     }
 }
@@ -577,9 +441,8 @@ impl std::fmt::Debug for MemoryStatusEx {
 fn global_memory_status_ex() -> Result<MemoryStatusEx, Error> {
     const MEMORY_STATUS_EX_SIZE: u32 = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
 
-    let mut memory_status_ex: std::mem::MaybeUninit<MEMORYSTATUSEX> = unsafe {
-        let mut memory_status_ex: std::mem::MaybeUninit<MEMORYSTATUSEX> =
-            std::mem::MaybeUninit::uninit();
+    let mut memory_status_ex: MaybeUninit<MEMORYSTATUSEX> = unsafe {
+        let mut memory_status_ex: MaybeUninit<MEMORYSTATUSEX> = MaybeUninit::uninit();
         std::ptr::addr_of_mut!((*memory_status_ex.as_mut_ptr()).dwLength)
             .write(MEMORY_STATUS_EX_SIZE);
         memory_status_ex
@@ -614,10 +477,360 @@ fn get_last_error() -> u32 {
 }
 */
 
+struct PerformanceInformation(PERFORMANCE_INFORMATION);
+
+impl PerformanceInformation {
+    /// The number of pages currently committed by the system.
+    ///
+    /// Note that committing pages (using VirtualAlloc with MEM_COMMIT) changes this value immediately;
+    /// however, the physical memory is not charged until the pages are accessed.
+    pub fn commit_total(&self) -> usize {
+        self.0.CommitTotal
+    }
+
+    /// The current maximum number of pages that can be committed by the system without extending the paging file(s).
+    ///
+    /// This number can change if memory is added or deleted,
+    /// or if pagefiles have grown, shrunk, or been added.
+    /// If the paging file can be extended, this is a soft limit.
+    pub fn commit_limit(&self) -> usize {
+        self.0.CommitLimit
+    }
+
+    /// The amount of actual physical memory, in pages.
+    pub fn physical_total(&self) -> usize {
+        self.0.PhysicalTotal
+    }
+
+    /// The amount of actual physical memory, in bytes.
+    pub fn physical_total_bytes(&self) -> Option<usize> {
+        self.physical_total().checked_mul(self.page_size())
+    }
+
+    /// The amount of physical memory currently available, in pages.
+    ///
+    /// This is the amount of physical memory that can be immediately
+    /// reused without having to write its contents to disk first.
+    /// It is the sum of the size of the standby, free, and zero lists.
+    pub fn physical_available(&self) -> usize {
+        self.0.PhysicalAvailable
+    }
+
+    /// The amount of physical memory currently available, in bytes.
+    ///
+    /// This is the amount of physical memory that can be immediately
+    /// reused without having to write its contents to disk first.
+    /// It is the sum of the size of the standby, free, and zero lists.
+    pub fn physical_available_bytes(&self) -> Option<usize> {
+        self.physical_available().checked_mul(self.page_size())
+    }
+
+    /// The size of a page, in bytes.
+    pub fn page_size(&self) -> usize {
+        self.0.PageSize
+    }
+}
+
+impl std::fmt::Debug for PerformanceInformation {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PerformanceInformation")
+            .field("commit_total", &self.commit_total())
+            .field("commit_limit", &self.commit_limit())
+            .field("physical_total", &self.physical_total())
+            .field("physical_total_bytes", &self.physical_total_bytes())
+            .field("physical_available", &self.physical_available())
+            .field("physical_available_bytes", &self.physical_available_bytes())
+            .field("page_size", &self.page_size())
+            .finish()
+    }
+}
+
+fn get_performance_info() -> Result<PerformanceInformation, Error> {
+    const SIZE: u32 = std::mem::size_of::<PERFORMANCE_INFORMATION>() as u32;
+
+    let mut performance_info = MaybeUninit::uninit();
+    let result = unsafe { GetPerformanceInfo(performance_info.as_mut_ptr(), SIZE) };
+    if result == FALSE {
+        return Err(Error::Io(std::io::Error::last_os_error()));
+    }
+    let performance_info = unsafe { performance_info.assume_init() };
+
+    Ok(PerformanceInformation(performance_info))
+}
+
+struct EnumPageFileInformation(*mut ENUM_PAGE_FILE_INFORMATION);
+
+impl EnumPageFileInformation {
+    /// The total size of the pagefile, in pages.
+    fn total_size(&self) -> usize {
+        unsafe { self.0.as_ref_unchecked() }.TotalSize
+    }
+
+    /// The current pagefile usage, in pages.
+    fn total_in_use(&self) -> usize {
+        unsafe { self.0.as_ref_unchecked() }.TotalInUse
+    }
+}
+
+impl std::fmt::Debug for EnumPageFileInformation {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("EnumPageFileInformation")
+            .field("total_size", &self.total_size())
+            .field("total_in_use", &self.total_in_use())
+            .finish()
+    }
+}
+
+fn enum_page_files<F, D>(user_data: D, func: F) -> Result<D, Error>
+where
+    F: FnMut(&mut D, EnumPageFileInformation, &WCStr) -> bool,
+{
+    struct Context<F, D> {
+        user_data: D,
+        func: F,
+        panic_data: Option<Box<dyn Any + Send + 'static>>,
+    }
+
+    unsafe extern "system" fn callback<F, D>(
+        context: *mut c_void,
+        page_file_info: *mut ENUM_PAGE_FILE_INFORMATION,
+        page_file_name: PCWSTR,
+    ) -> BOOL
+    where
+        F: FnMut(&mut D, EnumPageFileInformation, &WCStr) -> bool,
+    {
+        let context = unsafe { context.cast::<Context<F, D>>().as_mut_unchecked() };
+        let page_file_info = EnumPageFileInformation(page_file_info);
+        let page_file_name = unsafe { WCStr::from_ptr(page_file_name) };
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            (context.func)(&mut context.user_data, page_file_info, page_file_name)
+        }));
+        match result {
+            Ok(true) => TRUE,
+            Ok(false) => FALSE,
+            Err(panic_data) => {
+                // Store the panic and fail-fast.
+                // We resume the panic outside the callback.
+                context.panic_data = Some(panic_data);
+                FALSE
+            }
+        }
+    }
+
+    let mut context = Context {
+        func,
+        user_data,
+        panic_data: None,
+    };
+
+    let result = unsafe {
+        let context_ptr = (&mut context as *mut Context<F, D>).cast::<c_void>();
+        EnumPageFilesW(Some(callback::<F, D>), context_ptr)
+    };
+    // Panics are more important than errors.
+    if let Some(panic_data) = context.panic_data {
+        std::panic::resume_unwind(panic_data);
+    }
+    if result == FALSE {
+        return Err(Error::Io(std::io::Error::last_os_error()));
+    }
+
+    Ok(context.user_data)
+}
+
+#[derive(Debug)]
+struct PageFileStats {
+    /// The total size of all page files, in pages.
+    total: usize,
+
+    /// The total usage of all page files, in pages.
+    used: usize,
+}
+
+/// A cache for system data
+#[derive(Debug)]
+pub(crate) struct CacheContext {
+    system_info: OnceCell<SystemInfo>,
+    memory_status_ex: OnceCell<MemoryStatusEx>,
+    os_version_info_ex: OnceCell<OsVersionInfoEx>,
+    performance_info: OnceCell<PerformanceInformation>,
+    page_file_stats: OnceCell<PageFileStats>,
+}
+
+impl CacheContext {
+    /// Make a new cache context
+    pub fn new() -> Self {
+        Self {
+            system_info: OnceCell::new(),
+            memory_status_ex: OnceCell::new(),
+            os_version_info_ex: OnceCell::new(),
+            performance_info: OnceCell::new(),
+            page_file_stats: OnceCell::new(),
+        }
+    }
+
+    fn get_system_info(&self) -> &SystemInfo {
+        self.system_info.get_or_init(get_system_info)
+    }
+
+    fn get_memory_status_ex(&self) -> Result<&MemoryStatusEx, Error> {
+        self.memory_status_ex
+            .get_or_try_init(global_memory_status_ex)
+    }
+
+    fn get_os_version_info(&self) -> &OsVersionInfoEx {
+        self.os_version_info_ex.get_or_init(rtl_get_version)
+    }
+
+    fn get_performance_info(&self) -> Result<&PerformanceInformation, Error> {
+        self.performance_info.get_or_try_init(get_performance_info)
+    }
+
+    fn get_page_file_stats(&self) -> Result<&PageFileStats, Error> {
+        self.page_file_stats.get_or_try_init(|| {
+            enum_page_files(
+                PageFileStats { total: 0, used: 0 },
+                |stats, info, _file_name| {
+                    stats.total += info.total_size();
+                    stats.used += info.total_in_use();
+                    true
+                },
+            )
+        })
+    }
+
+    /// Get the time the system was booted.
+    pub fn get_boot_time(&self) -> Result<SystemTime, Error> {
+        Ok(SystemTime::now() - self.get_uptime()?)
+    }
+
+    /// Get the uptime.
+    pub fn get_uptime(&self) -> Result<Duration, Error> {
+        Ok(get_tick_count_64())
+    }
+
+    /// Get the hostname
+    pub fn get_hostname(&self) -> Result<String, Error> {
+        get_computer_name(ComputerNameFormat::PhysicalDnsHostname)
+    }
+
+    /// Get the architecture.
+    pub fn get_architecture(&self) -> Result<Option<Arch>, Error> {
+        let system_info = self.get_system_info();
+        match system_info.processor_architecture() {
+            Ok(ProcessorArchitecture::Amd64) => Ok(Some(Arch::X86_64)),
+            Ok(ProcessorArchitecture::Arm) => Ok(Some(Arch::Arm)),
+            Ok(ProcessorArchitecture::Arm64) => Ok(Some(Arch::AArch64)),
+            // Rust doesn't currently support Itanium, so I don't see how we could possibly get this value here?
+            Ok(ProcessorArchitecture::Ia64) => Ok(None),
+            Ok(ProcessorArchitecture::Intel) => Ok(Some(Arch::X86)),
+            Ok(ProcessorArchitecture::Unknown) => Ok(None),
+            Err(_e) => Ok(None),
+        }
+    }
+
+    /// Get the system name
+    pub fn get_system_name(&self) -> Result<Option<String>, Error> {
+        let os_version_info = self.get_os_version_info();
+
+        // https://www.lifewire.com/windows-version-numbers-2625171
+        // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ns-wdm-_osversioninfoexw
+        let system_name = match (
+            os_version_info.major_version(),
+            os_version_info.minor_version(),
+            os_version_info.build_number(),
+            os_version_info.product_type(),
+            os_version_info.suite_mask(),
+        ) {
+            (10, 0, build, Ok(ProductType::Workstation), _) if build >= 22000 => "Windows 11",
+            (10, 0, build, _, _) if build >= 22000 => "Windows Server 2022",
+            (10, 0, _, Ok(ProductType::Workstation), _) => "Windows 10",
+            (10, 0, _, _, _) => "Windows Server 2016",
+            (6, 3, _, Ok(ProductType::Workstation), _) => "Windows 8.1",
+            (6, 3, _, _, _) => "Windows Server 2012 R2",
+            (6, 2, _, Ok(ProductType::Workstation), _) => "Windows 8",
+            (6, 2, _, _, _) => "Windows Server 2012",
+            (6, 1, _, Ok(ProductType::Workstation), _) => "Windows 7",
+            (6, 1, _, _, _) => "Windows Server 2008 R2",
+            (6, 0, _, Ok(ProductType::Workstation), _) => "Windows Vista",
+            (6, 0, _, _, _) => "Windows Server 2008",
+            (5, 2, _, _, ProductSuite::WH_SERVER) => "Windows Home Server",
+            (5, 2, _, Ok(ProductType::Workstation), _) => "Windows XP Professional x64 Edition",
+            (5, 2, _, _, _) => "Windows Server 2003",
+            (5, 1, _, _, _) => "Windows XP",
+            (5, 0, _, _, _) => "Windows 2000",
+            _ => return Ok(None),
+        };
+
+        Ok(Some(system_name.to_string()))
+    }
+
+    /// Get the os version.
+    pub fn get_system_version(&self) -> Result<String, Error> {
+        let os_version_info = self.get_os_version_info();
+
+        let major_version = os_version_info.major_version();
+        let minor_version = os_version_info.minor_version();
+        let build_number = os_version_info.build_number();
+
+        Ok(format!("{major_version}.{minor_version}.{build_number}"))
+    }
+
+    /// Get the total amount of memory in the computer, in bytes.
+    pub fn get_total_memory(&self) -> Result<u64, Error> {
+        let memory_info_ex = self.get_memory_status_ex()?;
+        Ok(memory_info_ex.total_physical())
+    }
+
+    /// Get the available amount of memory in the computer, in bytes.
+    pub fn get_available_memory(&self) -> Result<u64, Error> {
+        let memory_info_ex = self.get_memory_status_ex()?;
+        Ok(memory_info_ex.available_physical())
+    }
+
+    /// Get the total amount of swap in the computer, in bytes.
+    pub fn get_total_swap(&self) -> Result<u64, Error> {
+        let performance_info = self.get_performance_info()?;
+        let page_file_stats = self.get_page_file_stats()?;
+
+        let page_size = performance_info.page_size();
+
+        page_file_stats
+            .total
+            .checked_mul(page_size)
+            .and_then(|value| u64::try_from(value).ok())
+            .ok_or(Error::Generic("Failed to calculate total swap size"))
+    }
+
+    /// Get the available amount of swap in the computer, in bytes.
+    pub fn get_available_swap(&self) -> Result<u64, Error> {
+        let performance_info = self.get_performance_info()?;
+        let page_file_stats = self.get_page_file_stats()?;
+
+        let page_size = performance_info.page_size();
+
+        page_file_stats
+            .total
+            .checked_sub(page_file_stats.used)
+            .and_then(|value| value.checked_mul(page_size))
+            .and_then(|value| u64::try_from(value).ok())
+            .ok_or(Error::Generic("Failed to calculate available swap size"))
+    }
+
+    /// Get the number of logical cpu cores.
+    pub fn count_logical_cpus(&self) -> Result<usize, Error> {
+        Ok(get_active_processor_count(u16::MAX)?
+            .try_into()
+            .expect("Windows is 16 bit"))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use std::time::Instant;
+
+    const BLOCKING_DURATION: Duration = Duration::from_millis(1);
 
     fn assert_impl_send<T>()
     where
@@ -629,14 +842,14 @@ mod test {
     fn get_tick_count_64_does_not_block() {
         let start = Instant::now();
         let _boot_time = CacheContext::new().get_boot_time();
-        assert!(start.elapsed() < Duration::from_millis(1));
+        assert!(start.elapsed() < BLOCKING_DURATION);
     }
 
     #[test]
     fn get_computer_name_does_not_block() {
         let start = Instant::now();
         let _hostname = get_computer_name(ComputerNameFormat::PhysicalDnsHostname);
-        assert!(start.elapsed() < Duration::from_millis(1));
+        assert!(start.elapsed() < BLOCKING_DURATION);
     }
 
     #[test]
@@ -644,7 +857,7 @@ mod test {
         let start = Instant::now();
         let _system_info = get_system_info();
         let elapsed = start.elapsed();
-        assert!(elapsed < Duration::from_millis(1));
+        assert!(elapsed < BLOCKING_DURATION);
     }
 
     #[test]
@@ -652,7 +865,7 @@ mod test {
         let start = Instant::now();
         let version = rtl_get_version();
         let elapsed = start.elapsed();
-        assert!(elapsed < Duration::from_millis(1));
+        assert!(elapsed < BLOCKING_DURATION);
 
         dbg!(version);
     }
@@ -660,9 +873,9 @@ mod test {
     #[test]
     fn global_memory_status_ex_works() {
         let start = Instant::now();
-        let memory_status = global_memory_status_ex().expect("failed to get global memory status");
+        let memory_status = global_memory_status_ex().expect("Failed to get global memory status");
         let elapsed = start.elapsed();
-        assert!(elapsed < Duration::from_millis(1));
+        assert!(elapsed < BLOCKING_DURATION);
 
         dbg!(memory_status);
     }
@@ -672,7 +885,33 @@ mod test {
         let start = Instant::now();
         let _logical_cpus = get_active_processor_count(u16::MAX);
         let elapsed = start.elapsed();
-        assert!(elapsed < Duration::from_millis(1));
+        assert!(elapsed < BLOCKING_DURATION);
+    }
+
+    #[test]
+    fn get_performance_info_works() {
+        let start = Instant::now();
+        let _performance_info = get_performance_info();
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+    }
+
+    #[test]
+    fn enum_page_files_works() {
+        let start = Instant::now();
+        let _page_file_info = enum_page_files((0, 0), |(total, used), info, _name| {
+            *total = info.total_size();
+            *used = info.total_in_use();
+            true
+        });
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
     }
 
     #[test]

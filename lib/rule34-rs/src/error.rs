@@ -38,4 +38,8 @@ pub enum Error {
     /// Missing auth
     #[error("missing authentication")]
     MissingAuth,
+
+    /// Ratelimited
+    #[error("ratelimited")]
+    Ratelimited,
 }

@@ -2,6 +2,8 @@
 **/test_data/*.js linguist-detectable=false
 **/test_data/*.json linguist-detectable=false
 
+Cargo.lock text eol=lf
+
 *.rs text eol=lf
 *.toml text eol=lf
-Cargo.lock text eol=lf
+*.sql text eol=lf

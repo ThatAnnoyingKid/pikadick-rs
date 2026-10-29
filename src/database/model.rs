@@ -1,5 +1,16 @@
-use bitflags::bitflags;
-use rusqlite::{
+mod jiff_timestamp_wrapper;
+mod rule34_post;
+mod rule34_query_stat;
+mod tiktok_embed_flags;
+
+pub use self::{
+    jiff_timestamp_wrapper::JiffTimestampWrapper,
+    rule34_post::Rule34Post,
+    rule34_query_stat::Rule34QueryStat,
+    tiktok_embed_flags::TikTokEmbedFlags,
+};
+use nd_async_rusqlite::rusqlite::{
+    ToSql,
     types::{
         FromSql,
         FromSqlError,
@@ -7,7 +18,6 @@ use rusqlite::{
         ToSqlOutput,
         ValueRef,
     },
-    ToSql,
 };
 use serenity::{
     model::prelude::*,
@@ -24,8 +34,6 @@ struct DatabaseUserId(UserId);
 
 impl FromSql for DatabaseUserId {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        // This is not heavy
-        #[allow(clippy::or_fun_call)]
         let value = value
             .as_i64()
             .map(i64::to_ne_bytes)
@@ -123,7 +131,7 @@ pub struct TicTacToePlayerParseError(std::num::ParseIntError);
 
 impl std::fmt::Display for TicTacToePlayerParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        "invalid player".fmt(f)
+        "Invalid player".fmt(f)
     }
 }
 
@@ -321,37 +329,5 @@ impl TicTacToeTopPlayerScore {
             ties,
             concedes,
         })
-    }
-}
-
-bitflags! {
-    /// Flags for TikTok embeds
-    #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-    pub struct TikTokEmbedFlags: u32 {
-        /// Whether embeds are enabled
-        const ENABLED = 1 << 0;
-        /// Whether the bot should delete old links
-        const DELETE_LINK = 1 << 1;
-    }
-}
-
-impl ToSql for TikTokEmbedFlags {
-    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
-        Ok(self.bits().into())
-    }
-}
-
-impl FromSql for TikTokEmbedFlags {
-    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        let value = value.as_i64()?;
-        let value = u32::try_from(value).map_err(|_e| FromSqlError::OutOfRange(value))?;
-
-        Self::from_bits(value).ok_or_else(|| FromSqlError::OutOfRange(value.into()))
-    }
-}
-
-impl Default for TikTokEmbedFlags {
-    fn default() -> Self {
-        Self::empty()
     }
 }

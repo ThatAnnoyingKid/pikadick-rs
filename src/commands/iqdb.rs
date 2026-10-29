@@ -1,68 +1,46 @@
 use crate::{
-    checks::ENABLED_CHECK,
-    client_data::{
-        CacheStatsBuilder,
-        CacheStatsProvider,
-    },
-    util::{
-        LoadingReaction,
-        TimedCache,
-        TimedCacheEntry,
-    },
-    ClientDataKey,
+    PoiseContext,
+    PoiseError,
 };
 use anyhow::Context as _;
-use serenity::{
-    builder::{
-        CreateEmbed,
-        CreateMessage,
-    },
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
+use bewu_util::AsyncTimedLruCache;
+use nd_util::ArcAnyhowError;
+use poise::CreateReply;
+use serenity::builder::CreateEmbed;
+use std::{
+    sync::Arc,
+    time::Duration,
 };
-use std::sync::Arc;
 use tracing::error;
 
-#[derive(Clone, Debug)]
+const FIVE_MINUTES: Duration = Duration::from_secs(60 * 5);
+
+#[derive(Debug)]
 pub struct IqdbClient {
     client: iqdb::Client,
-    search_cache: TimedCache<String, iqdb::SearchResults>,
+    search_cache: AsyncTimedLruCache<String, Result<Arc<iqdb::SearchResults>, ArcAnyhowError>>,
 }
 
 impl IqdbClient {
     pub fn new() -> Self {
         Self {
             client: iqdb::Client::new(),
-            search_cache: TimedCache::new(),
+            search_cache: AsyncTimedLruCache::new(100, FIVE_MINUTES),
         }
     }
 
     /// Search for an image, with caching
-    pub async fn search(
-        &self,
-        query: &str,
-    ) -> anyhow::Result<Arc<TimedCacheEntry<iqdb::SearchResults>>> {
-        if let Some(entry) = self.search_cache.get_if_fresh(query) {
-            return Ok(entry);
-        }
-
-        let search_results = self
-            .client
-            .search(query)
+    pub async fn search(&self, query: &str) -> Result<Arc<iqdb::SearchResults>, ArcAnyhowError> {
+        self.search_cache
+            .get(query.to_string(), || async {
+                self.client
+                    .search(query)
+                    .await
+                    .context("Failed to search for image")
+                    .map(Arc::new)
+                    .map_err(ArcAnyhowError::new)
+            })
             .await
-            .context("failed to search for image")?;
-
-        self.search_cache
-            .insert(String::from(query), search_results);
-
-        self.search_cache
-            .get_if_fresh(query)
-            .context("cache data expired")
     }
 }
 
@@ -72,65 +50,39 @@ impl Default for IqdbClient {
     }
 }
 
-impl CacheStatsProvider for IqdbClient {
-    fn publish_cache_stats(&self, cache_stats_builder: &mut CacheStatsBuilder) {
-        cache_stats_builder.publish_stat("iqdb", "search_cache", self.search_cache.len() as f32);
-    }
-}
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Search IQDB for an image at a url.")
+)]
+pub async fn iqdb(
+    ctx: PoiseContext<'_>,
+    #[description = "The url to the image."] url: String,
+) -> Result<(), PoiseError> {
+    ctx.defer().await?;
 
-#[command]
-#[description("Search IQDB for an image at a url")]
-#[usage("<img_url>")]
-#[example("https://konachan.com/image/5982d8946ae503351e960f097f84cd90/Konachan.com%20-%20330136%20animal%20nobody%20original%20signed%20yutaka_kana.jpg")]
-#[checks(Enabled)]
-#[min_args(1)]
-#[max_args(1)]
-#[bucket("default")]
-async fn iqdb(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let client = client_data.iqdb_client.clone();
-    drop(data_lock);
+    let result = ctx.data().iqdb_client.search(&url).await;
+    let mut create_reply = CreateReply::default();
+    match result {
+        Ok(data) => match data.best_match.as_ref() {
+            Some(data) => {
+                let create_embed = CreateEmbed::new()
+                    .title("IQDB Best Match")
+                    .image(data.image_url.as_str())
+                    .url(data.url.as_str())
+                    .description(data.url.as_str());
 
-    let query = args.trimmed().current().expect("missing query");
-
-    let mut loading = LoadingReaction::new(ctx.http.clone(), msg);
-
-    match client
-        .search(query)
-        .await
-        .context("failed to search for image")
-    {
-        Ok(data) => {
-            let data = data.data();
-            match data.best_match.as_ref() {
-                Some(data) => {
-                    let embed_builder = CreateEmbed::new()
-                        .title("IQDB Best Match")
-                        .image(data.image_url.as_str())
-                        .url(data.url.as_str())
-                        .description(data.url.as_str());
-                    let message_builder = CreateMessage::new().embed(embed_builder);
-                    msg.channel_id
-                        .send_message(&ctx.http, message_builder)
-                        .await?;
-
-                    loading.send_ok();
-                }
-                None => {
-                    msg.channel_id
-                        .say(&ctx.http, format!("No results on iqdb for \"{query}\"",))
-                        .await?;
-                }
+                create_reply = create_reply.embed(create_embed);
             }
-        }
+            None => {
+                create_reply = create_reply.content(format!("No results on IQDB for \"{url}\""));
+            }
+        },
         Err(error) => {
             error!("{error:?}");
-            msg.channel_id.say(&ctx.http, format!("{error:?}")).await?;
+            create_reply = create_reply.content(format!("{error:?}"));
         }
     }
+    ctx.send(create_reply).await?;
 
     Ok(())
 }

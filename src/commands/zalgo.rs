@@ -1,37 +1,23 @@
-use crate::checks::ENABLED_CHECK;
-use serenity::{
-    client::Context,
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::channel::Message,
+use crate::{
+    PoiseContext,
+    PoiseError,
 };
 use zalgo::ZalgoBuilder;
 
-#[command]
-#[description("Zalgoify a phrase")]
-#[usage("\"<phrase>\"<Max Length>")]
-#[example("\"Hello World!\" 50")]
-#[min_args(1)]
-#[max_args(2)]
-#[checks(Enabled)]
-#[bucket("default")]
-pub async fn zalgo(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let input: String = args.single_quoted()?;
-    let input_max = args.single().unwrap_or(2_000);
+#[poise::command(slash_command, description_localized("en-US", "Zalgoify a phrase."))]
+pub async fn zalgo(
+    ctx: PoiseContext<'_>,
+    #[description = "The phrase to zalgoify."] phrase: String,
+    #[description = "The length of the output phrase. Defaults to 2,000."] length: Option<u16>,
+) -> Result<(), PoiseError> {
+    let output_length = length.unwrap_or(2_000);
 
-    let input_len = input.chars().count();
-    let total = (input_max as f32 - input_len as f32) / input_len as f32;
+    let phrase_length = phrase.chars().count();
+    let total = (f64::from(output_length) - phrase_length as f64) / phrase_length as f64;
     let max = (total / 3.0) as usize;
 
     if max == 0 {
-        msg.channel_id
-            .say(
-                &ctx.http,
-                "The phrase cannot be zalgoified within the given limits",
-            )
+        ctx.reply("The phrase cannot be zalgoified within the given limits.")
             .await?;
         return Ok(());
     }
@@ -40,9 +26,9 @@ pub async fn zalgo(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
         .set_up(max)
         .set_down(max)
         .set_mid(max)
-        .zalgoify(&input);
+        .zalgoify(&phrase);
 
-    msg.channel_id.say(&ctx.http, &output).await?;
+    ctx.reply(output).await?;
 
     Ok(())
 }

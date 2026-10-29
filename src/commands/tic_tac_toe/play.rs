@@ -1,85 +1,71 @@
 use crate::{
-    checks::ENABLED_CHECK,
+    PoiseContext,
+    PoiseError,
     database::{
-        model::TicTacToePlayer,
         TicTacToeCreateGameError,
+        model::TicTacToePlayer,
     },
-    ClientDataKey,
 };
+use anyhow::Context as _;
+use poise::CreateReply;
 use serenity::{
-    builder::{
-        CreateAttachment,
-        CreateMessage,
-    },
-    client::Context,
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
+    builder::CreateAttachment,
+    model::id::UserId,
+    prelude::Mentionable,
 };
 use tracing::error;
 
-#[command]
-#[description("Start a game of Tic-Tac-Toe")]
-#[usage("<computer OR @user, X OR O>")]
-#[example("computer X")]
-#[min_args(2)]
-#[max_args(2)]
-#[checks(Enabled)]
-#[bucket("default")]
-pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let tic_tac_toe_data = client_data.tic_tac_toe_data.clone();
-    let db = client_data.db.clone();
-    drop(data_lock);
+#[derive(Debug, poise::ChoiceParameter)]
+enum TeamChoice {
+    #[name = "X"]
+    X,
 
-    let opponent: TicTacToePlayer = match args.trimmed().single() {
-        Ok(player) => player,
-        Err(e) => {
-            let response = format!(
-                "Invalid opponent. Choose 'computer' or '@user'. Error: {}",
-                e
-            );
-            msg.channel_id.say(&ctx.http, response).await?;
-            return Ok(());
-        }
+    #[name = "O"]
+    O,
+}
+
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Start a game of Tic-Tac-Toe.")
+)]
+pub async fn play(
+    ctx: PoiseContext<'_>,
+    #[description_localized("en-US", "The user you want to face. Omit to face the computer.")]
+    opponent: Option<UserId>,
+    #[description_localized("en-US", "The team you want to play as, X or O. Defaults to X.")] team: Option<
+        TeamChoice,
+    >,
+) -> Result<(), PoiseError> {
+    let author = ctx.author();
+    let author_id = author.id;
+    let author_team = match team {
+        Some(TeamChoice::X) | None => tic_tac_toe::Team::X,
+        Some(TeamChoice::O) => tic_tac_toe::Team::O,
     };
-
-    let author_team: tic_tac_toe::Team = match args.trimmed().single() {
-        Ok(team) => team,
-        Err(e) => {
-            let response = format!("Invalid team. Choose 'X' or 'O'. Error: {}", e);
-            msg.channel_id.say(&ctx.http, response).await?;
-            return Ok(());
-        }
+    let opponent = match opponent {
+        Some(user_id) => TicTacToePlayer::User(user_id),
+        None => TicTacToePlayer::Computer,
     };
-
-    let author_id = msg.author.id;
-    let guild_id = msg.guild_id;
-
-    let game = match db
-        .create_tic_tac_toe_game(guild_id.into(), author_id.into(), author_team, opponent)
-        .await
-    {
+    let create_game_result = ctx
+        .data()
+        .tic_tac_toe_data
+        .create_game(ctx.guild_id(), author_id, author_team, opponent)
+        .await;
+    let game = match create_game_result {
         Ok(game) => game,
         Err(TicTacToeCreateGameError::AuthorInGame) => {
             let response = "Finish your current game in this server before starting a new one. Use `tic-tac-toe concede` to end your current game.";
-            msg.channel_id.say(&ctx.http, response).await?;
+            ctx.reply(response).await?;
             return Ok(());
         }
         Err(TicTacToeCreateGameError::OpponentInGame) => {
             let response = "Your opponent is currently in another game in this server. Wait for them to finish.";
-            msg.channel_id.say(&ctx.http, response).await?;
+            ctx.reply(response).await?;
             return Ok(());
         }
-        Err(TicTacToeCreateGameError::Database(e)) => {
-            error!("{:?}", e);
-            msg.channel_id.say(&ctx.http, "database error").await?;
+        Err(TicTacToeCreateGameError::Database(error)) => {
+            error!("{error:?}");
+            ctx.reply("Database error").await?;
             return Ok(());
         }
     };
@@ -99,30 +85,26 @@ pub async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         author_id
     };
 
-    let file = match tic_tac_toe_data
-        .renderer
-        .render_board_async(game_board)
+    let file = match ctx
+        .data()
+        .tic_tac_toe_data
+        .render_board(game_board)
         .await
+        .context("Failed to render Tic-Tac-Toe board")
     {
         Ok(file) => CreateAttachment::bytes(file, format!("{}.png", game_board.encode_u16())),
         Err(error) => {
-            error!("Failed to render Tic-Tac-Toe board: {error}");
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    format!("Failed to render Tic-Tac-Toe board: {error}"),
-                )
-                .await?;
+            error!("{error:?}");
+            ctx.reply(format!("{error:?}")).await?;
             return Ok(());
         }
     };
 
-    let message_builder = CreateMessage::new()
+    let create_reply = CreateReply::new()
         .content(format!("Game created! Your turn {}", user.mention()))
-        .add_file(file);
-    msg.channel_id
-        .send_message(&ctx.http, message_builder)
-        .await?;
+        .attachment(file);
+
+    ctx.send(create_reply).await?;
 
     Ok(())
 }

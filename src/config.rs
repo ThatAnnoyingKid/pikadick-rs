@@ -27,6 +27,7 @@ pub struct Config {
     pub token: String,
 
     /// The application id
+    #[serde(rename = "application-id")]
     pub application_id: u64,
 
     /// Prefix for the bot
@@ -37,23 +38,22 @@ pub struct Config {
     pub status: Option<StatusConfig>,
 
     /// Data dir
+    #[serde(rename = "data-dir")]
     pub data_dir: Utf8PathBuf,
 
     /// The test guild
+    #[serde(rename = "test-guild")]
     pub test_guild: Option<GuildId>,
-
-    /// FML config
-    pub fml: FmlConfig,
 
     /// DeviantArt config
     pub deviantart: DeviantArtConfig,
 
     /// SauceNao config
+    #[serde(rename = "sauce-nao")]
     pub sauce_nao: SauceNaoConfig,
 
-    /// Open AI config
-    #[serde(rename = "open-ai")]
-    pub open_ai: OpenAiConfig,
+    /// Rule34 config
+    pub rule34: Rule34Config,
 
     /// The log config
     #[serde(default)]
@@ -62,13 +62,6 @@ pub struct Config {
     /// Unknown extra data
     #[serde(flatten)]
     pub extra: HashMap<String, toml::Value>,
-}
-
-/// FML config
-#[derive(Deserialize, Debug)]
-pub struct FmlConfig {
-    /// FML API key
-    pub key: String,
 }
 
 /// Deviant Config
@@ -85,17 +78,6 @@ pub struct DeviantArtConfig {
 #[derive(Deserialize, Debug)]
 pub struct SauceNaoConfig {
     /// The api key
-    pub api_key: String,
-
-    /// Unknown extra data
-    #[serde(flatten)]
-    pub extra: HashMap<String, toml::Value>,
-}
-
-/// Open AI Config
-#[derive(Deserialize, Debug)]
-pub struct OpenAiConfig {
-    /// The api key
     #[serde(rename = "api-key")]
     pub api_key: String,
 
@@ -104,23 +86,22 @@ pub struct OpenAiConfig {
     pub extra: HashMap<String, toml::Value>,
 }
 
+/// Rule34 Config
+#[derive(Deserialize, Debug)]
+pub struct Rule34Config {
+    #[serde(rename = "user-id")]
+    pub user_id: u64,
+
+    #[serde(rename = "api-key")]
+    pub api_key: String,
+}
+
 /// Log Config
 #[derive(Deserialize, Debug)]
 pub struct LogConfig {
     /// The logging directives.
     #[serde(default = "LogConfig::default_directives")]
     pub directives: Vec<String>,
-
-    /// Whether to use opentelemetry
-    #[serde(default, rename = "opentelemetry")]
-    pub opentelemetry: bool,
-
-    /// The OTLP endpoint
-    pub endpoint: Option<String>,
-
-    /// Headers
-    #[serde(default)]
-    pub headers: HashMap<String, String>,
 }
 
 impl LogConfig {
@@ -139,10 +120,6 @@ impl Default for LogConfig {
     fn default() -> Self {
         Self {
             directives: Self::default_directives(),
-
-            opentelemetry: false,
-            endpoint: None,
-            headers: HashMap::new(),
         }
     }
 }

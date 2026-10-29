@@ -1,29 +1,18 @@
 use crate::{
-    checks::ENABLED_CHECK,
-    ClientDataKey,
-};
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
+    PoiseContext,
+    PoiseError,
 };
 use tracing::warn;
 
-#[command]
-#[description("Get the bot's latency in this server")]
-#[checks(Enabled)]
-#[bucket("default")]
-async fn latency(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let shard_manager = client_data.shard_manager.clone();
-    drop(data_lock);
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Get the bot's latency in this server.")
+)]
+pub async fn latency(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    ctx.defer().await?;
 
-    let shard_id = ctx.shard_id;
+    let shard_manager = ctx.framework().shard_manager.clone();
+    let shard_id = ctx.serenity_context().shard_id;
 
     let latency = {
         let runners = shard_manager.runners.lock().await;
@@ -33,16 +22,13 @@ async fn latency(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     match latency {
         Some(latency) => {
-            msg.channel_id
-                .say(&ctx.http, format!("Shard Latency: {latency:?}"))
-                .await?;
+            ctx.reply(format!("Shard Latency: {latency:?}")).await?;
         }
         None => {
             warn!("Failed to get latency for shard: {shard_id}");
-            msg.channel_id
-                .say(&ctx.http, "Failed to get latency")
-                .await?;
+            ctx.reply("Failed to get latency.").await?;
         }
     }
+
     Ok(())
 }

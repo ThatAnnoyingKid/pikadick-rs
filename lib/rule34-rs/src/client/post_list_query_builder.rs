@@ -83,7 +83,7 @@ impl<'a> PostListQueryBuilder<'a> {
 
         let mut url = Url::parse_with_params(
             crate::API_BASE_URL,
-            &[("page", "dapi"), ("s", "post"), ("q", "index")],
+            [("page", "dapi"), ("s", "post"), ("q", "index")],
         )?;
 
         {
@@ -124,6 +124,8 @@ impl<'a> PostListQueryBuilder<'a> {
     /// Returns an empty list if there are no results.
     pub async fn execute(&self) -> Result<PostList, Error> {
         let url = self.get_url()?;
-        self.client.get_xml(url.as_str()).await
+        self.client
+            .ratelimited(|| async { self.client.get_xml(url.as_str()).await })
+            .await
     }
 }

@@ -2,18 +2,18 @@ use super::Error;
 use nix::{
     sys::{
         sysinfo::{
-            sysinfo,
             SysInfo,
+            sysinfo,
         },
         utsname::{
-            uname,
             UtsName,
+            uname,
         },
     },
     unistd::{
+        SysconfVar,
         gethostname,
         sysconf,
-        SysconfVar,
     },
 };
 use once_cell::sync::OnceCell;
@@ -106,25 +106,25 @@ impl CacheContext {
         Ok(version.to_string())
     }
 
-    /// Get the total amount of memory in the computer, in bytes
+    /// Get the total amount of memory in the computer, in bytes.
     pub fn get_total_memory(&self) -> Result<u64, Error> {
         let sysinfo = self.get_sysinfo()?;
         Ok(sysinfo.ram_total())
     }
 
-    /// Get the available amount of memory in the computer, in bytes
+    /// Get the available amount of memory in the computer, in bytes.
     pub fn get_available_memory(&self) -> Result<u64, Error> {
         let sysinfo = self.get_sysinfo()?;
         Ok(sysinfo.ram_unused())
     }
 
-    /// Get the total amount of swap in the computer, in bytes
+    /// Get the total amount of swap in the computer, in bytes.
     pub fn get_total_swap(&self) -> Result<u64, Error> {
         let sysinfo = self.get_sysinfo()?;
         Ok(sysinfo.swap_total())
     }
 
-    /// Get the available amount of swap in the computer, in bytes
+    /// Get the available amount of swap in the computer, in bytes.
     pub fn get_available_swap(&self) -> Result<u64, Error> {
         let sysinfo = self.get_sysinfo()?;
         Ok(sysinfo.swap_free())
@@ -136,7 +136,7 @@ impl CacheContext {
             .map_err(|error| Error::Io(std::io::Error::from(error)))?
             .ok_or(Error::MissingValue)?
             .try_into()
-            .expect("the number of cores cannot fit in a `usize`"))
+            .expect("The number of cores cannot fit in a `usize`"))
     }
 }
 

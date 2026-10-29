@@ -28,7 +28,7 @@ mod test {
     async fn check_room() {
         let client = Client::new();
         let data = client
-            .check_room("274218")
+            .check_room("430345")
             .await
             .expect("failed to check room");
 

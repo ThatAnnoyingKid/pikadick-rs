@@ -16,6 +16,7 @@ pub use crate::{
     error::Error,
     search_query_builder::SearchQueryBuilder,
     types::{
+        AutocompleteResult,
         DeletedImageList,
         Note,
         NoteList,
@@ -44,15 +45,18 @@ pub const TAGS_LIST_LIMIT_MAX: u16 = 1_000;
 // URL constants
 pub(crate) const URL_INDEX: &str = "https://rule34.xxx/index.php";
 
-/// The base Api Url
+/// The base api url
 pub(crate) const API_BASE_URL: &str = "https://api.rule34.xxx/index.php";
+
+/// The maximum number of requests that can be made per time interval.
+pub const RATELIMIT_BUDGET: u8 = 60;
 
 /// Turn a post id into a post url
 fn post_id_to_html_post_url(id: NonZeroU64) -> Url {
     // It shouldn't be possible to make this function fail for any valid id.
     Url::parse_with_params(
         crate::URL_INDEX,
-        &[
+        [
             ("id", itoa::Buffer::new().format(id.get())),
             ("page", "post"),
             ("s", "view"),
@@ -75,8 +79,8 @@ mod test {
     impl Config {
         fn load() -> Self {
             let raw =
-                std::fs::read_to_string("./config.json").expect("failed to read \"config.json\"");
-            let config: Config = serde_json::from_str(&raw).expect("failed to parse config");
+                std::fs::read_to_string("./config.json").expect("Failed to read \"config.json\"");
+            let config: Config = serde_json::from_str(&raw).expect("Failed to parse config");
 
             config
         }
@@ -179,13 +183,13 @@ mod test {
     #[test]
     fn bad_tags_list() {
         let tags = [
-            // TODO: I think this tag was deleted
+            // TODO: I think these tags were deleted
             // "swallow_(pokémon_move)",
+            // "almáriel",
             "akoúo̱_(rwby)",
             "miló_(rwby)",
             "las_tres_niñas_(company)",
             "ooparts♥love",
-            "almáriel",
             "kingdom_hearts_union_χ_[cross]",
             "gen¹³",
             "nancy’s_face_is_deeper_in_carrie’s_ass",
@@ -200,6 +204,7 @@ mod test {
             "ne-α_type",
             "lützow_(azur_lane)",
             "ä",
+            "göll_(shuumatsu_no_valkyrie)",
         ];
 
         RUNTIME.block_on(async move {
@@ -215,7 +220,7 @@ mod test {
 
                 assert!(
                     tags_len == 1,
-                    "failed to get tags for \"{expected_tag_name}\", tags does not have one tag, it has {tags_len} tags"
+                    "failed to get tags for \"{expected_tag_name}\", tags does not have 1 tag, it has {tags_len} tags"
                 );
                 let tag = tags.first().expect("tag list is empty");
                 let actual_tag_name = &*tag.name;
@@ -254,5 +259,14 @@ mod test {
         let post_3 = response_3.posts.first().expect("missing post");
         assert!(post_3.id.get() == 3);
         assert!(post_3.source.as_deref() == Some("https://www.pixiv.net/en/artworks/12972758"));
+    }
+
+    #[ignore]
+    #[test]
+    fn autocomplete() {
+        let results = RUNTIME
+            .block_on(CLIENT.autocomplete("1gir"))
+            .expect("Failed to get autocomplete");
+        dbg!(results);
     }
 }

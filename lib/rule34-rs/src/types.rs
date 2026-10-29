@@ -33,3 +33,16 @@ pub use self::{
         TagList,
     },
 };
+
+#[derive(Debug, serde::Deserialize)]
+pub struct AutocompleteResult {
+    /// The human-readable label for this result.
+    ///
+    /// Example: 1girls (5075347)
+    pub label: String,
+
+    /// The raw tag value for this result.
+    ///
+    /// Example: 1girls
+    pub value: String,
+}

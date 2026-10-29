@@ -1,23 +1,13 @@
-pub mod cache_stats;
-pub mod chat;
-pub mod cmd;
 pub mod deviantart;
-pub mod fml;
-pub mod insta_dl;
-pub mod invite;
 pub mod iqdb;
 pub mod latency;
 pub mod leave;
 pub mod nekos;
 pub mod ping;
 pub mod quizizz;
-pub mod r6stats;
 pub mod r6tracker;
-pub mod reddit;
-pub mod reddit_embed;
 pub mod rule34;
 pub mod sauce_nao;
-pub mod shift;
 pub mod stop;
 pub mod system;
 pub mod tic_tac_toe;
@@ -29,110 +19,25 @@ pub mod xkcd;
 pub mod yodaspeak;
 pub mod zalgo;
 
-pub use crate::commands::{
-    cache_stats::CACHE_STATS_COMMAND,
-    cmd::CMD_COMMAND,
-    deviantart::DEVIANTART_COMMAND,
-    fml::FML_COMMAND,
-    insta_dl::INSTA_DL_COMMAND,
-    invite::INVITE_COMMAND,
-    iqdb::IQDB_COMMAND,
-    latency::LATENCY_COMMAND,
-    leave::LEAVE_COMMAND,
-    quizizz::QUIZIZZ_COMMAND,
-    reddit::REDDIT_COMMAND,
-    reddit_embed::REDDIT_EMBED_COMMAND,
-    sauce_nao::SAUCE_NAO_COMMAND,
-    shift::SHIFT_COMMAND,
-    stop::STOP_COMMAND,
-    system::SYSTEM_COMMAND,
-    tic_tac_toe::TIC_TAC_TOE_COMMAND,
-    urban::URBAN_COMMAND,
-    uwuify::UWUIFY_COMMAND,
-    vaporwave::VAPORWAVE_COMMAND,
-    xkcd::XKCD_COMMAND,
-    zalgo::ZALGO_COMMAND,
+pub use self::{
+    deviantart::deviantart,
+    iqdb::iqdb,
+    latency::latency,
+    leave::leave,
+    nekos::nekos,
+    ping::ping,
+    quizizz::quizizz,
+    r6tracker::r6tracker,
+    rule34::rule34,
+    sauce_nao::sauce_nao,
+    stop::stop,
+    system::system,
+    tic_tac_toe::tic_tac_toe,
+    tiktok_embed::tiktok_embed,
+    urban::urban,
+    uwuify::uwuify,
+    vaporwave::vaporwave,
+    xkcd::xkcd,
+    yodaspeak::yodaspeak,
+    zalgo::zalgo,
 };
-use anyhow::Context;
-use pikadick_slash_framework::FromOptions;
-use serenity::builder::{
-    CreateEmbed,
-    CreateInteractionResponse,
-    CreateInteractionResponseMessage,
-};
-
-/// Help Options
-#[derive(Debug, FromOptions)]
-pub struct HelpCommandOptions {
-    /// The command
-    pub command: Option<String>,
-}
-
-/// Create a slash help command
-pub fn create_slash_help_command() -> anyhow::Result<pikadick_slash_framework::HelpCommand> {
-    pikadick_slash_framework::HelpCommandBuilder::new()
-        .description("Get information about commands and their use")
-        .argument(
-            pikadick_slash_framework::ArgumentParamBuilder::new()
-                .name("command")
-                .description("The command you need help for")
-                .kind(pikadick_slash_framework::ArgumentKind::String)
-                .build()?,
-        )
-        .on_process(
-            |ctx, interaction, map, args: HelpCommandOptions| async move {
-                let mut embed_builder = CreateEmbed::new().color(0xF4D665_u32);
-                if let Some(command) = args.command {
-                    let maybe_command = map.get(command.as_str());
-
-                    match maybe_command {
-                        Some(command) => {
-                            embed_builder = embed_builder
-                                .title(command.name())
-                                .description(command.description());
-
-                            if !command.arguments().is_empty() {
-                                let mut arguments = String::with_capacity(256);
-                                for argument in command.arguments().iter() {
-                                    arguments.push_str("**");
-                                    arguments.push_str(argument.name());
-                                    arguments.push_str("**");
-
-                                    arguments.push_str(": ");
-                                    arguments.push_str(argument.description());
-                                }
-                                embed_builder = embed_builder.field("Arguments", &arguments, false);
-                            }
-                        }
-                        None => {
-                            embed_builder = embed_builder
-                                .title("Unknown Command")
-                                .description(format!("Command \"{command}\" was not found."));
-                        }
-                    }
-                } else {
-                    embed_builder = embed_builder.title("Help");
-
-                    let mut description = String::with_capacity(256);
-                    for name in map.keys() {
-                        description.push('`');
-                        description.push_str(name);
-                        description.push('`');
-                        description.push('\n');
-                    }
-
-                    embed_builder = embed_builder.description(description);
-                }
-
-                let message_builder = CreateInteractionResponseMessage::new().embed(embed_builder);
-                let response_builder = CreateInteractionResponse::Message(message_builder);
-                interaction
-                    .create_response(&ctx.http, response_builder)
-                    .await?;
-
-                Ok(())
-            },
-        )
-        .build()
-        .context("failed to build help command")
-}

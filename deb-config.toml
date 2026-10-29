@@ -2,13 +2,13 @@
 # token = "[TOKEN]"
 
 # Put your bot application id here
-# application_id = [APPLICATION_ID]
+# application-id = [APPLICATION_ID]
 
 # Put your bot prefix here
 # prefix = "[PREFIX]"
 
 # The path to the data directory
-data_dir = "/var/lib/pikadick/data"
+data-dir = "/var/lib/pikadick/data"
 
 # The test guild id. Not necessary for normal operation.
 # test_guild = "[TEST_GUILD]"
@@ -19,10 +19,6 @@ data_dir = "/var/lib/pikadick/data"
 # The status type. Must be "Playing", "Listening", or "Streaming"
 # type = "[STATUS_TYPE]"
 
-[fml]
-# The fml api key. You are fine using this.
-key = "4dccf019bdfac" 
-
 # [deviantart]
 # The deviantart username
 # username = "[DEVIANT_USERNAME]"
@@ -30,12 +26,14 @@ key = "4dccf019bdfac"
 # password = "[DEVIANT_PASSWORD]"
 
 # The sauce nao api key
-# [sauce_nao]
-# api_key = "[SAUCE_NAO_API_KEY]"
+# [sauce-nao]
+# api-key = "[SAUCE_NAO_API_KEY]"
 
-# The open ai api key
-# [open-ai]
-# api_key = "[OPEN_AI_API_KEY]"
+# [rule34]
+# The rule34 user id
+# user-id = RULE34_USER_ID
+# The rule34 api key
+# api-key = "[RULE34_API_KEY]"
 
 # This section is optional
 [log]
@@ -44,12 +42,3 @@ directives = [
     "pikadick=info",
     "serenity::framework::standard=info",
 ]
-
-# Whether to enable opentelemetry
-opentelemetry = false
-
-# Endpoint for OTLP GRPC telemetry
-# endpoint = "[ENDPOINT_URL]" 
-
-# Headers for telemetry 
-# [log.headers]

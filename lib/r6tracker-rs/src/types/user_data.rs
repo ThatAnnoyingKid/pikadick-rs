@@ -1,11 +1,3 @@
-/// Season data type
-pub mod season;
-
-pub use self::season::Season;
-use crate::{
-    types::platform::Platform,
-    Stat,
-};
 use std::collections::HashMap;
 use url::Url;
 
@@ -21,6 +13,16 @@ pub enum ApiResponse<T> {
 
 #[derive(Debug)]
 pub struct InvalidApiResponseError(pub Vec<ApiError>);
+
+impl InvalidApiResponseError {
+    /// Returns true if this is a missing error.
+    pub fn is_missing(&self) -> bool {
+        match self.0.as_slice() {
+            [first] => first.is_missing(),
+            _ => false,
+        }
+    }
+}
 
 impl std::error::Error for InvalidApiResponseError {}
 
@@ -38,8 +40,21 @@ impl std::fmt::Display for InvalidApiResponseError {
 /// Errors that occured while procesing an API Request
 #[derive(serde::Deserialize, Debug)]
 pub struct ApiError {
+    /// The error code string.
+    pub code: String,
+
     /// The error message
     pub message: String,
+}
+
+impl ApiError {
+    /// Returns true if this is a missing error.
+    pub fn is_missing(&self) -> bool {
+        // The user does not exist.
+        self.code == "CollectorResultStatus::NotFound" || 
+        // The user exists but has not played siege.
+        self.code == "CollectorResultStatus::NoData"
+    }
 }
 
 impl std::fmt::Display for ApiError {
@@ -107,7 +122,6 @@ impl<T> ApiResponse<T> {
     }
 }
 
-#[allow(clippy::upper_case_acronyms)]
 /// An R6 Rank.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Rank {
@@ -183,22 +197,379 @@ impl Rank {
     }
 }
 
+fn parse_hex_color(color: &str) -> Option<u32> {
+    u32::from_str_radix(color.strip_prefix('#')?, 16).ok()
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct NumberPrecision2Stat {
+    pub value: f64,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct NumberPercentageStat {
+    pub value: f64,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct SegmentOverviewStats {
+    #[serde(rename = "kdRatio")]
+    pub kd_ratio: NumberPrecision2Stat,
+    #[serde(rename = "winPercentage")]
+    pub win_percentage: NumberPercentageStat,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct SegmentOverview {
+    pub stats: SegmentOverviewStats,
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+impl SegmentOverview {
+    /// Get the k/d ratio.
+    pub fn kd_ratio_value(&self) -> f64 {
+        self.stats.kd_ratio.value
+    }
+
+    /// Get the win percentage.
+    pub fn win_percentage_value(&self) -> f64 {
+        self.stats.win_percentage.value
+    }
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct SegmentGameModeAttributes {
+    /// The game mode
+    #[serde(rename = "gamemode")]
+    pub game_mode: String,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct SegmentGameModeStats {
+    #[serde(rename = "kdRatio")]
+    pub kd_ratio: NumberPrecision2Stat,
+    #[serde(rename = "winPercentage")]
+    pub win_percentage: NumberPercentageStat,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct SegmentGameMode {
+    pub attributes: SegmentGameModeAttributes,
+    pub stats: SegmentGameModeStats,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+impl SegmentGameMode {
+    /// Returns `true` if this is Ranked.
+    pub fn is_ranked(&self) -> bool {
+        self.attributes.game_mode == "pvp_ranked"
+    }
+
+    /// Get the k/d ratio.
+    pub fn kd_ratio_value(&self) -> f64 {
+        self.stats.kd_ratio.value
+    }
+
+    /// Get the win percentage.
+    pub fn win_percentage_value(&self) -> f64 {
+        self.stats.win_percentage.value
+    }
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct Metadata {
+    #[serde(rename = "currentSeason")]
+    pub current_season: u16,
+
+    #[serde(rename = "clearanceLevel")]
+    pub clearance_level: u32,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct SegmentSeasonAttributes {
+    /// The season number
+    pub season: u16,
+
+    /// The game mode
+    #[serde(rename = "gamemode")]
+    pub game_mode: String,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct SegmentSeasonMetadata {
+    /// The hex color of this season.
+    pub color: String,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct MmrStatMetadata {
+    #[serde(rename = "imageUrl")]
+    pub image_url: Url,
+    pub name: Option<String>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct MmrStat {
+    pub value: Option<u32>,
+    pub metadata: MmrStatMetadata,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct RankPointsStatMetadata {
+    #[serde(rename = "imageUrl")]
+    pub image_url: Url,
+    pub name: Option<String>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct RankPointsStat {
+    pub value: Option<u32>,
+    pub metadata: RankPointsStatMetadata,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct NumberStat {
+    pub value: u64,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct SegmentSeasonStats {
+    pub mmr: Option<MmrStat>,
+    #[serde(rename = "maxMmr")]
+    pub max_mmr: Option<MmrStat>,
+    #[serde(rename = "rankPoints")]
+    pub rank_points: Option<RankPointsStat>,
+    #[serde(rename = "maxRankPoints")]
+    pub max_rank_points: Option<RankPointsStat>,
+    #[serde(rename = "kdRatio")]
+    pub kd_ratio: NumberPrecision2Stat,
+    #[serde(rename = "winPercentage")]
+    pub win_percentage: NumberPercentageStat,
+    #[serde(rename = "matchesPlayed")]
+    pub matches_played: NumberStat,
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct SegmentSeason {
+    pub attributes: SegmentSeasonAttributes,
+    pub metadata: SegmentSeasonMetadata,
+    pub stats: SegmentSeasonStats,
+
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+impl SegmentSeason {
+    /// Returns `true` if this is Ranked.
+    pub fn is_ranked(&self) -> bool {
+        self.attributes.game_mode == "pvp_ranked"
+    }
+
+    /// Returns `true` if this is Casual.
+    pub fn is_casual(&self) -> bool {
+        self.attributes.game_mode == "pvp_casual"
+    }
+
+    /// Returns `true` if this is Unranked.
+    pub fn is_unranked(&self) -> bool {
+        self.attributes.game_mode == "pvp_standard"
+    }
+
+    /// Tries to parse this season's hex color as a u32
+    pub fn color_u32(&self) -> Option<u32> {
+        parse_hex_color(self.metadata.color.as_str())
+    }
+
+    /// Get the max mmr value.
+    pub fn max_mmr_value(&self) -> Option<u32> {
+        self.stats.max_mmr.as_ref()?.value
+    }
+
+    /// Get the max rp value.
+    pub fn max_rank_points_value(&self) -> Option<u32> {
+        self.stats.max_rank_points.as_ref()?.value
+    }
+
+    /// Get the max ranking value, mmr or rp.
+    pub fn max_ranking_value(&self) -> Option<u32> {
+        self.max_mmr_value().or(self.max_rank_points_value())
+    }
+
+    /// Get the max mmr rank name.
+    pub fn max_mmr_rank_name(&self) -> Option<&str> {
+        self.stats.max_mmr.as_ref()?.metadata.name.as_deref()
+    }
+
+    /// Get the max rp rank name.
+    pub fn max_rank_points_rank_name(&self) -> Option<&str> {
+        self.stats
+            .max_rank_points
+            .as_ref()?
+            .metadata
+            .name
+            .as_deref()
+    }
+
+    /// Get the max ranking name, mmr or rp.
+    pub fn max_ranking_rank_name(&self) -> Option<&str> {
+        self.max_mmr_rank_name()
+            .or(self.max_rank_points_rank_name())
+    }
+
+    /// Get current mmr value.
+    pub fn mmr_value(&self) -> Option<u32> {
+        self.stats.mmr.as_ref()?.value
+    }
+
+    /// Get current ranking points value.
+    pub fn ranking_points_value(&self) -> Option<u32> {
+        self.stats.rank_points.as_ref()?.value
+    }
+
+    /// Get current ranking value, mmr or rp.
+    pub fn ranking_value(&self) -> Option<u32> {
+        self.mmr_value().or(self.ranking_points_value())
+    }
+
+    /// Get current mmr rank name.
+    pub fn mmr_rank_name(&self) -> Option<&str> {
+        self.stats.mmr.as_ref()?.metadata.name.as_deref()
+    }
+
+    /// Get current ranking rank name.
+    pub fn ranking_points_rank_name(&self) -> Option<&str> {
+        self.stats.rank_points.as_ref()?.metadata.name.as_deref()
+    }
+
+    /// Get current ranking name, mmr or rp.
+    pub fn ranking_rank_name(&self) -> Option<&str> {
+        self.mmr_rank_name().or(self.ranking_points_rank_name())
+    }
+
+    /// Get the k/d ratio.
+    pub fn kd_ratio_value(&self) -> f64 {
+        self.stats.kd_ratio.value
+    }
+
+    /// Get the win percentage.
+    pub fn win_percentage_value(&self) -> f64 {
+        self.stats.win_percentage.value
+    }
+
+    /// Get the # of matches played.
+    pub fn matches_played_value(&self) -> u64 {
+        self.stats.matches_played.value
+    }
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[serde(tag = "type")]
+pub enum Segment {
+    #[serde(rename = "overview")]
+    Overview(SegmentOverview),
+
+    #[serde(rename = "gamemode")]
+    GameMode(Box<SegmentGameMode>),
+
+    #[serde(rename = "season")]
+    Season(Box<SegmentSeason>),
+}
+
+impl Segment {
+    /// Get a ref to the SegmentOverview if it is an overview.
+    pub fn overview_ref(&self) -> Option<&SegmentOverview> {
+        match self {
+            Self::Overview(value) => Some(value),
+            _ => None,
+        }
+    }
+
+    /// Get a ref to the SegmentGameMode if it is a game mode.
+    pub fn game_mode_ref(&self) -> Option<&SegmentGameMode> {
+        match self {
+            Self::GameMode(value) => Some(value),
+            _ => None,
+        }
+    }
+
+    /// Get a ref to the SegmentSeason if it is a season.
+    pub fn season_ref(&self) -> Option<&SegmentSeason> {
+        match self {
+            Self::Season(value) => Some(value),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct UserDataPlatformInfo {
+    #[serde(rename = "platformUserHandle")]
+    pub platform_user_handle: String,
+
+    #[serde(rename = "avatarUrl")]
+    pub avatar_url: String,
+
+    /// Unknown fields
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct UserDataUserInfo {
+    #[serde(rename = "isSuspicious")]
+    pub is_suspicious: Option<bool>,
+
+    /// Unknown fields
+    #[serde(flatten)]
+    pub unknown: HashMap<String, serde_json::Value>,
+}
+
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct UserData {
-    /// Unique user id
-    pub id: String,
-
-    #[serde(rename = "type")]
-    pub kind: String,
-
-    /// Collection of ranked seasons stats
-    pub children: Vec<Season>,
-
     /// Metadata
     pub metadata: Metadata,
 
-    /// A collection of all stats
-    pub stats: Vec<Stat>,
+    pub segments: Vec<Segment>,
+    #[serde(rename = "platformInfo")]
+    pub platform_info: UserDataPlatformInfo,
+
+    #[serde(rename = "userInfo")]
+    pub user_info: UserDataUserInfo,
 
     /// Unknown fields
     #[serde(flatten)]
@@ -206,175 +577,78 @@ pub struct UserData {
 }
 
 impl UserData {
-    /// Utility function to get a stat by name. Currently an O(n) linear search.
-    fn get_stat_by_name(&self, name: &str) -> Option<&Stat> {
-        self.stats.iter().find(|s| s.name() == name)
-    }
-
-    /// Gets top mmr from all servers.
-    pub fn current_mmr(&self) -> Option<u32> {
-        self.get_stat_by_name("MMR").map(|s| s.value as u32)
-    }
-
-    /// Get the image url for the rank this user is at gloablly
-    pub fn current_mmr_image(&self) -> Option<&Url> {
-        self.get_stat_by_name("Global MMR")
-            .and_then(|s| s.icon_url())
-    }
-
-    /// Get the MMR for this user.
-    pub fn current_mmr_america(&self) -> Option<u32> {
-        self.get_stat_by_name("Global MMR").map(|s| s.value as u32)
-    }
-
-    /// Gets this season's color as a string hex value
-    pub fn season_color(&self) -> &str {
-        &self.metadata.current_season_color
-    }
-
-    /// Tries to parse this season's hex color as a u32
-    pub fn season_color_u32(&self) -> Option<u32> {
-        u32::from_str_radix(self.season_color().get(1..)?, 16).ok()
-    }
-
-    /// Get total # of kills
-    pub fn get_kills(&self) -> Option<u64> {
-        self.get_stat_by_name("Kills").map(|s| s.value as u64)
-    }
-
-    /// Get total # of deaths
-    pub fn get_deaths(&self) -> Option<u64> {
-        self.get_stat_by_name("Deaths").map(|s| s.value as u64)
-    }
-
-    /// Get overall K/D
-    pub fn kd(&self) -> Option<f64> {
-        self.get_stat_by_name("KD Ratio").map(|s| s.value)
-    }
-
-    /// Get Overall W/L
-    pub fn wl(&self) -> Option<f64> {
-        self.get_stat_by_name("WL Ratio").map(|s| s.value)
-    }
-
-    /// Get user tag name
-    pub fn name(&self) -> &str {
-        &self.metadata.platform_user_handle
-    }
-
-    /// Get user avatar url
-    pub fn avatar_url(&self) -> &Url {
-        &self.metadata.picture_url
-    }
-
-    /// Get the latest stats for the latest ranked region/season the user has played in
-    pub fn get_latest_season(&self) -> Option<&Season> {
-        let target_id = format!(
-            "region-{}.season-{}",
-            self.metadata.latest_region.unwrap_or(100),
-            self.metadata.latest_season
-        );
-
-        self.children.iter().find(|s| s.id == target_id)
-    }
-
-    /// Get the season where the user attained their max ranking
-    pub fn get_max_season(&self) -> Option<&Season> {
-        self.children
+    /// Get the current ranked season.
+    pub fn get_current_ranked_season(&self) -> Option<&SegmentSeason> {
+        self.segments
             .iter()
-            .filter_map(|child| child.max_mmr().map(|mmr| (child, mmr)))
-            .max_by_key(|(_, mmr)| *mmr)
-            .map(|(child, _)| child)
-    }
-}
-
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct Metadata {
-    #[serde(rename = "accountId")]
-    pub account_id: String,
-
-    #[serde(rename = "countryCode")]
-    pub country_code: Option<String>,
-
-    #[serde(rename = "currentSeasonColor")]
-    pub current_season_color: String,
-
-    #[serde(rename = "currentSeasonName")]
-    pub current_season_name: String,
-
-    #[serde(rename = "latestRegion")]
-    pub latest_region: Option<u32>,
-
-    #[serde(rename = "latestSeason")]
-    pub latest_season: u32,
-
-    #[serde(rename = "pictureUrl")]
-    pub picture_url: Url,
-
-    #[serde(rename = "platformId")]
-    pub platform_id: Platform,
-
-    #[serde(rename = "platformUserHandle")]
-    pub platform_user_handle: String,
-
-    #[serde(rename = "segmentControls")]
-    pub segment_controls: Vec<serde_json::Value>,
-
-    #[serde(rename = "statsCategoryOrder")]
-    pub stats_category_order: Vec<String>,
-
-    #[serde(flatten)]
-    pub unknown: HashMap<String, serde_json::Value>,
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::types::ApiResponse;
-
-    const SAMPLE_1: &str = include_str!("../../test_data/user_data_1.json");
-    const SAMPLE_2: &str = include_str!("../../test_data/user_data_2.json");
-    const INVALID_USER_DATA: &str = include_str!("../../test_data/invalid_user_data.json");
-    const SMACK_ASH_USER_DATA: &str = include_str!("../../test_data/smack_ash_user_data.json");
-
-    #[test]
-    fn parse_sample_1() {
-        let data = serde_json::from_str::<ApiResponse<UserData>>(SAMPLE_1)
-            .unwrap()
-            .take_valid()
-            .unwrap();
-        let season = data.get_latest_season().unwrap();
-        dbg!(season);
-
-        let max_season = data.get_max_season().unwrap();
-        dbg!(max_season.max_mmr());
-        dbg!(max_season.max_rank());
+            .filter_map(|segment| segment.season_ref())
+            .filter(|season| season.is_ranked())
+            .find(|season| season.attributes.season == self.metadata.current_season)
     }
 
-    #[test]
-    fn parse_sample_2() {
-        let data = serde_json::from_str::<ApiResponse<UserData>>(SAMPLE_2)
-            .unwrap()
-            .take_valid()
-            .unwrap();
-        let season = data.get_latest_season().unwrap();
-
-        dbg!(season);
+    /// Get the current unranked season.
+    pub fn get_current_unranked_season(&self) -> Option<&SegmentSeason> {
+        self.segments
+            .iter()
+            .filter_map(|segment| segment.season_ref())
+            .filter(|season| season.is_unranked())
+            .find(|season| season.attributes.season == self.metadata.current_season)
     }
 
-    #[test]
-    fn parse_smack_ash_user_data() {
-        let data = serde_json::from_str::<ApiResponse<UserData>>(SMACK_ASH_USER_DATA)
-            .unwrap()
-            .take_valid()
-            .unwrap();
-        assert!(data.get_latest_season().is_none());
+    /// Get the current casual season.
+    pub fn get_current_casual_season(&self) -> Option<&SegmentSeason> {
+        self.segments
+            .iter()
+            .filter_map(|segment| segment.season_ref())
+            .filter(|season| season.is_casual())
+            .find(|season| season.attributes.season == self.metadata.current_season)
     }
 
-    #[test]
-    fn parse_invalid_sample() {
-        let data = serde_json::from_str::<ApiResponse<UserData>>(INVALID_USER_DATA).unwrap();
+    /// Get the ranked season where the user attained their max ranking, either mmr or rp.
+    pub fn get_max_ranked_season(&self) -> Option<&SegmentSeason> {
+        self.segments
+            .iter()
+            .filter_map(|segment| segment.season_ref())
+            .filter(|season| season.is_ranked())
+            .filter(|season| {
+                season
+                    .max_mmr_value()
+                    .or(season.max_rank_points_value())
+                    .is_some()
+            })
+            .max_by_key(|season| {
+                season
+                    .max_mmr_value()
+                    .or(season.max_rank_points_value())
+                    .expect("season has no ranking")
+            })
+    }
 
-        dbg!(data);
+    /// Get the image url for the rank this user.
+    pub fn current_rank_points_image(&self) -> Option<&Url> {
+        Some(
+            &self
+                .get_current_ranked_season()?
+                .stats
+                .rank_points
+                .as_ref()?
+                .metadata
+                .image_url,
+        )
+    }
+
+    /// Get the lifetime ranked stats.
+    pub fn get_ranked_game_mode(&self) -> Option<&SegmentGameMode> {
+        self.segments
+            .iter()
+            .filter_map(|segment| segment.game_mode_ref())
+            .find(|game_mode| game_mode.is_ranked())
+    }
+
+    /// Get overview stats.
+    pub fn get_overview(&self) -> Option<&SegmentOverview> {
+        self.segments
+            .iter()
+            .find_map(|segment| segment.overview_ref())
     }
 }

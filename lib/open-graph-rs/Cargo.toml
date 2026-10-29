@@ -11,15 +11,15 @@ path = "src/main.rs"
 required-features = [ "cli" ]
 
 [dependencies]
-scraper = { version = "0.24.0", default-features = false }
-thiserror = "2.0.16"
-url = "2.5.4"
+scraper = { version = "0.29.0", default-features = false }
+thiserror = "2.0.21"
+url = "2.5.8"
 
 # Optional
-anyhow = { version = "1.0.99", optional = true }
-argh = { version = "0.1.13", optional = true }
-reqwest = { version = "0.12.23", default-features = false, optional = true }
-tokio = { version = "1.47.1", optional = true }
+anyhow = { version = "1.0.104", optional = true }
+argh = { version = "0.1.19", optional = true }
+reqwest = { version = "0.13.5", default-features = false, optional = true }
+tokio = { version = "1.54.1", optional = true }
 
 [features]
 default = []
@@ -39,9 +39,9 @@ client-native-tls = [
     "reqwest/native-tls"
 ]
 
-client-rustls-tls = [
+client-rustls = [
     "client",
-    "reqwest/rustls-tls"
+    "reqwest/rustls"
 ]
 
 cli = [ 

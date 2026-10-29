@@ -174,11 +174,7 @@ impl HtmlPost {
                                     .query_pairs()
                                     .find_map(
                                         |(key, value)| {
-                                            if key == "uname" {
-                                                Some(value)
-                                            } else {
-                                                None
-                                            }
+                                            if key == "uname" { Some(value) } else { None }
                                         },
                                     )?
                                     .into();
@@ -295,39 +291,32 @@ impl HtmlPost {
                     "child posts" => {
                         has_child_posts = true;
                     }
-                    "parent post" => {
-                        if parent_post.is_none() {
-                            parent_post = element
-                                .select(&A_SELECTOR)
-                                .next()
-                                .and_then(|element| {
-                                    let url = element.value().attr("href")?;
+                    "parent post" if parent_post.is_none() => {
+                        parent_post = element
+                            .select(&A_SELECTOR)
+                            .next()
+                            .and_then(|element| {
+                                let url = element.value().attr("href")?;
 
-                                    let mut trimmed = false;
-                                    let query = url.trim_start_matches(|c| {
-                                        if !trimmed && c == '?' {
-                                            trimmed = true;
-                                            trimmed
-                                        } else {
-                                            !trimmed
-                                        }
-                                    });
+                                let mut trimmed = false;
+                                let query = url.trim_start_matches(|c| {
+                                    if !trimmed && c == '?' {
+                                        trimmed = true;
+                                        trimmed
+                                    } else {
+                                        !trimmed
+                                    }
+                                });
 
-                                    url::form_urlencoded::parse(query.as_bytes()).find_map(
-                                        |(k, v)| {
-                                            if k == "id" {
-                                                Some(
-                                                    v.parse()
-                                                        .map_err(FromHtmlError::InvalidParentPost),
-                                                )
-                                            } else {
-                                                None
-                                            }
-                                        },
-                                    )
+                                url::form_urlencoded::parse(query.as_bytes()).find_map(|(k, v)| {
+                                    if k == "id" {
+                                        Some(v.parse().map_err(FromHtmlError::InvalidParentPost))
+                                    } else {
+                                        None
+                                    }
                                 })
-                                .transpose()?;
-                        }
+                            })
+                            .transpose()?;
                     }
                     _ => {}
                 }

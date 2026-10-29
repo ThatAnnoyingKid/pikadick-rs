@@ -1,87 +1,77 @@
 [package]
 name = "pikadick"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-description = "yet another discord bot"
+description = "Yet another Discord bot"
 authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 
 [dependencies]
-anyhow = "1.0.99"
-argh = "0.1.13"
-async-rusqlite = { path = "./lib/async-rusqlite-rs", features = [ "bundled" ] }
-bincode = "1.3.3"
-bitflags = "2.9.2"
-bytes = "1.10.1"
-camino = { version = "1.1.11", features = [ "serde1" ] }
-crossbeam = "0.8.4"
-dashmap = "5.5.3"
+anyhow = "1.0.104"
+argh = "0.1.19"
+bewu-util = { git = "https://github.com/ThatAnnoyingKid/Bewu", version = "0.0.0", features = [ "async-timed-cache-cell", "async-timed-lru-cache", "async-mutex-map" ] }
+bitflags = "2.13.2"
+camino = { version = "1.2.6", features = [ "serde1" ] }
 deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
-fml = { path = "./lib/fml-rs", default-features = false, features = [ "rustls-tls" ] }
-futures = { version = "0.3.31", features = [ "std" ], default-features = false }
+# This is needed as we still use some stats from this library.
 heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
-indexmap = "2.10.0"
-insta = { path = "./lib/insta-rs", default-features = false, features = [ "rustls-tls" ] }
-iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls-tls" ] }
-itoa = "1.0.15"
+iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls" ] }
+itoa = "1.0.18"
+jiff = "0.2.38"
+mimalloc = "0.1.52"
+nd-async-rusqlite = { version = "0.1.0", features = [ "bundled", "trace", "wal-pool", "fallible_uint" ] }
 nd-util = { git = "https://github.com/nathaniel-daniel/nd-util-rs", features = [ "download-to-path", "drop-remove-path", "arc-anyhow-error" ] }
-nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls-tls" ] }
-once_cell = "1.21.3"
-open-ai = { path = "./lib/open-ai-rs", features = [ "rustls-tls" ], default-features = false }
-opentelemetry = { version = "0.22.0" }
-opentelemetry-otlp = { version = "0.15.0", features = [ "tls", "tls-roots" ] }
-opentelemetry_sdk = { version = "0.22.1", features = [ "rt-tokio" ] }
-parking_lot = "0.12.4"
-pikadick-slash-framework = { path = "./lib/pikadick-slash-framework-rs"}
+nekos = { path = "./lib/nekos-rs", default-features = false, features = [ "rustls" ] }
+poise = "0.7.1"
 pikadick-util = { path = "./lib/pikadick-util-rs", features = [ "async_lock_file", "request_map" ] }
 pikadick-system-info = { path = "./lib/pikadick-system-info-rs" }
-quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "rustls-tls" ] }
-r6stats = { path = "./lib/r6stats-rs", default-features = false, features = [ "rustls-tls" ] }
-r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = [ "rustls-tls" ] }
-rand = "0.8.5"
-reddit = { git = "https://github.com/nathaniel-daniel/reddit-rs", features = [ "rustls-tls" ], default-features = false }
-reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls-tls" ] }
-regex = "1.11.1"
-reqwest = { version = "0.12.23", default-features = false }
-rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls-tls" ] }
-rusqlite = { version = "0.31.0", features = [ "bundled", "blob", "trace" ] }
-ryu = "1.0.20"
-sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-features = false, features = [ "rustls-tls" ] }
-serde = { version = "1.0.219", features = [ "derive" ] }
-serenity = { version = "0.12.4", features = [ "client", "standard_framework", "rustls_backend", "voice", "cache", "unstable_discord_api" ], default-features = false }
-shift-orcz = { git = "https://github.com/adumbidiot/shift-client-rs", default-features = false, features = [ "rustls-tls" ] } 
-songbird = "0.4.6"
-systemstat = "0.2.5"
-thiserror = "2.0.16"
+quizizz = { path = "./lib/quizizz-rs", default-features = false, features = [ "rustls" ] }
+r6tracker = { path = "./lib/r6tracker-rs", default-features = false, features = [ "rustls" ] }
+rand = "0.10.3"
+reddit-tube = { path = "./lib/reddit-tube-rs", default-features = false, features = [ "rustls" ] }
+regex = "1.13.1"
+rule34 = { path = "./lib/rule34-rs", default-features = false, features = [ "rustls" ] }
+# This is needed as some database models refer to rusqlite directly, and nd-async-rusqlite lacks a "blob" feature.
+rusqlite = { version = "=0.40.2", features = [ "blob" ] }
+sauce-nao = { git = "https://github.com/adumbidiot/sauce-nao-rs", default-features = false, features = [ "rustls" ] }
+serde = { version = "1.0.229", features = [ "derive" ] }
+serenity = { version = "0.12.5", features = [ "client", "rustls_backend", "voice", "cache" ], default-features = false }
+serde_json = "1.0.154"
+skrifa = "0.49.0"
+songbird = { version = "0.6.1", features = [ "backend-mousiki" ] }
+# This is needed as we use this libary to get temperature data.
+systemstat = "0.2.7"
+thiserror = "2.0.21"
 tic-tac-toe = { path = "lib/tic-tac-toe-rs" }
-tiktok = { git = "https://github.com/adumbidiot/tiktok-rs", default-features = false, features = [ "rustls-tls" ] }
-time = "0.3.41"
-tiny-skia = { version = "0.11.4", features = [ "std", "simd", "png-format" ], default-features = false }
-tokio = { version = "1.47.1", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
+tikwm = { git = "https://github.com/adumbidiot/tiktok-rs", default-features = false, features = [ "rustls" ] }
+tiny-skia = { version = "0.12.0", features = [ "std", "simd", "png-format" ], default-features = false }
+tokio = { version = "1.54.1", features = [ "rt-multi-thread", "signal", "sync", "time", "parking_lot" ] }
 tokio-ffmpeg-cli = { path = "./lib/tokio-ffmpeg-cli-rs" }
-tokio-stream = "0.1.17"
-toml = "0.8.23"
-tonic = { version = "0.11.0", default-features = false }
-tracing = "0.1.41"
-tracing-appender = "0.2.3"
+tokio-stream = "0.1.19"
+toml = "1.1.8"
+tracing = "0.1.44"
+tracing-appender = "0.2.5"
 tracing-log = "0.2.0"
-tracing-opentelemetry = "0.23.0"
-tracing-subscriber = { version = "0.3.19", features = [ "env-filter", "fmt", "parking_lot" ] }
-ttf-parser = "0.20.0"
-uom = "0.31.1"
-urban-dictionary = { path = "./lib/urban-dictionary-rs", default-features = false, features = [ "rustls-tls" ] }
-url = "2.5.4"
-xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls-tls" ] }
-yodaspeak = { path = "lib/yodaspeak-rs", default-features = false, features = [ "rustls-tls" ] }
+tracing-subscriber = { version = "0.3.23", features = [ "env-filter", "fmt" ] }
+# This is needed as heim doesn't re-export some types needed for formatting.
+uom = "=0.31.1"
+urban-dictionary = { path = "./lib/urban-dictionary-rs", default-features = false, features = [ "rustls" ] }
+url = "2.5.8"
+xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls" ] }
+yodaspeak = { path = "lib/yodaspeak-rs", default-features = false, features = [ "rustls" ] }
 zalgo = { git = "https://github.com/nathaniel-daniel/zalgo-rs", default-features = false }
 
 # Optional
-openssl = { version = "0.10.73", optional = true, features = [ "vendored" ] }
+openssl = { version = "0.10.81", optional = true, features = [ "vendored" ] }
 
 [features]
 # Note: This is needed for cross comp
 use-openssl-vendored = [ "openssl" ]
+
+[lints.rust]
+# Warn
+unused_import_braces = "warn"
 
 [lints.clippy]
 # Deny
@@ -98,7 +88,6 @@ filetype_is_file = "warn"
 filter_map_next = "warn"
 flat_map_option = "warn"
 fn_params_excessive_bools = "warn"
-from_iter_instead_of_collect = "warn"
 implicit_clone = "warn"
 inefficient_to_string = "warn"
 inconsistent_struct_constructor = "warn"
@@ -142,8 +131,11 @@ zero_sized_map_values = "warn"
 # heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }
 heim = { git = "https://github.com/vectordotdev/heim", branch = "update-nix" }
 
-# Fix ntapi 0.3.0 not compiling on newer Rust versions
+# Fix ntapi 0.3.0 not compiling on newer Rust versions.
 ntapi3 = { version = "0.3.0", git = "https://github.com/MSxDOS/ntapi", rev = "2148881c30e8da6a3ff585efd1c7d8ad125ccd2c", package = "ntapi" }
+
+# This allows us to use the pure-rust opus2 backend to make cross-compilation easier.
+songbird = { git = "https://github.com/adumbidiot/songbird", branch = "opus2-backends" }
 
 # To make image drawing times sane
 [profile.dev.package.tiny-skia]
@@ -187,6 +179,7 @@ opt-level = 3
 strip = false
 
 [workspace]
+resolver = "3"
 members = [ 
     "lib/*"
 ]

@@ -4,20 +4,11 @@ PRAGMA foreign_keys = ON;
 PRAGMA synchronous = FULL;
 
 CREATE TABLE IF NOT EXISTS kv_store (
-    key_prefix BLOB NULL CHECK(TYPEOF(key_prefix) IN ('blob', 'null')), 
-    key_name BLOB NOT NULL CHECK(TYPEOF(key_name) = 'blob'),
-    key_value BLOB NOT NULL CHECK(TYPEOF(key_value) = 'blob'),
-    PRIMARY KEY (key_prefix, key_name),
-    UNIQUE (key_prefix, key_name)
-);
-
-CREATE TABLE IF NOT EXISTS disabled_commands (
-    guild_id INTEGER NOT NULL CHECK(TYPEOF(guild_id) = 'integer'),
-    name TEXT NOT NULL CHECK(TYPEOF(name) = 'text'),
-    disabled INTEGER NOT NULL CHECK(TYPEOF(disabled) = 'integer' AND disabled IN (0, 1)),
-    PRIMARY KEY (guild_id, name),
-    UNIQUE (guild_id, name)
-);
+    key_prefix BLOB NOT NULL, 
+    key_name BLOB NOT NULL,
+    key_value BLOB NOT NULL,
+    PRIMARY KEY (key_prefix, key_name)
+) STRICT;
 
 CREATE TABLE IF NOT EXISTS reddit_embed_guild_settings (
     guild_id INTEGER NOT NULL PRIMARY KEY UNIQUE,
@@ -55,4 +46,31 @@ CREATE TABLE IF NOT EXISTS tiktok_embed_guild_settings (
     -- 0   | enabled?     | Whether the bot should try to embed links
     -- 1   | delete-link? | Whether the bot should delete the original link on success
     flags INTEGER NOT NULL DEFAULT 0
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS rule34_post (
+    id INTEGER NOT NULL PRIMARY KEY,
+    tags TEXT NOT NULL,
+    file_url TEXT NOT NULL,
+    last_fetched INTEGER NOT NULL
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS rule34_tag (
+    id INTEGER NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS rule34_post_tag (
+    post_id INTEGER NOT NULL,
+    tag_id INTEGER NOT NULL,
+    
+    PRIMARY KEY (post_id, tag_id),
+    FOREIGN KEY (post_id) REFERENCES rule34_post (id),
+    FOREIGN KEY (tag_id) REFERENCES rule34_tag (id)
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS rule34_query_stat (
+    query TEXT NOT NULL PRIMARY KEY,
+    queries_since_last_fetch INTEGER NOT NULL,
+    last_fetched INTEGER NOT NULL
 ) STRICT;

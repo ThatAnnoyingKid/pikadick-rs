@@ -1,15 +1,18 @@
 use anyhow::Context;
 use std::{
     ffi::OsString,
-    sync::Arc,
+    sync::{
+        Arc,
+        Mutex,
+    },
 };
 use tokio::sync::oneshot;
 use tokio_stream::{
-    wrappers::ReceiverStream,
     Stream,
     StreamExt,
+    wrappers::ReceiverStream,
 };
-use tracing::info;
+use tracing::debug;
 
 /// A message for the encoder task
 enum Message {
@@ -51,7 +54,7 @@ enum Message {
 /// A task to re-encode things
 #[derive(Debug, Clone)]
 pub struct EncoderTask {
-    handle: Arc<parking_lot::Mutex<Option<tokio::task::JoinHandle<()>>>>,
+    handle: Arc<Mutex<Option<tokio::task::JoinHandle<()>>>>,
     tx: tokio::sync::mpsc::Sender<Message>,
 }
 
@@ -62,7 +65,7 @@ impl EncoderTask {
         let handle = tokio::spawn(encoder_task_impl(rx));
 
         Self {
-            handle: Arc::new(parking_lot::Mutex::new(Some(handle))),
+            handle: Arc::new(Mutex::new(Some(handle))),
             tx,
         }
     }
@@ -76,9 +79,9 @@ impl EncoderTask {
         self.tx
             .try_send(Message::GetEncoders { validate, tx })
             .ok()
-            .context("failed to send message")?;
+            .context("Failed to send message")?;
 
-        rx.await.context("task crashed")?
+        rx.await.context("Task crashed")?
     }
 
     /// Create a builder for an encode request
@@ -94,7 +97,7 @@ impl EncoderTask {
             .send(Message::Close { tx })
             .await
             .ok()
-            .context("task is gone")?;
+            .context("Task is gone")?;
 
         rx.await.context("task crashed")
     }
@@ -104,8 +107,13 @@ impl EncoderTask {
     /// This will NOT send a shutdown request, that must be done beforehand.
     /// Also, this function can only be called once. Future calls will return an error.
     pub async fn join(&self) -> anyhow::Result<()> {
-        let handle = self.handle.lock().take().context("missing handle")?;
-        handle.await.context("task panicked")
+        let handle = self
+            .handle
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .take()
+            .context("Missing handle")?;
+        handle.await.context("Task panicked")
     }
 
     /// Shutdown the task, sending a close request can joining the task.
@@ -113,8 +121,8 @@ impl EncoderTask {
     /// This calls `join` under the hood, so it has the same restrictions as close:
     /// Either shutdown or close can only be called once.
     pub async fn shutdown(&self) -> anyhow::Result<()> {
-        self.close().await.context("failed to send close request")?;
-        self.join().await.context("failed to join task")?;
+        self.close().await.context("Failed to send close request")?;
+        self.join().await.context("Failed to join task")?;
         Ok(())
     }
 }
@@ -130,7 +138,7 @@ async fn encoder_task_impl(mut rx: tokio::sync::mpsc::Receiver<Message>) {
                 let _ = tx.send(()).is_ok();
             }
             Message::Encode { mut builder, tx } => {
-                let maybe_stream = builder.spawn().context("failed to spawn FFMpeg");
+                let maybe_stream = builder.spawn().context("Failed to spawn FFMpeg");
 
                 match maybe_stream {
                     Ok(mut stream) => {
@@ -157,7 +165,7 @@ async fn encoder_task_impl(mut rx: tokio::sync::mpsc::Receiver<Message>) {
                     // Get all encoders
                     let raw_encoders = tokio_ffmpeg_cli::get_encoders()
                         .await
-                        .context("failed to get ffmpeg encoders")?;
+                        .context("Failed to get ffmpeg encoders")?;
 
                     if validate {
                         // If we are validating, allocate a new buffer and move valid entries to it was we validate it.
@@ -189,7 +197,7 @@ async fn encoder_task_impl(mut rx: tokio::sync::mpsc::Receiver<Message>) {
                             if status.success() {
                                 encoders.push(encoder);
                             } else {
-                                info!("skipping \"{}\" as it failed a sanity check", encoder.name);
+                                debug!("Skipping \"{}\" as it failed a sanity check", encoder.name);
                             }
                         }
 
@@ -295,8 +303,9 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
     /// Try to send the message, exiting it it is at capacity
     pub async fn try_send(
         &self,
-    ) -> anyhow::Result<impl Stream<Item = Result<tokio_ffmpeg_cli::Event, tokio_ffmpeg_cli::Error>>>
-    {
+    ) -> anyhow::Result<
+        impl Stream<Item = Result<tokio_ffmpeg_cli::Event, tokio_ffmpeg_cli::Error>> + use<>,
+    > {
         let (tx, rx) = oneshot::channel();
         self.task
             .tx
@@ -305,10 +314,10 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
                 tx,
             })
             .ok()
-            .context("failed to send message")?;
+            .context("Failed to send message")?;
 
         rx.await
-            .context("encode task crashed")?
+            .context("Encode task crashed")?
             .map(ReceiverStream::new)
     }
 }

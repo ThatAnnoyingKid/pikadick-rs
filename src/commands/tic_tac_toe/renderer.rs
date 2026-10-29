@@ -1,7 +1,20 @@
 use anyhow::Context;
-use once_cell::sync::Lazy;
+use skrifa::{
+    MetadataProvider,
+    outline::{
+        DrawSettings,
+        OutlinePen,
+    },
+    prelude::{
+        LocationRef,
+        Size,
+    },
+};
 use std::{
-    sync::Arc,
+    sync::{
+        Arc,
+        LazyLock,
+    },
     time::Instant,
 };
 use tiny_skia::{
@@ -15,20 +28,74 @@ use tiny_skia::{
 };
 use tokio::sync::Semaphore;
 use tracing::info;
-use ttf_parser::OutlineBuilder;
 
-const FONT_BYTES: &[u8] =
-    include_bytes!("../../../assets/Averia_Serif_Libre/AveriaSerifLibre-Light.ttf");
-static FONT_FACE: Lazy<ttf_parser::Face<'static>> =
-    Lazy::new(|| ttf_parser::Face::parse(FONT_BYTES, 0).expect("failed to load `FONT_BYTES`"));
+const FONT_BYTES: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/assets/Averia_Serif_Libre/AveriaSerifLibre-Light.ttf"
+));
+static FONT_FACE: LazyLock<skrifa::FontRef<'static>> =
+    LazyLock::new(|| skrifa::FontRef::new(FONT_BYTES).expect("Failed to load FONT_BYTES"));
 
-const RENDERED_SIZE: u16 = 300;
+const RENDERED_SIZE: u16 = 600;
 const SQUARE_SIZE: u16 = RENDERED_SIZE / 3;
 const SQUARE_SIZE_USIZE: usize = SQUARE_SIZE as usize;
 const SQUARE_SIZE_F32: f32 = SQUARE_SIZE as f32;
 const HALF_SQUARE_SIZE_F32: f32 = SQUARE_SIZE_F32 / 2.0;
 
 const MAX_PARALLEL_RENDER_LIMIT: usize = 4;
+
+/// Utility to draw a font glyph to a path.
+#[derive(Debug)]
+pub(crate) struct SkiaOutlinePen(PathBuilder);
+
+impl SkiaOutlinePen {
+    /// Make a new [`SkiaOutlinePen`].
+    pub(crate) fn new() -> Self {
+        Self(Default::default())
+    }
+
+    /// Get the inner [`tiny_skia::Path`].
+    pub(crate) fn into_path(self) -> Option<Path> {
+        let mut path = self.0.finish()?;
+
+        // This transform is needed to make skrifa's coordinate system agree with tiny-skia's
+        let bounds = path.bounds();
+        let transform = Transform::from_scale(1.0, -1.0)
+            .post_translate(-bounds.x(), bounds.y() + bounds.height());
+        path = path.transform(transform)?;
+
+        Some(path)
+    }
+}
+
+impl Default for SkiaOutlinePen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl OutlinePen for SkiaOutlinePen {
+    fn move_to(&mut self, x: f32, y: f32) {
+        self.0.move_to(x, y);
+    }
+
+    fn line_to(&mut self, x: f32, y: f32) {
+        self.0.line_to(x, y);
+    }
+
+    fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
+        self.0.quad_to(x1, y1, x, y);
+    }
+
+    fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
+        // TODO: This is not used, is it implemented correctly?
+        self.0.cubic_to(x1, y1, x2, y2, x, y);
+    }
+
+    fn close(&mut self) {
+        self.0.close();
+    }
+}
 
 /// Render a Tic-Tac-Toe board
 #[derive(Debug, Clone)]
@@ -39,12 +106,11 @@ pub(crate) struct Renderer {
     render_semaphore: Arc<Semaphore>,
 }
 
-#[allow(clippy::new_without_default)]
 impl Renderer {
     /// Make a new [`Renderer`].
     pub(crate) fn new() -> anyhow::Result<Self> {
         let mut background_pixmap = Pixmap::new(RENDERED_SIZE.into(), RENDERED_SIZE.into())
-            .context("failed to create background pixmap")?;
+            .context("Failed to create background pixmap")?;
 
         let mut paint = Paint::default();
         for i in 0..3 {
@@ -53,7 +119,7 @@ impl Renderer {
                 let y = j * SQUARE_SIZE;
                 let square =
                     Rect::from_xywh(f32::from(x), f32::from(y), SQUARE_SIZE_F32, SQUARE_SIZE_F32)
-                        .context("failed to make square")?;
+                        .context("Failed to make square")?;
 
                 if (j * 3 + i) % 2 == 0 {
                     paint.set_color_rgba8(255, 0, 0, 255);
@@ -68,18 +134,23 @@ impl Renderer {
         let mut number_paths = Vec::with_capacity(10);
         let mut paint = Paint::default();
         paint.set_color_rgba8(255, 255, 255, 255);
-        for i in b'0'..=b'9' {
-            let glyph_id = FONT_FACE
-                .glyph_index(char::from(i))
-                .with_context(|| format!("missing glyph for '{}'", char::from(i)))?;
+        let outlines = FONT_FACE.outline_glyphs();
+        let charmap = FONT_FACE.charmap();
+        for ch in '0'..='9' {
+            let glyph_id = charmap
+                .map(ch)
+                .with_context(|| format!("Missing glyph id for \"{ch}\""))?;
+            let glyph = outlines
+                .get(glyph_id)
+                .with_context(|| format!("Missing glyph for \"{ch}\""))?;
 
-            let mut builder = SkiaBuilder::new();
-            let _bb = FONT_FACE
-                .outline_glyph(glyph_id, &mut builder)
-                .with_context(|| format!("missing glyph bounds for '{}'", char::from(i)))?;
-            let path = builder.into_path().with_context(|| {
-                format!("failed to generate glyph path for '{}'", char::from(i))
-            })?;
+            let mut skia_outline_pen = SkiaOutlinePen::new();
+            let settings = DrawSettings::unhinted(Size::unscaled(), LocationRef::default());
+            glyph.draw(settings, &mut skia_outline_pen)?;
+
+            let path = skia_outline_pen
+                .into_path()
+                .with_context(|| format!("Failed to generate glyph path for \"{ch}\""))?;
 
             number_paths.push(path);
         }
@@ -92,18 +163,21 @@ impl Renderer {
     }
 
     /// Render a Tic-Tac-Toe board with `tiny_skia`.
-    // Author might add more fields
-    #[allow(clippy::field_reassign_with_default)]
     pub(crate) fn render_board(&self, board: tic_tac_toe::Board) -> anyhow::Result<Vec<u8>> {
         const PIECE_WIDTH: u16 = 4;
 
         let draw_start = Instant::now();
         let mut pixmap = self.background_pixmap.as_ref().as_ref().to_owned();
 
-        let mut paint = Paint::default();
-        let mut stroke = Stroke::default();
-        paint.anti_alias = true;
-        stroke.width = f32::from(PIECE_WIDTH);
+        let mut paint = Paint {
+            anti_alias: true,
+            ..Paint::default()
+        };
+        let stroke = Stroke {
+            width: f32::from(PIECE_WIDTH),
+            line_cap: tiny_skia::LineCap::Round,
+            ..Stroke::default()
+        };
 
         for (i, team) in board.iter() {
             let transform = Transform::from_translate(
@@ -138,7 +212,7 @@ impl Renderer {
                     ),
                 };
                 let path =
-                    path.with_context(|| format!("failed to build path for team '{:?}'", team))?;
+                    path.with_context(|| format!("Failed to build path for team \"{team:?}\""))?;
 
                 pixmap.stroke_path(&path, &paint, &stroke, transform, None);
             } else {
@@ -159,27 +233,26 @@ impl Renderer {
         // Draw winning line
         if let Some(winner_info) = board.get_winner_info() {
             draw_winning_line(&mut pixmap, stroke, paint, winner_info)
-                .context("failed to draw winning line")?;
+                .context("Failed to draw winning line")?;
         }
 
         let draw_end = Instant::now();
-        info!("board draw time: {:?}", draw_end - draw_start);
+        info!("Board draw time: {:?}", draw_end - draw_start);
 
         let encode_start = Instant::now();
         let img = pixmap.encode_png().context("failed to encode board")?;
         let encode_end = Instant::now();
 
-        info!("board png encode time: {:?}", encode_end - encode_start);
+        info!("Board png encode time: {:?}", encode_end - encode_start);
 
         Ok(img)
     }
 
-    /// Render a Tic-Tac-Toe board on a threadpool
+    /// Render a Tic-Tac-Toe board on a threadpool.
     pub(crate) async fn render_board_async(
         &self,
         board: tic_tac_toe::Board,
     ) -> anyhow::Result<Vec<u8>> {
-        // TODO: LRU cache
         let _permit = self.render_semaphore.acquire().await?;
         let self_clone = self.clone();
         tokio::task::spawn_blocking(move || self_clone.render_board(board)).await?
@@ -194,6 +267,7 @@ fn draw_winning_line(
     winner_info: tic_tac_toe::WinnerInfo,
 ) -> anyhow::Result<()> {
     stroke.width = 10.0;
+    stroke.line_cap = tiny_skia::LineCap::Round;
     paint.set_color_rgba8(48, 48, 48, 255);
 
     let start_index = winner_info.start_tile_index();
@@ -234,64 +308,11 @@ fn draw_winning_line(
     path_builder.line_to(end_x, end_y);
     let path = path_builder
         .finish()
-        .context("failed to draw winning line")?;
+        .context("Failed to draw winning line")?;
 
     pixmap.stroke_path(&path, &paint, &stroke, Transform::identity(), None);
 
     Ok(())
-}
-
-/// Utility to draw a font glyph to a path.
-#[derive(Debug)]
-pub(crate) struct SkiaBuilder(PathBuilder);
-
-impl SkiaBuilder {
-    /// Make a new [`SkiaBuilder`].
-    pub(crate) fn new() -> Self {
-        Self(Default::default())
-    }
-
-    /// Get the inner [`tiny_skia::Path`].
-    pub(crate) fn into_path(self) -> Option<Path> {
-        let mut path = self.0.finish()?;
-
-        // This transform is needed to make ttf's coordinate system agree with tiny-skia's
-        let bounds = path.bounds();
-        let transform = Transform::from_scale(1.0, -1.0)
-            .post_translate(-bounds.x(), bounds.y() + bounds.height());
-        path = path.transform(transform)?;
-
-        Some(path)
-    }
-}
-
-impl Default for SkiaBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl OutlineBuilder for SkiaBuilder {
-    fn move_to(&mut self, x: f32, y: f32) {
-        self.0.move_to(x, y);
-    }
-
-    fn line_to(&mut self, x: f32, y: f32) {
-        self.0.line_to(x, y);
-    }
-
-    fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
-        self.0.quad_to(x1, y1, x, y);
-    }
-
-    fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
-        // TODO: This is not used, is it implemented correctly?
-        self.0.cubic_to(x1, y1, x2, y2, x, y);
-    }
-
-    fn close(&mut self) {
-        self.0.close();
-    }
 }
 
 #[cfg(test)]
@@ -301,12 +322,12 @@ mod test {
 
     #[test]
     fn render_board() {
-        let renderer = Renderer::new().expect("failed to make renderer");
+        let renderer = Renderer::new().expect("Failed to make renderer");
         let board = tic_tac_toe::Board::new()
             .set(0, Some(Team::X))
             .set(4, Some(Team::X))
             .set(8, Some(Team::X));
-        let img = renderer.render_board(board).expect("failed to render");
-        std::fs::write("ttt-render-test.png", img).expect("failed to save");
+        let img = renderer.render_board(board).expect("Failed to render");
+        std::fs::write("ttt-render-test.png", img).expect("Failed to save");
     }
 }

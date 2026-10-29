@@ -1,32 +1,12 @@
-use crate::checks::ENABLED_CHECK;
-use rand::prelude::SliceRandom;
-use serenity::{
-    client::Context,
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::channel::Message,
+use crate::{
+    PoiseContext,
+    PoiseError,
 };
+use rand::prelude::IndexedRandom;
 
 const FACES: &[&str] = &["(・`ω´・)", ";;w;;", "owo", "UwU", ">w<", "^w^"];
 
-#[command]
-#[description("UwUify as phrase")]
-#[usage("\"<phrase>\"")]
-#[example("\"Hello World!\"")]
-#[min_args(1)]
-#[max_args(1)]
-#[checks(Enabled)]
-#[bucket("default")]
-pub async fn uwuify(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let phrase = args.single_quoted::<String>()?;
-    msg.channel_id.say(&ctx.http, uwuify_str(&phrase)).await?;
-    Ok(())
-}
-
-/// A rust-optimized version of:
+/// A Rust-optimized version of:
 /// ```javascript
 /// /// Taken from: https://honk.moe/tools/owo.html
 /// var faces = ["(・`ω´・)", ";;w;;", "owo", "UwU", ">w<", "^w^"];
@@ -122,7 +102,7 @@ pub fn uwuify_str(input: &str) -> String {
                     // it might make sense to add a feature that does that here
                 }
 
-                let face = FACES.choose(&mut rand::thread_rng()).expect("Valid Face");
+                let face = FACES.choose(&mut rand::rng()).expect("missing face");
                 output.reserve(face.len() + 2);
 
                 output.push(' ');
@@ -134,4 +114,13 @@ pub fn uwuify_str(input: &str) -> String {
     }
 
     output
+}
+
+#[poise::command(slash_command, description_localized("en-US", "UwUify as phrase."))]
+pub async fn uwuify(
+    ctx: PoiseContext<'_>,
+    #[description = "The phrase to uwuify."] phrase: String,
+) -> Result<(), PoiseError> {
+    ctx.reply(uwuify_str(&phrase)).await?;
+    Ok(())
 }

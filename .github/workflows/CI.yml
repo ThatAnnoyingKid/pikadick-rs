@@ -1,4 +1,4 @@
-name: Rust
+name: CI
 'on':
   push:
     branches:
@@ -25,7 +25,10 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-lint-cargo-${{ hashFiles('**/Cargo.lock') }}
-      
+          
+      - name: Run `apt-get update`
+        run: sudo apt-get update
+        
       - name: Install Protobuf Compiler
         run: sudo apt-get install -y protobuf-compiler
       

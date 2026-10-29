@@ -10,12 +10,17 @@ pub use self::{
 #[cfg(feature = "scrape")]
 use crate::HtmlPost;
 use crate::{
+    AutocompleteResult,
     DeletedImageList,
     Error,
+    RATELIMIT_BUDGET,
 };
-use reqwest::header::{
-    HeaderMap,
-    HeaderValue,
+use reqwest::{
+    StatusCode,
+    header::{
+        HeaderMap,
+        HeaderValue,
+    },
 };
 #[cfg(feature = "scrape")]
 use scraper::Html;
@@ -25,20 +30,39 @@ use std::{
         Arc,
         Mutex,
     },
-    time::Duration,
+    time::{
+        Duration,
+        Instant,
+    },
 };
 use url::Url;
 
 // Default Header values
-static USER_AGENT_VALUE: HeaderValue = HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4514.0 Safari/537.36");
+static USER_AGENT_VALUE: HeaderValue = HeaderValue::from_static(
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4514.0 Safari/537.36",
+);
 static REFERER_VALUE: HeaderValue = HeaderValue::from_static("https://rule34.xxx/");
 static ACCEPT_LANGUAGE_VALUE: HeaderValue = HeaderValue::from_static("en,en-US;q=0,5");
 static ACCEPT_VALUE: HeaderValue = HeaderValue::from_static("*/*");
+
+const ONE_MINUTE: Duration = Duration::from_mins(1);
 
 #[derive(Debug)]
 struct AuthState {
     user_id: u64,
     api_key: String,
+}
+
+#[derive(Debug)]
+struct RatelimitState {
+    ratelimit_last_time: Instant,
+    budget: u8,
+}
+
+#[derive(Debug)]
+struct ClientState {
+    auth_state: Mutex<Option<AuthState>>,
+    ratelimit_state: Mutex<RatelimitState>,
 }
 
 /// A Rule34 Client
@@ -49,8 +73,8 @@ pub struct Client {
     /// This probably shouldn't be used by you.
     pub client: reqwest::Client,
 
-    /// The auth state.
-    auth_state: Arc<Mutex<Option<AuthState>>>,
+    /// The client state.
+    state: Arc<ClientState>,
 }
 
 impl Client {
@@ -69,17 +93,24 @@ impl Client {
             .default_headers(default_headers)
             .connect_timeout(Duration::from_secs(10))
             .build()
-            .expect("failed to build rule34 client");
+            .expect("Failed to build rule34 client");
 
         Client {
             client,
-            auth_state: Arc::new(Mutex::new(None)),
+            state: Arc::new(ClientState {
+                auth_state: std::sync::Mutex::new(None),
+                ratelimit_state: Mutex::new(RatelimitState {
+                    ratelimit_last_time: Instant::now(),
+                    budget: RATELIMIT_BUDGET,
+                }),
+            }),
         }
     }
 
     /// Set the authentication.
     pub fn set_auth(&self, user_id: u64, api_key: &str) {
         let mut auth_state = self
+            .state
             .auth_state
             .lock()
             .unwrap_or_else(|error| error.into_inner());
@@ -92,9 +123,80 @@ impl Client {
 
     /// Get the auth state.
     fn get_auth(&self) -> std::sync::MutexGuard<'_, Option<AuthState>> {
-        self.auth_state
+        self.state
+            .auth_state
             .lock()
             .unwrap_or_else(|error| error.into_inner())
+    }
+
+    async fn ratelimit(&self) {
+        loop {
+            let sleep_time = {
+                let mut state = self
+                    .state
+                    .ratelimit_state
+                    .lock()
+                    .unwrap_or_else(|error| error.into_inner());
+                let mut elapsed = state.ratelimit_last_time.elapsed();
+                if elapsed > ONE_MINUTE {
+                    state.ratelimit_last_time = Instant::now();
+                    state.budget = RATELIMIT_BUDGET;
+                    elapsed = Duration::ZERO;
+                }
+
+                if state.budget > 0 {
+                    state.budget -= 1;
+                    None
+                } else {
+                    Some(ONE_MINUTE - elapsed)
+                }
+            };
+
+            match sleep_time {
+                Some(sleep_time) => {
+                    tokio::time::sleep(sleep_time).await;
+                }
+                None => return,
+            }
+        }
+    }
+
+    /// Get the amount ratelimit budget remaining for this time interval.
+    pub fn ratelimit_budget_remaining(&self) -> u8 {
+        let state = self
+            .state
+            .ratelimit_state
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        state.budget
+    }
+
+    async fn ratelimited<FN, FUT, R>(&self, mut func: FN) -> Result<R, Error>
+    where
+        FN: FnMut() -> FUT,
+        FUT: Future<Output = Result<R, Error>>,
+    {
+        const MAX_TRIES: usize = 3;
+
+        let mut tries = 0;
+        loop {
+            self.ratelimit().await;
+
+            let future = func();
+            let result = future.await;
+
+            match result {
+                Ok(value) => return Ok(value),
+                Err(Error::Reqwest(error))
+                    if error.status() == Some(StatusCode::TOO_MANY_REQUESTS) => {}
+                Err(error) => return Err(error),
+            }
+
+            tries += 1;
+            if tries == MAX_TRIES {
+                return Err(Error::Ratelimited);
+            }
+        }
     }
 
     /// Send a GET web request to a `url` and get the result as a [`String`].
@@ -165,7 +267,7 @@ impl Client {
     ) -> Result<DeletedImageList, Error> {
         let mut url = Url::parse_with_params(
             crate::API_BASE_URL,
-            &[
+            [
                 ("page", "dapi"),
                 ("s", "post"),
                 ("q", "index"),
@@ -204,6 +306,20 @@ impl Client {
     /// This is undocumented.
     pub fn list_notes(&self) -> NotesListQueryBuilder<'_> {
         NotesListQueryBuilder::new(self)
+    }
+
+    /// Autocomplete a tag.
+    pub async fn autocomplete(&self, query: &str) -> Result<Vec<AutocompleteResult>, Error> {
+        let url =
+            Url::parse_with_params("https://api.rule34.xxx/autocomplete.php", [("q", query)])?;
+        let response = self
+            .client
+            .get(url.as_str())
+            .send()
+            .await?
+            .error_for_status()?;
+        let data = response.json().await?;
+        Ok(data)
     }
 }
 

@@ -1,5 +1,6 @@
 mod board;
 mod concede;
+mod move_;
 mod play;
 mod renderer;
 mod scoreboard;
@@ -7,66 +8,131 @@ mod stats;
 
 use self::renderer::Renderer;
 pub use self::{
-    board::BOARD_COMMAND,
-    concede::CONCEDE_COMMAND,
-    play::PLAY_COMMAND,
-    scoreboard::SCOREBOARD_COMMAND,
-    stats::STATS_COMMAND,
+    board::board,
+    concede::concede,
+    move_::move_,
+    play::play,
+    scoreboard::scoreboard,
+    stats::stats,
 };
 use crate::{
-    checks::ENABLED_CHECK,
+    Database,
+    PoiseContext,
+    PoiseError,
     database::{
-        model::TicTacToePlayer,
+        TicTacToeCreateGameError,
         TicTacToeTryMoveError,
         TicTacToeTryMoveResponse,
+        model::{
+            TicTacToeGame,
+            TicTacToePlayer,
+            TicTacToeScore,
+            TicTacToeTopPlayerScore,
+        },
     },
-    ClientDataKey,
 };
 use serenity::{
-    builder::{
-        CreateAttachment,
-        CreateMessage,
+    model::id::{
+        GuildId,
+        UserId,
     },
-    client::Context,
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::{
-        channel::Message,
-        prelude::*,
-    },
+    prelude::Mentionable,
 };
 use std::sync::Arc;
-use tracing::error;
 
 /// Data pertaining to running tic_tac_toe games
 #[derive(Clone)]
 pub struct TicTacToeData {
+    database: Database,
     renderer: Arc<Renderer>,
 }
 
 impl TicTacToeData {
     /// Make a new [`TicTacToeData`].
-    pub fn new() -> Self {
-        let renderer = Renderer::new().expect("failed to init renderer");
+    pub fn new(database: Database) -> Self {
+        let renderer = Renderer::new().expect("Failed to init renderer");
 
         Self {
+            database,
             renderer: Arc::new(renderer),
         }
+    }
+
+    /// Render a board.
+    async fn render_board(&self, game_board: tic_tac_toe::Board) -> anyhow::Result<Vec<u8>> {
+        self.renderer.render_board_async(game_board).await
+    }
+
+    /// Create a tic tac toe game.
+    async fn create_game(
+        &self,
+        guild_id: Option<GuildId>,
+        author_id: UserId,
+        author_team: tic_tac_toe::Team,
+        opponent: TicTacToePlayer,
+    ) -> Result<TicTacToeGame, TicTacToeCreateGameError> {
+        self.database
+            .create_tic_tac_toe_game(guild_id.into(), author_id.into(), author_team, opponent)
+            .await
+    }
+
+    /// Try to make a move.
+    async fn try_move(
+        &self,
+        guild_id: Option<GuildId>,
+        author_id: UserId,
+        move_index: u8,
+    ) -> Result<TicTacToeTryMoveResponse, TicTacToeTryMoveError> {
+        self.database
+            .try_tic_tac_toe_move(guild_id.into(), author_id.into(), move_index)
+            .await
+    }
+
+    /// Concede a game.
+    async fn concede_game(
+        &self,
+        guild_id: Option<GuildId>,
+        author_id: UserId,
+    ) -> anyhow::Result<Option<TicTacToeGame>> {
+        self.database
+            .concede_tic_tac_toe_game(guild_id.into(), author_id)
+            .await
+    }
+
+    /// Get a game.
+    async fn get_game(
+        &self,
+        guild_id: Option<GuildId>,
+        author_id: UserId,
+    ) -> anyhow::Result<Option<TicTacToeGame>> {
+        self.database
+            .get_tic_tac_toe_game(guild_id.into(), author_id.into())
+            .await
+    }
+
+    /// Get the score.
+    async fn get_score(
+        &self,
+        guild_id: Option<GuildId>,
+        author_id: UserId,
+    ) -> anyhow::Result<TicTacToeScore> {
+        self.database
+            .get_tic_tac_toe_score(guild_id.into(), author_id)
+            .await
+    }
+
+    /// Get the top scores.
+    async fn get_top_scores(
+        &self,
+        guild_id: GuildId,
+    ) -> anyhow::Result<Vec<TicTacToeTopPlayerScore>> {
+        self.database.get_top_tic_tac_toe_scores(guild_id).await
     }
 }
 
 impl std::fmt::Debug for TicTacToeData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TicTacToeData").finish()
-    }
-}
-
-impl Default for TicTacToeData {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -91,163 +157,12 @@ impl std::fmt::Display for GamePlayerMention {
     }
 }
 
-#[command("tic-tac-toe")]
-#[aliases("ttt")]
-#[sub_commands("play", "concede", "board", "stats", "scoreboard")]
-#[description("Play a game of Tic-Tac-Toe")]
-#[usage("<move #>")]
-#[example("0")]
-#[min_args(1)]
-#[max_args(1)]
-#[checks(Enabled)]
-#[bucket("default")]
-pub async fn tic_tac_toe(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let tic_tac_toe_data = client_data.tic_tac_toe_data.clone();
-    let db = client_data.db.clone();
-    drop(data_lock);
-
-    let guild_id = msg.guild_id;
-    let author_id = msg.author.id;
-
-    let mut move_index = match args.trimmed().single::<u8>() {
-        Ok(num) => num,
-        Err(error) => {
-            let response = format!("That move is not a number: {error}\nUse `tic-tac-toe play <computer/@user> <X/O> to start a game.`");
-            msg.channel_id.say(&ctx.http, response).await?;
-            return Ok(());
-        }
-    };
-
-    if !(1..=9).contains(&move_index) {
-        let response = format!(
-            "Your move number must be between 1 and 9 {}",
-            author_id.mention()
-        );
-        msg.channel_id.say(&ctx.http, response).await?;
-        return Ok(());
-    }
-
-    move_index -= 1;
-
-    match db
-        .try_tic_tac_toe_move(guild_id.into(), author_id.into(), move_index)
-        .await
-    {
-        Ok(TicTacToeTryMoveResponse::Winner {
-            game,
-            winner,
-            loser,
-        }) => {
-            let file = match tic_tac_toe_data
-                .renderer
-                .render_board_async(game.board)
-                .await
-            {
-                Ok(file) => {
-                    CreateAttachment::bytes(file, format!("ttt-{}.png", game.board.encode_u16()))
-                }
-                Err(error) => {
-                    error!("Failed to render Tic-Tac-Toe board: {error}");
-                    msg.channel_id
-                        .say(
-                            &ctx.http,
-                            format!("Failed to render Tic-Tac-Toe board: {error}"),
-                        )
-                        .await?;
-                    return Ok(());
-                }
-            };
-            let content = format!(
-                "{} has triumphed over {} in Tic-Tac-Toe",
-                winner.mention(),
-                loser.mention(),
-            );
-            let message_builder = CreateMessage::new().content(content).add_file(file);
-            msg.channel_id
-                .send_message(&ctx.http, message_builder)
-                .await?;
-        }
-        Ok(TicTacToeTryMoveResponse::Tie { game }) => {
-            let file = match tic_tac_toe_data
-                .renderer
-                .render_board_async(game.board)
-                .await
-            {
-                Ok(file) => {
-                    CreateAttachment::bytes(file, format!("ttt-{}.png", game.board.encode_u16()))
-                }
-                Err(error) => {
-                    error!("Failed to render Tic-Tac-Toe board: {error}");
-                    msg.channel_id
-                        .say(
-                            &ctx.http,
-                            format!("Failed to render Tic-Tac-Toe board: {error}"),
-                        )
-                        .await?;
-                    return Ok(());
-                }
-            };
-            let content = format!(
-                "{} has tied with {} in Tic-Tac-Toe",
-                game.get_player(tic_tac_toe::Team::X).mention(),
-                game.get_player(tic_tac_toe::Team::O).mention(),
-            );
-            let message_builder = CreateMessage::new().content(content).add_file(file);
-            msg.channel_id
-                .send_message(&ctx.http, message_builder)
-                .await?;
-        }
-        Ok(TicTacToeTryMoveResponse::NextTurn { game }) => {
-            let file = match tic_tac_toe_data
-                .renderer
-                .render_board_async(game.board)
-                .await
-            {
-                Ok(file) => {
-                    CreateAttachment::bytes(file, format!("ttt-{}.png", game.board.encode_u16()))
-                }
-                Err(error) => {
-                    error!("Failed to render Tic-Tac-Toe board: {error}");
-                    msg.channel_id
-                        .say(
-                            &ctx.http,
-                            format!("Failed to render Tic-Tac-Toe board: {error}"),
-                        )
-                        .await?;
-                    return Ok(());
-                }
-            };
-            let content = format!("Your turn {}", game.get_player_turn().mention());
-            let message_builder = CreateMessage::new().content(content).add_file(file);
-            msg.channel_id
-                .send_message(&ctx.http, message_builder)
-                .await?;
-        }
-        Err(TicTacToeTryMoveError::InvalidTurn) => {
-            let response = "It is not your turn. Please wait for your opponent to finish.";
-            msg.channel_id.say(&ctx.http, response).await?;
-        }
-        Err(TicTacToeTryMoveError::InvalidMove) => {
-            let response = format!(
-                "Invalid move {}. Please choose one of the available squares.\n",
-                author_id.mention(),
-            );
-            msg.channel_id.say(&ctx.http, response).await?;
-        }
-        Err(TicTacToeTryMoveError::NotInAGame) => {
-            let response =
-                "No games in progress. Make one with `tic-tac-toe play <computer/@user> <X/O>`.";
-            msg.channel_id.say(&ctx.http, response).await?;
-        }
-        Err(TicTacToeTryMoveError::Database(error)) => {
-            error!("{error:?}");
-            msg.channel_id.say(&ctx.http, "database error").await?;
-        }
-    }
-
+#[poise::command(
+    slash_command,
+    rename = "tic-tac-toe",
+    description_localized("en-US", "Play a game of Tic-Tac-Toe"),
+    subcommands("play", "move_", "concede", "board", "stats", "scoreboard")
+)]
+pub async fn tic_tac_toe(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     Ok(())
 }

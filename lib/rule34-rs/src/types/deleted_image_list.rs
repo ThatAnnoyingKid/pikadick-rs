@@ -29,8 +29,8 @@ pub struct Post {
 mod serde_md5_digest {
     use super::*;
     use serde::{
-        de::Error,
         Serialize,
+        de::Error,
     };
     use std::borrow::Cow;
 

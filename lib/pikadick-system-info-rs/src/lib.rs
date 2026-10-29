@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 cfg_if::cfg_if! {
     if #[cfg(target_os = "windows")] {
         mod windows;
@@ -8,7 +6,7 @@ cfg_if::cfg_if! {
         mod linux;
         use self::linux as imp;
     } else {
-        compile_error!("unsupported platform");
+        compile_error!("Unsupported platform");
     }
 }
 
@@ -22,24 +20,28 @@ use std::time::{
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// An io error occured
-    #[error(transparent)]
+    #[error("IO error")]
     Io(#[from] std::io::Error),
 
     /// Invalid UTF8 string
-    #[error(transparent)]
+    #[error("Invalid Utf8 string")]
     InvalidUtf8String(#[from] std::string::FromUtf8Error),
 
     /// Invalid UTF16 string
-    #[error(transparent)]
+    #[error("Invalid Utf16 string")]
     InvalidUtf16String(#[from] std::string::FromUtf16Error),
 
     /// Invalid Utf8 OsStr
-    #[error("invalid utf8 os str")]
+    #[error("Invalid utf8 os str")]
     InvalidUtf8OsStr,
 
     /// The value is missing for some reason
-    #[error("missing value")]
+    #[error("Missing value")]
     MissingValue,
+
+    /// A generic error occured.
+    #[error("{0}")]
+    Generic(&'static str),
 }
 
 /// A context for caching data related to information queries.
@@ -169,7 +171,7 @@ mod tests {
         let offset = match time::UtcOffset::current_local_offset() {
             Ok(offset) => offset,
             Err(error) => {
-                println!("failed to get local offset ({error}), using UTC...");
+                println!("Failed to get local offset ({error}), using UTC...");
                 time::UtcOffset::UTC
             }
         };
@@ -177,7 +179,7 @@ mod tests {
         let start = Instant::now();
         let boot_time = cache_context
             .get_boot_time()
-            .expect("failed to get boot time");
+            .expect("Failed to get boot time");
         let elapsed = start.elapsed();
 
         println!(
@@ -191,10 +193,10 @@ mod tests {
     fn uptime() {
         let cache_context = CacheContext::new();
         let start = Instant::now();
-        let uptime = cache_context.get_uptime().expect("failed to get uptime");
+        let uptime = cache_context.get_uptime().expect("Failed to get uptime");
         let elapsed = start.elapsed();
 
-        println!("Uptime: {:?}\nTime: {:?}", uptime, elapsed);
+        println!("Uptime: {uptime:?}\nTime: {elapsed:?}");
     }
 
     #[test]
@@ -203,10 +205,10 @@ mod tests {
         let start = Instant::now();
         let hostname = cache_context
             .get_hostname()
-            .expect("failed to get hostname");
+            .expect("Failed to get hostname");
         let elapsed = start.elapsed();
 
-        println!("Hostname: {}\nTime: {:?}", hostname, elapsed);
+        println!("Hostname: {hostname}\nTime: {elapsed:?}");
     }
 
     #[test]
@@ -215,12 +217,12 @@ mod tests {
         let start = Instant::now();
         let arch = cache_context
             .get_architecture()
-            .expect("failed to get arch");
+            .expect("Failed to get arch");
         let elapsed = start.elapsed();
 
         println!(
             "Arch: {}\nTime: {:?}",
-            arch.map(|arch| arch.as_str()).unwrap_or("unknown"),
+            arch.map(|arch| arch.as_str()).unwrap_or("Unknown"),
             elapsed
         );
     }
@@ -231,10 +233,10 @@ mod tests {
         let start = Instant::now();
         let system_name = cache_context
             .get_system_name()
-            .expect("failed to get system name");
+            .expect("Failed to get system name");
         let elapsed = start.elapsed();
 
-        println!("System Name: {:?}\nTime: {:?}", system_name, elapsed);
+        println!("System Name: {system_name:?}\nTime: {elapsed:?}");
     }
 
     #[test]
@@ -243,10 +245,10 @@ mod tests {
         let start = Instant::now();
         let system_version = cache_context
             .get_system_version()
-            .expect("failed to get system version");
+            .expect("Failed to get system version");
         let elapsed = start.elapsed();
 
-        println!("System Version: {:?}\nTime: {:?}", system_version, elapsed);
+        println!("System Version: {system_version:?}\nTime: {elapsed:?}");
     }
 
     #[test]
@@ -255,10 +257,10 @@ mod tests {
         let start = Instant::now();
         let total_memory = cache_context
             .get_total_memory()
-            .expect("failed to get total memory");
+            .expect("Failed to get total memory");
         let elapsed = start.elapsed();
 
-        println!("Total Memory: {}\nTime: {:?}", total_memory, elapsed);
+        println!("Total Memory: {total_memory}\nTime: {elapsed:?}");
     }
 
     #[test]
@@ -267,13 +269,10 @@ mod tests {
         let start = Instant::now();
         let available_memory = cache_context
             .get_available_memory()
-            .expect("failed to get available memory");
+            .expect("Failed to get available memory");
         let elapsed = start.elapsed();
 
-        println!(
-            "Available Memory: {}\nTime: {:?}",
-            available_memory, elapsed
-        );
+        println!("Available Memory: {available_memory}\nTime: {elapsed:?}");
     }
 
     #[test]
@@ -282,10 +281,10 @@ mod tests {
         let start = Instant::now();
         let total_swap = cache_context
             .get_total_swap()
-            .expect("failed to get total swap");
+            .expect("Failed to get total swap");
         let elapsed = start.elapsed();
 
-        println!("Total Swap: {}\nTime: {:?}", total_swap, elapsed);
+        println!("Total Swap: {total_swap}\nTime: {elapsed:?}");
     }
 
     #[test]
@@ -294,10 +293,10 @@ mod tests {
         let start = Instant::now();
         let available_swap = cache_context
             .get_available_swap()
-            .expect("failed to get available swap memory");
+            .expect("Failed to get available swap memory");
         let elapsed = start.elapsed();
 
-        println!("Available Swap: {}\nTime: {:?}", available_swap, elapsed);
+        println!("Available Swap: {available_swap}\nTime: {elapsed:?}");
     }
 
     #[test]
@@ -306,9 +305,9 @@ mod tests {
         let start = Instant::now();
         let logical_cpus = cache_context
             .count_logical_cpus()
-            .expect("failed to get count logical cpus");
+            .expect("Failed to get count logical cpus");
         let elapsed = start.elapsed();
 
-        println!("Logical Cpus: {}\nTime: {:?}", logical_cpus, elapsed);
+        println!("Logical Cpus: {logical_cpus}\nTime: {elapsed:?}");
     }
 }

@@ -1,41 +1,31 @@
 use crate::{
-    checks::ENABLED_CHECK,
+    PoiseContext,
+    PoiseError,
     util::AsciiTable,
-    ClientDataKey,
 };
 use anyhow::Context as _;
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
-};
 use tracing::error;
 
-#[command]
-#[description("Get personal stats for Tic-Tac-Toe")]
-#[checks(Enabled)]
-#[bucket("default")]
-pub async fn stats(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let db = client_data.db.clone();
-    drop(data_lock);
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Get personal stats for Tic-Tac-Toe.")
+)]
+pub async fn stats(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    let guild_id = ctx.guild_id();
+    let author = ctx.author();
+    let author_id = author.id;
 
-    let scores = match db
-        .get_tic_tac_toe_score(msg.guild_id.into(), msg.author.id)
+    let scores = match ctx
+        .data()
+        .tic_tac_toe_data
+        .get_score(guild_id, author_id)
         .await
-        .context("failed to get tic-tac-toe stats")
+        .context("Failed to get tic-tac-toe stats")
     {
         Ok(scores) => scores,
-        Err(e) => {
-            error!("{:?}", e);
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
+        Err(error) => {
+            error!("{error:?}");
+            ctx.reply(format!("{error:?}")).await?;
             return Ok(());
         }
     };
@@ -58,14 +48,8 @@ pub async fn stats(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     table.set_cell(2, 1, ties_buffer.format(scores.ties));
     table.set_cell(3, 1, concedes_buffer.format(scores.concedes));
 
-    msg.channel_id
-        .say(
-            &ctx.http,
-            format!(
-                "```\n{}'s Tic-Tac-Toe Stats\n{}\n```",
-                msg.author.name, table
-            ),
-        )
-        .await?;
+    let response = format!("```\n{}'s Tic-Tac-Toe Stats\n{}\n```", author.name, table);
+    ctx.reply(response).await?;
+
     Ok(())
 }

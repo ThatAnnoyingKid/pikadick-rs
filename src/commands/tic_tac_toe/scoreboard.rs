@@ -1,41 +1,36 @@
 use crate::{
-    checks::ENABLED_CHECK,
+    PoiseContext,
+    PoiseError,
     util::AsciiTable,
-    ClientDataKey,
 };
 use anyhow::Context as _;
-use serenity::{
-    framework::standard::{
-        macros::command,
-        Args,
-        CommandResult,
-    },
-    model::prelude::*,
-    prelude::*,
-};
 use tracing::error;
 
-#[command]
-#[description("Get the top stats for Tic-Tac-Toe in this server")]
-#[checks(Enabled)]
-#[bucket("default")]
-pub async fn scoreboard(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let db = client_data.db.clone();
-    drop(data_lock);
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Get the top stats for Tic-Tac-Toe in this server.")
+)]
+pub async fn scoreboard(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    let guild_id = match ctx.guild_id() {
+        Some(guild_id) => guild_id,
+        None => {
+            ctx.reply("This command can only be used fron a server.")
+                .await?;
+            return Ok(());
+        }
+    };
 
-    let scores = match db
-        .get_top_tic_tac_toe_scores(msg.guild_id.into())
+    let scores = match ctx
+        .data()
+        .tic_tac_toe_data
+        .get_top_scores(guild_id)
         .await
-        .context("failed to get top tic-tac-toe stats")
+        .context("Failed to get top tic-tac-toe stats")
     {
         Ok(scores) => scores,
-        Err(e) => {
-            error!("{:?}", e);
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
+        Err(error) => {
+            error!("{error:?}");
+            ctx.reply(format!("{error:?}")).await?;
             return Ok(());
         }
     };
@@ -68,11 +63,9 @@ pub async fn scoreboard(ctx: &Context, msg: &Message, _args: Args) -> CommandRes
         table.set_cell(6, i + 1, score.concedes.to_string());
     }
 
-    msg.channel_id
-        .say(
-            &ctx.http,
-            format!("```\nTop Tic-Tac-Toe Stats\n{}\n```", table),
-        )
-        .await?;
+    let response = format!("```\nTop Tic-Tac-Toe Stats\n{table}\n```");
+
+    ctx.reply(response).await?;
+
     Ok(())
 }

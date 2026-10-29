@@ -1,35 +1,51 @@
-use crate::checks::ENABLED_CHECK;
-use anyhow::Context as _;
-use serenity::{
-    client::Context,
-    framework::standard::{
-        macros::command,
-        CommandResult,
-    },
-    model::prelude::*,
+use crate::{
+    PoiseContext,
+    PoiseError,
 };
+use anyhow::Context as _;
+use serenity::model::prelude::GuildId;
+use std::fmt::Write;
+use tracing::warn;
 
-#[command]
-#[only_in(guilds)]
-#[bucket("default")]
-#[checks(Enabled)]
-async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild_id: GuildId = msg.guild(&ctx.cache).context("missing server data")?.id;
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Leave the voice channel.")
+)]
+pub async fn leave(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    ctx.defer().await?;
 
-    let manager = songbird::get(ctx)
+    let guild_id: GuildId = match ctx.guild_id() {
+        Some(guild_id) => guild_id,
+        None => {
+            ctx.reply("Not in a guild.").await?;
+            return Ok(());
+        }
+    };
+
+    let manager = songbird::get(ctx.serenity_context())
         .await
-        .expect("missing songbird data")
+        .expect("Missing songbird data")
         .clone();
     let has_handler = manager.get(guild_id).is_some();
 
     if has_handler {
-        if let Err(e) = manager.remove(guild_id).await {
-            msg.channel_id.say(&ctx.http, format!("{:?}", e)).await?;
-        }
+        let mut content = String::new();
 
-        msg.channel_id.say(&ctx.http, "Left voice channel").await?;
+        if let Err(error) = manager
+            .remove(guild_id)
+            .await
+            .context("Failed to remove guild")
+        {
+            warn!("{error:?}");
+
+            writeln!(&mut content, "{error:?}")?;
+        }
+        writeln!(&mut content)?;
+        writeln!(&mut content, "Left voice channel.")?;
+
+        ctx.reply(content).await?;
     } else {
-        msg.reply(ctx, "Not in a voice channel").await?;
+        ctx.reply("Not in a voice channel.").await?;
     }
 
     Ok(())

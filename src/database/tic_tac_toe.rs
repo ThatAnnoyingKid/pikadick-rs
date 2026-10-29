@@ -1,4 +1,5 @@
 use crate::database::{
+    Database,
     model::{
         MaybeGuildString,
         TicTacToeGame,
@@ -6,14 +7,13 @@ use crate::database::{
         TicTacToeScore,
         TicTacToeTopPlayerScore,
     },
-    Database,
 };
 use anyhow::Context;
 use rusqlite::{
-    named_params,
-    params,
     OptionalExtension,
     TransactionBehavior,
+    named_params,
+    params,
 };
 use serenity::model::prelude::*;
 use tic_tac_toe::Board;
@@ -42,15 +42,15 @@ const GET_TOP_TIC_TAC_TOE_SCORES_SQL: &str =
 #[derive(Debug, thiserror::Error)]
 pub enum TicTacToeCreateGameError {
     /// The author is in a game
-    #[error("the author is in a game")]
+    #[error("The author is in a game")]
     AuthorInGame,
 
     /// The opponent is in a game
-    #[error("the opponent is in a game")]
+    #[error("The opponent is in a game")]
     OpponentInGame,
 
     /// Error accessing the database
-    #[error("database error")]
+    #[error("Database error")]
     Database(#[source] anyhow::Error),
 }
 
@@ -58,19 +58,19 @@ pub enum TicTacToeCreateGameError {
 #[derive(Debug, thiserror::Error)]
 pub enum TicTacToeTryMoveError {
     /// The user is not in a game
-    #[error("not in a game")]
+    #[error("Not in a game")]
     NotInAGame,
 
     /// It is not the user's turn
-    #[error("not the user's turn to move")]
+    #[error("Not the user's turn to move")]
     InvalidTurn,
 
     /// The move is invalid
-    #[error("the move is not valid")]
+    #[error("The move is not valid")]
     InvalidMove,
 
     /// Error accessing the database
-    #[error("database error")]
+    #[error("Database error")]
     Database(#[source] anyhow::Error),
 }
 
@@ -431,7 +431,7 @@ impl Database {
                     })
                 },
             )?;
-            txn.commit().context("failed to commit").map(|_| ret)
+            txn.commit().context("Failed to commit").map(|_| ret)
         })
         .await?
     }
@@ -439,12 +439,12 @@ impl Database {
     /// Get the top Tic-Tac-Toe scores for the current server
     pub async fn get_top_tic_tac_toe_scores(
         &self,
-        guild_id: MaybeGuildString,
+        guild_id: GuildId,
     ) -> anyhow::Result<Vec<TicTacToeTopPlayerScore>> {
         self.access_db(move |db| {
             let ret = db
                 .prepare_cached(GET_TOP_TIC_TAC_TOE_SCORES_SQL)?
-                .query_map([guild_id], TicTacToeTopPlayerScore::from_row)?
+                .query_map([i64::from(guild_id)], TicTacToeTopPlayerScore::from_row)?
                 .collect::<Result<Vec<_>, _>>()?;
 
             Ok(ret)
