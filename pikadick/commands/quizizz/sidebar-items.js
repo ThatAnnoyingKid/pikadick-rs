@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CODE_VALID_TIME","LIMIT_REACHED_MSG","MAX_CODE","MAX_TRIES"],"fn":["finder_task","quizizz"],"struct":["CodeCache","QuizizzClient"],"type":["SearchResult"]};

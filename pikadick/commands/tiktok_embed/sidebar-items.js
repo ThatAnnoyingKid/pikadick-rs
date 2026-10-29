@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ENCODER_PREFERENCE_LIST","FILE_SIZE_LIMIT_BYTES","TARGET_FILE_SIZE_BYTES"],"fn":["bool_to_str","calc_target_bitrate","parse_tiktok_url","select_best_encoder","tiktok_embed"],"struct":["InnerTikTokData","TikTokData","UrlData"],"type":["VideoDownloadRequestMap"]};

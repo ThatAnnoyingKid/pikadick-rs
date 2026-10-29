@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["BYTES_IN_GB_F64"],"fn":["fmt_cpu_frequency","format_boot_time","format_uptime","get_cpu_usage","system"],"struct":["SystemStats"]};

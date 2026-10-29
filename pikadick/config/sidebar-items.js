@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ActivityKind","Severity","ValidationError"],"fn":["default_prefix"],"struct":["Config","DeviantArtConfig","LogConfig","Rule34Config","SauceNaoConfig","StatusConfig","ValidationMessage"]};

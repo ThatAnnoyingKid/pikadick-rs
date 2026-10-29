@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["board","concede","move_","play","scoreboard","stats","tic_tac_toe"],"mod":["board","concede","move_","play","renderer","scoreboard","stats"],"struct":["GamePlayerMention","TicTacToeData"]};

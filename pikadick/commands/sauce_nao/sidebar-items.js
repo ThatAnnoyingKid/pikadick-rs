@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["FIVE_MINUTES"],"fn":["sauce_nao"],"struct":["SauceNaoClient"]};

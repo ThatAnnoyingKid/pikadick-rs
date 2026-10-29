@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["LOG_PREFIX","LOG_SUFFIX","MAX_LOG_FILES"],"fn":["setup"],"mod":["delay_writer"],"struct":["DelayWriter"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["GetVideoResponse"],"struct":["GetVideoResponseError","GetVideoResponseOk","VideoData"]};

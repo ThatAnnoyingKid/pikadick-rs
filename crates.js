@@ -1,0 +1,2 @@
+window.ALL_CRATES = ["fml","insta","iqdb","nekos","open_ai","open_graph","pikadick","pikadick_system_info","pikadick_util","quizizz","r6stats","r6tracker","reddit_tube","rpi_deploy","rule34","tic_tac_toe","tokio_ffmpeg_cli","urban_dictionary","xkcd","yodaspeak"];
+//{"start":21,"fragment_lengths":[5,8,7,8,10,13,11,23,16,10,10,12,14,13,9,14,19,19,7,12]}
