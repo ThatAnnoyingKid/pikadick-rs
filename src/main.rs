@@ -47,7 +47,6 @@ pub mod util;
 use crate::{
     cli_options::CliOptions,
     client_data::ClientData,
-    commands::*,
     config::{
         ActivityKind,
         Config,
@@ -69,7 +68,6 @@ use pikadick_util::AsyncLockFile;
 use poise::structs::FrameworkError;
 use serenity::{
     FutureExt,
-    framework::standard::macros::group,
     gateway::{
         ActivityData,
         ShardManager,
@@ -279,10 +277,6 @@ impl TypeMapKey for ClientDataKey {
     type Value = ClientData;
 }
 
-#[group]
-#[commands(tic_tac_toe)]
-struct General;
-
 async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
     match tokio::signal::ctrl_c()
         .await
@@ -318,6 +312,7 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
             self::commands::sauce_nao(),
             self::commands::stop(),
             self::commands::system(),
+            self::commands::tic_tac_toe(),
             self::commands::tiktok_embed(),
             self::commands::urban(),
             self::commands::uwuify(),
@@ -512,11 +507,6 @@ async fn async_main(config: Arc<Config>) -> anyhow::Result<()> {
     let client_data = ClientData::init(config, database.clone())
         .await
         .context("Client data initialization failed")?;
-
-    // Add all post-init client data changes here
-    {
-        client_data.enabled_check_data.add_groups(&[&GENERAL_GROUP]);
-    }
 
     {
         let mut data = client.data.write().await;

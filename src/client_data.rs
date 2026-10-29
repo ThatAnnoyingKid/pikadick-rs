@@ -44,7 +44,7 @@ impl ClientData {
             .await
             .context("Failed to init tiktok data")?;
 
-        let tic_tac_toe_data = TicTacToeData::new();
+        let tic_tac_toe_data = TicTacToeData::new(db.clone());
 
         Ok(ClientData {
             enabled_check_data: Default::default(),

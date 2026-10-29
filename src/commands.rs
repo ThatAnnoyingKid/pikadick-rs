@@ -32,7 +32,7 @@ pub use self::{
     sauce_nao::sauce_nao,
     stop::stop,
     system::system,
-    tic_tac_toe::TIC_TAC_TOE_COMMAND,
+    tic_tac_toe::tic_tac_toe,
     tiktok_embed::tiktok_embed,
     urban::urban,
     uwuify::uwuify,
