@@ -8,12 +8,12 @@ mod stats;
 
 use self::renderer::Renderer;
 pub use self::{
-    board::BOARD_COMMAND,
-    concede::CONCEDE_COMMAND,
+    board::board,
+    concede::concede,
     move_::move_,
     play::play,
-    scoreboard::SCOREBOARD_COMMAND,
-    stats::STATS_COMMAND,
+    scoreboard::scoreboard,
+    stats::stats,
 };
 use crate::{
     Database,
@@ -26,6 +26,8 @@ use crate::{
         model::{
             TicTacToeGame,
             TicTacToePlayer,
+            TicTacToeScore,
+            TicTacToeTopPlayerScore,
         },
     },
 };
@@ -85,6 +87,47 @@ impl TicTacToeData {
             .try_tic_tac_toe_move(guild_id.into(), author_id.into(), move_index)
             .await
     }
+
+    /// Concede a game.
+    async fn concede_game(
+        &self,
+        guild_id: Option<GuildId>,
+        author_id: UserId,
+    ) -> anyhow::Result<Option<TicTacToeGame>> {
+        self.database
+            .concede_tic_tac_toe_game(guild_id.into(), author_id)
+            .await
+    }
+
+    /// Get a game.
+    async fn get_game(
+        &self,
+        guild_id: Option<GuildId>,
+        author_id: UserId,
+    ) -> anyhow::Result<Option<TicTacToeGame>> {
+        self.database
+            .get_tic_tac_toe_game(guild_id.into(), author_id.into())
+            .await
+    }
+
+    /// Get the score.
+    async fn get_score(
+        &self,
+        guild_id: Option<GuildId>,
+        author_id: UserId,
+    ) -> anyhow::Result<TicTacToeScore> {
+        self.database
+            .get_tic_tac_toe_score(guild_id.into(), author_id)
+            .await
+    }
+
+    /// Get the top scores.
+    async fn get_top_scores(
+        &self,
+        guild_id: GuildId,
+    ) -> anyhow::Result<Vec<TicTacToeTopPlayerScore>> {
+        self.database.get_top_tic_tac_toe_scores(guild_id).await
+    }
 }
 
 impl std::fmt::Debug for TicTacToeData {
@@ -115,14 +158,14 @@ impl std::fmt::Display for GamePlayerMention {
 }
 
 /*
-#[sub_commands("concede", "board", "stats", "scoreboard")]
+#[sub_commands("")]
 */
 
 #[poise::command(
     slash_command,
     rename = "tic-tac-toe",
     description_localized("en-US", "Play a game of Tic-Tac-Toe"),
-    subcommands("play", "move_")
+    subcommands("play", "move_", "concede", "board", "stats", "scoreboard")
 )]
 pub async fn tic_tac_toe(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     Ok(())

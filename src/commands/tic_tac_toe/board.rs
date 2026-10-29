@@ -1,81 +1,51 @@
 use crate::{
-    ClientDataKey,
-    checks::ENABLED_CHECK,
+    PoiseContext,
+    PoiseError,
 };
-use serenity::{
-    builder::{
-        CreateAttachment,
-        CreateMessage,
-    },
-    client::Context,
-    framework::standard::{
-        Args,
-        CommandResult,
-        macros::command,
-    },
-    model::prelude::*,
-};
+use anyhow::Context;
+use poise::CreateReply;
+use serenity::builder::CreateAttachment;
 use tracing::error;
 
-#[command]
-#[description("Print the current Tic-Tac-Toe board")]
-#[usage("")]
-#[example("")]
-#[min_args(0)]
-#[max_args(0)]
-#[bucket("ttt-board")]
-#[checks(Enabled)]
-pub async fn board(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    let data_lock = ctx.data.read().await;
-    let client_data = data_lock
-        .get::<ClientDataKey>()
-        .expect("missing client data");
-    let tic_tac_toe_data = client_data.tic_tac_toe_data.clone();
-    let db = client_data.db.clone();
-    drop(data_lock);
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Print the current Tic-Tac-Toe board.")
+)]
+pub async fn board(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    let tic_tac_toe_data = &ctx.data().tic_tac_toe_data;
 
-    let guild_id = msg.guild_id;
-    let author_id = msg.author.id;
+    let guild_id = ctx.guild_id();
+    let author_id = ctx.author().id;
 
-    match db
-        .get_tic_tac_toe_game(guild_id.into(), author_id.into())
-        .await
-    {
+    match tic_tac_toe_data.get_game(guild_id, author_id).await {
         Ok(Some(game)) => {
             let file = match tic_tac_toe_data
-                .renderer
-                .render_board_async(game.board)
+                .render_board(game.board)
                 .await
+                .context("Failed to render Tic-Tac-Toe board")
             {
                 Ok(file) => {
                     CreateAttachment::bytes(file, format!("ttt-{}.png", game.board.encode_u16()))
                 }
                 Err(error) => {
-                    error!("Failed to render Tic-Tac-Toe board: {error}");
-                    msg.channel_id
-                        .say(
-                            &ctx.http,
-                            format!("Failed to render Tic-Tac-Toe board: {error}"),
-                        )
-                        .await?;
+                    error!("{error:?}");
+                    ctx.reply(format!("{error:?}")).await?;
                     return Ok(());
                 }
             };
-            let message_builder = CreateMessage::new().add_file(file);
-            msg.channel_id
-                .send_message(&ctx.http, message_builder)
-                .await?;
+            let create_reply = CreateReply::new().attachment(file);
+
+            ctx.send(create_reply).await?;
         }
         Ok(None) => {
-            let response = "Failed to print board as you have no games in this server".to_string();
-            msg.channel_id.say(&ctx.http, response).await?;
-            return Ok(());
+            let response = "Failed to print board as you have no games in this server.";
+            ctx.reply(response).await?;
         }
         Err(error) => {
             error!("{error:?}");
-            msg.channel_id.say(&ctx.http, "database error").await?;
+            ctx.reply("Database error").await?;
         }
-    };
+    }
 
     Ok(())
 }
