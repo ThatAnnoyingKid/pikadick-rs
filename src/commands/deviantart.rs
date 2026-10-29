@@ -81,18 +81,12 @@ impl DeviantartClient {
             info!("Re-signing in");
             self.client.login(&self.username, &self.password).await?;
 
-            // Store the new cookies
-            let cookie_store = self.client.cookie_store.clone();
-            let cookie_data = tokio::task::spawn_blocking(move || {
-                let mut cookie_data = Vec::with_capacity(1_000_000); // 1 MB
-                cookie_store
-                    .lock()
-                    .expect("Cookie store is poisoned")
-                    .save_json(&mut cookie_data)
-                    .map_err(deviantart::WrapBoxError)?;
-                anyhow::Ok(cookie_data)
-            })
-            .await??;
+            let cookie_data = Vec::with_capacity(2 * 1024);
+            let cookie_data = self
+                .client
+                .save_json_cookies(cookie_data)
+                .await
+                .context("Failed to save JSON cookies")?;
             self.database
                 .store_put(DATA_STORE_NAME, COOKIE_KEY, &cookie_data)
                 .await?;

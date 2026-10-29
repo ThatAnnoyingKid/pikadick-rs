@@ -28,9 +28,6 @@
 // clippy::redundant_closure_for_method_calls
 // clippy::too_many_lines
 
-// TODO: Fix deviantart cookie saving
-#![expect(deprecated)]
-
 //! # Pikadick
 
 pub mod cli_options;
