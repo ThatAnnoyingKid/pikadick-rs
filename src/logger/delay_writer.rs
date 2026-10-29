@@ -1,7 +1,9 @@
-use parking_lot::Mutex;
 use std::{
     io::Write,
-    sync::Arc,
+    sync::{
+        Arc,
+        Mutex,
+    },
 };
 
 const DEFAULT_CAPACITY: usize = 1_000_000;
@@ -35,7 +37,7 @@ where
         let buffer = match self {
             Self::Buffer(bytes) => bytes,
             Self::Writer(_) => {
-                return Err(std::io::Error::other("already initalized"));
+                return Err(std::io::Error::other("Already initalized"));
             }
         };
 
@@ -90,7 +92,8 @@ where
 {
     /// Try to init this DelayWriter
     pub fn init(&self, writer: W) -> Result<(), std::io::Error> {
-        let mut lock = self.0.lock();
+        let mut lock = self.0.lock().unwrap_or_else(|error| error.into_inner());
+
         lock.init(writer)
     }
 }
@@ -106,19 +109,19 @@ where
     W: Write,
 {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let mut lock = self.0.lock();
+        let mut lock = self.0.lock().unwrap_or_else(|error| error.into_inner());
 
         lock.write(buf)
     }
 
     fn flush(&mut self) -> std::io::Result<()> {
-        let mut lock = self.0.lock();
+        let mut lock = self.0.lock().unwrap_or_else(|error| error.into_inner());
 
         lock.flush()
     }
 
     fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
-        let mut lock = self.0.lock();
+        let mut lock = self.0.lock().unwrap_or_else(|error| error.into_inner());
 
         lock.write_all(buf)
     }

@@ -28,8 +28,8 @@
 // clippy::redundant_closure_for_method_calls
 // clippy::too_many_lines
 
-// TODO: Switch to poise
-// #![expect(deprecated)]
+// TODO: Fix deviantart cookie saving
+#![expect(deprecated)]
 
 //! # Pikadick
 
