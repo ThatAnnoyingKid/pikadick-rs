@@ -11,9 +11,12 @@ cfg_if::cfg_if! {
 }
 
 pub use platforms::Arch;
-use std::time::{
-    Duration,
-    SystemTime,
+use std::{
+    ffi::OsString,
+    time::{
+        Duration,
+        SystemTime,
+    },
 };
 
 /// The library error type
@@ -34,6 +37,10 @@ pub enum Error {
     /// Invalid Utf8 OsStr
     #[error("Invalid utf8 os str")]
     InvalidUtf8OsStr,
+
+    /// Invalid Utf8 OsString
+    #[error("Invalid utf8 os string")]
+    InvalidUtf8OsString { value: OsString },
 
     /// Failed to parse int
     #[error("Failed to parse int")]

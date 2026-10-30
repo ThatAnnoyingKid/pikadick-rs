@@ -1,4 +1,11 @@
+mod util;
+
+use self::util::get_tick_count_64;
 use super::Error;
+use crate::windows::util::{
+    ComputerNameFormat,
+    get_computer_name,
+};
 use bitflags::bitflags;
 use core::{
     any::Any,
@@ -33,18 +40,8 @@ use windows_sys::{
                 PERFORMANCE_INFORMATION,
             },
             SystemInformation::{
-                ComputerNameDnsDomain,
-                ComputerNameDnsFullyQualified,
-                ComputerNameDnsHostname,
-                ComputerNameNetBIOS,
-                ComputerNamePhysicalDnsDomain,
-                ComputerNamePhysicalDnsFullyQualified,
-                ComputerNamePhysicalDnsHostname,
-                ComputerNamePhysicalNetBIOS,
-                GetComputerNameExW,
                 GetLogicalProcessorInformationEx,
                 GetNativeSystemInfo,
-                GetTickCount64,
                 GetVersionExW,
                 GlobalMemoryStatusEx,
                 LOGICAL_PROCESSOR_RELATIONSHIP,
@@ -67,10 +64,7 @@ use windows_sys::{
                 VER_SUITE_WH_SERVER,
             },
             Threading::GetActiveProcessorCount,
-            WindowsProgramming::{
-                MAX_COMPUTERNAME_LENGTH,
-                uaw_wcslen,
-            },
+            WindowsProgramming::uaw_wcslen,
         },
     },
     core::{
@@ -78,54 +72,6 @@ use windows_sys::{
         PCWSTR,
     },
 };
-
-/// A wrapper for `GetTickCount64`.
-///
-/// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount64
-fn get_tick_count_64() -> Duration {
-    Duration::from_millis(unsafe { GetTickCount64() })
-}
-
-/// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/ne-sysinfoapi-computer_name_format
-#[expect(dead_code)]
-#[repr(i32)]
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-enum ComputerNameFormat {
-    NetBios = ComputerNameNetBIOS,
-    DnsHostname = ComputerNameDnsHostname,
-    DnsDomain = ComputerNameDnsDomain,
-    DnsFullyQualified = ComputerNameDnsFullyQualified,
-    PhysicalNetBIOS = ComputerNamePhysicalNetBIOS,
-    PhysicalDnsHostname = ComputerNamePhysicalDnsHostname,
-    PhysicalDnsDomain = ComputerNamePhysicalDnsDomain,
-    PhysicalDnsFullyQualified = ComputerNamePhysicalDnsFullyQualified,
-}
-
-/// A wrapper for `GetComputerNameExA`.
-///
-/// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getcomputernameexa
-fn get_computer_name(computer_name_format: ComputerNameFormat) -> Result<String, Error> {
-    const MAX_COMPUTERNAME_LENGTH_USIZE: usize = MAX_COMPUTERNAME_LENGTH as usize;
-
-    let buffer: &mut [std::mem::MaybeUninit<u16>] =
-        &mut [MaybeUninit::uninit(); MAX_COMPUTERNAME_LENGTH_USIZE];
-    let mut size = MAX_COMPUTERNAME_LENGTH;
-
-    let code = unsafe {
-        GetComputerNameExW(
-            computer_name_format as i32,
-            buffer.as_mut_ptr().cast(),
-            &mut size,
-        )
-    };
-    if code != 0 {
-        let len = size.try_into().expect("Failed to convert len to `usize`");
-        let slice: &[u16] = unsafe { std::slice::from_raw_parts(buffer.as_ptr().cast(), len) };
-        Ok(String::from_utf16(slice)?)
-    } else {
-        Err(Error::Io(std::io::Error::last_os_error()))
-    }
-}
 
 /// A wrapper for the wProcessorArchitecture in a `SYSTEM_INFO`.
 ///
@@ -845,6 +791,7 @@ impl std::fmt::Debug for ProcessorPowerInformation {
     }
 }
 
+#[expect(dead_code)]
 fn call_nt_power_information(
     processor_count: usize,
 ) -> Result<Vec<ProcessorPowerInformation>, Error> {
@@ -944,7 +891,9 @@ impl CacheContext {
 
     /// Get the hostname
     pub fn get_hostname(&self) -> Result<String, Error> {
-        get_computer_name(ComputerNameFormat::PhysicalDnsHostname)
+        get_computer_name(ComputerNameFormat::PhysicalDnsHostname)?
+            .into_string()
+            .map_err(|value| Error::InvalidUtf8OsString { value })
     }
 
     /// Get the architecture.
