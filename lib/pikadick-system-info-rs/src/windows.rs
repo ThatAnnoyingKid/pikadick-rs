@@ -16,10 +16,16 @@ use windows_sys::{
         Foundation::{
             ERROR_INSUFFICIENT_BUFFER,
             FALSE,
+            RtlNtStatusToDosError,
             STATUS_SUCCESS,
             TRUE,
         },
         System::{
+            Power::{
+                CallNtPowerInformation,
+                PROCESSOR_POWER_INFORMATION,
+                ProcessorInformation,
+            },
             ProcessStatus::{
                 ENUM_PAGE_FILE_INFORMATION,
                 EnumPageFilesW,
@@ -163,6 +169,11 @@ impl SystemInfo {
     pub fn page_size(&self) -> u32 {
         self.0.dwPageSize
     }
+
+    /// Get the number of processors.
+    pub fn number_of_processors(&self) -> u32 {
+        self.0.dwNumberOfProcessors
+    }
 }
 
 impl std::fmt::Debug for SystemInfo {
@@ -170,6 +181,7 @@ impl std::fmt::Debug for SystemInfo {
         f.debug_struct("SystemInfo")
             .field("processor_architecture", &self.processor_architecture())
             .field("page_size", &self.page_size())
+            .field("number_of_processors", &self.number_of_processors())
             .finish()
     }
 }
@@ -797,11 +809,67 @@ fn get_logical_processor_information_ex() -> Result<LogicalProcessorInformationE
     Ok(LogicalProcessorInformationExStore { buffer })
 }
 
-/*
-fn call_nt_power_information() -> Result<(), Error>{
-    // CallNtPowerInformation
+#[repr(transparent)]
+struct ProcessorPowerInformation(PROCESSOR_POWER_INFORMATION);
+
+impl ProcessorPowerInformation {
+    /// Get the processor number.
+    fn number(&self) -> u32 {
+        self.0.Number
+    }
+
+    /// Get the max processor speed.
+    fn max_mhz(&self) -> u32 {
+        self.0.MaxMhz
+    }
+
+    /// Get the current processor speed.
+    fn current_mhz(&self) -> u32 {
+        self.0.CurrentMhz
+    }
+
+    /// Get the max processor speed.
+    fn limit_mhz(&self) -> u32 {
+        self.0.MhzLimit
+    }
 }
-*/
+
+impl std::fmt::Debug for ProcessorPowerInformation {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("ProcessorPowerInformation")
+            .field("number", &self.number())
+            .field("max_mhz", &self.max_mhz())
+            .field("current_mhz", &self.current_mhz())
+            .field("limit_mhz", &self.limit_mhz())
+            .finish()
+    }
+}
+
+fn call_nt_power_information(
+    processor_count: usize,
+) -> Result<Vec<ProcessorPowerInformation>, Error> {
+    let mut info: Vec<ProcessorPowerInformation> = Vec::with_capacity(processor_count);
+    let info_len_bytes = processor_count * std::mem::size_of::<PROCESSOR_POWER_INFORMATION>();
+    let result = unsafe {
+        CallNtPowerInformation(
+            ProcessorInformation,
+            std::ptr::null(),
+            0,
+            info.as_mut_ptr().cast(),
+            u32::try_from(info_len_bytes).expect("Core count too large"),
+        )
+    };
+
+    if result != STATUS_SUCCESS {
+        let error = unsafe { RtlNtStatusToDosError(result) };
+        return Err(Error::Io(std::io::Error::from_raw_os_error(error as i32)));
+    }
+    unsafe {
+        info.set_len(processor_count);
+    }
+
+    Ok(info)
+}
 
 #[derive(Debug)]
 struct PageFileStats {
@@ -1073,7 +1141,8 @@ mod test {
     #[test]
     fn get_performance_info_works() {
         let start = Instant::now();
-        let _performance_info = get_performance_info();
+        let _performance_info =
+            get_performance_info().expect("get_performance_info returned an error");
         let elapsed = start.elapsed();
         assert!(
             elapsed < BLOCKING_DURATION,
@@ -1088,12 +1157,41 @@ mod test {
             *total = info.total_size();
             *used = info.total_in_use();
             true
-        });
+        })
+        .expect("enum_page_files returned an error");
         let elapsed = start.elapsed();
         assert!(
             elapsed < BLOCKING_DURATION,
             "Blocked, operation took {elapsed:?}"
         );
+    }
+
+    #[test]
+    fn get_logical_processor_information_ex_works() {
+        let start = Instant::now();
+        let _info = get_logical_processor_information_ex()
+            .expect("get_logical_processor_information_ex returned an error");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+    }
+
+    #[test]
+    fn call_nt_power_information_works() {
+        let start = Instant::now();
+        let system_info = get_system_info();
+        let info = call_nt_power_information(
+            usize::try_from(system_info.number_of_processors()).expect("Core count too large"),
+        )
+        .expect("call_nt_power_information returned an error");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+        dbg!(info);
     }
 
     #[test]

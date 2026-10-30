@@ -240,7 +240,7 @@ impl CacheContext {
         } else {
             let processors: HashSet<u32> = cpu_info
                 .iter()
-                // The Raspberry Pi 4 will report the BCM2835 here,
+                // The Raspberry Pi 4 will report the BCM2835 here (why?),
                 // which does not have a processor field.
                 .filter_map(|info| info.processor)
                 .collect();
