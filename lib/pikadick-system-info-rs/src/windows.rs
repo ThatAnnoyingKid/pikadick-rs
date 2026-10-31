@@ -1,6 +1,9 @@
 mod util;
 
-use self::util::get_tick_count_64;
+use self::util::{
+    WCStr,
+    get_tick_count_64,
+};
 use super::Error;
 use crate::windows::util::{
     ComputerNameFormat,
@@ -11,7 +14,6 @@ use bitflags::bitflags;
 use core::{
     any::Any,
     ffi::c_void,
-    fmt::Write,
     mem::MaybeUninit,
     time::Duration,
 };
@@ -23,12 +25,24 @@ use windows_sys::{
     Win32::{
         Foundation::{
             ERROR_INSUFFICIENT_BUFFER,
+            ERROR_SUCCESS,
             FALSE,
             RtlNtStatusToDosError,
             STATUS_SUCCESS,
             TRUE,
         },
         System::{
+            Performance::{
+                PDH_HCOUNTER,
+                PDH_HQUERY,
+                PDH_MORE_DATA,
+                PDH_RAW_COUNTER_ITEM_W,
+                PdhAddEnglishCounterW,
+                PdhCloseQuery,
+                PdhCollectQueryData,
+                PdhGetRawCounterArrayW,
+                PdhOpenQueryW,
+            },
             Power::{
                 CallNtPowerInformation,
                 PROCESSOR_POWER_INFORMATION,
@@ -64,7 +78,6 @@ use windows_sys::{
                 VER_NT_WORKSTATION,
                 VER_SUITE_WH_SERVER,
             },
-            WindowsProgramming::uaw_wcslen,
         },
     },
     core::{
@@ -227,60 +240,6 @@ impl std::fmt::Debug for OsVersionInfoEx {
             .field("service_pack_minor", &self.service_pack_minor())
             .field("product_type", &self.product_type())
             .finish()
-    }
-}
-
-/// A wide cstr
-struct WCStr {
-    // TODO: use wchar def?
-    inner: [u16],
-}
-
-impl WCStr {
-    /// Make a [`WCStr`] from a raw ptr.
-    ///
-    /// # Safety
-    /// * The memeory behind the pointer must be valid for the lifetime of the returned reference.
-    /// * The ptr must be terminated by a nul byte.
-    /// * The memory behing the ptr must not be changed while the reference is alive.
-    unsafe fn from_ptr<'a>(ptr: *const u16) -> &'a WCStr {
-        unsafe {
-            let len = uaw_wcslen(ptr);
-            let slice = std::slice::from_raw_parts(ptr, len + 1);
-            Self::from_bytes_with_nul_unchecked(slice)
-        }
-    }
-
-    /// # Safety
-    /// * The slice must contain only one nul
-    /// * The nul must be the last element in the slice
-    unsafe fn from_bytes_with_nul_unchecked(slice: &[u16]) -> &Self {
-        unsafe { &*(slice as *const [u16] as *const Self) }
-    }
-
-    /// Get this as a slice, excluding the NUL.
-    pub fn to_slice(&self) -> &[u16] {
-        let slice = &self.inner;
-        &slice[..slice.len() - 1]
-    }
-}
-
-impl std::fmt::Debug for WCStr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "\"")?;
-        for ch in std::char::decode_utf16(self.to_slice().iter().copied()) {
-            match ch {
-                Ok(ch) => {
-                    for ch in ch.escape_default() {
-                        f.write_char(ch)?;
-                    }
-                }
-                Err(e) => {
-                    write!(f, "\\x{:X}", e.unpaired_surrogate())?;
-                }
-            }
-        }
-        write!(f, "\"")
     }
 }
 
@@ -804,6 +763,164 @@ fn call_nt_power_information(
     Ok(info)
 }
 
+struct PdhQuery(PDH_HQUERY);
+
+impl PdhQuery {
+    fn new() -> Result<Self, Error> {
+        let mut handle: MaybeUninit<PDH_HQUERY> = MaybeUninit::zeroed();
+        let result = unsafe { PdhOpenQueryW(std::ptr::null(), 0, handle.as_mut_ptr().cast()) };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+        let query = Self(unsafe { handle.assume_init() });
+
+        Ok(query)
+    }
+
+    fn add_counter(&self, query: &str) -> Result<PdhCounter<'_>, Error> {
+        let query_str_wide: Vec<u16> = query.encode_utf16().chain(Some(0)).collect();
+        let mut handle: MaybeUninit<PDH_HCOUNTER> = MaybeUninit::zeroed();
+        let result = unsafe {
+            PdhAddEnglishCounterW(self.0, query_str_wide.as_ptr(), 0, handle.as_mut_ptr())
+        };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+
+        Ok(PdhCounter {
+            handle: unsafe { handle.assume_init() },
+            _query: self,
+        })
+    }
+
+    fn collect(&self) -> Result<(), Error> {
+        let result = unsafe { PdhCollectQueryData(self.0) };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+
+        Ok(())
+    }
+}
+
+impl Drop for PdhQuery {
+    fn drop(&mut self) {
+        let _result = unsafe { PdhCloseQuery(self.0) };
+    }
+}
+
+#[repr(transparent)]
+struct PdhRawItem(PDH_RAW_COUNTER_ITEM_W);
+
+impl PdhRawItem {
+    fn name(&self) -> &WCStr {
+        unsafe { WCStr::from_ptr(self.0.szName) }
+    }
+
+    fn first_value(&self) -> i64 {
+        self.0.RawValue.FirstValue
+    }
+
+    fn second_value(&self) -> i64 {
+        self.0.RawValue.SecondValue
+    }
+}
+
+impl std::fmt::Debug for PdhRawItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PdhRawItem")
+            .field("name", &self.name())
+            .field("first_value", &self.first_value())
+            .field("second_value", &self.second_value())
+            .finish()
+    }
+}
+
+struct PdhRawArray {
+    buffer: Vec<u8>,
+    item_count: usize,
+}
+
+impl PdhRawArray {
+    fn len(&self) -> usize {
+        self.item_count
+    }
+
+    #[expect(dead_code)]
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    fn get(&self, index: usize) -> Option<&PdhRawItem> {
+        if index >= self.item_count {
+            return None;
+        }
+
+        let item: &PdhRawItem = unsafe {
+            self.buffer
+                .as_ptr()
+                .cast::<PDH_RAW_COUNTER_ITEM_W>()
+                .add(index)
+                .cast::<PdhRawItem>()
+                .as_ref_unchecked()
+        };
+
+        Some(item)
+    }
+}
+
+struct PdhCounter<'a> {
+    handle: PDH_HCOUNTER,
+    _query: &'a PdhQuery,
+}
+
+impl PdhCounter<'_> {
+    fn get_raw_array(&self) -> Result<PdhRawArray, Error> {
+        let mut buffer_size: u32 = 0;
+        let mut item_count: u32 = 0;
+        let result = unsafe {
+            PdhGetRawCounterArrayW(
+                self.handle,
+                &mut buffer_size,
+                &mut item_count,
+                std::ptr::null_mut(),
+            )
+        };
+        match result {
+            ERROR_SUCCESS => {
+                return Ok(PdhRawArray {
+                    buffer: Vec::new(),
+                    item_count: 0,
+                });
+            }
+            PDH_MORE_DATA => {}
+            _ => return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32))),
+        }
+
+        let buffer_size_usize = usize::try_from(buffer_size).expect("buffer_size too large");
+        let mut buffer: Vec<u8> = Vec::with_capacity(buffer_size_usize);
+        let result = unsafe {
+            PdhGetRawCounterArrayW(
+                self.handle,
+                &mut buffer_size,
+                &mut item_count,
+                buffer.as_mut_ptr().cast(),
+            )
+        };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+        unsafe {
+            buffer.set_len(buffer_size_usize);
+        }
+
+        Ok(PdhRawArray {
+            buffer,
+            item_count: usize::try_from(item_count).expect("item_count too large"),
+        })
+    }
+}
+
 #[derive(Debug)]
 struct PageFileStats {
     /// The total size of all page files, in pages.
@@ -1127,6 +1244,21 @@ mod test {
             "Blocked, operation took {elapsed:?}"
         );
         dbg!(info);
+    }
+
+    #[test]
+    fn pdh_query_works() {
+        let query = PdhQuery::new().expect("Failed to create query");
+        let counter = query
+            .add_counter("\\Processor Information(*)\\Actual Frequency")
+            .expect("Failed to create counter");
+        query.collect().expect("Failed to collect data");
+        let raw_array = counter.get_raw_array().expect("Failed to get raw array");
+
+        for index in 0..raw_array.len() {
+            let item = raw_array.get(index).expect("Invalid index");
+            dbg!(item);
+        }
     }
 
     #[test]

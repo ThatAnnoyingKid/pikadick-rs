@@ -1,5 +1,6 @@
 use std::{
     ffi::OsString,
+    fmt::Write,
     mem::MaybeUninit,
     os::windows::ffi::OsStringExt,
     time::Duration,
@@ -19,8 +20,65 @@ use windows_sys::Win32::System::{
         GetTickCount64,
     },
     Threading::GetActiveProcessorCount,
-    WindowsProgramming::MAX_COMPUTERNAME_LENGTH,
+    WindowsProgramming::{
+        MAX_COMPUTERNAME_LENGTH,
+        uaw_wcslen,
+    },
 };
+
+/// A wide cstr
+pub struct WCStr {
+    // TODO: use wchar def?
+    inner: [u16],
+}
+
+impl WCStr {
+    /// Make a [`WCStr`] from a raw ptr.
+    ///
+    /// # Safety
+    /// * The memeory behind the pointer must be valid for the lifetime of the returned reference.
+    /// * The ptr must be terminated by a nul byte.
+    /// * The memory behing the ptr must not be changed while the reference is alive.
+    pub unsafe fn from_ptr<'a>(ptr: *const u16) -> &'a WCStr {
+        unsafe {
+            let len = uaw_wcslen(ptr);
+            let slice = std::slice::from_raw_parts(ptr, len + 1);
+            Self::from_bytes_with_nul_unchecked(slice)
+        }
+    }
+
+    /// # Safety
+    /// * The slice must contain only one nul
+    /// * The nul must be the last element in the slice
+    unsafe fn from_bytes_with_nul_unchecked(slice: &[u16]) -> &Self {
+        unsafe { &*(slice as *const [u16] as *const Self) }
+    }
+
+    /// Get this as a slice, excluding the NUL.
+    pub fn to_slice(&self) -> &[u16] {
+        let slice = &self.inner;
+        &slice[..slice.len() - 1]
+    }
+}
+
+impl std::fmt::Debug for WCStr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "\"")?;
+        for ch in std::char::decode_utf16(self.to_slice().iter().copied()) {
+            match ch {
+                Ok(ch) => {
+                    for ch in ch.escape_default() {
+                        f.write_char(ch)?;
+                    }
+                }
+                Err(e) => {
+                    write!(f, "\\x{:X}", e.unpaired_surrogate())?;
+                }
+            }
+        }
+        write!(f, "\"")
+    }
+}
 
 /// A wrapper for `GetTickCount64`.
 ///
