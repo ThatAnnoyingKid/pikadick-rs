@@ -18,6 +18,7 @@ use windows_sys::Win32::System::{
         GetComputerNameExW,
         GetTickCount64,
     },
+    Threading::GetActiveProcessorCount,
     WindowsProgramming::MAX_COMPUTERNAME_LENGTH,
 };
 
@@ -85,4 +86,18 @@ pub fn get_computer_name(computer_name_format: ComputerNameFormat) -> std::io::R
     let slice: &[u16] = unsafe { std::slice::from_raw_parts(buffer.as_ptr().cast(), len) };
 
     Ok(OsString::from_wide(slice))
+}
+
+/// A wrapper for `GetActiveProcessorCount`.
+///
+/// Use `u16::MAX` to get all processor groups.
+///
+/// See `https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getactiveprocessorcount`.
+pub fn get_active_processor_count(group_number: u16) -> std::io::Result<u32> {
+    let code = unsafe { GetActiveProcessorCount(group_number) };
+    if code == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+
+    Ok(code)
 }

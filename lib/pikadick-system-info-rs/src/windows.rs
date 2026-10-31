@@ -4,6 +4,7 @@ use self::util::get_tick_count_64;
 use super::Error;
 use crate::windows::util::{
     ComputerNameFormat,
+    get_active_processor_count,
     get_computer_name,
 };
 use bitflags::bitflags;
@@ -63,7 +64,6 @@ use windows_sys::{
                 VER_NT_WORKSTATION,
                 VER_SUITE_WH_SERVER,
             },
-            Threading::GetActiveProcessorCount,
             WindowsProgramming::uaw_wcslen,
         },
     },
@@ -415,20 +415,6 @@ fn global_memory_status_ex() -> Result<MemoryStatusEx, Error> {
         return Err(Error::Io(std::io::Error::last_os_error()));
     }
     Ok(MemoryStatusEx(unsafe { memory_status_ex.assume_init() }))
-}
-
-/// A wrapper for `GetActiveProcessorCount`.
-///
-/// Use `u16::MAX` to get all processor groups.
-///
-/// See `https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getactiveprocessorcount`.
-pub fn get_active_processor_count(group_number: u16) -> Result<u32, Error> {
-    let code = unsafe { GetActiveProcessorCount(group_number) };
-    if code == 0 {
-        return Err(Error::Io(std::io::Error::last_os_error()));
-    }
-
-    Ok(code)
 }
 
 /*
