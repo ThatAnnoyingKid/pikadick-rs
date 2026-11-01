@@ -1,10 +1,12 @@
 mod note_list_query_builder;
 mod post_list_query_builder;
+mod post_list_query_json_builder;
 mod tag_list_query_builder;
 
 pub use self::{
     note_list_query_builder::NotesListQueryBuilder,
     post_list_query_builder::PostListQueryBuilder,
+    post_list_query_json_builder::PostListQueryJsonBuilder,
     tag_list_query_builder::TagListQueryBuilder,
 };
 #[cfg(feature = "scrape")]
@@ -236,9 +238,24 @@ impl Client {
         Ok(ret)
     }
 
+    /// Send a GET web request to a `uri` and get the result as json, deserializing it to the given type.
+    async fn get_json<T>(&self, uri: &str) -> Result<T, Error>
+    where
+        T: serde::de::DeserializeOwned + Send + 'static,
+    {
+        let text = self.get_text(uri).await?;
+        let ret = tokio::task::spawn_blocking(move || serde_json::from_str(&text)).await??;
+        Ok(ret)
+    }
+
     /// Create a builder to list posts from rule34.
     pub fn list_posts(&self) -> PostListQueryBuilder<'_> {
         PostListQueryBuilder::new(self)
+    }
+
+    /// Create a builder to list posts from rule34, using the json endpoint.
+    pub fn list_posts_json(&self) -> PostListQueryJsonBuilder<'_> {
+        PostListQueryJsonBuilder::new(self)
     }
 
     /// Get a [`HtmlPost`] by `id`.
