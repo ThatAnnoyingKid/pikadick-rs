@@ -21,6 +21,7 @@ pub use crate::{
         Note,
         NoteList,
         Post,
+        PostJson,
         PostList,
         PostListJson,
         PostStatus,

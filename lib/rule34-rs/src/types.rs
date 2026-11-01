@@ -29,7 +29,10 @@ pub use self::{
         PostStatus,
         Rating,
     },
-    post_list_json::PostListJson,
+    post_list_json::{
+        PostJson,
+        PostListJson,
+    },
     tag_list::{
         Tag,
         TagKind,
