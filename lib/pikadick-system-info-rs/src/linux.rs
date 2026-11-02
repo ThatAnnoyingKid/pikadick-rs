@@ -284,17 +284,19 @@ impl CacheContext {
 
             let cpu_freq_path = entry.path().join("cpufreq/scaling_cur_freq");
             let cpu_freq_string = std::fs::read_to_string(cpu_freq_path)?;
-            let cpu_freq: u64 = cpu_freq_string.parse()?;
+            let cpu_freq: u64 = cpu_freq_string.trim().parse()?;
 
             frequencies.push(cpu_freq);
         }
         if frequencies.is_empty() {
             return Err(Error::Generic("Failed to get cpu frequencies"));
         }
-        let sum: u64 = frequencies.iter().sum();
-        let count = u64::try_from(frequencies.len()).expect("Cpu count cannot fit in a u64");
-
-        Ok(sum / count)
+        let sum: f64 = frequencies.iter().map(|value| *value as f64).sum();
+        let count = f64::from(u32::try_from(frequencies.len()).expect("Cpu count cannot fit in a u32"));
+        let freq_khz = sum / count;
+        let freq_mhz = freq_khz / 1_000_000.0;
+        
+        Ok(freq_mhz as u64)
     }
 }
 
