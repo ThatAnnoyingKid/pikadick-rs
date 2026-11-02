@@ -292,11 +292,12 @@ impl CacheContext {
             return Err(Error::Generic("Failed to get cpu frequencies"));
         }
         let sum: f64 = frequencies.iter().map(|value| *value as f64).sum();
-        let count = f64::from(u32::try_from(frequencies.len()).expect("Cpu count cannot fit in a u32"));
+        let count =
+            f64::from(u32::try_from(frequencies.len()).expect("Cpu count cannot fit in a u32"));
         let freq_khz = sum / count;
-        let freq_mhz = freq_khz / 1_000_000.0;
-        
-        Ok(freq_mhz as u64)
+        let freq_hz = freq_khz / 1_000.0;
+
+        Ok(freq_hz as u64)
     }
 }
 

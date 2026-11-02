@@ -55,7 +55,7 @@ async fn get_cpu_usage() -> Result<f32, heim::Error> {
 
 fn format_boot_time(value: SystemTime) -> anyhow::Result<String> {
     let timestamp = jiff::Timestamp::try_from(value).context("Failed to make timestamp")?;
-    
+
     Ok(timestamp.strftime("%e %b %Y, %I:%M:%S %p UTC").to_string())
 }
 
@@ -78,7 +78,7 @@ fn format_uptime(value: Duration) -> anyhow::Result<String> {
 fn format_cpu_frequency(value: u64) -> String {
     let value = value as f64;
     let ghz = value / 1_000_000_000.0;
-    
+
     format!("{ghz:.2} GHz")
 }
 

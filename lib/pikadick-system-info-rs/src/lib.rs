@@ -381,14 +381,14 @@ mod tests {
 
         println!("Physical Cpus: {physical_cpus}\nTime: {elapsed:?}");
     }
-    
+
     #[test]
     fn get_cpu_frequency() {
         let cache_context = CacheContext::new();
         cache_context.start().expect("Failed to start");
         std::thread::sleep(Duration::from_secs(1));
         cache_context.end().expect("Failed to end");
-        
+
         let start = Instant::now();
         let cpu_frequency = cache_context
             .get_cpu_frequency()
