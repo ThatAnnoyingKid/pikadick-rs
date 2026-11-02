@@ -282,8 +282,11 @@ impl CacheContext {
                 Err(_error) => continue,
             };
 
-            let cpu_freq_path = entry.path().join("cpufreq/scaling_cur_freq");
-            let cpu_freq_string = std::fs::read_to_string(cpu_freq_path)?;
+            let entry_path = entry.path();
+            let cpuinfo_cur_freq_path = entry_path.join("cpufreq/cpuinfo_cur_freq");
+            let scaling_cur_freq_path = entry_path.join("cpufreq/scaling_cur_freq");
+            let cpu_freq_string = std::fs::read_to_string(cpuinfo_cur_freq_path)
+                .or_else(|_| std::fs::read_to_string(scaling_cur_freq_path))?;
             let cpu_freq: u64 = cpu_freq_string.trim().parse()?;
 
             frequencies.push(cpu_freq);
