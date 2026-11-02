@@ -358,9 +358,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 
     // Currently reports incorrectly on Windows
     if let Some(cpu_frequency) = cpu_frequency {
-        create_embed =
-            create_embed.field("Cpu Freq", fmt_cpu_frequency(cpu_frequency.current()), true);
-
         if let Some(min_cpu_frequency) = cpu_frequency.min() {
             create_embed =
                 create_embed.field("Min Cpu Freq", fmt_cpu_frequency(min_cpu_frequency), true);

@@ -265,6 +265,8 @@ impl CacheContext {
 
     /// Get the cpu frequency.
     pub fn get_cpu_frequency(&self) -> Result<u64, Error> {
+        // Inspired by: https://unix.stackexchange.com/questions/87522/why-do-cpuinfo-cur-freq-and-proc-cpuinfo-report-different-numbers
+
         let mut frequencies = Vec::with_capacity(4);
         for entry in std::fs::read_dir("/sys/devices/system/cpu/")? {
             let entry = entry?;
