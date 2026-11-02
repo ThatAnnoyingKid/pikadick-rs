@@ -19,7 +19,11 @@ use core::{
 };
 use once_cell::sync::OnceCell;
 use platforms::Arch;
-use std::time::SystemTime;
+use std::{
+    marker::PhantomData,
+    sync::Mutex,
+    time::SystemTime,
+};
 use windows_sys::{
     Wdk::System::SystemServices::RtlGetVersion,
     Win32::{
@@ -33,6 +37,11 @@ use windows_sys::{
         },
         System::{
             Performance::{
+                PDH_CSTATUS_NEW_DATA,
+                PDH_CSTATUS_VALID_DATA,
+                PDH_FMT_COUNTERVALUE,
+                PDH_FMT_COUNTERVALUE_ITEM_W,
+                PDH_FMT_DOUBLE,
                 PDH_HCOUNTER,
                 PDH_HQUERY,
                 PDH_MORE_DATA,
@@ -40,6 +49,8 @@ use windows_sys::{
                 PdhAddEnglishCounterW,
                 PdhCloseQuery,
                 PdhCollectQueryData,
+                PdhGetFormattedCounterArrayW,
+                PdhGetFormattedCounterValue,
                 PdhGetRawCounterArrayW,
                 PdhOpenQueryW,
             },
@@ -148,6 +159,10 @@ impl std::fmt::Debug for SystemInfo {
 // This is essentially just bytes.
 // Even though it has a pointer in it, it doesn't point to valid memory and simply marks the start and end of the address space.
 unsafe impl Send for SystemInfo {}
+
+// This is essentially just bytes.
+// Even though it has a pointer in it, it doesn't point to valid memory and simply marks the start and end of the address space.
+unsafe impl Sync for SystemInfo {}
 
 /// A wrapper for `GetNativeSystemInfo`.
 ///
@@ -736,7 +751,7 @@ impl std::fmt::Debug for ProcessorPowerInformation {
     }
 }
 
-#[expect(dead_code)]
+#[allow(dead_code)]
 fn call_nt_power_information(
     processor_count: usize,
 ) -> Result<Vec<ProcessorPowerInformation>, Error> {
@@ -763,7 +778,10 @@ fn call_nt_power_information(
     Ok(info)
 }
 
-struct PdhQuery(PDH_HQUERY);
+struct PdhQuery {
+    query_handle: PDH_HQUERY,
+    counters: Vec<PdhCounter>,
+}
 
 impl PdhQuery {
     fn new() -> Result<Self, Error> {
@@ -772,29 +790,43 @@ impl PdhQuery {
         if result != ERROR_SUCCESS {
             return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
         }
-        let query = Self(unsafe { handle.assume_init() });
+        let query_handle = unsafe { handle.assume_init() };
 
-        Ok(query)
+        Ok(Self {
+            query_handle,
+            counters: Vec::new(),
+        })
     }
 
-    fn add_counter(&self, query: &str) -> Result<PdhCounter<'_>, Error> {
+    fn add_counter(&mut self, query: &str) -> Result<usize, Error> {
         let query_str_wide: Vec<u16> = query.encode_utf16().chain(Some(0)).collect();
         let mut handle: MaybeUninit<PDH_HCOUNTER> = MaybeUninit::zeroed();
         let result = unsafe {
-            PdhAddEnglishCounterW(self.0, query_str_wide.as_ptr(), 0, handle.as_mut_ptr())
+            PdhAddEnglishCounterW(
+                self.query_handle,
+                query_str_wide.as_ptr(),
+                0,
+                handle.as_mut_ptr(),
+            )
         };
         if result != ERROR_SUCCESS {
             return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
         }
 
-        Ok(PdhCounter {
-            handle: unsafe { handle.assume_init() },
-            _query: self,
-        })
+        let handle = unsafe { handle.assume_init() };
+        let pdh_counter = PdhCounter { handle };
+        let counter_index = self.counters.len();
+        let _pdh_counter = self.counters.push_mut(pdh_counter);
+
+        Ok(counter_index)
+    }
+
+    fn get_counter(&self, index: usize) -> Option<&PdhCounter> {
+        self.counters.get(index)
     }
 
     fn collect(&self) -> Result<(), Error> {
-        let result = unsafe { PdhCollectQueryData(self.0) };
+        let result = unsafe { PdhCollectQueryData(self.query_handle) };
         if result != ERROR_SUCCESS {
             return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
         }
@@ -803,11 +835,20 @@ impl PdhQuery {
     }
 }
 
-impl Drop for PdhQuery {
-    fn drop(&mut self) {
-        let _result = unsafe { PdhCloseQuery(self.0) };
+impl std::fmt::Debug for PdhQuery {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PdhQuery").finish()
     }
 }
+
+impl Drop for PdhQuery {
+    fn drop(&mut self) {
+        let _result = unsafe { PdhCloseQuery(self.query_handle) };
+    }
+}
+
+// Safety: PDH_HQUERY has no thread-local state.
+unsafe impl Send for PdhQuery {}
 
 #[repr(transparent)]
 struct PdhRawItem(PDH_RAW_COUNTER_ITEM_W);
@@ -817,12 +858,28 @@ impl PdhRawItem {
         unsafe { WCStr::from_ptr(self.0.szName) }
     }
 
-    fn first_value(&self) -> i64 {
-        self.0.RawValue.FirstValue
+    fn ensure_valid(&self) -> Result<(), Error> {
+        if self.0.RawValue.CStatus != PDH_CSTATUS_VALID_DATA
+            && self.0.RawValue.CStatus != PDH_CSTATUS_NEW_DATA
+        {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(
+                self.0.RawValue.CStatus as i32,
+            )));
+        }
+
+        Ok(())
     }
 
-    fn second_value(&self) -> i64 {
-        self.0.RawValue.SecondValue
+    fn first_value(&self) -> Result<i64, Error> {
+        self.ensure_valid()?;
+
+        Ok(self.0.RawValue.FirstValue)
+    }
+
+    fn second_value(&self) -> Result<i64, Error> {
+        self.ensure_valid()?;
+
+        Ok(self.0.RawValue.SecondValue)
     }
 }
 
@@ -836,12 +893,71 @@ impl std::fmt::Debug for PdhRawItem {
     }
 }
 
-struct PdhRawArray {
-    buffer: Vec<u8>,
-    item_count: usize,
+#[repr(transparent)]
+struct PdhFormattedCounterValue(PDH_FMT_COUNTERVALUE);
+
+impl PdhFormattedCounterValue {
+    fn ensure_valid(&self) -> Result<(), Error> {
+        if self.0.CStatus != PDH_CSTATUS_VALID_DATA && self.0.CStatus != PDH_CSTATUS_NEW_DATA {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(
+                self.0.CStatus as i32,
+            )));
+        }
+
+        Ok(())
+    }
+
+    fn double(&self) -> Result<f64, Error> {
+        self.ensure_valid()?;
+
+        // Safety: All bit-patterns of double are valid.
+        Ok(unsafe { self.0.Anonymous.doubleValue })
+    }
 }
 
-impl PdhRawArray {
+impl std::fmt::Debug for PdhFormattedCounterValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PdhFormattedCounterValue")
+            .field("double", &self.double())
+            .finish()
+    }
+}
+
+#[repr(transparent)]
+struct PdhFmtValueItem(PDH_FMT_COUNTERVALUE_ITEM_W);
+
+impl PdhFmtValueItem {
+    fn name(&self) -> &WCStr {
+        unsafe { WCStr::from_ptr(self.0.szName) }
+    }
+
+    fn value(&self) -> &PdhFormattedCounterValue {
+        unsafe {
+            (&self.0.FmtValue as *const PDH_FMT_COUNTERVALUE)
+                .cast::<PdhFormattedCounterValue>()
+                .as_ref_unchecked()
+        }
+    }
+}
+
+impl std::fmt::Debug for PdhFmtValueItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PdhFmtValueItem")
+            .field("name", &self.name())
+            .field("value", &self.value())
+            .finish()
+    }
+}
+
+#[expect(dead_code)]
+struct PdhItemArray<T> {
+    buffer: Vec<u8>,
+    item_count: usize,
+    _data: PhantomData<T>,
+}
+
+#[expect(dead_code)]
+impl<T> PdhItemArray<T> {
     fn len(&self) -> usize {
         self.item_count
     }
@@ -851,17 +967,16 @@ impl PdhRawArray {
         self.len() == 0
     }
 
-    fn get(&self, index: usize) -> Option<&PdhRawItem> {
+    fn get(&self, index: usize) -> Option<&T> {
         if index >= self.item_count {
             return None;
         }
 
-        let item: &PdhRawItem = unsafe {
+        let item: &T = unsafe {
             self.buffer
                 .as_ptr()
-                .cast::<PDH_RAW_COUNTER_ITEM_W>()
+                .cast::<T>()
                 .add(index)
-                .cast::<PdhRawItem>()
                 .as_ref_unchecked()
         };
 
@@ -869,13 +984,13 @@ impl PdhRawArray {
     }
 }
 
-struct PdhCounter<'a> {
+struct PdhCounter {
     handle: PDH_HCOUNTER,
-    _query: &'a PdhQuery,
 }
 
-impl PdhCounter<'_> {
-    fn get_raw_array(&self) -> Result<PdhRawArray, Error> {
+impl PdhCounter {
+    #[expect(dead_code)]
+    fn get_raw_array(&self) -> Result<PdhItemArray<PdhRawItem>, Error> {
         let mut buffer_size: u32 = 0;
         let mut item_count: u32 = 0;
         let result = unsafe {
@@ -888,9 +1003,10 @@ impl PdhCounter<'_> {
         };
         match result {
             ERROR_SUCCESS => {
-                return Ok(PdhRawArray {
+                return Ok(PdhItemArray {
                     buffer: Vec::new(),
                     item_count: 0,
+                    _data: PhantomData,
                 });
             }
             PDH_MORE_DATA => {}
@@ -898,7 +1014,7 @@ impl PdhCounter<'_> {
         }
 
         let buffer_size_usize = usize::try_from(buffer_size).expect("buffer_size too large");
-        let mut buffer: Vec<u8> = Vec::with_capacity(buffer_size_usize);
+        let mut buffer: Vec<u8> = vec![0; buffer_size_usize];
         let result = unsafe {
             PdhGetRawCounterArrayW(
                 self.handle,
@@ -910,14 +1026,85 @@ impl PdhCounter<'_> {
         if result != ERROR_SUCCESS {
             return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
         }
-        unsafe {
-            buffer.set_len(buffer_size_usize);
-        }
 
-        Ok(PdhRawArray {
+        Ok(PdhItemArray {
             buffer,
             item_count: usize::try_from(item_count).expect("item_count too large"),
+            _data: PhantomData,
         })
+    }
+
+    #[expect(dead_code)]
+    fn get_formatted_array(&self) -> Result<PdhItemArray<PdhFmtValueItem>, Error> {
+        let format = PDH_FMT_DOUBLE;
+
+        let mut buffer_size: u32 = 0;
+        let mut item_count: u32 = 0;
+        let result = unsafe {
+            PdhGetFormattedCounterArrayW(
+                self.handle,
+                format,
+                &mut buffer_size,
+                &mut item_count,
+                std::ptr::null_mut(),
+            )
+        };
+        match result {
+            ERROR_SUCCESS => {
+                return Ok(PdhItemArray {
+                    buffer: Vec::new(),
+                    item_count: 0,
+                    _data: PhantomData,
+                });
+            }
+            PDH_MORE_DATA => {}
+            _ => return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32))),
+        }
+
+        let buffer_size_usize = usize::try_from(buffer_size).expect("buffer_size too large");
+        let mut buffer: Vec<u8> = vec![0; buffer_size_usize];
+        let result = unsafe {
+            PdhGetFormattedCounterArrayW(
+                self.handle,
+                format,
+                &mut buffer_size,
+                &mut item_count,
+                buffer.as_mut_ptr().cast(),
+            )
+        };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+
+        Ok(PdhItemArray {
+            buffer,
+            item_count: usize::try_from(item_count).expect("item_count too large"),
+            _data: PhantomData,
+        })
+    }
+
+    fn get_formatted_value(&self) -> Result<PdhFormattedCounterValue, Error> {
+        let format = PDH_FMT_DOUBLE;
+        let mut value: MaybeUninit<PdhFormattedCounterValue> = MaybeUninit::zeroed();
+        let result = unsafe {
+            PdhGetFormattedCounterValue(
+                self.handle,
+                format,
+                std::ptr::null_mut(),
+                value.as_mut_ptr().cast(),
+            )
+        };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+
+        Ok(unsafe { value.assume_init() })
+    }
+}
+
+impl std::fmt::Debug for PdhCounter {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PdhCounter").finish()
     }
 }
 
@@ -930,6 +1117,12 @@ struct PageFileStats {
     used: usize,
 }
 
+#[derive(Debug)]
+struct PdhCounters {
+    query: PdhQuery,
+    cpu_frequency_counter_index: usize,
+}
+
 /// A cache for system data
 #[derive(Debug)]
 pub(crate) struct CacheContext {
@@ -938,6 +1131,7 @@ pub(crate) struct CacheContext {
     os_version_info_ex: OnceCell<OsVersionInfoEx>,
     performance_info: OnceCell<PerformanceInformation>,
     page_file_stats: OnceCell<PageFileStats>,
+    pdh_counters: OnceCell<Mutex<PdhCounters>>,
 }
 
 impl CacheContext {
@@ -949,6 +1143,7 @@ impl CacheContext {
             os_version_info_ex: OnceCell::new(),
             performance_info: OnceCell::new(),
             page_file_stats: OnceCell::new(),
+            pdh_counters: OnceCell::new(),
         }
     }
 
@@ -980,6 +1175,39 @@ impl CacheContext {
                 },
             )
         })
+    }
+
+    /// Start measuring.
+    pub fn start(&self) -> Result<(), Error> {
+        self.pdh_counters.get_or_try_init(|| {
+            let mut query = PdhQuery::new()?;
+            let cpu_frequency_counter_index =
+                query.add_counter("\\Processor Information(_Total)\\Actual Frequency")?;
+            query.collect()?;
+
+            Ok::<_, Error>(Mutex::new(PdhCounters {
+                query,
+                cpu_frequency_counter_index,
+            }))
+        })?;
+
+        Ok(())
+    }
+
+    /// End measuring.
+    pub fn end(&self) -> Result<(), Error> {
+        let pdh_counters = self
+            .pdh_counters
+            .get()
+            .ok_or(Error::Generic("Need to call `start`"))?;
+        {
+            let pdh_counters = pdh_counters
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            pdh_counters.query.collect()?;
+        }
+
+        Ok(())
     }
 
     /// Get the time the system was booted.
@@ -1125,6 +1353,32 @@ impl CacheContext {
 
         Ok(physical_core_count)
     }
+
+    /// Get the cpu frequency.
+    pub fn get_cpu_frequency(&self) -> Result<u64, Error> {
+        // Inspired by: https://stackoverflow.com/questions/61802420/unable-to-get-current-cpu-frequency-in-powershell-or-python
+
+        let pdh_counters = self
+            .pdh_counters
+            .get()
+            .ok_or(Error::Generic("Need to call `start`"))?;
+        let value = {
+            let pdh_counters = pdh_counters
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            let counter = pdh_counters
+                .query
+                .get_counter(pdh_counters.cpu_frequency_counter_index)
+                .expect("Missing cpu frequency counter");
+            counter.get_formatted_value()?.double()?
+        };
+
+        // The returned value is in MHz.
+        // Convert to Hz.
+        let value = value * 1_000_000.0;
+
+        Ok(value as u64)
+    }
 }
 
 #[cfg(test)]
@@ -1137,6 +1391,12 @@ mod test {
     fn assert_impl_send<T>()
     where
         T: Send,
+    {
+    }
+
+    fn assert_impl_sync<T>()
+    where
+        T: Sync,
     {
     }
 
@@ -1248,21 +1508,61 @@ mod test {
 
     #[test]
     fn pdh_query_works() {
-        let query = PdhQuery::new().expect("Failed to create query");
-        let counter = query
-            .add_counter("\\Processor Information(*)\\Actual Frequency")
-            .expect("Failed to create counter");
-        query.collect().expect("Failed to collect data");
-        let raw_array = counter.get_raw_array().expect("Failed to get raw array");
+        let start = Instant::now();
+        let mut query = PdhQuery::new().expect("Failed to create query");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
 
-        for index in 0..raw_array.len() {
-            let item = raw_array.get(index).expect("Invalid index");
-            dbg!(item);
-        }
+        // Adding a counter blocks for about ~150 ms.
+        let start = Instant::now();
+        let counter_index = query
+            .add_counter("\\Processor Information(_Total)\\Actual Frequency")
+            .expect("Failed to create counter");
+        let counter = query.get_counter(counter_index).expect("Missing counter");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed > BLOCKING_DURATION,
+            "Operation did not block, took {elapsed:?}"
+        );
+
+        let start = Instant::now();
+        query.collect().expect("Failed to collect data");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        let start = Instant::now();
+        query.collect().expect("Failed to collect data");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+
+        let start = Instant::now();
+        let item = counter.get_formatted_value().expect("Failed to get value");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+        dbg!(item);
     }
 
     #[test]
     fn cache_context_is_send() {
         assert_impl_send::<CacheContext>();
+    }
+
+    #[test]
+    fn cache_context_is_sync() {
+        assert_impl_sync::<CacheContext>();
     }
 }

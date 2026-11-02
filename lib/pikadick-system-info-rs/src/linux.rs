@@ -136,6 +136,16 @@ impl CacheContext {
             .map(|value| value.as_slice())
     }
 
+    /// Start measuring.
+    pub fn start(&self) -> Result<(), Error> {
+        Ok(())
+    }
+
+    /// End measuring.
+    pub fn end(&self) -> Result<(), Error> {
+        Ok(())
+    }
+
     /// Get the time the system was booted.
     pub fn get_boot_time(&self) -> Result<SystemTime, Error> {
         Ok(SystemTime::now() - self.get_uptime()?)
@@ -252,6 +262,40 @@ impl CacheContext {
             Ok(count)
         }
     }
+
+    /// Get the cpu frequency.
+    pub fn get_cpu_frequency(&self) -> Result<u64, Error> {
+        let mut frequencies = Vec::with_capacity(4);
+        for entry in std::fs::read_dir("/sys/devices/system/cpu/")? {
+            let entry = entry?;
+            let file_name = entry
+                .file_name()
+                .to_os_string()
+                .into_string()
+                .map_err(|_| Error::Generic("File name is not utf8"))?;
+            let trimmed_file_name = match file_name.strip_prefix("cpu") {
+                Some(value) => value,
+                None => continue,
+            };
+            let _cpu_n = match trimmed_file_name.parse::<u32>() {
+                Ok(value) => value,
+                Err(_error) => continue,
+            };
+
+            let cpu_freq_path = entry.path().join("cpufreq/scaling_cur_freq");
+            let cpu_freq_string = std::fs::read_to_string(cpu_freq_path)?;
+            let cpu_freq: u64 = cpu_freq_string.parse()?;
+
+            frequencies.push(cpu_freq);
+        }
+        if frequencies.is_empty() {
+            return Err(Error::Generic("Failed to get cpu frequencies"));
+        }
+        let sum: u64 = frequencies.iter().sum();
+        let count = u64::try_from(frequencies.len()).expect("Cpu count cannot fit in a u64");
+
+        Ok(sum / count)
+    }
 }
 
 #[cfg(test)]
@@ -264,6 +308,12 @@ mod test {
     fn assert_impl_send<T>()
     where
         T: Send,
+    {
+    }
+
+    fn assert_impl_sync<T>()
+    where
+        T: Sync,
     {
     }
 
@@ -307,5 +357,10 @@ mod test {
     #[test]
     fn cache_context_is_send() {
         assert_impl_send::<CacheContext>();
+    }
+
+    #[test]
+    fn cache_context_is_sync() {
+        assert_impl_sync::<CacheContext>();
     }
 }

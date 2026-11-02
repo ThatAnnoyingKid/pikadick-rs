@@ -73,6 +73,28 @@ impl CacheContext {
         }
     }
 
+    /// Start measuring.
+    ///
+    /// Some stats require this to be called along with `end` before they can function.
+    /// There must be a delay of at least 1 second between `start` and `end`.
+    ///
+    /// # Blocking
+    /// This is blocking.
+    pub fn start(&self) -> Result<(), Error> {
+        self.inner.start()
+    }
+
+    /// End measuring.
+    ///
+    /// Some stats require this to be called along with `start` before they can function.
+    /// There must be a delay of at least 1 second between `start` and `end`.
+    ///
+    /// # Blocking
+    /// This is blocking.
+    pub fn end(&self) -> Result<(), Error> {
+        self.inner.end()
+    }
+
     /// Get the boot time.
     ///
     /// # Blocking
@@ -171,6 +193,24 @@ impl CacheContext {
     pub fn count_physical_cpus(&self) -> Result<usize, Error> {
         self.inner.count_physical_cpus()
     }
+
+    /// Get the cpu frequency, in hertz.
+    ///
+    /// This includes CPU TurboBoost.
+    ///
+    /// # Collection
+    /// This API requires that you call `start` and `end` before calling this.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_cpu_frequency(&self) -> Result<u64, Error> {
+        // TODO: Add guard to prevent usage before `start` and `end`?
+        self.inner.get_cpu_frequency()
+    }
+
+    // TODO:
+    // get_min_cpu_frequency()
+    // get_max_cpu_frequency()
 }
 
 impl Default for CacheContext {
@@ -340,5 +380,21 @@ mod tests {
         let elapsed = start.elapsed();
 
         println!("Physical Cpus: {physical_cpus}\nTime: {elapsed:?}");
+    }
+    
+    #[test]
+    fn get_cpu_frequency() {
+        let cache_context = CacheContext::new();
+        cache_context.start().expect("Failed to start");
+        std::thread::sleep(Duration::from_secs(1));
+        cache_context.end().expect("Failed to end");
+        
+        let start = Instant::now();
+        let cpu_frequency = cache_context
+            .get_cpu_frequency()
+            .expect("Failed to get cpu frequency");
+        let elapsed = start.elapsed();
+
+        println!("CPU Frequency: {cpu_frequency}\nTime: {elapsed:?}");
     }
 }

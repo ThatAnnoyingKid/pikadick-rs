@@ -18,10 +18,13 @@ use serenity::{
     },
     model::colour::Colour,
 };
-use std::time::{
-    Duration,
-    Instant,
-    SystemTime,
+use std::{
+    sync::Arc,
+    time::{
+        Duration,
+        Instant,
+        SystemTime,
+    },
 };
 use systemstat::{
     System,
@@ -52,6 +55,7 @@ async fn get_cpu_usage() -> Result<f32, heim::Error> {
 
 fn format_boot_time(value: SystemTime) -> anyhow::Result<String> {
     let timestamp = jiff::Timestamp::try_from(value).context("Failed to make timestamp")?;
+    
     Ok(timestamp.strftime("%e %b %Y, %I:%M:%S %p UTC").to_string())
 }
 
@@ -71,6 +75,13 @@ fn format_uptime(value: Duration) -> anyhow::Result<String> {
     Ok(printer.span_to_string(&span_rounded))
 }
 
+fn format_cpu_frequency(value: u64) -> String {
+    let value = value as f64;
+    let ghz = value / 1_000_000_000.0;
+    
+    format!("{ghz:.2} GHz")
+}
+
 #[derive(Debug)]
 struct SystemStats {
     hostname: Option<String>,
@@ -79,11 +90,12 @@ struct SystemStats {
     architecture: Option<&'static str>,
     boot_time: Option<String>,
     uptime: Option<String>,
+    cpu_frequency: Option<String>,
 }
 
 impl SystemStats {
-    fn new() -> Self {
-        let cache_context = pikadick_system_info::CacheContext::new();
+    async fn new() -> Self {
+        let cache_context = Arc::new(pikadick_system_info::CacheContext::new());
 
         let hostname = match cache_context
             .get_hostname()
@@ -157,6 +169,36 @@ impl SystemStats {
             }
         };
 
+        let result = {
+            let cache_context = cache_context.clone();
+            tokio::task::spawn_blocking(move || {
+                cache_context.start()?;
+                std::thread::sleep(Duration::from_secs(1));
+                cache_context.end()?;
+                anyhow::Ok(())
+            })
+            .await
+            .map_err(anyhow::Error::from)
+            .flatten()
+            .context("Failed to collect timed stats")
+        };
+
+        let cpu_frequency = match result
+            .and_then(|_| {
+                cache_context
+                    .get_cpu_frequency()
+                    .map_err(anyhow::Error::from)
+            })
+            .map(format_cpu_frequency)
+            .context("Failed to get cpu frequency")
+        {
+            Ok(value) => Some(value),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
         Self {
             hostname,
             system_name,
@@ -164,6 +206,7 @@ impl SystemStats {
             architecture,
             boot_time,
             uptime,
+            cpu_frequency,
         }
     }
 
@@ -175,6 +218,7 @@ impl SystemStats {
             ("Architecture", self.architecture),
             ("Boot Time", self.boot_time.as_deref()),
             ("Uptime", self.uptime.as_deref()),
+            ("CPU Freq", self.cpu_frequency.as_deref()),
         ];
 
         for (key, value) in fields {
@@ -302,7 +346,7 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 
     // End WIP
 
-    let system_stats = SystemStats::new();
+    let system_stats = SystemStats::new().await;
 
     let mut create_embed = CreateEmbed::new()
         .title("System Status")
