@@ -295,7 +295,7 @@ impl CacheContext {
         let count =
             f64::from(u32::try_from(frequencies.len()).expect("Cpu count cannot fit in a u32"));
         let freq_khz = sum / count;
-        let freq_hz = freq_khz / 1_000.0;
+        let freq_hz = freq_khz * 1_000.0;
 
         Ok(freq_hz as u64)
     }
