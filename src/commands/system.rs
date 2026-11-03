@@ -3,13 +3,6 @@ use crate::{
     PoiseError,
 };
 use anyhow::Context as _;
-use heim::units::{
-    Frequency,
-    frequency::{
-        gigahertz,
-        hertz,
-    },
-};
 use nd_util::ArcAnyhowError;
 use poise::CreateReply;
 use serenity::{
@@ -32,19 +25,8 @@ use systemstat::{
     platform::common::Platform,
 };
 use tracing::warn;
-use uom::{
-    fmt::DisplayStyle,
-    si::f32::Frequency as FrequencyF32,
-};
 
 const BYTES_IN_GB_F64: f64 = 1_000_000_000_f64;
-
-fn fmt_cpu_frequency(freq: Frequency) -> String {
-    let fmt_args = FrequencyF32::format_args(gigahertz, DisplayStyle::Abbreviation);
-    let freq = FrequencyF32::new::<hertz>(freq.get::<hertz>() as f32);
-
-    format!("{:.2}", fmt_args.with(freq))
-}
 
 async fn get_cpu_usage() -> Result<f32, heim::Error> {
     let start = heim::cpu::usage().await?;
@@ -226,6 +208,8 @@ impl SystemStats {
             }
         };
 
+        // This is an underestimate on Windows;
+        // there does not seem to be an API for this that includes TurboBoost.
         let max_cpu_frequency = match cache_context
             .get_max_cpu_frequency()
             .context("Failed to get max CPU frequency")
@@ -361,16 +345,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         }
     };
 
-    let cpu_frequency = match heim::cpu::frequency().await {
-        Ok(cpu_frequency) => Some(cpu_frequency),
-        Err(error) => {
-            warn!("Failed to get cpu frequency: {error}");
-            None
-        }
-    };
-
-    let virtualization = heim::virt::detect().await;
-
     let cpu_usage = match get_cpu_usage().await {
         Ok(usage) => Some(usage),
         Err(error) => {
@@ -397,19 +371,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         create_embed = create_embed.thumbnail(icon);
     }
     create_embed = system_stats.populate_embed(create_embed);
-
-    // Currently reports incorrectly on Windows
-    if let Some(cpu_frequency) = cpu_frequency {
-        if let Some(min_cpu_frequency) = cpu_frequency.min() {
-            create_embed =
-                create_embed.field("Min Cpu Freq", fmt_cpu_frequency(min_cpu_frequency), true);
-        }
-
-        if let Some(max_cpu_frequency) = cpu_frequency.max() {
-            create_embed =
-                create_embed.field("Max Cpu Freq", fmt_cpu_frequency(max_cpu_frequency), true);
-        }
-    }
 
     match (cpu_logical_count, cpu_physical_count) {
         (Some(logical_count), Some(physical_count)) => {
@@ -453,12 +414,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
             true,
         );
     }
-
-    let virtualization_field = match virtualization.as_ref() {
-        Some(virtualization) => virtualization.as_str(),
-        None => "None",
-    };
-    create_embed = create_embed.field("Virtualization", virtualization_field, true);
 
     if let (Some(cpu_usage), Some(cpu_logical_count)) = (cpu_usage, cpu_logical_count) {
         create_embed = create_embed.field(

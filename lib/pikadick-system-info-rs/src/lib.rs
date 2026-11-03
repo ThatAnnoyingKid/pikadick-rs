@@ -448,7 +448,7 @@ mod tests {
 
         println!("Min CPU Frequency: {min_cpu_frequency}\nTime: {elapsed:?}");
     }
-    
+
     #[test]
     fn get_max_cpu_frequency() {
         let cache_context = CacheContext::new();

@@ -15,7 +15,7 @@ bitflags = "2.13.2"
 camino = { version = "1.2.6", features = [ "serde1" ] }
 deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
 # This is needed as we still use some stats from this library.
-heim = { version = "0.1.0-rc.1", features = [ "cpu", "virt" ] }
+heim = { version = "0.1.0-rc.1", features = [ "cpu" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls" ] }
 itoa = "1.0.18"
 jiff = "0.2.38"
