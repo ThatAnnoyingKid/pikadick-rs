@@ -26,8 +26,6 @@ use systemstat::{
 };
 use tracing::warn;
 
-const BYTES_IN_GB_F64: f64 = 1_000_000_000_f64;
-
 async fn get_cpu_usage() -> Result<f32, heim::Error> {
     let start = heim::cpu::usage().await?;
     tokio::time::sleep(Duration::from_secs(1)).await;
@@ -58,11 +56,22 @@ fn format_uptime(value: Duration) -> anyhow::Result<String> {
     Ok(printer.span_to_string(&span_rounded))
 }
 
-fn format_cpu_frequency(value: u64) -> String {
-    let value = value as f64;
-    let ghz = value / 1_000_000_000.0;
+fn format_cpu_frequency(hz: u64) -> String {
+    const HZ_PER_GHZ: f64 = 1_000_000_000.0;
+
+    let hz = hz as f64;
+    let ghz = hz / HZ_PER_GHZ;
 
     format!("{ghz:.2} GHz")
+}
+
+fn format_memory_usage(total: u64, available: u64) -> String {
+    const BYTES_PER_GB: f64 = 1024.0 * 1024.0 * 1024.0;
+
+    let used_gib = (total - available) as f64 / BYTES_PER_GB;
+    let total_gib = total as f64 / BYTES_PER_GB;
+
+    format!("{used_gib:.2} GiB / {total_gib:.2} GiB",)
 }
 
 #[derive(Debug)]
@@ -76,6 +85,9 @@ struct SystemStats {
     cpu_frequency: Option<String>,
     min_cpu_frequency: Option<String>,
     max_cpu_frequency: Option<String>,
+    cpu_core_count: Option<String>,
+    memory_usage: Option<String>,
+    swap_usage: Option<String>,
 }
 
 impl SystemStats {
@@ -221,6 +233,95 @@ impl SystemStats {
             }
         };
 
+        let cpu_logical_count = match cache_context
+            .count_logical_cpus()
+            .context("Failed to count number of logical cpus")
+        {
+            Ok(cpu_logical_count) => Some(cpu_logical_count),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let cpu_physical_count = match cache_context
+            .count_physical_cpus()
+            .context("Failed to count number of physical cpus")
+        {
+            Ok(cpu_physical_count) => Some(cpu_physical_count),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let cpu_core_count = match (cpu_logical_count, cpu_physical_count) {
+            (Some(logical_count), Some(physical_count)) => Some(format!(
+                "{logical_count} logical, {physical_count} physical"
+            )),
+            (Some(logical_count), None) => Some(format!("{logical_count} logical")),
+            (None, Some(physical_count)) => Some(format!("{physical_count} physical")),
+            (None, None) => None,
+        };
+
+        let total_memory = match cache_context
+            .get_total_memory()
+            .context("Failed to get total memory")
+        {
+            Ok(memory) => Some(memory),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let available_memory = match cache_context
+            .get_available_memory()
+            .context("Failed to get available memory")
+        {
+            Ok(memory) => Some(memory),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let memory_usage = match (total_memory, available_memory) {
+            (Some(total_memory), Some(available_memory)) => {
+                Some(format_memory_usage(total_memory, available_memory))
+            }
+            _ => None,
+        };
+
+        let total_swap = match cache_context
+            .get_total_swap()
+            .context("Failed to get total swap")
+        {
+            Ok(memory) => Some(memory),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let available_swap = match cache_context
+            .get_available_swap()
+            .context("Failed to get available swap")
+        {
+            Ok(memory) => Some(memory),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let swap_usage = match (total_swap, available_swap) {
+            (Some(total_swap), Some(available_swap)) => {
+                Some(format_memory_usage(total_swap, available_swap))
+            }
+            _ => None,
+        };
+
         Self {
             hostname,
             system_name,
@@ -231,6 +332,9 @@ impl SystemStats {
             cpu_frequency,
             min_cpu_frequency,
             max_cpu_frequency,
+            cpu_core_count,
+            memory_usage,
+            swap_usage,
         }
     }
 
@@ -245,6 +349,9 @@ impl SystemStats {
             ("CPU Freq", self.cpu_frequency.as_deref()),
             ("Min CPU Freq", self.min_cpu_frequency.as_deref()),
             ("Max CPU Freq", self.max_cpu_frequency.as_deref()),
+            ("Cpu Core Count", self.cpu_core_count.as_deref()),
+            ("Memory Usage", self.memory_usage.as_deref()),
+            ("Swap Usage", self.swap_usage.as_deref()),
         ];
 
         for (key, value) in fields {
@@ -279,72 +386,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     // End Legacy data gathering
     let cache_context = pikadick_system_info::CacheContext::new();
 
-    let total_memory = match cache_context
-        .get_total_memory()
-        .context("Failed to get total memory")
-    {
-        Ok(memory) => Some(memory),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let available_memory = match cache_context
-        .get_available_memory()
-        .context("Failed to get available memory")
-    {
-        Ok(memory) => Some(memory),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let total_swap = match cache_context
-        .get_total_swap()
-        .context("Failed to get total swap")
-    {
-        Ok(memory) => Some(memory),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let available_swap = match cache_context
-        .get_available_swap()
-        .context("Failed to get available swap")
-    {
-        Ok(memory) => Some(memory),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let cpu_logical_count = match cache_context
-        .count_logical_cpus()
-        .context("Failed to count number of logical cpus")
-    {
-        Ok(cpu_logical_count) => Some(cpu_logical_count),
-        Err(error) => {
-            warn!("Failed to get logical cpu count: {error}");
-            None
-        }
-    };
-
-    let cpu_physical_count = match cache_context
-        .count_physical_cpus()
-        .context("Failed to count number of physical cpus")
-    {
-        Ok(cpu_physical_count) => Some(cpu_physical_count),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
     let cpu_usage = match get_cpu_usage().await {
         Ok(usage) => Some(usage),
         Err(error) => {
@@ -353,7 +394,9 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         }
     };
 
-    let data_retrieval_time = Instant::now() - start;
+    let system_stats = SystemStats::new().await;
+
+    let data_retrieval_time = start.elapsed();
 
     // Start WIP
 
@@ -361,8 +404,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     // let temperatures = heim::sensors::temperatures().collect::<Vec<_>>().await;
 
     // End WIP
-
-    let system_stats = SystemStats::new().await;
 
     let mut create_embed = CreateEmbed::new()
         .title("System Status")
@@ -372,50 +413,9 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     }
     create_embed = system_stats.populate_embed(create_embed);
 
-    match (cpu_logical_count, cpu_physical_count) {
-        (Some(logical_count), Some(physical_count)) => {
-            create_embed = create_embed.field(
-                "Cpu Core Count",
-                format!("{logical_count} logical, {physical_count} physical"),
-                true,
-            );
-        }
-        (Some(logical_count), None) => {
-            create_embed =
-                create_embed.field("Cpu Core Count", format!("{logical_count} logical"), true);
-        }
-        (None, Some(physical_count)) => {
-            create_embed =
-                create_embed.field("Cpu Core Count", format!("{physical_count} physical"), true);
-        }
-        (None, None) => {}
-    }
-
-    if let (Some(total_memory), Some(available_memory)) = (total_memory, available_memory) {
-        create_embed = create_embed.field(
-            "Memory Usage",
-            format!(
-                "{:.2} GB / {:.2} GB",
-                (total_memory - available_memory) as f64 / BYTES_IN_GB_F64,
-                total_memory as f64 / BYTES_IN_GB_F64,
-            ),
-            true,
-        );
-    }
-
-    if let (Some(total_swap), Some(available_swap)) = (total_swap, available_swap) {
-        create_embed = create_embed.field(
-            "Swap Usage",
-            format!(
-                "{:.2} GB / {:.2} GB",
-                (total_swap - available_swap) as f64 / BYTES_IN_GB_F64,
-                total_swap as f64 / BYTES_IN_GB_F64,
-            ),
-            true,
-        );
-    }
-
-    if let (Some(cpu_usage), Some(cpu_logical_count)) = (cpu_usage, cpu_logical_count) {
+    if let (Some(cpu_usage), Some(cpu_logical_count)) =
+        (cpu_usage, cache_context.count_logical_cpus().ok())
+    {
         create_embed = create_embed.field(
             "Cpu Usage",
             format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),
