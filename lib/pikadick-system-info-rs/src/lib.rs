@@ -434,7 +434,9 @@ mod tests {
         println!("CPU Frequency: {cpu_frequency}\nTime: {elapsed:?}");
     }
 
+    // Unsupported on Windows
     #[test]
+    #[cfg(not(windows))]
     fn get_min_cpu_frequency() {
         let cache_context = CacheContext::new();
 
