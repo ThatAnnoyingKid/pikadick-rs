@@ -50,9 +50,20 @@ pub enum Error {
     #[error("Missing value")]
     MissingValue,
 
+    /// This API is unsupported on this platform.
+    #[error("Unsupported on this platform")]
+    Unsupported,
+
     /// A generic error occured.
     #[error("{0}")]
     Generic(&'static str),
+}
+
+impl Error {
+    /// Returns `true` is this is `Error::Unsupported`.
+    pub fn is_unsupported(&self) -> bool {
+        matches!(self, Error::Unsupported)
+    }
 }
 
 /// A context for caching data related to information queries.
@@ -194,9 +205,12 @@ impl CacheContext {
         self.inner.count_physical_cpus()
     }
 
-    /// Get the cpu frequency, in hertz.
+    /// Get the CPU frequency, in hertz.
     ///
     /// This includes CPU TurboBoost.
+    ///
+    /// # Platform-specific behavior
+    /// On Linux, this value may or may not include TurboBoost depending on the driver.
     ///
     /// # Collection
     /// This API requires that you call `start` and `end` before calling this.
@@ -208,9 +222,31 @@ impl CacheContext {
         self.inner.get_cpu_frequency()
     }
 
-    // TODO:
-    // get_min_cpu_frequency()
-    // get_max_cpu_frequency()
+    /// Get the minimum CPU frequency, in hertz.
+    ///
+    /// This includes CPU TurboBoost.
+    ///
+    /// # Platform-specific behavior
+    /// On Windows, this function is unsupported.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_min_cpu_frequency(&self) -> Result<u64, Error> {
+        self.inner.get_min_cpu_frequency()
+    }
+
+    /// Get the maximum CPU frequency, in hertz.
+    ///
+    /// This includes CPU TurboBoost.
+    ///
+    /// # Platform-specific behavior
+    /// On Windows, this value will NOT take into account TurboBoost.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_max_cpu_frequency(&self) -> Result<u64, Error> {
+        self.inner.get_max_cpu_frequency()
+    }
 }
 
 impl Default for CacheContext {
@@ -396,5 +432,18 @@ mod tests {
         let elapsed = start.elapsed();
 
         println!("CPU Frequency: {cpu_frequency}\nTime: {elapsed:?}");
+    }
+
+    #[test]
+    fn get_min_cpu_frequency() {
+        let cache_context = CacheContext::new();
+
+        let start = Instant::now();
+        let min_cpu_frequency = cache_context
+            .get_min_cpu_frequency()
+            .expect("Failed to get min cpu frequency");
+        let elapsed = start.elapsed();
+
+        println!("Min CPU Frequency: {min_cpu_frequency}\nTime: {elapsed:?}");
     }
 }

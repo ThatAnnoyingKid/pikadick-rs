@@ -10,6 +10,7 @@ use heim::units::{
         hertz,
     },
 };
+use nd_util::ArcAnyhowError;
 use poise::CreateReply;
 use serenity::{
     builder::{
@@ -91,6 +92,8 @@ struct SystemStats {
     boot_time: Option<String>,
     uptime: Option<String>,
     cpu_frequency: Option<String>,
+    min_cpu_frequency: Option<String>,
+    max_cpu_frequency: Option<String>,
 }
 
 impl SystemStats {
@@ -181,18 +184,53 @@ impl SystemStats {
             .map_err(anyhow::Error::from)
             .flatten()
             .context("Failed to collect timed stats")
+            .map_err(ArcAnyhowError::new)
         };
 
         let cpu_frequency = match result
+            .as_ref()
+            .map_err(|value| value.clone())
             .and_then(|_| {
                 cache_context
                     .get_cpu_frequency()
                     .map_err(anyhow::Error::from)
+                    .map_err(ArcAnyhowError::new)
             })
             .map(format_cpu_frequency)
             .context("Failed to get cpu frequency")
         {
             Ok(value) => Some(value),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let min_cpu_frequency = match cache_context
+            .get_min_cpu_frequency()
+            .context("Failed to get min cpu frequency")
+        {
+            Ok(value) => Some(format_cpu_frequency(value)),
+            // Don't warn for unsupported APIs; too noisy.
+            Err(error)
+                if error
+                    .root_cause()
+                    .downcast_ref::<pikadick_system_info::Error>()
+                    .is_some_and(|error| error.is_unsupported()) =>
+            {
+                None
+            }
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let max_cpu_frequency = match cache_context
+            .get_max_cpu_frequency()
+            .context("Failed to get max CPU frequency")
+        {
+            Ok(value) => Some(format_cpu_frequency(value)),
             Err(error) => {
                 warn!("{error:?}");
                 None
@@ -207,6 +245,8 @@ impl SystemStats {
             boot_time,
             uptime,
             cpu_frequency,
+            min_cpu_frequency,
+            max_cpu_frequency,
         }
     }
 
@@ -219,6 +259,8 @@ impl SystemStats {
             ("Boot Time", self.boot_time.as_deref()),
             ("Uptime", self.uptime.as_deref()),
             ("CPU Freq", self.cpu_frequency.as_deref()),
+            ("Min CPU Freq", self.min_cpu_frequency.as_deref()),
+            ("Max CPU Freq", self.max_cpu_frequency.as_deref()),
         ];
 
         for (key, value) in fields {

@@ -1132,6 +1132,7 @@ pub(crate) struct CacheContext {
     performance_info: OnceCell<PerformanceInformation>,
     page_file_stats: OnceCell<PageFileStats>,
     pdh_counters: OnceCell<Mutex<PdhCounters>>,
+    processor_power_information: OnceCell<Vec<ProcessorPowerInformation>>,
 }
 
 impl CacheContext {
@@ -1144,6 +1145,7 @@ impl CacheContext {
             performance_info: OnceCell::new(),
             page_file_stats: OnceCell::new(),
             pdh_counters: OnceCell::new(),
+            processor_power_information: OnceCell::new(),
         }
     }
 
@@ -1175,6 +1177,15 @@ impl CacheContext {
                 },
             )
         })
+    }
+
+    fn get_processor_power_information(&self) -> Result<&[ProcessorPowerInformation], Error> {
+        let system_info = self.get_system_info();
+        let number_of_processors = usize::try_from(system_info.number_of_processors())
+            .expect("Number of processors cannot fit in a usize");
+        self.processor_power_information
+            .get_or_try_init(|| call_nt_power_information(number_of_processors))
+            .map(|value| value.as_slice())
     }
 
     /// Start measuring.
@@ -1378,6 +1389,33 @@ impl CacheContext {
         let value = value * 1_000_000.0;
 
         Ok(value as u64)
+    }
+
+    /// Get the min cpu frequency.
+    pub fn get_min_cpu_frequency(&self) -> Result<u64, Error> {
+        // Windows does not seem to expose an API to report min speed.
+        Err(Error::Unsupported)
+    }
+
+    /// Get the max cpu frequency.
+    pub fn get_max_cpu_frequency(&self) -> Result<u64, Error> {
+        // This includes the processor's base max speed,
+        // but doesn't include TurboBoost.
+        // Windows does not seem to have introduced a new API that reports max speed with TurboBoost.
+        let processor_power_information = self.get_processor_power_information()?;
+        if processor_power_information.is_empty() {
+            return Err(Error::Generic("Failed to get processor power information"));
+        }
+
+        let sum: f64 = processor_power_information
+            .iter()
+            .map(|info| f64::from(info.max_mhz()))
+            .sum();
+        let n = processor_power_information.len() as f64;
+        // Convert MHz to Hz
+        let avg_hz = (sum / n) * 1_000_000.0;
+
+        Ok(avg_hz as u64)
     }
 }
 

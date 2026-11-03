@@ -99,12 +99,86 @@ fn get_cpu_info() -> Result<Vec<CpuInfo>, Error> {
     parse_cpu_info(&file)
 }
 
+#[derive(Debug)]
+struct CpuFreqInfo {
+    freq: u64,
+    min_freq: u64,
+    max_freq: u64,
+}
+
+fn get_cpu_freq_info() -> Result<CpuFreqInfo, Error> {
+    // Inspired by: https://unix.stackexchange.com/questions/87522/why-do-cpuinfo-cur-freq-and-proc-cpuinfo-report-different-numbers
+
+    let mut frequencies = Vec::with_capacity(4);
+    let mut min_frequencies = Vec::with_capacity(4);
+    let mut max_frequencies = Vec::with_capacity(4);
+    for entry in std::fs::read_dir("/sys/devices/system/cpu/")? {
+        let entry = entry?;
+        let file_name = entry
+            .file_name()
+            .to_os_string()
+            .into_string()
+            .map_err(|_| Error::Generic("File name is not utf8"))?;
+        let trimmed_file_name = match file_name.strip_prefix("cpu") {
+            Some(value) => value,
+            None => continue,
+        };
+        let _cpu_n = match trimmed_file_name.parse::<u32>() {
+            Ok(value) => value,
+            Err(_error) => continue,
+        };
+
+        let entry_path = entry.path();
+
+        let cpuinfo_cur_freq_path = entry_path.join("cpufreq/cpuinfo_cur_freq");
+        let scaling_cur_freq_path = entry_path.join("cpufreq/scaling_cur_freq");
+        let cpu_freq_string = std::fs::read_to_string(cpuinfo_cur_freq_path)
+            .or_else(|_| std::fs::read_to_string(scaling_cur_freq_path))?;
+        let cpu_freq: u64 = cpu_freq_string.trim().parse()?;
+        frequencies.push(cpu_freq);
+
+        let min_freq_path = entry_path.join("cpufreq/cpuinfo_min_freq");
+        let min_freq_string = std::fs::read_to_string(min_freq_path)?;
+        let min_cpu_freq: u64 = min_freq_string.trim().parse()?;
+        min_frequencies.push(min_cpu_freq);
+
+        let max_freq_path = entry_path.join("cpufreq/cpuinfo_max_freq");
+        let max_freq_string = std::fs::read_to_string(max_freq_path)?;
+        let max_cpu_freq: u64 = max_freq_string.trim().parse()?;
+        max_frequencies.push(max_cpu_freq);
+    }
+    if frequencies.is_empty() {
+        return Err(Error::Generic("Failed to get CPU frequencies"));
+    }
+    let cpu_count =
+        f64::from(u32::try_from(frequencies.len()).expect("CPU count cannot fit in a u32"));
+
+    let curr_sum: f64 = frequencies.iter().map(|value| *value as f64).sum();
+    let curr_freq_khz = curr_sum / cpu_count;
+    let curr_freq_hz = curr_freq_khz * 1_000.0;
+
+    let min_sum: f64 = min_frequencies.iter().map(|value| *value as f64).sum();
+    let min_freq_khz = min_sum / cpu_count;
+    let min_freq_hz = min_freq_khz * 1_000.0;
+
+    let max_sum: f64 = max_frequencies.iter().map(|value| *value as f64).sum();
+    let max_freq_khz = max_sum / cpu_count;
+    let max_freq_hz = max_freq_khz * 1_000.0;
+
+    Ok(CpuFreqInfo {
+        freq: curr_freq_hz as u64,
+        min_freq: min_freq_hz as u64,
+        max_freq: max_freq_hz as u64,
+    })
+}
+
 /// A cache for system data
 #[derive(Debug)]
 pub(crate) struct CacheContext {
     sysinfo: OnceCell<SysInfo>,
     utsname: OnceCell<UtsName>,
     cpu_info: OnceCell<Vec<CpuInfo>>,
+    cpu_freq_info: OnceCell<CpuFreqInfo>,
 }
 
 impl CacheContext {
@@ -114,6 +188,7 @@ impl CacheContext {
             sysinfo: OnceCell::new(),
             utsname: OnceCell::new(),
             cpu_info: OnceCell::new(),
+            cpu_freq_info: OnceCell::new(),
         }
     }
 
@@ -134,6 +209,11 @@ impl CacheContext {
         self.cpu_info
             .get_or_try_init(get_cpu_info)
             .map(|value| value.as_slice())
+    }
+
+    /// Get cpu freq info.
+    fn get_cpu_freq_info(&self) -> Result<&CpuFreqInfo, Error> {
+        self.cpu_freq_info.get_or_try_init(get_cpu_freq_info)
     }
 
     /// Start measuring.
@@ -256,7 +336,7 @@ impl CacheContext {
                 .collect();
             let count = processors.len();
             if count == 0 {
-                return Err(Error::Generic("count should be greater than 0"));
+                return Err(Error::Generic("Count should be greater than 0"));
             }
 
             Ok(count)
@@ -265,44 +345,20 @@ impl CacheContext {
 
     /// Get the cpu frequency.
     pub fn get_cpu_frequency(&self) -> Result<u64, Error> {
-        // Inspired by: https://unix.stackexchange.com/questions/87522/why-do-cpuinfo-cur-freq-and-proc-cpuinfo-report-different-numbers
+        let cpu_freq_info = self.get_cpu_freq_info()?;
+        Ok(cpu_freq_info.freq)
+    }
 
-        let mut frequencies = Vec::with_capacity(4);
-        for entry in std::fs::read_dir("/sys/devices/system/cpu/")? {
-            let entry = entry?;
-            let file_name = entry
-                .file_name()
-                .to_os_string()
-                .into_string()
-                .map_err(|_| Error::Generic("File name is not utf8"))?;
-            let trimmed_file_name = match file_name.strip_prefix("cpu") {
-                Some(value) => value,
-                None => continue,
-            };
-            let _cpu_n = match trimmed_file_name.parse::<u32>() {
-                Ok(value) => value,
-                Err(_error) => continue,
-            };
+    /// Get the min cpu frequency.
+    pub fn get_min_cpu_frequency(&self) -> Result<u64, Error> {
+        let cpu_freq_info = self.get_cpu_freq_info()?;
+        Ok(cpu_freq_info.min_freq)
+    }
 
-            let entry_path = entry.path();
-            let cpuinfo_cur_freq_path = entry_path.join("cpufreq/cpuinfo_cur_freq");
-            let scaling_cur_freq_path = entry_path.join("cpufreq/scaling_cur_freq");
-            let cpu_freq_string = std::fs::read_to_string(cpuinfo_cur_freq_path)
-                .or_else(|_| std::fs::read_to_string(scaling_cur_freq_path))?;
-            let cpu_freq: u64 = cpu_freq_string.trim().parse()?;
-
-            frequencies.push(cpu_freq);
-        }
-        if frequencies.is_empty() {
-            return Err(Error::Generic("Failed to get cpu frequencies"));
-        }
-        let sum: f64 = frequencies.iter().map(|value| *value as f64).sum();
-        let count =
-            f64::from(u32::try_from(frequencies.len()).expect("Cpu count cannot fit in a u32"));
-        let freq_khz = sum / count;
-        let freq_hz = freq_khz * 1_000.0;
-
-        Ok(freq_hz as u64)
+    /// Get the max cpu frequency.
+    pub fn get_max_cpu_frequency(&self) -> Result<u64, Error> {
+        let cpu_freq_info = self.get_cpu_freq_info()?;
+        Ok(cpu_freq_info.max_freq)
     }
 }
 
@@ -358,7 +414,14 @@ mod test {
     #[test]
     fn get_cpu_info_does_not_block() {
         let start = Instant::now();
-        let _cpu_info = get_cpu_info().expect("Failed to parse cpu info");
+        let _cpu_info = get_cpu_info().expect("Failed to get cpu info");
+        assert!(start.elapsed() < BLOCKING_DURATION);
+    }
+
+    #[test]
+    fn get_cpu_freq_info_does_not_block() {
+        let start = Instant::now();
+        let _cpu_info = get_cpu_info().expect("Failed to get cpu freq info");
         assert!(start.elapsed() < BLOCKING_DURATION);
     }
 
