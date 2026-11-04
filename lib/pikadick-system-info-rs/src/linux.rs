@@ -172,6 +172,126 @@ fn get_cpu_freq_info() -> Result<CpuFreqInfo, Error> {
     })
 }
 
+#[derive(Debug)]
+struct Stat {
+    user: u64,
+    nice: u64,
+    system: u64,
+    idle: u64,
+    iowait: u64,
+    irq: u64,
+    softirq: u64,
+    steal: u64,
+    #[expect(dead_code)]
+    guest: u64,
+    #[expect(dead_code)]
+    guest_nice: u64,
+}
+
+impl Stat {
+    /// Get the total time.
+    fn total(&self) -> u64 {
+        self.user
+            + self.nice
+            + self.system
+            + self.idle
+            + self.iowait
+            + self.irq
+            + self.softirq
+            + self.steal
+    }
+
+    /// Get the idle time.
+    fn idle(&self) -> u64 {
+        self.idle + self.iowait
+    }
+}
+
+fn get_stat() -> Result<Stat, Error> {
+    const MISSING_PART_ERROR: &str = "Missing stat part";
+
+    let stat_string = std::fs::read_to_string("/proc/stat")?;
+    let (line, _) = stat_string
+        .split_once('\n')
+        .ok_or(Error::Generic("Missing newline"))?;
+
+    let mut iter = line.split(' ');
+    let cpu = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
+    if cpu != "cpu" {
+        return Err(Error::Generic("Invalid cpu part"));
+    }
+
+    let user = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
+    let user: u64 = user.parse()?;
+
+    let nice = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
+    let nice: u64 = nice.parse()?;
+
+    let system = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
+    let system: u64 = system.parse()?;
+
+    let idle = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
+    let idle: u64 = idle.parse()?;
+
+    let iowait = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
+    let iowait: u64 = iowait.parse()?;
+
+    let irq = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
+    let irq: u64 = irq.parse()?;
+
+    let softirq = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
+    let softirq: u64 = softirq.parse()?;
+
+    let steal = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
+    let steal: u64 = steal.parse()?;
+
+    let guest = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
+    let guest: u64 = guest.parse()?;
+
+    let guest_nice = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
+    let guest_nice: u64 = guest_nice.parse()?;
+
+    if iter.next().is_some() {
+        return Err(Error::Generic("Unexpected stat part"));
+    }
+
+    Ok(Stat {
+        user,
+        nice,
+        system,
+        idle,
+        iowait,
+        irq,
+        softirq,
+        steal,
+        guest,
+        guest_nice,
+    })
+}
+
+fn calc_cpu_usage(start: &Stat, end: &Stat) -> Result<f64, Error> {
+    let start_total = start.total();
+    let start_idle = start.idle();
+
+    let end_total = end.total();
+    let end_idle = end.idle();
+
+    let total = (end_total - start_total) as f64;
+    let idle = (end_idle - start_idle) as f64;
+
+    if total == 0.0 {
+        return Err(Error::Generic("total was 0"));
+    }
+
+    Ok(100.0 * (1.0 - (idle / total)))
+}
+
+#[derive(Debug)]
+struct StatInfo {
+    start: Stat,
+    end: OnceCell<Stat>,
+}
+
 /// A cache for system data
 #[derive(Debug)]
 pub(crate) struct CacheContext {
@@ -179,6 +299,7 @@ pub(crate) struct CacheContext {
     utsname: OnceCell<UtsName>,
     cpu_info: OnceCell<Vec<CpuInfo>>,
     cpu_freq_info: OnceCell<CpuFreqInfo>,
+    stat_info: OnceCell<StatInfo>,
 }
 
 impl CacheContext {
@@ -189,6 +310,7 @@ impl CacheContext {
             utsname: OnceCell::new(),
             cpu_info: OnceCell::new(),
             cpu_freq_info: OnceCell::new(),
+            stat_info: OnceCell::new(),
         }
     }
 
@@ -216,13 +338,30 @@ impl CacheContext {
         self.cpu_freq_info.get_or_try_init(get_cpu_freq_info)
     }
 
+    /// Get stat info.
+    fn get_stat_info(&self) -> Result<&StatInfo, Error> {
+        self.stat_info
+            .get()
+            .ok_or(Error::Generic("Need to call `start`"))
+    }
+
     /// Start measuring.
     pub fn start(&self) -> Result<(), Error> {
+        self.stat_info.get_or_try_init(|| {
+            let start = get_stat()?;
+
+            Ok::<_, Error>(StatInfo {
+                start,
+                end: OnceCell::new(),
+            })
+        })?;
         Ok(())
     }
 
     /// End measuring.
     pub fn end(&self) -> Result<(), Error> {
+        let stat_info = self.get_stat_info()?;
+        stat_info.end.get_or_try_init(get_stat)?;
         Ok(())
     }
 
@@ -360,6 +499,17 @@ impl CacheContext {
         let cpu_freq_info = self.get_cpu_freq_info()?;
         Ok(cpu_freq_info.max_freq)
     }
+
+    /// Get the cpu usage.
+    pub fn get_cpu_usage(&self) -> Result<f64, Error> {
+        let stat_info = self.get_stat_info()?;
+        let end = stat_info
+            .end
+            .get()
+            .ok_or(Error::Generic("Need to call `start`"))?;
+
+        calc_cpu_usage(&stat_info.start, end)
+    }
 }
 
 #[cfg(test)]
@@ -422,6 +572,13 @@ mod test {
     fn get_cpu_freq_info_does_not_block() {
         let start = Instant::now();
         let _cpu_info = get_cpu_info().expect("Failed to get cpu freq info");
+        assert!(start.elapsed() < BLOCKING_DURATION);
+    }
+
+    #[test]
+    fn get_stat_does_not_block() {
+        let start = Instant::now();
+        let _stat = get_stat().expect("Failed to get stat");
         assert!(start.elapsed() < BLOCKING_DURATION);
     }
 

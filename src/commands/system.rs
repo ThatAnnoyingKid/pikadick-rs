@@ -413,9 +413,8 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     }
     create_embed = system_stats.populate_embed(create_embed);
 
-    if let (Some(cpu_usage), Some(cpu_logical_count)) =
-        (cpu_usage, cache_context.count_logical_cpus().ok())
-    {
+    let cpu_logical_count = cache_context.count_logical_cpus().ok();
+    if let (Some(cpu_usage), Some(cpu_logical_count)) = (cpu_usage, cpu_logical_count) {
         create_embed = create_embed.field(
             "Cpu Usage",
             format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),

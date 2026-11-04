@@ -1121,6 +1121,7 @@ struct PageFileStats {
 struct PdhCounters {
     query: PdhQuery,
     cpu_frequency_counter_index: usize,
+    cpu_time_counter_index: usize,
 }
 
 /// A cache for system data
@@ -1194,11 +1195,14 @@ impl CacheContext {
             let mut query = PdhQuery::new()?;
             let cpu_frequency_counter_index =
                 query.add_counter("\\Processor Information(_Total)\\Actual Frequency")?;
+            let cpu_time_counter_index =
+                query.add_counter("\\Processor Information(_Total)\\% Processor Time")?;
             query.collect()?;
 
             Ok::<_, Error>(Mutex::new(PdhCounters {
                 query,
                 cpu_frequency_counter_index,
+                cpu_time_counter_index,
             }))
         })?;
 
@@ -1416,6 +1420,26 @@ impl CacheContext {
         let avg_hz = (sum / n) * 1_000_000.0;
 
         Ok(avg_hz as u64)
+    }
+
+    /// Get the cpu usage.
+    pub fn get_cpu_usage(&self) -> Result<f64, Error> {
+        let pdh_counters = self
+            .pdh_counters
+            .get()
+            .ok_or(Error::Generic("Need to call `start`"))?;
+        let value = {
+            let pdh_counters = pdh_counters
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            let counter = pdh_counters
+                .query
+                .get_counter(pdh_counters.cpu_time_counter_index)
+                .expect("Missing cpu time counter");
+            counter.get_formatted_value()?.double()?
+        };
+
+        Ok(value)
     }
 }
 

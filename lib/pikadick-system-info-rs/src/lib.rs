@@ -212,7 +212,7 @@ impl CacheContext {
     /// # Platform-specific behavior
     /// On Linux, this value may or may not include TurboBoost depending on the driver.
     ///
-    /// # Collection
+    /// # Data Collection
     /// This API requires that you call `start` and `end` before calling this.
     ///
     /// # Blocking
@@ -247,6 +247,19 @@ impl CacheContext {
     pub fn get_max_cpu_frequency(&self) -> Result<u64, Error> {
         self.inner.get_max_cpu_frequency()
     }
+
+    /// Get the cpu usage, as a percent.
+    ///
+    /// # Collection
+    /// This API requires that you call `start` and `end` before calling this.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_cpu_usage(&self) -> Result<f64, Error> {
+        self.inner.get_cpu_usage()
+    }
+
+    // TODO: pub fn get_cpu_temperature(&self) -> Result<f64, Error> {
 }
 
 impl Default for CacheContext {
@@ -259,6 +272,8 @@ impl Default for CacheContext {
 mod tests {
     use super::*;
     use std::time::Instant;
+
+    const BLOCKING_DURATION: Duration = Duration::from_millis(1);
 
     #[test]
     fn boot_time() {
@@ -276,6 +291,7 @@ mod tests {
             .get_boot_time()
             .expect("Failed to get boot time");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!(
             "Boot Time: {}\nTime: {:?}",
@@ -290,6 +306,7 @@ mod tests {
         let start = Instant::now();
         let uptime = cache_context.get_uptime().expect("Failed to get uptime");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Uptime: {uptime:?}\nTime: {elapsed:?}");
     }
@@ -302,6 +319,7 @@ mod tests {
             .get_hostname()
             .expect("Failed to get hostname");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Hostname: {hostname}\nTime: {elapsed:?}");
     }
@@ -314,6 +332,7 @@ mod tests {
             .get_architecture()
             .expect("Failed to get arch");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!(
             "Arch: {}\nTime: {:?}",
@@ -330,6 +349,7 @@ mod tests {
             .get_system_name()
             .expect("Failed to get system name");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("System Name: {system_name:?}\nTime: {elapsed:?}");
     }
@@ -342,6 +362,7 @@ mod tests {
             .get_system_version()
             .expect("Failed to get system version");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("System Version: {system_version:?}\nTime: {elapsed:?}");
     }
@@ -354,6 +375,7 @@ mod tests {
             .get_total_memory()
             .expect("Failed to get total memory");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Total Memory: {total_memory}\nTime: {elapsed:?}");
     }
@@ -366,6 +388,7 @@ mod tests {
             .get_available_memory()
             .expect("Failed to get available memory");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Available Memory: {available_memory}\nTime: {elapsed:?}");
     }
@@ -378,6 +401,7 @@ mod tests {
             .get_total_swap()
             .expect("Failed to get total swap");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Total Swap: {total_swap}\nTime: {elapsed:?}");
     }
@@ -390,6 +414,7 @@ mod tests {
             .get_available_swap()
             .expect("Failed to get available swap memory");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Available Swap: {available_swap}\nTime: {elapsed:?}");
     }
@@ -402,6 +427,7 @@ mod tests {
             .count_logical_cpus()
             .expect("Failed to get count logical cpus");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Logical Cpus: {logical_cpus}\nTime: {elapsed:?}");
     }
@@ -414,6 +440,7 @@ mod tests {
             .count_physical_cpus()
             .expect("Failed to get count physical cpus");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Physical Cpus: {physical_cpus}\nTime: {elapsed:?}");
     }
@@ -428,8 +455,9 @@ mod tests {
         let start = Instant::now();
         let cpu_frequency = cache_context
             .get_cpu_frequency()
-            .expect("Failed to get cpu frequency");
+            .expect("Failed to get CPU frequency");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("CPU Frequency: {cpu_frequency}\nTime: {elapsed:?}");
     }
@@ -443,8 +471,9 @@ mod tests {
         let start = Instant::now();
         let min_cpu_frequency = cache_context
             .get_min_cpu_frequency()
-            .expect("Failed to get min cpu frequency");
+            .expect("Failed to get min CPU frequency");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Min CPU Frequency: {min_cpu_frequency}\nTime: {elapsed:?}");
     }
@@ -456,9 +485,37 @@ mod tests {
         let start = Instant::now();
         let max_cpu_frequency = cache_context
             .get_max_cpu_frequency()
-            .expect("Failed to get max cpu frequency");
+            .expect("Failed to get max CPU frequency");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Max CPU Frequency: {max_cpu_frequency}\nTime: {elapsed:?}");
+    }
+
+    #[test]
+    fn get_cpu_usage() {
+        let cache_context = CacheContext::new();
+        let start = Instant::now();
+        cache_context.start().expect("Failed to start");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < Duration::from_millis(200),
+            "Blocked for {elapsed:?}"
+        );
+
+        std::thread::sleep(Duration::from_secs(1));
+        let start = Instant::now();
+        cache_context.end().expect("Failed to end");
+        let elapsed = start.elapsed();
+        assert!(elapsed < Duration::from_millis(200));
+
+        let start = Instant::now();
+        let cpu_usage = cache_context
+            .get_cpu_usage()
+            .expect("Failed to get CPU usage");
+        let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
+
+        println!("CPU Usage: {cpu_usage}\nTime: {elapsed:?}");
     }
 }
