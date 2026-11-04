@@ -451,7 +451,9 @@ mod tests {
         println!("Physical Cpus: {physical_cpus}\nTime: {elapsed:?}");
     }
 
+    // Github CI does not expose frequency data.
     #[test]
+    #[ignore]
     fn get_cpu_frequency() {
         let cache_context = CacheContext::new();
         cache_context.start().expect("Failed to start");
@@ -469,7 +471,9 @@ mod tests {
     }
 
     // Unsupported on Windows
+    // Github CI does not expose frequency data.
     #[test]
+    #[ignore]
     #[cfg(not(windows))]
     fn get_min_cpu_frequency() {
         let cache_context = CacheContext::new();
@@ -484,7 +488,9 @@ mod tests {
         println!("Min CPU Frequency: {min_cpu_frequency}\nTime: {elapsed:?}");
     }
 
+    // Github CI does not expose frequency data.
     #[test]
+    #[ignore]
     fn get_max_cpu_frequency() {
         let cache_context = CacheContext::new();
 

@@ -153,7 +153,7 @@ fn get_cpu_freq_info() -> Result<CpuFreqInfo, Error> {
         max_frequencies.push(max_cpu_freq);
     }
     if frequencies.is_empty() {
-        return Err(Error::Generic("Failed to get CPU frequencies"));
+        return Err(Error::MissingValue);
     }
     let cpu_count =
         f64::from(u32::try_from(frequencies.len()).expect("CPU count cannot fit in a u32"));
