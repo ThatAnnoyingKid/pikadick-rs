@@ -654,7 +654,8 @@ mod test {
     fn get_thermal_zones_does_not_block() {
         let start = Instant::now();
         let _stat = get_thermal_zones().expect("Failed to get stat");
-        assert!(start.elapsed() < BLOCKING_DURATION);
+        let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION, "Blocked, took {elapsed}");
     }
 
     #[test]
