@@ -318,7 +318,10 @@ fn get_thermal_zones() -> Result<Vec<ThermalZone>, Error> {
         let temp: u64 = temp_string.trim().parse()?;
 
         let type_path = entry_path.join("type");
-        let type_string = std::fs::read_to_string(type_path)?;
+        let mut type_string = std::fs::read_to_string(type_path)?;
+        if type_string.ends_with('\n') {
+            type_string.pop();
+        }
 
         zones.push(ThermalZone {
             name: type_string,
