@@ -528,7 +528,7 @@ mod tests {
     // Unsupported on Windows
     #[test]
     #[cfg(not(windows))]
-    fn get_cpu_temperature_frequency() {
+    fn get_cpu_temperature() {
         let cache_context = CacheContext::new();
 
         let start = Instant::now();
