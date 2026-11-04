@@ -14,8 +14,6 @@ bewu-util = { git = "https://github.com/ThatAnnoyingKid/Bewu", version = "0.0.0"
 bitflags = "2.13.2"
 camino = { version = "1.2.6", features = [ "serde1" ] }
 deviantart = { git = "https://github.com/adumbidiot/deviantart-rs", default-features = false, features = [ "rustls-tls" ] }
-# This is needed as we still use some stats from this library.
-heim = { version = "0.1.0-rc.1", features = [ "cpu" ] }
 iqdb = { path = "./lib/iqdb-rs", default-features = false, features = [ "rustls" ] }
 itoa = "1.0.18"
 jiff = "0.2.38"
@@ -127,13 +125,6 @@ zero_sized_map_values = "warn"
 # uninlined_format_args = "warn"
 
 [patch.crates-io]
-# Fix security advisory.
-# heim = { git = "https://github.com/heim-rs/heim", rev = "b292f1535bb27c03800cdb7509fa81a40859fbbb" }
-heim = { git = "https://github.com/vectordotdev/heim", branch = "update-nix" }
-
-# Fix ntapi 0.3.0 not compiling on newer Rust versions.
-ntapi3 = { version = "0.3.0", git = "https://github.com/MSxDOS/ntapi", rev = "2148881c30e8da6a3ff585efd1c7d8ad125ccd2c", package = "ntapi" }
-
 # This allows us to use the pure-rust opus2 backend to make cross-compilation easier.
 songbird = { git = "https://github.com/adumbidiot/songbird", branch = "opus2-backends" }
 

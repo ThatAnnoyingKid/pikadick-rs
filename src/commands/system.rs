@@ -26,14 +26,6 @@ use systemstat::{
 };
 use tracing::warn;
 
-async fn get_cpu_usage() -> Result<f32, heim::Error> {
-    let start = heim::cpu::usage().await?;
-    tokio::time::sleep(Duration::from_secs(1)).await;
-    let end = heim::cpu::usage().await?;
-
-    Ok((end - start).get::<heim::units::ratio::percent>())
-}
-
 fn format_boot_time(value: SystemTime) -> anyhow::Result<String> {
     let timestamp = jiff::Timestamp::try_from(value).context("Failed to make timestamp")?;
 
@@ -88,6 +80,7 @@ struct SystemStats {
     cpu_core_count: Option<String>,
     memory_usage: Option<String>,
     swap_usage: Option<String>,
+    cpu_usage: Option<String>,
 }
 
 impl SystemStats {
@@ -321,6 +314,18 @@ impl SystemStats {
             }
             _ => None,
         };
+        
+        let cpu_usage = match cache_context
+            .get_cpu_usage()
+            .context("Failed to get cpu usage")
+            .map(|cpu_usage| format!("{cpu_usage:.2}%"))
+        {
+            Ok(cpu_usage) => Some(cpu_usage),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
 
         Self {
             hostname,
@@ -335,6 +340,7 @@ impl SystemStats {
             cpu_core_count,
             memory_usage,
             swap_usage,
+            cpu_usage,
         }
     }
 
@@ -352,6 +358,7 @@ impl SystemStats {
             ("Cpu Core Count", self.cpu_core_count.as_deref()),
             ("Memory Usage", self.memory_usage.as_deref()),
             ("Swap Usage", self.swap_usage.as_deref()),
+            ("Cpu Usage", self.cpu_usage.as_deref()),
         ];
 
         for (key, value) in fields {
@@ -383,17 +390,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         }
     };
 
-    // End Legacy data gathering
-    let cache_context = pikadick_system_info::CacheContext::new();
-
-    let cpu_usage = match get_cpu_usage().await {
-        Ok(usage) => Some(usage),
-        Err(error) => {
-            warn!("Failed to get cpu usage: {error}");
-            None
-        }
-    };
-
     let system_stats = SystemStats::new().await;
 
     let data_retrieval_time = start.elapsed();
@@ -412,15 +408,6 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         create_embed = create_embed.thumbnail(icon);
     }
     create_embed = system_stats.populate_embed(create_embed);
-
-    let cpu_logical_count = cache_context.count_logical_cpus().ok();
-    if let (Some(cpu_usage), Some(cpu_logical_count)) = (cpu_usage, cpu_logical_count) {
-        create_embed = create_embed.field(
-            "Cpu Usage",
-            format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),
-            true,
-        );
-    }
 
     /////////////////////////////////////////////////////////////////////////////////////
     // Legacy (These functions from systemstat have no direct replacement in heim yet) //
