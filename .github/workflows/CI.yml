@@ -107,7 +107,7 @@ jobs:
         run: ls -la /sys/class/thermal/
         
       - name: List CPUs
-        run: ls -la /sys/devices/system/cpu/
+        run: ls -la /sys/devices/system/cpu/cpu*
         
       - name: Build Pikadick
         run: cargo build --verbose

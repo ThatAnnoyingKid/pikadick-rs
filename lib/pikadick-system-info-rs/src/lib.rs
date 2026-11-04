@@ -526,7 +526,9 @@ mod tests {
     }
 
     // Unsupported on Windows
+    // Github CI does not expose temperature data.
     #[test]
+    #[ignore]
     #[cfg(not(windows))]
     fn get_cpu_temperature() {
         let cache_context = CacheContext::new();
