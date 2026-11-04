@@ -293,6 +293,8 @@ struct ThermalZone {
 }
 
 fn get_thermal_zones() -> Result<Vec<ThermalZone>, Error> {
+    const ENODATA: i32 = 61;
+
     let mut zones = Vec::with_capacity(4);
     for entry in std::fs::read_dir("/sys/class/thermal/")? {
         let entry = entry?;
@@ -308,7 +310,11 @@ fn get_thermal_zones() -> Result<Vec<ThermalZone>, Error> {
 
         let entry_path = entry.path();
         let temp_path = entry_path.join("temp");
-        let temp_string = std::fs::read_to_string(temp_path)?;
+        let temp_string = match std::fs::read_to_string(temp_path) {
+            Ok(value) => value,
+            Err(error) if error.raw_os_error() == Some(ENODATA) => continue,
+            Err(error) => return Err(Error::Io(error)),
+        };
         let temp: u64 = temp_string.trim().parse()?;
 
         let type_path = entry_path.join("type");
