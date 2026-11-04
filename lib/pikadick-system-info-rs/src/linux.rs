@@ -215,7 +215,7 @@ fn get_stat() -> Result<Stat, Error> {
         .split_once('\n')
         .ok_or(Error::Generic("Missing newline"))?;
 
-    let mut iter = line.split(' ');
+    let mut iter = line.split(' ').filter(|value| !value.is_empty());
     let cpu = iter.next().ok_or(Error::Generic(MISSING_PART_ERROR))?;
     if cpu != "cpu" {
         return Err(Error::Generic("Invalid cpu part"));
