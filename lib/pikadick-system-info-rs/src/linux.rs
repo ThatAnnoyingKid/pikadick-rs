@@ -296,7 +296,7 @@ fn get_thermal_zones() -> Result<Vec<ThermalZone>, Error> {
     const ENODATA: i32 = 61;
 
     let mut zones = Vec::with_capacity(4);
-    for entry in std::fs::read_dir("/sys/class/thermal/")? {
+    for entry in std::fs::read_dir("/sys/class/thermal")? {
         let entry = entry?;
         let file_name = entry
             .file_name()
@@ -655,7 +655,10 @@ mod test {
         let start = Instant::now();
         let _stat = get_thermal_zones().expect("Failed to get stat");
         let elapsed = start.elapsed();
-        assert!(elapsed < Duration::from_millis(2), "Blocked, took {elapsed:?}");
+        assert!(
+            elapsed < Duration::from_millis(2),
+            "Blocked, took {elapsed:?}"
+        );
     }
 
     #[test]

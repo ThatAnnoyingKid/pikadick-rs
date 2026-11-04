@@ -20,10 +20,6 @@ use std::{
         SystemTime,
     },
 };
-use systemstat::{
-    System,
-    platform::common::Platform,
-};
 use tracing::warn;
 
 fn format_boot_time(value: SystemTime) -> anyhow::Result<String> {
@@ -81,6 +77,7 @@ struct SystemStats {
     memory_usage: Option<String>,
     swap_usage: Option<String>,
     cpu_usage: Option<String>,
+    cpu_temp: Option<String>,
 }
 
 impl SystemStats {
@@ -317,13 +314,43 @@ impl SystemStats {
 
         let cpu_usage = match cache_context
             .get_cpu_usage()
-            .context("Failed to get cpu usage")
+            .context("Failed to get CPU usage")
             .map(|cpu_usage| format!("{cpu_usage:.2}%"))
         {
             Ok(cpu_usage) => Some(cpu_usage),
             Err(error) => {
                 warn!("{error:?}");
                 None
+            }
+        };
+
+        let cpu_temp = {
+            let cache_context = cache_context.clone();
+            let result = tokio::task::spawn_blocking(move || {
+                cache_context
+                    .get_cpu_temperature()
+                    .map_err(anyhow::Error::from)
+            })
+            .await
+            .map_err(anyhow::Error::from)
+            .flatten()
+            .context("Failed to get CPU temp")
+            .map(|value| format!("{value:.2} °C"));
+            match result {
+                Ok(cpu_temp) => Some(cpu_temp),
+                // Don't warn for unsupported APIs; too noisy.
+                Err(error)
+                    if error
+                        .root_cause()
+                        .downcast_ref::<pikadick_system_info::Error>()
+                        .is_some_and(|error| error.is_unsupported()) =>
+                {
+                    None
+                }
+                Err(error) => {
+                    warn!("{error:?}");
+                    None
+                }
             }
         };
 
@@ -341,6 +368,7 @@ impl SystemStats {
             memory_usage,
             swap_usage,
             cpu_usage,
+            cpu_temp,
         }
     }
 
@@ -359,6 +387,7 @@ impl SystemStats {
             ("Memory Usage", self.memory_usage.as_deref()),
             ("Swap Usage", self.swap_usage.as_deref()),
             ("Cpu Usage", self.cpu_usage.as_deref()),
+            ("Cpu Temp", self.cpu_temp.as_deref()),
         ];
 
         for (key, value) in fields {
@@ -376,30 +405,9 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     ctx.defer().await?;
 
     let start = Instant::now();
-
     let profile_avatar_url = ctx.cache().current_user().avatar_url();
-
-    // Start Legacy data gathering
-    let sys = System::new();
-
-    let cpu_temp = match sys.cpu_temp() {
-        Ok(cpu_temp) => Some(cpu_temp),
-        Err(error) => {
-            warn!("Failed to get cpu temp: {error}");
-            None
-        }
-    };
-
     let system_stats = SystemStats::new().await;
-
     let data_retrieval_time = start.elapsed();
-
-    // Start WIP
-
-    // Reports temps from all sensors
-    // let temperatures = heim::sensors::temperatures().collect::<Vec<_>>().await;
-
-    // End WIP
 
     let mut create_embed = CreateEmbed::new()
         .title("System Status")
@@ -407,18 +415,8 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     if let Some(icon) = profile_avatar_url {
         create_embed = create_embed.thumbnail(icon);
     }
+
     create_embed = system_stats.populate_embed(create_embed);
-
-    /////////////////////////////////////////////////////////////////////////////////////
-    // Legacy (These functions from systemstat have no direct replacement in heim yet) //
-    /////////////////////////////////////////////////////////////////////////////////////
-
-    // This does not work on Windows
-    // TODO: This can probably be replaced with temprature readings from heim.
-    // It doesn't support Windows, but this never worked there anyways as Windows has no simple way to get temps
-    if let Some(cpu_temp) = cpu_temp {
-        create_embed = create_embed.field("Cpu Temp", format!("{cpu_temp} °C"), true);
-    }
 
     let footer = CreateEmbedFooter::new(format!(
         "Retrieved system data in {:.2} second(s)",

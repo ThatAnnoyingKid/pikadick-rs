@@ -536,7 +536,10 @@ mod tests {
             .get_cpu_temperature()
             .expect("Failed to get CPU temperature");
         let elapsed = start.elapsed();
-        assert!(elapsed < Duration::from_millis(2), "Blocked for {elapsed:?}");
+        assert!(
+            elapsed < Duration::from_millis(2),
+            "Blocked for {elapsed:?}"
+        );
 
         println!("CPU temperature: {temp}\nTime: {elapsed:?}");
     }
