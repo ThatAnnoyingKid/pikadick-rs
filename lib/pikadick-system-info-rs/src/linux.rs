@@ -129,20 +129,25 @@ fn get_cpu_freq_info() -> Result<CpuFreqInfo, Error> {
         };
 
         let entry_path = entry.path();
+        let cpufreq_path = entry_path.join("cpufreq");
+        // Github Actions seems to not provide this folder.
+        if !cpufreq_path.try_exists()? {
+            continue;
+        }
 
-        let cpuinfo_cur_freq_path = entry_path.join("cpufreq/cpuinfo_cur_freq");
-        let scaling_cur_freq_path = entry_path.join("cpufreq/scaling_cur_freq");
+        let cpuinfo_cur_freq_path = cpufreq_path.join("cpuinfo_cur_freq");
+        let scaling_cur_freq_path = cpufreq_path.join("scaling_cur_freq");
         let cpu_freq_string = std::fs::read_to_string(cpuinfo_cur_freq_path)
             .or_else(|_| std::fs::read_to_string(scaling_cur_freq_path))?;
         let cpu_freq: u64 = cpu_freq_string.trim().parse()?;
         frequencies.push(cpu_freq);
 
-        let min_freq_path = entry_path.join("cpufreq/cpuinfo_min_freq");
+        let min_freq_path = cpufreq_path.join("cpuinfo_min_freq");
         let min_freq_string = std::fs::read_to_string(min_freq_path)?;
         let min_cpu_freq: u64 = min_freq_string.trim().parse()?;
         min_frequencies.push(min_cpu_freq);
 
-        let max_freq_path = entry_path.join("cpufreq/cpuinfo_max_freq");
+        let max_freq_path = cpufreq_path.join("cpuinfo_max_freq");
         let max_freq_string = std::fs::read_to_string(max_freq_path)?;
         let max_cpu_freq: u64 = max_freq_string.trim().parse()?;
         max_frequencies.push(max_cpu_freq);
