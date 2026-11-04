@@ -287,6 +287,43 @@ fn calc_cpu_usage(start: &Stat, end: &Stat) -> Result<f64, Error> {
 }
 
 #[derive(Debug)]
+struct ThermalZone {
+    name: String,
+    value: u64,
+}
+
+fn get_thermal_zones() -> Result<Vec<ThermalZone>, Error> {
+    let mut zones = Vec::with_capacity(4);
+    for entry in std::fs::read_dir("/sys/class/thermal/")? {
+        let entry = entry?;
+        let file_name = entry
+            .file_name()
+            .into_string()
+            .map_err(|_| Error::Generic("File name is not utf8"))?;
+        let file_name = match file_name.strip_prefix("thermal_zone") {
+            Some(name) => name,
+            None => continue,
+        };
+        let _n: u64 = file_name.parse()?;
+
+        let entry_path = entry.path();
+        let temp_path = entry_path.join("temp");
+        let temp_string = std::fs::read_to_string(temp_path)?;
+        let temp: u64 = temp_string.parse()?;
+
+        let type_path = entry_path.join("type");
+        let type_string = std::fs::read_to_string(type_path)?;
+
+        zones.push(ThermalZone {
+            name: type_string,
+            value: temp,
+        });
+    }
+
+    Ok(zones)
+}
+
+#[derive(Debug)]
 struct StatInfo {
     start: Stat,
     end: OnceCell<Stat>,
@@ -300,6 +337,7 @@ pub(crate) struct CacheContext {
     cpu_info: OnceCell<Vec<CpuInfo>>,
     cpu_freq_info: OnceCell<CpuFreqInfo>,
     stat_info: OnceCell<StatInfo>,
+    thermal_zones: OnceCell<Vec<ThermalZone>>,
 }
 
 impl CacheContext {
@@ -311,6 +349,7 @@ impl CacheContext {
             cpu_info: OnceCell::new(),
             cpu_freq_info: OnceCell::new(),
             stat_info: OnceCell::new(),
+            thermal_zones: OnceCell::new(),
         }
     }
 
@@ -343,6 +382,13 @@ impl CacheContext {
         self.stat_info
             .get()
             .ok_or(Error::Generic("Need to call `start`"))
+    }
+
+    /// Get thermal zones
+    fn get_thermal_zones(&self) -> Result<&[ThermalZone], Error> {
+        self.thermal_zones
+            .get_or_try_init(get_thermal_zones)
+            .map(|value| value.as_slice())
     }
 
     /// Start measuring.
@@ -510,6 +556,19 @@ impl CacheContext {
 
         calc_cpu_usage(&stat_info.start, end)
     }
+
+    /// Get the cpu temperature, in degrees Celsius.
+    pub fn get_cpu_temperature(&self) -> Result<f64, Error> {
+        let thermal_zones = self.get_thermal_zones()?;
+
+        for zone in thermal_zones {
+            if zone.name == "x86_pkg_temp" || zone.name == "cpu-thermal" {
+                return Ok((zone.value as f64) / 1000.0);
+            }
+        }
+
+        Err(Error::MissingValue)
+    }
 }
 
 #[cfg(test)]
@@ -579,6 +638,13 @@ mod test {
     fn get_stat_does_not_block() {
         let start = Instant::now();
         let _stat = get_stat().expect("Failed to get stat");
+        assert!(start.elapsed() < BLOCKING_DURATION);
+    }
+
+    #[test]
+    fn get_thermal_zones_does_not_block() {
+        let start = Instant::now();
+        let _stat = get_thermal_zones().expect("Failed to get stat");
         assert!(start.elapsed() < BLOCKING_DURATION);
     }
 

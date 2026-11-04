@@ -314,7 +314,7 @@ impl SystemStats {
             }
             _ => None,
         };
-        
+
         let cpu_usage = match cache_context
             .get_cpu_usage()
             .context("Failed to get cpu usage")

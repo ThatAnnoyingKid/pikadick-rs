@@ -655,6 +655,7 @@ impl<'a> LogicalProcessorInformationExStoreCursor<'a> {
         self.current.clone()
     }
 
+    // Returns `true` if successful.
     fn advance(&mut self) -> bool {
         let current = match self.current.take() {
             Some(current) => current,
@@ -665,11 +666,8 @@ impl<'a> LogicalProcessorInformationExStoreCursor<'a> {
         unsafe {
             self.read_current();
         }
-        if self.current.is_none() {
-            return false;
-        }
 
-        true
+        self.current.is_some()
     }
 }
 
@@ -1440,6 +1438,13 @@ impl CacheContext {
         };
 
         Ok(value)
+    }
+
+    /// Get the CPU temperature.
+    pub fn get_cpu_temperature(&self) -> Result<f64, Error> {
+        // Windows does not expose an API to report CPU temp.
+        // Even Steam needs a kernel module to report CPU temp.
+        Err(Error::Unsupported)
     }
 }
 

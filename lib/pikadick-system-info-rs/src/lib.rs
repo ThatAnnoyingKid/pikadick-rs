@@ -259,7 +259,9 @@ impl CacheContext {
         self.inner.get_cpu_usage()
     }
 
-    // TODO: pub fn get_cpu_temperature(&self) -> Result<f64, Error> {
+    pub fn get_cpu_temperature(&self) -> Result<f64, Error> {
+        self.inner.get_cpu_temperature()
+    }
 }
 
 impl Default for CacheContext {
@@ -517,5 +519,21 @@ mod tests {
         assert!(elapsed < BLOCKING_DURATION);
 
         println!("CPU Usage: {cpu_usage}\nTime: {elapsed:?}");
+    }
+
+    // Unsupported on Windows
+    #[test]
+    #[cfg(not(windows))]
+    fn get_cpu_temperature_frequency() {
+        let cache_context = CacheContext::new();
+
+        let start = Instant::now();
+        let temp = cache_context
+            .get_cpu_temperature()
+            .expect("Failed to get CPU temperature");
+        let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
+
+        println!("CPU temperature: {temp}\nTime: {elapsed:?}");
     }
 }
