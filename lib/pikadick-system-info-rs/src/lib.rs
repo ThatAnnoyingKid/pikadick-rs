@@ -259,6 +259,10 @@ impl CacheContext {
         self.inner.get_cpu_usage()
     }
 
+    /// Get the CPU temperature, in degrees Celsius.
+    ///
+    /// # Blocking
+    /// This is blocking.
     pub fn get_cpu_temperature(&self) -> Result<f64, Error> {
         self.inner.get_cpu_temperature()
     }
@@ -532,7 +536,7 @@ mod tests {
             .get_cpu_temperature()
             .expect("Failed to get CPU temperature");
         let elapsed = start.elapsed();
-        assert!(elapsed < BLOCKING_DURATION, "Blocked for {elapsed:?}");
+        assert!(elapsed < Duration::from_millis(2), "Blocked for {elapsed:?}");
 
         println!("CPU temperature: {temp}\nTime: {elapsed:?}");
     }
