@@ -58,12 +58,7 @@ xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls" ]
 yodaspeak = { path = "lib/yodaspeak-rs", default-features = false, features = [ "rustls" ] }
 zalgo = { git = "https://github.com/nathaniel-daniel/zalgo-rs", default-features = false }
 
-# Optional
-openssl = { version = "0.10.81", optional = true, features = [ "vendored" ] }
-
 [features]
-# Note: This is needed for cross comp
-use-openssl-vendored = [ "openssl" ]
 
 [lints.rust]
 # Warn
