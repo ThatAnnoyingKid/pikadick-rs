@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["WinType"],"struct":["Board","ChildrenIter","WinnerInfo"]};

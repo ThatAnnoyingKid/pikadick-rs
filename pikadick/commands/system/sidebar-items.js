@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["format_boot_time","format_cpu_frequency","format_memory_usage","format_uptime","system"],"struct":["SystemStats"]};
