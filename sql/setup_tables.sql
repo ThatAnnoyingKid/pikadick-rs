@@ -10,32 +10,27 @@ CREATE TABLE IF NOT EXISTS kv_store (
     PRIMARY KEY (key_prefix, key_name)
 ) STRICT;
 
-CREATE TABLE IF NOT EXISTS reddit_embed_guild_settings (
-    guild_id INTEGER NOT NULL PRIMARY KEY UNIQUE,
-    enabled INTEGER NOT NULL CHECK(enabled IN (0, 1))
-) STRICT;
-
 CREATE TABLE IF NOT EXISTS tic_tac_toe_games (
-    id INTEGER PRIMARY KEY UNIQUE NOT NULL CHECK(TYPEOF(id) = 'integer'),
-    board INTEGER NOT NULL CHECK(TYPEOF(board) = 'integer'),
-    x_player INTEGER NULL CHECK(TYPEOF(x_player) IN ('integer', 'null')),
-    o_player INTEGER NULL CHECK(TYPEOF(o_player) IN ('integer', 'null')),
-    guild_id TEXT NOT NULL CHECK(TYPEOF(guild_id) = 'text'),
+    id INTEGER PRIMARY KEY UNIQUE NOT NULL,
+    board INTEGER NOT NULL,
+    x_player INTEGER NULL,
+    o_player INTEGER NULL,
+    guild_id TEXT NOT NULL,
     UNIQUE (guild_id, x_player, o_player),
     UNIQUE (guild_id, x_player),
     UNIQUE (guild_id, o_player)
-);
+) STRICT;
 
 CREATE TABLE IF NOT EXISTS tic_tac_toe_scores (
-    guild_id TEXT NOT NULL CHECK(TYPEOF(guild_id) = 'text'),
-    player INTEGER NOT NULL CHECK(TYPEOF(player) = 'integer'),
-    wins INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(wins) = 'integer'),
-    losses INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(losses) = 'integer'),
-    concedes INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(concedes) = 'integer'),
-    ties INTEGER NOT NULL DEFAULT 0 CHECK(TYPEOF(ties) = 'integer'),
+    guild_id TEXT NOT NULL,
+    player INTEGER NOT NULL,
+    wins INTEGER NOT NULL DEFAULT 0,
+    losses INTEGER NOT NULL DEFAULT 0,
+    concedes INTEGER NOT NULL DEFAULT 0,
+    ties INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (guild_id, player),
     UNIQUE (guild_id, player)
-);
+) STRICT;
 
 CREATE TABLE IF NOT EXISTS tiktok_embed_guild_settings (
     guild_id INTEGER NOT NULL PRIMARY KEY UNIQUE,

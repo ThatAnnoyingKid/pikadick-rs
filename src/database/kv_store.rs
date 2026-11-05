@@ -73,6 +73,10 @@ impl Database {
     }
 
     /// Get and Put a key in the store in one action, ensuring the key is not changed between the commands.
+    #[expect(
+        dead_code,
+        reason = "This isn't used right now, but it is good to have."
+    )]
     pub async fn store_update<P, K, V, U>(
         &self,
         prefix: P,
@@ -88,7 +92,7 @@ impl Database {
         let prefix = prefix.as_ref().to_vec();
         let key = key.as_ref().to_vec();
 
-        self.access_db(move |database| {
+        self.write(move |database| {
             let txn = database.transaction_with_behavior(TransactionBehavior::Immediate)?;
 
             let maybe_value = txn

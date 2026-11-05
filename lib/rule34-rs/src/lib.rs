@@ -21,7 +21,9 @@ pub use crate::{
         Note,
         NoteList,
         Post,
+        PostJson,
         PostList,
+        PostListJson,
         PostStatus,
         Rating,
         Tag,
@@ -89,7 +91,7 @@ mod test {
     static CONFIG: LazyLock<Config> = LazyLock::new(Config::load);
 
     static RUNTIME: LazyLock<tokio::runtime::Runtime> =
-        LazyLock::new(|| tokio::runtime::Runtime::new().expect("failed to init runtime"));
+        LazyLock::new(|| tokio::runtime::Runtime::new().expect("Failed to init runtime"));
 
     static CLIENT: LazyLock<Client> = LazyLock::new(|| {
         let client = Client::new();
@@ -102,7 +104,7 @@ mod test {
     fn search() {
         let res = RUNTIME
             .block_on(CLIENT.list_posts().tags(Some("rust")).execute())
-            .expect("failed to search rule34 for \"rust\"");
+            .expect("Failed to search rule34 for \"rust\"");
         dbg!(&res);
         assert!(!res.posts.is_empty());
     }
@@ -114,7 +116,7 @@ mod test {
             .limit(Some(crate::POST_LIST_LIMIT_MAX))
             .execute()
             .await
-            .unwrap_or_else(|error| panic!("failed to search rule34 for \"{query}\": {error}"));
+            .unwrap_or_else(|error| panic!("Failed to search rule34 for \"{query}\": {error}"));
         assert!(!response.posts.is_empty(), "no posts for \"{query}\"");
 
         dbg!(&response);
@@ -125,7 +127,7 @@ mod test {
             let post = CLIENT
                 .get_html_post(first.id)
                 .await
-                .expect("failed to get first post");
+                .expect("Failed to get first post");
             dbg!(post);
         }
     }
@@ -159,7 +161,7 @@ mod test {
 
         let result = RUNTIME
             .block_on(CLIENT.list_deleted_images(min))
-            .expect("failed to get deleted images");
+            .expect("Failed to get deleted images");
         dbg!(result);
     }
 
@@ -174,7 +176,7 @@ mod test {
                     .order(Some("name"))
                     .execute(),
             )
-            .expect("failed to list tags");
+            .expect("Failed to list tags");
         assert!(!result.tags.is_empty());
         // dbg!(result);
     }
@@ -214,7 +216,7 @@ mod test {
                     .name(Some(expected_tag_name))
                     .execute()
                     .await
-                    .expect("failed to get tag")
+                    .expect("Failed to get tag")
                     .tags;
                 let tags_len = tags.len();
 
@@ -238,7 +240,7 @@ mod test {
     fn notes_list() {
         let result = RUNTIME
             .block_on(CLIENT.list_notes().execute())
-            .expect("failed to list notes");
+            .expect("Failed to list notes");
         assert!(!result.notes.is_empty());
         dbg!(result);
     }
@@ -248,14 +250,14 @@ mod test {
     fn source() {
         let response_1 = RUNTIME
             .block_on(CLIENT.list_posts().id(NonZeroU64::new(1)).execute())
-            .expect("failed to get post 1");
+            .expect("Failed to get post 1");
         let post_1 = response_1.posts.first().expect("missing post");
         assert!(post_1.id.get() == 1);
         assert!(post_1.source.is_none());
 
         let response_3 = RUNTIME
             .block_on(CLIENT.list_posts().id(NonZeroU64::new(3)).execute())
-            .expect("failed to get post 3");
+            .expect("Failed to get post 3");
         let post_3 = response_3.posts.first().expect("missing post");
         assert!(post_3.id.get() == 3);
         assert!(post_3.source.as_deref() == Some("https://www.pixiv.net/en/artworks/12972758"));
@@ -268,5 +270,13 @@ mod test {
             .block_on(CLIENT.autocomplete("1gir"))
             .expect("Failed to get autocomplete");
         dbg!(results);
+    }
+
+    #[ignore]
+    #[test]
+    fn get_post_json() {
+        let post_id = NonZeroU64::new(19212772).expect("Invalid post id");
+        let response = RUNTIME.block_on(CLIENT.list_posts_json().id(Some(post_id)).execute());
+        dbg!(&response);
     }
 }

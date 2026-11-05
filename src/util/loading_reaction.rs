@@ -71,12 +71,20 @@ impl LoadingReaction {
 
     /// Send the `Ok` reaction
     pub fn send_ok(&mut self) {
+        if self.sent_reaction {
+            return;
+        }
+
         self.send_reaction(OK_EMOJI);
         self.sent_reaction = true;
     }
 
     /// Send the `Fail` reaction
     pub fn send_fail(&mut self) {
+        if self.sent_reaction {
+            return;
+        }
+
         self.send_reaction(ERR_EMOJI);
         self.sent_reaction = true;
     }

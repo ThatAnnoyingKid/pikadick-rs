@@ -38,13 +38,11 @@ use serenity::{
     },
     prelude::Mentionable,
 };
-use std::sync::Arc;
 
 /// Data pertaining to running tic_tac_toe games
-#[derive(Clone)]
 pub struct TicTacToeData {
     database: Database,
-    renderer: Arc<Renderer>,
+    renderer: Renderer,
 }
 
 impl TicTacToeData {
@@ -52,10 +50,7 @@ impl TicTacToeData {
     pub fn new(database: Database) -> Self {
         let renderer = Renderer::new().expect("Failed to init renderer");
 
-        Self {
-            database,
-            renderer: Arc::new(renderer),
-        }
+        Self { database, renderer }
     }
 
     /// Render a board.
@@ -72,7 +67,7 @@ impl TicTacToeData {
         opponent: TicTacToePlayer,
     ) -> Result<TicTacToeGame, TicTacToeCreateGameError> {
         self.database
-            .create_tic_tac_toe_game(guild_id.into(), author_id.into(), author_team, opponent)
+            .create_tic_tac_toe_game(guild_id, author_id.into(), author_team, opponent)
             .await
     }
 
@@ -84,7 +79,7 @@ impl TicTacToeData {
         move_index: u8,
     ) -> Result<TicTacToeTryMoveResponse, TicTacToeTryMoveError> {
         self.database
-            .try_tic_tac_toe_move(guild_id.into(), author_id.into(), move_index)
+            .try_tic_tac_toe_move(guild_id, author_id.into(), move_index)
             .await
     }
 
@@ -95,7 +90,7 @@ impl TicTacToeData {
         author_id: UserId,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
         self.database
-            .concede_tic_tac_toe_game(guild_id.into(), author_id)
+            .concede_tic_tac_toe_game(guild_id, author_id)
             .await
     }
 
@@ -106,7 +101,7 @@ impl TicTacToeData {
         author_id: UserId,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
         self.database
-            .get_tic_tac_toe_game(guild_id.into(), author_id.into())
+            .get_tic_tac_toe_game(guild_id, author_id.into())
             .await
     }
 
@@ -117,7 +112,7 @@ impl TicTacToeData {
         author_id: UserId,
     ) -> anyhow::Result<TicTacToeScore> {
         self.database
-            .get_tic_tac_toe_score(guild_id.into(), author_id)
+            .get_tic_tac_toe_score(guild_id, author_id)
             .await
     }
 

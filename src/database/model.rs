@@ -1,15 +1,21 @@
 mod jiff_timestamp_wrapper;
+mod option_guild_id_string;
 mod rule34_post;
 mod rule34_query_stat;
+mod serenity_user_id_wrapper;
 mod tiktok_embed_flags;
 
 pub use self::{
     jiff_timestamp_wrapper::JiffTimestampWrapper,
+    option_guild_id_string::OptionGuildIdString,
     rule34_post::Rule34Post,
     rule34_query_stat::Rule34QueryStat,
+    serenity_user_id_wrapper::SerenityUserIdWrapper,
     tiktok_embed_flags::TikTokEmbedFlags,
 };
 use nd_async_rusqlite::rusqlite::{
+    Result as RusqliteResult,
+    Row as RusqliteRow,
     ToSql,
     types::{
         FromSql,
@@ -28,22 +34,6 @@ use std::{
     num::NonZeroU64,
     str::FromStr,
 };
-
-/// A wrapper for a serenity user id
-struct DatabaseUserId(UserId);
-
-impl FromSql for DatabaseUserId {
-    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        let value = value
-            .as_i64()
-            .map(i64::to_ne_bytes)
-            .map(u64::from_ne_bytes)
-            .map(NonZeroU64::new)?
-            .ok_or(FromSqlError::OutOfRange(0))?;
-
-        Ok(Self(UserId::from(value)))
-    }
-}
 
 /// A Tic-Tac-Toe game
 #[derive(Debug, Copy, Clone)]
@@ -105,24 +95,6 @@ impl TicTacToeGame {
             (true, false) => Some(self.o_player),
             (true, true) => Some(player), // Player is playing themselves
         }
-    }
-
-    /// Iterate over all [`TicTacToePlayer`]s.
-    ///
-    /// Order is X player, O player.
-    /// This will include computer players.
-    /// Convert players into [`UserId`]s and filter if you want human players.
-    pub fn iter_players(&self) -> impl Iterator<Item = TicTacToePlayer> + '_ {
-        let mut count = 0;
-        std::iter::from_fn(move || {
-            let ret = match count {
-                0 => self.x_player,
-                1 => self.o_player,
-                _c => return None,
-            };
-            count += 1;
-            Some(ret)
-        })
     }
 }
 
@@ -202,7 +174,7 @@ impl From<UserId> for TicTacToePlayer {
 }
 
 impl ToSql for TicTacToePlayer {
-    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+    fn to_sql(&self) -> RusqliteResult<ToSqlOutput<'_>> {
         match self {
             Self::Computer => Ok(ToSqlOutput::Borrowed(ValueRef::Null)),
             Self::User(id) => Ok(ToSqlOutput::Borrowed(ValueRef::Integer(i64::from(*id)))),
@@ -215,55 +187,12 @@ impl FromSql for TicTacToePlayer {
         match value {
             ValueRef::Integer(int) => {
                 let int_u64 = u64::from_ne_bytes(int.to_ne_bytes());
-                // This is not heavy
-                #[allow(clippy::or_fun_call)]
                 let user_id =
                     UserId::from(NonZeroU64::new(int_u64).ok_or(FromSqlError::OutOfRange(0))?);
                 Ok(Self::User(user_id))
             }
             ValueRef::Null => Ok(Self::Computer),
             _ => Err(FromSqlError::InvalidType),
-        }
-    }
-}
-
-/// A String wrapper for a [`GuildId`]
-///
-/// This is "[u64].to_string()" if a guild, or "empty" if not.
-#[derive(Debug, Copy, Clone)]
-pub struct MaybeGuildString {
-    pub guild_id: Option<GuildId>,
-}
-
-impl From<Option<GuildId>> for MaybeGuildString {
-    fn from(guild_id: Option<GuildId>) -> Self {
-        Self { guild_id }
-    }
-}
-
-impl ToSql for MaybeGuildString {
-    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
-        match self.guild_id {
-            Some(guild_id) => Ok(ToSqlOutput::from(guild_id.to_string())),
-            None => Ok(ToSqlOutput::Borrowed(ValueRef::Text(b"empty"))),
-        }
-    }
-}
-
-impl FromSql for MaybeGuildString {
-    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        let text = value.as_str()?;
-        match text.parse::<NonZeroU64>() {
-            Ok(guild_id) => Ok(MaybeGuildString {
-                guild_id: Some(GuildId::from(guild_id)),
-            }),
-            Err(e) => {
-                if text == "empty" {
-                    Ok(MaybeGuildString { guild_id: None })
-                } else {
-                    Err(FromSqlError::Other(Box::new(e)))
-                }
-            }
         }
     }
 }
@@ -308,17 +237,12 @@ impl TicTacToeTopPlayerScore {
     /// 4. losses
     /// 5. ties
     /// 6. concedes
-    pub(crate) fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Self> {
+    pub(crate) fn from_row(row: &RusqliteRow<'_>) -> RusqliteResult<Self> {
         let score = row.get(0)?;
-
-        let player = row.get::<_, DatabaseUserId>(1)?.0;
-
+        let SerenityUserIdWrapper(player) = row.get(1)?;
         let wins = row.get(2)?;
-
         let losses = row.get(3)?;
-
         let ties = row.get(4)?;
-
         let concedes = row.get(5)?;
 
         Ok(TicTacToeTopPlayerScore {

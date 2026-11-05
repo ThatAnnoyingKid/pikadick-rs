@@ -1,24 +1,64 @@
+mod util;
+
+use self::util::{
+    WCStr,
+    get_tick_count_64,
+};
 use super::Error;
+use crate::windows::util::{
+    ComputerNameFormat,
+    get_active_processor_count,
+    get_computer_name,
+};
 use bitflags::bitflags;
 use core::{
     any::Any,
     ffi::c_void,
-    fmt::Write,
     mem::MaybeUninit,
     time::Duration,
 };
 use once_cell::sync::OnceCell;
 use platforms::Arch;
-use std::time::SystemTime;
+use std::{
+    marker::PhantomData,
+    sync::Mutex,
+    time::SystemTime,
+};
 use windows_sys::{
     Wdk::System::SystemServices::RtlGetVersion,
     Win32::{
         Foundation::{
+            ERROR_INSUFFICIENT_BUFFER,
+            ERROR_SUCCESS,
             FALSE,
+            RtlNtStatusToDosError,
             STATUS_SUCCESS,
             TRUE,
         },
         System::{
+            Performance::{
+                PDH_CSTATUS_NEW_DATA,
+                PDH_CSTATUS_VALID_DATA,
+                PDH_FMT_COUNTERVALUE,
+                PDH_FMT_COUNTERVALUE_ITEM_W,
+                PDH_FMT_DOUBLE,
+                PDH_HCOUNTER,
+                PDH_HQUERY,
+                PDH_MORE_DATA,
+                PDH_RAW_COUNTER_ITEM_W,
+                PdhAddEnglishCounterW,
+                PdhCloseQuery,
+                PdhCollectQueryData,
+                PdhGetFormattedCounterArrayW,
+                PdhGetFormattedCounterValue,
+                PdhGetRawCounterArrayW,
+                PdhOpenQueryW,
+            },
+            Power::{
+                CallNtPowerInformation,
+                PROCESSOR_POWER_INFORMATION,
+                ProcessorInformation,
+            },
             ProcessStatus::{
                 ENUM_PAGE_FILE_INFORMATION,
                 EnumPageFilesW,
@@ -26,19 +66,11 @@ use windows_sys::{
                 PERFORMANCE_INFORMATION,
             },
             SystemInformation::{
-                ComputerNameDnsDomain,
-                ComputerNameDnsFullyQualified,
-                ComputerNameDnsHostname,
-                ComputerNameNetBIOS,
-                ComputerNamePhysicalDnsDomain,
-                ComputerNamePhysicalDnsFullyQualified,
-                ComputerNamePhysicalDnsHostname,
-                ComputerNamePhysicalNetBIOS,
-                GetComputerNameExW,
+                GetLogicalProcessorInformationEx,
                 GetNativeSystemInfo,
-                GetTickCount64,
                 GetVersionExW,
                 GlobalMemoryStatusEx,
+                LOGICAL_PROCESSOR_RELATIONSHIP,
                 MEMORYSTATUSEX,
                 OSVERSIONINFOEXW,
                 PROCESSOR_ARCHITECTURE_AMD64,
@@ -47,18 +79,15 @@ use windows_sys::{
                 PROCESSOR_ARCHITECTURE_IA64,
                 PROCESSOR_ARCHITECTURE_INTEL,
                 PROCESSOR_ARCHITECTURE_UNKNOWN,
+                RelationProcessorCore,
                 SYSTEM_INFO,
+                SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX,
             },
             SystemServices::{
                 VER_NT_DOMAIN_CONTROLLER,
                 VER_NT_SERVER,
                 VER_NT_WORKSTATION,
                 VER_SUITE_WH_SERVER,
-            },
-            Threading::GetActiveProcessorCount,
-            WindowsProgramming::{
-                MAX_COMPUTERNAME_LENGTH,
-                uaw_wcslen,
             },
         },
     },
@@ -67,54 +96,6 @@ use windows_sys::{
         PCWSTR,
     },
 };
-
-/// A wrapper for `GetTickCount64`.
-///
-/// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount64
-fn get_tick_count_64() -> Duration {
-    Duration::from_millis(unsafe { GetTickCount64() })
-}
-
-/// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/ne-sysinfoapi-computer_name_format
-#[expect(dead_code)]
-#[repr(i32)]
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-enum ComputerNameFormat {
-    NetBios = ComputerNameNetBIOS,
-    DnsHostname = ComputerNameDnsHostname,
-    DnsDomain = ComputerNameDnsDomain,
-    DnsFullyQualified = ComputerNameDnsFullyQualified,
-    PhysicalNetBIOS = ComputerNamePhysicalNetBIOS,
-    PhysicalDnsHostname = ComputerNamePhysicalDnsHostname,
-    PhysicalDnsDomain = ComputerNamePhysicalDnsDomain,
-    PhysicalDnsFullyQualified = ComputerNamePhysicalDnsFullyQualified,
-}
-
-/// A wrapper for `GetComputerNameExA`.
-///
-/// See https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getcomputernameexa
-fn get_computer_name(computer_name_format: ComputerNameFormat) -> Result<String, Error> {
-    const MAX_COMPUTERNAME_LENGTH_USIZE: usize = MAX_COMPUTERNAME_LENGTH as usize;
-
-    let buffer: &mut [std::mem::MaybeUninit<u16>] =
-        &mut [MaybeUninit::uninit(); MAX_COMPUTERNAME_LENGTH_USIZE];
-    let mut size = MAX_COMPUTERNAME_LENGTH;
-
-    let code = unsafe {
-        GetComputerNameExW(
-            computer_name_format as i32,
-            buffer.as_mut_ptr().cast(),
-            &mut size,
-        )
-    };
-    if code != 0 {
-        let len = size.try_into().expect("Failed to convert len to `usize`");
-        let slice: &[u16] = unsafe { std::slice::from_raw_parts(buffer.as_ptr().cast(), len) };
-        Ok(String::from_utf16(slice)?)
-    } else {
-        Err(Error::Io(std::io::Error::last_os_error()))
-    }
-}
 
 /// A wrapper for the wProcessorArchitecture in a `SYSTEM_INFO`.
 ///
@@ -158,6 +139,11 @@ impl SystemInfo {
     pub fn page_size(&self) -> u32 {
         self.0.dwPageSize
     }
+
+    /// Get the number of processors.
+    pub fn number_of_processors(&self) -> u32 {
+        self.0.dwNumberOfProcessors
+    }
 }
 
 impl std::fmt::Debug for SystemInfo {
@@ -165,6 +151,7 @@ impl std::fmt::Debug for SystemInfo {
         f.debug_struct("SystemInfo")
             .field("processor_architecture", &self.processor_architecture())
             .field("page_size", &self.page_size())
+            .field("number_of_processors", &self.number_of_processors())
             .finish()
     }
 }
@@ -172,6 +159,10 @@ impl std::fmt::Debug for SystemInfo {
 // This is essentially just bytes.
 // Even though it has a pointer in it, it doesn't point to valid memory and simply marks the start and end of the address space.
 unsafe impl Send for SystemInfo {}
+
+// This is essentially just bytes.
+// Even though it has a pointer in it, it doesn't point to valid memory and simply marks the start and end of the address space.
+unsafe impl Sync for SystemInfo {}
 
 /// A wrapper for `GetNativeSystemInfo`.
 ///
@@ -264,60 +255,6 @@ impl std::fmt::Debug for OsVersionInfoEx {
             .field("service_pack_minor", &self.service_pack_minor())
             .field("product_type", &self.product_type())
             .finish()
-    }
-}
-
-/// A wide cstr
-struct WCStr {
-    // TODO: use wchar def?
-    inner: [u16],
-}
-
-impl WCStr {
-    /// Make a [`WCStr`] from a raw ptr.
-    ///
-    /// # Safety
-    /// * The memeory behind the pointer must be valid for the lifetime of the returned reference.
-    /// * The ptr must be terminated by a nul byte.
-    /// * The memory behing the ptr must not be changed while the reference is alive.
-    unsafe fn from_ptr<'a>(ptr: *const u16) -> &'a WCStr {
-        unsafe {
-            let len = uaw_wcslen(ptr);
-            let slice = std::slice::from_raw_parts(ptr, len + 1);
-            Self::from_bytes_with_nul_unchecked(slice)
-        }
-    }
-
-    /// # Safety
-    /// * The slice must contain only one nul
-    /// * The nul must be the last element in the slice
-    unsafe fn from_bytes_with_nul_unchecked(slice: &[u16]) -> &Self {
-        unsafe { &*(slice as *const [u16] as *const Self) }
-    }
-
-    /// Get this as a slice, excluding the NUL.
-    pub fn to_slice(&self) -> &[u16] {
-        let slice = &self.inner;
-        &slice[..slice.len() - 1]
-    }
-}
-
-impl std::fmt::Debug for WCStr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "\"")?;
-        for ch in std::char::decode_utf16(self.to_slice().iter().copied()) {
-            match ch {
-                Ok(ch) => {
-                    for ch in ch.escape_default() {
-                        f.write_char(ch)?;
-                    }
-                }
-                Err(e) => {
-                    write!(f, "\\x{:X}", e.unpaired_surrogate())?;
-                }
-            }
-        }
-        write!(f, "\"")
     }
 }
 
@@ -452,20 +389,6 @@ fn global_memory_status_ex() -> Result<MemoryStatusEx, Error> {
         return Err(Error::Io(std::io::Error::last_os_error()));
     }
     Ok(MemoryStatusEx(unsafe { memory_status_ex.assume_init() }))
-}
-
-/// A wrapper for `GetActiveProcessorCount`.
-///
-/// Use `u16::MAX` to get all processor groups.
-///
-/// See `https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getactiveprocessorcount`.
-pub fn get_active_processor_count(group_number: u16) -> Result<u32, Error> {
-    let code = unsafe { GetActiveProcessorCount(group_number) };
-    if code == 0 {
-        return Err(Error::Io(std::io::Error::last_os_error()));
-    }
-
-    Ok(code)
 }
 
 /*
@@ -638,6 +561,551 @@ where
     Ok(context.user_data)
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum LogicalProcessorRelationship {
+    ProcessorCore,
+}
+
+impl TryFrom<LOGICAL_PROCESSOR_RELATIONSHIP> for LogicalProcessorRelationship {
+    type Error = LOGICAL_PROCESSOR_RELATIONSHIP;
+
+    fn try_from(value: LOGICAL_PROCESSOR_RELATIONSHIP) -> Result<Self, Self::Error> {
+        #[expect(
+            non_upper_case_globals,
+            reason = "RelationProcessorCore is from windows-sys and we have no control over it."
+        )]
+        match value {
+            RelationProcessorCore => Ok(Self::ProcessorCore),
+            _ => Err(value),
+        }
+    }
+}
+
+#[derive(Clone)]
+struct SystemLogicalProcessorInformationEx<'a>(&'a SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX);
+
+impl SystemLogicalProcessorInformationEx<'_> {
+    fn relationship(&self) -> Option<LogicalProcessorRelationship> {
+        LogicalProcessorRelationship::try_from(self.0.Relationship).ok()
+    }
+
+    fn size(&self) -> u32 {
+        self.0.Size
+    }
+}
+
+impl std::fmt::Debug for SystemLogicalProcessorInformationEx<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("SystemLogicalProcessorInformationEx")
+            .field("relationship", &self.relationship())
+            .field("size", &self.size())
+            .finish()
+    }
+}
+
+struct LogicalProcessorInformationExStore {
+    buffer: Vec<u8>,
+}
+
+impl LogicalProcessorInformationExStore {
+    fn cursor(&self) -> LogicalProcessorInformationExStoreCursor<'_> {
+        LogicalProcessorInformationExStoreCursor::new(self)
+    }
+}
+
+struct LogicalProcessorInformationExStoreCursor<'a> {
+    store: &'a LogicalProcessorInformationExStore,
+    current: Option<SystemLogicalProcessorInformationEx<'a>>,
+    offset: usize,
+}
+
+impl<'a> LogicalProcessorInformationExStoreCursor<'a> {
+    fn new(store: &'a LogicalProcessorInformationExStore) -> Self {
+        let mut cursor = Self {
+            store,
+            current: None,
+            offset: 0,
+        };
+
+        unsafe { cursor.read_current() };
+
+        cursor
+    }
+
+    /// Safety
+    /// `offset` must point at a valid SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX in `buffer`,
+    /// or be at the end.
+    unsafe fn read_current(&mut self) {
+        self.current = if self.offset < self.store.buffer.len() {
+            Some(SystemLogicalProcessorInformationEx(unsafe {
+                self.store
+                    .buffer
+                    .as_ptr()
+                    .add(self.offset)
+                    .cast::<SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>()
+                    .as_ref()
+                    .expect("Invalid ptr")
+            }))
+        } else {
+            None
+        };
+    }
+
+    fn get(&self) -> Option<SystemLogicalProcessorInformationEx<'a>> {
+        self.current.clone()
+    }
+
+    // Returns `true` if successful.
+    fn advance(&mut self) -> bool {
+        let current = match self.current.take() {
+            Some(current) => current,
+            None => return false,
+        };
+        self.offset += usize::try_from(current.size()).expect("Size greater than usize");
+
+        unsafe {
+            self.read_current();
+        }
+
+        self.current.is_some()
+    }
+}
+
+fn get_logical_processor_information_ex() -> Result<LogicalProcessorInformationExStore, Error> {
+    let mut buffer_len_bytes = 0;
+    let mut buffer: Vec<u8> = Vec::new();
+    let result = unsafe {
+        GetLogicalProcessorInformationEx(
+            RelationProcessorCore,
+            buffer
+                .as_mut_ptr()
+                .cast::<SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(),
+            &mut buffer_len_bytes,
+        )
+    };
+    if result == TRUE {
+        return Ok(LogicalProcessorInformationExStore { buffer });
+    }
+    let error = std::io::Error::last_os_error();
+    if error.raw_os_error() != Some(ERROR_INSUFFICIENT_BUFFER as i32) {
+        return Err(Error::Io(error));
+    }
+
+    let buffer_len_usize =
+        usize::try_from(buffer_len_bytes).expect("buffer_len larger than a usize");
+    buffer.reserve(buffer_len_usize);
+    let result = unsafe {
+        GetLogicalProcessorInformationEx(
+            RelationProcessorCore,
+            buffer
+                .as_mut_ptr()
+                .cast::<SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(),
+            &mut buffer_len_bytes,
+        )
+    };
+    if result == FALSE {
+        return Err(Error::Io(std::io::Error::last_os_error()));
+    }
+    let buffer_len_usize =
+        usize::try_from(buffer_len_bytes).expect("buffer_len larger than a usize");
+    unsafe { buffer.set_len(buffer_len_usize) };
+
+    Ok(LogicalProcessorInformationExStore { buffer })
+}
+
+#[repr(transparent)]
+struct ProcessorPowerInformation(PROCESSOR_POWER_INFORMATION);
+
+impl ProcessorPowerInformation {
+    /// Get the processor number.
+    fn number(&self) -> u32 {
+        self.0.Number
+    }
+
+    /// Get the max processor speed.
+    fn max_mhz(&self) -> u32 {
+        self.0.MaxMhz
+    }
+
+    /// Get the current processor speed.
+    fn current_mhz(&self) -> u32 {
+        self.0.CurrentMhz
+    }
+
+    /// Get the max processor speed.
+    fn limit_mhz(&self) -> u32 {
+        self.0.MhzLimit
+    }
+}
+
+impl std::fmt::Debug for ProcessorPowerInformation {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("ProcessorPowerInformation")
+            .field("number", &self.number())
+            .field("max_mhz", &self.max_mhz())
+            .field("current_mhz", &self.current_mhz())
+            .field("limit_mhz", &self.limit_mhz())
+            .finish()
+    }
+}
+
+#[allow(dead_code)]
+fn call_nt_power_information(
+    processor_count: usize,
+) -> Result<Vec<ProcessorPowerInformation>, Error> {
+    let mut info: Vec<ProcessorPowerInformation> = Vec::with_capacity(processor_count);
+    let info_len_bytes = processor_count * std::mem::size_of::<PROCESSOR_POWER_INFORMATION>();
+    let result = unsafe {
+        CallNtPowerInformation(
+            ProcessorInformation,
+            std::ptr::null(),
+            0,
+            info.as_mut_ptr().cast(),
+            u32::try_from(info_len_bytes).expect("Core count too large"),
+        )
+    };
+
+    if result != STATUS_SUCCESS {
+        let error = unsafe { RtlNtStatusToDosError(result) };
+        return Err(Error::Io(std::io::Error::from_raw_os_error(error as i32)));
+    }
+    unsafe {
+        info.set_len(processor_count);
+    }
+
+    Ok(info)
+}
+
+struct PdhQuery {
+    query_handle: PDH_HQUERY,
+    counters: Vec<PdhCounter>,
+}
+
+impl PdhQuery {
+    fn new() -> Result<Self, Error> {
+        let mut handle: MaybeUninit<PDH_HQUERY> = MaybeUninit::zeroed();
+        let result = unsafe { PdhOpenQueryW(std::ptr::null(), 0, handle.as_mut_ptr().cast()) };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+        let query_handle = unsafe { handle.assume_init() };
+
+        Ok(Self {
+            query_handle,
+            counters: Vec::new(),
+        })
+    }
+
+    fn add_counter(&mut self, query: &str) -> Result<usize, Error> {
+        let query_str_wide: Vec<u16> = query.encode_utf16().chain(Some(0)).collect();
+        let mut handle: MaybeUninit<PDH_HCOUNTER> = MaybeUninit::zeroed();
+        let result = unsafe {
+            PdhAddEnglishCounterW(
+                self.query_handle,
+                query_str_wide.as_ptr(),
+                0,
+                handle.as_mut_ptr(),
+            )
+        };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+
+        let handle = unsafe { handle.assume_init() };
+        let pdh_counter = PdhCounter { handle };
+        let counter_index = self.counters.len();
+        let _pdh_counter = self.counters.push_mut(pdh_counter);
+
+        Ok(counter_index)
+    }
+
+    fn get_counter(&self, index: usize) -> Option<&PdhCounter> {
+        self.counters.get(index)
+    }
+
+    fn collect(&self) -> Result<(), Error> {
+        let result = unsafe { PdhCollectQueryData(self.query_handle) };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+
+        Ok(())
+    }
+}
+
+impl std::fmt::Debug for PdhQuery {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PdhQuery").finish()
+    }
+}
+
+impl Drop for PdhQuery {
+    fn drop(&mut self) {
+        let _result = unsafe { PdhCloseQuery(self.query_handle) };
+    }
+}
+
+// Safety: PDH_HQUERY has no thread-local state.
+unsafe impl Send for PdhQuery {}
+
+#[repr(transparent)]
+struct PdhRawItem(PDH_RAW_COUNTER_ITEM_W);
+
+impl PdhRawItem {
+    fn name(&self) -> &WCStr {
+        unsafe { WCStr::from_ptr(self.0.szName) }
+    }
+
+    fn ensure_valid(&self) -> Result<(), Error> {
+        if self.0.RawValue.CStatus != PDH_CSTATUS_VALID_DATA
+            && self.0.RawValue.CStatus != PDH_CSTATUS_NEW_DATA
+        {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(
+                self.0.RawValue.CStatus as i32,
+            )));
+        }
+
+        Ok(())
+    }
+
+    fn first_value(&self) -> Result<i64, Error> {
+        self.ensure_valid()?;
+
+        Ok(self.0.RawValue.FirstValue)
+    }
+
+    fn second_value(&self) -> Result<i64, Error> {
+        self.ensure_valid()?;
+
+        Ok(self.0.RawValue.SecondValue)
+    }
+}
+
+impl std::fmt::Debug for PdhRawItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PdhRawItem")
+            .field("name", &self.name())
+            .field("first_value", &self.first_value())
+            .field("second_value", &self.second_value())
+            .finish()
+    }
+}
+
+#[repr(transparent)]
+struct PdhFormattedCounterValue(PDH_FMT_COUNTERVALUE);
+
+impl PdhFormattedCounterValue {
+    fn ensure_valid(&self) -> Result<(), Error> {
+        if self.0.CStatus != PDH_CSTATUS_VALID_DATA && self.0.CStatus != PDH_CSTATUS_NEW_DATA {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(
+                self.0.CStatus as i32,
+            )));
+        }
+
+        Ok(())
+    }
+
+    fn double(&self) -> Result<f64, Error> {
+        self.ensure_valid()?;
+
+        // Safety: All bit-patterns of double are valid.
+        Ok(unsafe { self.0.Anonymous.doubleValue })
+    }
+}
+
+impl std::fmt::Debug for PdhFormattedCounterValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PdhFormattedCounterValue")
+            .field("double", &self.double())
+            .finish()
+    }
+}
+
+#[repr(transparent)]
+struct PdhFmtValueItem(PDH_FMT_COUNTERVALUE_ITEM_W);
+
+impl PdhFmtValueItem {
+    fn name(&self) -> &WCStr {
+        unsafe { WCStr::from_ptr(self.0.szName) }
+    }
+
+    fn value(&self) -> &PdhFormattedCounterValue {
+        unsafe {
+            (&self.0.FmtValue as *const PDH_FMT_COUNTERVALUE)
+                .cast::<PdhFormattedCounterValue>()
+                .as_ref_unchecked()
+        }
+    }
+}
+
+impl std::fmt::Debug for PdhFmtValueItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PdhFmtValueItem")
+            .field("name", &self.name())
+            .field("value", &self.value())
+            .finish()
+    }
+}
+
+#[expect(dead_code)]
+struct PdhItemArray<T> {
+    buffer: Vec<u8>,
+    item_count: usize,
+    _data: PhantomData<T>,
+}
+
+#[expect(dead_code)]
+impl<T> PdhItemArray<T> {
+    fn len(&self) -> usize {
+        self.item_count
+    }
+
+    #[expect(dead_code)]
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    fn get(&self, index: usize) -> Option<&T> {
+        if index >= self.item_count {
+            return None;
+        }
+
+        let item: &T = unsafe {
+            self.buffer
+                .as_ptr()
+                .cast::<T>()
+                .add(index)
+                .as_ref_unchecked()
+        };
+
+        Some(item)
+    }
+}
+
+struct PdhCounter {
+    handle: PDH_HCOUNTER,
+}
+
+impl PdhCounter {
+    #[expect(dead_code)]
+    fn get_raw_array(&self) -> Result<PdhItemArray<PdhRawItem>, Error> {
+        let mut buffer_size: u32 = 0;
+        let mut item_count: u32 = 0;
+        let result = unsafe {
+            PdhGetRawCounterArrayW(
+                self.handle,
+                &mut buffer_size,
+                &mut item_count,
+                std::ptr::null_mut(),
+            )
+        };
+        match result {
+            ERROR_SUCCESS => {
+                return Ok(PdhItemArray {
+                    buffer: Vec::new(),
+                    item_count: 0,
+                    _data: PhantomData,
+                });
+            }
+            PDH_MORE_DATA => {}
+            _ => return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32))),
+        }
+
+        let buffer_size_usize = usize::try_from(buffer_size).expect("buffer_size too large");
+        let mut buffer: Vec<u8> = vec![0; buffer_size_usize];
+        let result = unsafe {
+            PdhGetRawCounterArrayW(
+                self.handle,
+                &mut buffer_size,
+                &mut item_count,
+                buffer.as_mut_ptr().cast(),
+            )
+        };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+
+        Ok(PdhItemArray {
+            buffer,
+            item_count: usize::try_from(item_count).expect("item_count too large"),
+            _data: PhantomData,
+        })
+    }
+
+    #[expect(dead_code)]
+    fn get_formatted_array(&self) -> Result<PdhItemArray<PdhFmtValueItem>, Error> {
+        let format = PDH_FMT_DOUBLE;
+
+        let mut buffer_size: u32 = 0;
+        let mut item_count: u32 = 0;
+        let result = unsafe {
+            PdhGetFormattedCounterArrayW(
+                self.handle,
+                format,
+                &mut buffer_size,
+                &mut item_count,
+                std::ptr::null_mut(),
+            )
+        };
+        match result {
+            ERROR_SUCCESS => {
+                return Ok(PdhItemArray {
+                    buffer: Vec::new(),
+                    item_count: 0,
+                    _data: PhantomData,
+                });
+            }
+            PDH_MORE_DATA => {}
+            _ => return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32))),
+        }
+
+        let buffer_size_usize = usize::try_from(buffer_size).expect("buffer_size too large");
+        let mut buffer: Vec<u8> = vec![0; buffer_size_usize];
+        let result = unsafe {
+            PdhGetFormattedCounterArrayW(
+                self.handle,
+                format,
+                &mut buffer_size,
+                &mut item_count,
+                buffer.as_mut_ptr().cast(),
+            )
+        };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+
+        Ok(PdhItemArray {
+            buffer,
+            item_count: usize::try_from(item_count).expect("item_count too large"),
+            _data: PhantomData,
+        })
+    }
+
+    fn get_formatted_value(&self) -> Result<PdhFormattedCounterValue, Error> {
+        let format = PDH_FMT_DOUBLE;
+        let mut value: MaybeUninit<PdhFormattedCounterValue> = MaybeUninit::zeroed();
+        let result = unsafe {
+            PdhGetFormattedCounterValue(
+                self.handle,
+                format,
+                std::ptr::null_mut(),
+                value.as_mut_ptr().cast(),
+            )
+        };
+        if result != ERROR_SUCCESS {
+            return Err(Error::Io(std::io::Error::from_raw_os_error(result as i32)));
+        }
+
+        Ok(unsafe { value.assume_init() })
+    }
+}
+
+impl std::fmt::Debug for PdhCounter {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("PdhCounter").finish()
+    }
+}
+
 #[derive(Debug)]
 struct PageFileStats {
     /// The total size of all page files, in pages.
@@ -645,6 +1113,13 @@ struct PageFileStats {
 
     /// The total usage of all page files, in pages.
     used: usize,
+}
+
+#[derive(Debug)]
+struct PdhCounters {
+    query: PdhQuery,
+    cpu_frequency_counter_index: usize,
+    cpu_time_counter_index: usize,
 }
 
 /// A cache for system data
@@ -655,6 +1130,8 @@ pub(crate) struct CacheContext {
     os_version_info_ex: OnceCell<OsVersionInfoEx>,
     performance_info: OnceCell<PerformanceInformation>,
     page_file_stats: OnceCell<PageFileStats>,
+    pdh_counters: OnceCell<Mutex<PdhCounters>>,
+    processor_power_information: OnceCell<Vec<ProcessorPowerInformation>>,
 }
 
 impl CacheContext {
@@ -666,6 +1143,8 @@ impl CacheContext {
             os_version_info_ex: OnceCell::new(),
             performance_info: OnceCell::new(),
             page_file_stats: OnceCell::new(),
+            pdh_counters: OnceCell::new(),
+            processor_power_information: OnceCell::new(),
         }
     }
 
@@ -699,6 +1178,51 @@ impl CacheContext {
         })
     }
 
+    fn get_processor_power_information(&self) -> Result<&[ProcessorPowerInformation], Error> {
+        let system_info = self.get_system_info();
+        let number_of_processors = usize::try_from(system_info.number_of_processors())
+            .expect("Number of processors cannot fit in a usize");
+        self.processor_power_information
+            .get_or_try_init(|| call_nt_power_information(number_of_processors))
+            .map(|value| value.as_slice())
+    }
+
+    /// Start measuring.
+    pub fn start(&self) -> Result<(), Error> {
+        self.pdh_counters.get_or_try_init(|| {
+            let mut query = PdhQuery::new()?;
+            let cpu_frequency_counter_index =
+                query.add_counter("\\Processor Information(_Total)\\Actual Frequency")?;
+            let cpu_time_counter_index =
+                query.add_counter("\\Processor Information(_Total)\\% Processor Time")?;
+            query.collect()?;
+
+            Ok::<_, Error>(Mutex::new(PdhCounters {
+                query,
+                cpu_frequency_counter_index,
+                cpu_time_counter_index,
+            }))
+        })?;
+
+        Ok(())
+    }
+
+    /// End measuring.
+    pub fn end(&self) -> Result<(), Error> {
+        let pdh_counters = self
+            .pdh_counters
+            .get()
+            .ok_or(Error::Generic("Need to call `start`"))?;
+        {
+            let pdh_counters = pdh_counters
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            pdh_counters.query.collect()?;
+        }
+
+        Ok(())
+    }
+
     /// Get the time the system was booted.
     pub fn get_boot_time(&self) -> Result<SystemTime, Error> {
         Ok(SystemTime::now() - self.get_uptime()?)
@@ -711,7 +1235,9 @@ impl CacheContext {
 
     /// Get the hostname
     pub fn get_hostname(&self) -> Result<String, Error> {
-        get_computer_name(ComputerNameFormat::PhysicalDnsHostname)
+        get_computer_name(ComputerNameFormat::PhysicalDnsHostname)?
+            .into_string()
+            .map_err(|value| Error::InvalidUtf8OsString { value })
     }
 
     /// Get the architecture.
@@ -823,6 +1349,103 @@ impl CacheContext {
             .try_into()
             .expect("Windows is 16 bit"))
     }
+
+    /// Get the number of physical cpus cores.
+    pub fn count_physical_cpus(&self) -> Result<usize, Error> {
+        let store = get_logical_processor_information_ex()?;
+        let mut cursor = store.cursor();
+
+        let mut physical_core_count = 0;
+        while let Some(info) = cursor.get() {
+            if info.relationship() == Some(LogicalProcessorRelationship::ProcessorCore) {
+                physical_core_count += 1;
+            }
+
+            cursor.advance();
+        }
+
+        Ok(physical_core_count)
+    }
+
+    /// Get the cpu frequency.
+    pub fn get_cpu_frequency(&self) -> Result<u64, Error> {
+        // Inspired by: https://stackoverflow.com/questions/61802420/unable-to-get-current-cpu-frequency-in-powershell-or-python
+
+        let pdh_counters = self
+            .pdh_counters
+            .get()
+            .ok_or(Error::Generic("Need to call `start`"))?;
+        let value = {
+            let pdh_counters = pdh_counters
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            let counter = pdh_counters
+                .query
+                .get_counter(pdh_counters.cpu_frequency_counter_index)
+                .expect("Missing cpu frequency counter");
+            counter.get_formatted_value()?.double()?
+        };
+
+        // The returned value is in MHz.
+        // Convert to Hz.
+        let value = value * 1_000_000.0;
+
+        Ok(value as u64)
+    }
+
+    /// Get the min cpu frequency.
+    pub fn get_min_cpu_frequency(&self) -> Result<u64, Error> {
+        // Windows does not seem to expose an API to report min speed.
+        Err(Error::Unsupported)
+    }
+
+    /// Get the max cpu frequency.
+    pub fn get_max_cpu_frequency(&self) -> Result<u64, Error> {
+        // This includes the processor's base max speed,
+        // but doesn't include TurboBoost.
+        // Windows does not seem to have introduced a new API that reports max speed with TurboBoost.
+        let processor_power_information = self.get_processor_power_information()?;
+        if processor_power_information.is_empty() {
+            return Err(Error::Generic("Failed to get processor power information"));
+        }
+
+        let sum: f64 = processor_power_information
+            .iter()
+            .map(|info| f64::from(info.max_mhz()))
+            .sum();
+        let n = processor_power_information.len() as f64;
+        // Convert MHz to Hz
+        let avg_hz = (sum / n) * 1_000_000.0;
+
+        Ok(avg_hz as u64)
+    }
+
+    /// Get the cpu usage.
+    pub fn get_cpu_usage(&self) -> Result<f64, Error> {
+        let pdh_counters = self
+            .pdh_counters
+            .get()
+            .ok_or(Error::Generic("Need to call `start`"))?;
+        let value = {
+            let pdh_counters = pdh_counters
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            let counter = pdh_counters
+                .query
+                .get_counter(pdh_counters.cpu_time_counter_index)
+                .expect("Missing cpu time counter");
+            counter.get_formatted_value()?.double()?
+        };
+
+        Ok(value)
+    }
+
+    /// Get the CPU temperature.
+    pub fn get_cpu_temperature(&self) -> Result<f64, Error> {
+        // Windows does not expose an API to report CPU temp.
+        // Even Steam needs a kernel module to report CPU temp.
+        Err(Error::Unsupported)
+    }
 }
 
 #[cfg(test)]
@@ -835,6 +1458,12 @@ mod test {
     fn assert_impl_send<T>()
     where
         T: Send,
+    {
+    }
+
+    fn assert_impl_sync<T>()
+    where
+        T: Sync,
     {
     }
 
@@ -891,7 +1520,8 @@ mod test {
     #[test]
     fn get_performance_info_works() {
         let start = Instant::now();
-        let _performance_info = get_performance_info();
+        let _performance_info =
+            get_performance_info().expect("get_performance_info returned an error");
         let elapsed = start.elapsed();
         assert!(
             elapsed < BLOCKING_DURATION,
@@ -906,7 +1536,8 @@ mod test {
             *total = info.total_size();
             *used = info.total_in_use();
             true
-        });
+        })
+        .expect("enum_page_files returned an error");
         let elapsed = start.elapsed();
         assert!(
             elapsed < BLOCKING_DURATION,
@@ -915,7 +1546,90 @@ mod test {
     }
 
     #[test]
+    fn get_logical_processor_information_ex_works() {
+        let start = Instant::now();
+        let _info = get_logical_processor_information_ex()
+            .expect("get_logical_processor_information_ex returned an error");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+    }
+
+    #[test]
+    fn call_nt_power_information_works() {
+        let start = Instant::now();
+        let system_info = get_system_info();
+        let info = call_nt_power_information(
+            usize::try_from(system_info.number_of_processors()).expect("Core count too large"),
+        )
+        .expect("call_nt_power_information returned an error");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+        dbg!(info);
+    }
+
+    #[test]
+    fn pdh_query_works() {
+        let start = Instant::now();
+        let mut query = PdhQuery::new().expect("Failed to create query");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+
+        // Adding a counter blocks for about ~150 ms.
+        let start = Instant::now();
+        let counter_index = query
+            .add_counter("\\Processor Information(_Total)\\Actual Frequency")
+            .expect("Failed to create counter");
+        let counter = query.get_counter(counter_index).expect("Missing counter");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed > BLOCKING_DURATION,
+            "Operation did not block, took {elapsed:?}"
+        );
+
+        let start = Instant::now();
+        query.collect().expect("Failed to collect data");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        let start = Instant::now();
+        query.collect().expect("Failed to collect data");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+
+        let start = Instant::now();
+        let item = counter.get_formatted_value().expect("Failed to get value");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BLOCKING_DURATION,
+            "Blocked, operation took {elapsed:?}"
+        );
+        dbg!(item);
+    }
+
+    #[test]
     fn cache_context_is_send() {
         assert_impl_send::<CacheContext>();
+    }
+
+    #[test]
+    fn cache_context_is_sync() {
+        assert_impl_sync::<CacheContext>();
     }
 }

@@ -11,9 +11,12 @@ cfg_if::cfg_if! {
 }
 
 pub use platforms::Arch;
-use std::time::{
-    Duration,
-    SystemTime,
+use std::{
+    ffi::OsString,
+    time::{
+        Duration,
+        SystemTime,
+    },
 };
 
 /// The library error type
@@ -35,13 +38,32 @@ pub enum Error {
     #[error("Invalid utf8 os str")]
     InvalidUtf8OsStr,
 
+    /// Invalid Utf8 OsString
+    #[error("Invalid utf8 os string")]
+    InvalidUtf8OsString { value: OsString },
+
+    /// Failed to parse int
+    #[error("Failed to parse int")]
+    ParseInt(#[from] std::num::ParseIntError),
+
     /// The value is missing for some reason
     #[error("Missing value")]
     MissingValue,
 
+    /// This API is unsupported on this platform.
+    #[error("Unsupported on this platform")]
+    Unsupported,
+
     /// A generic error occured.
     #[error("{0}")]
     Generic(&'static str),
+}
+
+impl Error {
+    /// Returns `true` is this is `Error::Unsupported`.
+    pub fn is_unsupported(&self) -> bool {
+        matches!(self, Error::Unsupported)
+    }
 }
 
 /// A context for caching data related to information queries.
@@ -60,6 +82,28 @@ impl CacheContext {
         Self {
             inner: imp::CacheContext::new(),
         }
+    }
+
+    /// Start measuring.
+    ///
+    /// Some stats require this to be called along with `end` before they can function.
+    /// There must be a delay of at least 1 second between `start` and `end`.
+    ///
+    /// # Blocking
+    /// This is blocking.
+    pub fn start(&self) -> Result<(), Error> {
+        self.inner.start()
+    }
+
+    /// End measuring.
+    ///
+    /// Some stats require this to be called along with `start` before they can function.
+    /// There must be a delay of at least 1 second between `start` and `end`.
+    ///
+    /// # Blocking
+    /// This is blocking.
+    pub fn end(&self) -> Result<(), Error> {
+        self.inner.end()
     }
 
     /// Get the boot time.
@@ -152,6 +196,76 @@ impl CacheContext {
     pub fn count_logical_cpus(&self) -> Result<usize, Error> {
         self.inner.count_logical_cpus()
     }
+
+    /// Get the number of physical cpu cores.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn count_physical_cpus(&self) -> Result<usize, Error> {
+        self.inner.count_physical_cpus()
+    }
+
+    /// Get the CPU frequency, in hertz.
+    ///
+    /// This includes CPU TurboBoost.
+    ///
+    /// # Platform-specific behavior
+    /// On Linux, this value may or may not include TurboBoost depending on the driver.
+    ///
+    /// # Data Collection
+    /// This API requires that you call `start` and `end` before calling this.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_cpu_frequency(&self) -> Result<u64, Error> {
+        // TODO: Add guard to prevent usage before `start` and `end`?
+        self.inner.get_cpu_frequency()
+    }
+
+    /// Get the minimum CPU frequency, in hertz.
+    ///
+    /// This includes CPU TurboBoost.
+    ///
+    /// # Platform-specific behavior
+    /// On Windows, this function is unsupported.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_min_cpu_frequency(&self) -> Result<u64, Error> {
+        self.inner.get_min_cpu_frequency()
+    }
+
+    /// Get the maximum CPU frequency, in hertz.
+    ///
+    /// This includes CPU TurboBoost.
+    ///
+    /// # Platform-specific behavior
+    /// On Windows, this value will NOT take into account TurboBoost.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_max_cpu_frequency(&self) -> Result<u64, Error> {
+        self.inner.get_max_cpu_frequency()
+    }
+
+    /// Get the cpu usage, as a percent.
+    ///
+    /// # Collection
+    /// This API requires that you call `start` and `end` before calling this.
+    ///
+    /// # Blocking
+    /// This is NOT blocking.
+    pub fn get_cpu_usage(&self) -> Result<f64, Error> {
+        self.inner.get_cpu_usage()
+    }
+
+    /// Get the CPU temperature, in degrees Celsius.
+    ///
+    /// # Blocking
+    /// This is blocking.
+    pub fn get_cpu_temperature(&self) -> Result<f64, Error> {
+        self.inner.get_cpu_temperature()
+    }
 }
 
 impl Default for CacheContext {
@@ -164,6 +278,8 @@ impl Default for CacheContext {
 mod tests {
     use super::*;
     use std::time::Instant;
+
+    const BLOCKING_DURATION: Duration = Duration::from_millis(1);
 
     #[test]
     fn boot_time() {
@@ -181,6 +297,7 @@ mod tests {
             .get_boot_time()
             .expect("Failed to get boot time");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!(
             "Boot Time: {}\nTime: {:?}",
@@ -195,6 +312,7 @@ mod tests {
         let start = Instant::now();
         let uptime = cache_context.get_uptime().expect("Failed to get uptime");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Uptime: {uptime:?}\nTime: {elapsed:?}");
     }
@@ -207,6 +325,7 @@ mod tests {
             .get_hostname()
             .expect("Failed to get hostname");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Hostname: {hostname}\nTime: {elapsed:?}");
     }
@@ -219,6 +338,7 @@ mod tests {
             .get_architecture()
             .expect("Failed to get arch");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!(
             "Arch: {}\nTime: {:?}",
@@ -235,6 +355,7 @@ mod tests {
             .get_system_name()
             .expect("Failed to get system name");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("System Name: {system_name:?}\nTime: {elapsed:?}");
     }
@@ -247,6 +368,7 @@ mod tests {
             .get_system_version()
             .expect("Failed to get system version");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("System Version: {system_version:?}\nTime: {elapsed:?}");
     }
@@ -259,6 +381,7 @@ mod tests {
             .get_total_memory()
             .expect("Failed to get total memory");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Total Memory: {total_memory}\nTime: {elapsed:?}");
     }
@@ -271,6 +394,7 @@ mod tests {
             .get_available_memory()
             .expect("Failed to get available memory");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Available Memory: {available_memory}\nTime: {elapsed:?}");
     }
@@ -283,6 +407,7 @@ mod tests {
             .get_total_swap()
             .expect("Failed to get total swap");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Total Swap: {total_swap}\nTime: {elapsed:?}");
     }
@@ -295,6 +420,7 @@ mod tests {
             .get_available_swap()
             .expect("Failed to get available swap memory");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Available Swap: {available_swap}\nTime: {elapsed:?}");
     }
@@ -307,7 +433,122 @@ mod tests {
             .count_logical_cpus()
             .expect("Failed to get count logical cpus");
         let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
 
         println!("Logical Cpus: {logical_cpus}\nTime: {elapsed:?}");
+    }
+
+    #[test]
+    fn physical_cpus() {
+        let cache_context = CacheContext::new();
+        let start = Instant::now();
+        let physical_cpus = cache_context
+            .count_physical_cpus()
+            .expect("Failed to get count physical cpus");
+        let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
+
+        println!("Physical Cpus: {physical_cpus}\nTime: {elapsed:?}");
+    }
+
+    // Github CI does not expose frequency data.
+    #[test]
+    #[ignore]
+    fn get_cpu_frequency() {
+        let cache_context = CacheContext::new();
+        cache_context.start().expect("Failed to start");
+        std::thread::sleep(Duration::from_secs(1));
+        cache_context.end().expect("Failed to end");
+
+        let start = Instant::now();
+        let cpu_frequency = cache_context
+            .get_cpu_frequency()
+            .expect("Failed to get CPU frequency");
+        let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
+
+        println!("CPU Frequency: {cpu_frequency}\nTime: {elapsed:?}");
+    }
+
+    // Unsupported on Windows
+    // Github CI does not expose frequency data.
+    #[test]
+    #[ignore]
+    #[cfg(not(windows))]
+    fn get_min_cpu_frequency() {
+        let cache_context = CacheContext::new();
+
+        let start = Instant::now();
+        let min_cpu_frequency = cache_context
+            .get_min_cpu_frequency()
+            .expect("Failed to get min CPU frequency");
+        let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
+
+        println!("Min CPU Frequency: {min_cpu_frequency}\nTime: {elapsed:?}");
+    }
+
+    // Github CI does not expose frequency data.
+    #[test]
+    #[ignore]
+    fn get_max_cpu_frequency() {
+        let cache_context = CacheContext::new();
+
+        let start = Instant::now();
+        let max_cpu_frequency = cache_context
+            .get_max_cpu_frequency()
+            .expect("Failed to get max CPU frequency");
+        let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
+
+        println!("Max CPU Frequency: {max_cpu_frequency}\nTime: {elapsed:?}");
+    }
+
+    #[test]
+    fn get_cpu_usage() {
+        let cache_context = CacheContext::new();
+        let start = Instant::now();
+        cache_context.start().expect("Failed to start");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < Duration::from_millis(200),
+            "Blocked for {elapsed:?}"
+        );
+
+        std::thread::sleep(Duration::from_secs(1));
+        let start = Instant::now();
+        cache_context.end().expect("Failed to end");
+        let elapsed = start.elapsed();
+        assert!(elapsed < Duration::from_millis(200));
+
+        let start = Instant::now();
+        let cpu_usage = cache_context
+            .get_cpu_usage()
+            .expect("Failed to get CPU usage");
+        let elapsed = start.elapsed();
+        assert!(elapsed < BLOCKING_DURATION);
+
+        println!("CPU Usage: {cpu_usage}\nTime: {elapsed:?}");
+    }
+
+    // Unsupported on Windows
+    // Github CI does not expose temperature data.
+    #[test]
+    #[ignore]
+    #[cfg(not(windows))]
+    fn get_cpu_temperature() {
+        let cache_context = CacheContext::new();
+
+        let start = Instant::now();
+        let temp = cache_context
+            .get_cpu_temperature()
+            .expect("Failed to get CPU temperature");
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < Duration::from_millis(2),
+            "Blocked for {elapsed:?}"
+        );
+
+        println!("CPU temperature: {temp}\nTime: {elapsed:?}");
     }
 }

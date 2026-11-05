@@ -1,6 +1,5 @@
 mod kv_store;
 pub mod model;
-mod reddit_embed;
 mod rule34;
 mod tic_tac_toe;
 mod tiktok_embed;
@@ -19,7 +18,10 @@ pub use self::{
 };
 use anyhow::Context;
 use camino::Utf8PathBuf;
-use nd_async_rusqlite::WalPool;
+use nd_async_rusqlite::{
+    WalPool,
+    rusqlite::Connection as RusqliteConnection,
+};
 use std::num::NonZero;
 use tracing::{
     debug,
@@ -67,7 +69,7 @@ impl Database {
     /// Read from the database.
     async fn read<F, R>(&self, func: F) -> anyhow::Result<R>
     where
-        F: FnOnce(&mut rusqlite::Connection) -> R + Send + 'static,
+        F: FnOnce(&mut RusqliteConnection) -> R + Send + 'static,
         R: Send + 'static,
     {
         Ok(self.database.read(move |database| func(database)).await?)
@@ -76,19 +78,10 @@ impl Database {
     /// Write to the database.
     async fn write<F, R>(&self, func: F) -> anyhow::Result<R>
     where
-        F: FnOnce(&mut rusqlite::Connection) -> R + Send + 'static,
+        F: FnOnce(&mut RusqliteConnection) -> R + Send + 'static,
         R: Send + 'static,
     {
         Ok(self.database.write(move |database| func(database)).await?)
-    }
-
-    // Compat
-    async fn access_db<F, R>(&self, func: F) -> anyhow::Result<R>
-    where
-        F: FnOnce(&mut rusqlite::Connection) -> R + Send + 'static,
-        R: Send + 'static,
-    {
-        self.write(func).await
     }
 
     /// Close the database

@@ -1,17 +1,20 @@
-use nd_async_rusqlite::rusqlite::types::{
-    FromSql,
-    FromSqlError,
-    FromSqlResult,
-    ToSql,
-    ToSqlOutput,
-    ValueRef,
+use nd_async_rusqlite::rusqlite::{
+    Result as RusqliteResult,
+    types::{
+        FromSql,
+        FromSqlError,
+        FromSqlResult,
+        ToSql,
+        ToSqlOutput,
+        ValueRef,
+    },
 };
 
 #[derive(Debug)]
 pub struct JiffTimestampWrapper(pub jiff::Timestamp);
 
 impl ToSql for JiffTimestampWrapper {
-    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+    fn to_sql(&self) -> RusqliteResult<ToSqlOutput<'_>> {
         Ok(self.0.as_millisecond().into())
     }
 }

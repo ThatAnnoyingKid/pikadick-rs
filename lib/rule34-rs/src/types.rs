@@ -9,6 +9,8 @@ pub mod md5_digest;
 pub mod note_list;
 /// The [`PostList`] type
 pub mod post_list;
+/// The [`PostListJson`] type
+pub mod post_list_json;
 /// The [`TagList`] type
 pub mod tag_list;
 
@@ -26,6 +28,10 @@ pub use self::{
         PostList,
         PostStatus,
         Rating,
+    },
+    post_list_json::{
+        PostJson,
+        PostListJson,
     },
     tag_list::{
         Tag,

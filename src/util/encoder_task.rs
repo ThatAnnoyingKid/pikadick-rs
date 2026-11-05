@@ -271,6 +271,7 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
     }
 
     /// Set the input format
+    #[expect(dead_code)]
     pub fn input_format(&mut self, input_format: impl Into<String>) -> &mut Self {
         self.builder.input_format(input_format);
         self
@@ -283,18 +284,21 @@ impl<'a> EncoderTaskEncodeBuilder<'a> {
     }
 
     /// Set the # of video frames from the input
+    #[expect(dead_code)]
     pub fn video_frames(&mut self, video_frames: impl Into<u64>) -> &mut Self {
         self.builder.video_frames(video_frames);
         self
     }
 
     /// Set the video profile
+    #[expect(dead_code)]
     pub fn video_profile(&mut self, video_profile: impl Into<String>) -> &mut Self {
         self.builder.video_profile(video_profile);
         self
     }
 
     /// Set the preset
+    #[expect(dead_code)]
     pub fn preset(&mut self, preset: impl Into<String>) -> &mut Self {
         self.builder.preset(preset);
         self

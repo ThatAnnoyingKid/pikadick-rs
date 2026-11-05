@@ -3,13 +3,7 @@ use crate::{
     PoiseError,
 };
 use anyhow::Context as _;
-use heim::units::{
-    Frequency,
-    frequency::{
-        gigahertz,
-        hertz,
-    },
-};
+use nd_util::ArcAnyhowError;
 use poise::CreateReply;
 use serenity::{
     builder::{
@@ -18,40 +12,19 @@ use serenity::{
     },
     model::colour::Colour,
 };
-use std::time::{
-    Duration,
-    Instant,
-    SystemTime,
-};
-use systemstat::{
-    System,
-    platform::common::Platform,
+use std::{
+    sync::Arc,
+    time::{
+        Duration,
+        Instant,
+        SystemTime,
+    },
 };
 use tracing::warn;
-use uom::{
-    fmt::DisplayStyle,
-    si::f32::Frequency as FrequencyF32,
-};
-
-const BYTES_IN_GB_F64: f64 = 1_000_000_000_f64;
-
-fn fmt_cpu_frequency(freq: Frequency) -> String {
-    let fmt_args = FrequencyF32::format_args(gigahertz, DisplayStyle::Abbreviation);
-    let freq = FrequencyF32::new::<hertz>(freq.get::<hertz>() as f32);
-
-    format!("{:.2}", fmt_args.with(freq))
-}
-
-async fn get_cpu_usage() -> Result<f32, heim::Error> {
-    let start = heim::cpu::usage().await?;
-    tokio::time::sleep(Duration::from_secs(1)).await;
-    let end = heim::cpu::usage().await?;
-
-    Ok((end - start).get::<heim::units::ratio::percent>())
-}
 
 fn format_boot_time(value: SystemTime) -> anyhow::Result<String> {
     let timestamp = jiff::Timestamp::try_from(value).context("Failed to make timestamp")?;
+
     Ok(timestamp.strftime("%e %b %Y, %I:%M:%S %p UTC").to_string())
 }
 
@@ -71,6 +44,24 @@ fn format_uptime(value: Duration) -> anyhow::Result<String> {
     Ok(printer.span_to_string(&span_rounded))
 }
 
+fn format_cpu_frequency(hz: u64) -> String {
+    const HZ_PER_GHZ: f64 = 1_000_000_000.0;
+
+    let hz = hz as f64;
+    let ghz = hz / HZ_PER_GHZ;
+
+    format!("{ghz:.2} GHz")
+}
+
+fn format_memory_usage(total: u64, available: u64) -> String {
+    const BYTES_PER_GB: f64 = 1024.0 * 1024.0 * 1024.0;
+
+    let used_gib = (total - available) as f64 / BYTES_PER_GB;
+    let total_gib = total as f64 / BYTES_PER_GB;
+
+    format!("{used_gib:.2} GiB / {total_gib:.2} GiB",)
+}
+
 #[derive(Debug)]
 struct SystemStats {
     hostname: Option<String>,
@@ -79,11 +70,19 @@ struct SystemStats {
     architecture: Option<&'static str>,
     boot_time: Option<String>,
     uptime: Option<String>,
+    cpu_frequency: Option<String>,
+    min_cpu_frequency: Option<String>,
+    max_cpu_frequency: Option<String>,
+    cpu_core_count: Option<String>,
+    memory_usage: Option<String>,
+    swap_usage: Option<String>,
+    cpu_usage: Option<String>,
+    cpu_temp: Option<String>,
 }
 
 impl SystemStats {
-    fn new() -> Self {
-        let cache_context = pikadick_system_info::CacheContext::new();
+    async fn new() -> Self {
+        let cache_context = Arc::new(pikadick_system_info::CacheContext::new());
 
         let hostname = match cache_context
             .get_hostname()
@@ -157,6 +156,204 @@ impl SystemStats {
             }
         };
 
+        let result = {
+            let cache_context = cache_context.clone();
+            tokio::task::spawn_blocking(move || {
+                cache_context.start()?;
+                std::thread::sleep(Duration::from_secs(1));
+                cache_context.end()?;
+                anyhow::Ok(())
+            })
+            .await
+            .map_err(anyhow::Error::from)
+            .flatten()
+            .context("Failed to collect timed stats")
+            .map_err(ArcAnyhowError::new)
+        };
+
+        let cpu_frequency = match result
+            .as_ref()
+            .map_err(|value| value.clone())
+            .and_then(|_| {
+                cache_context
+                    .get_cpu_frequency()
+                    .map_err(anyhow::Error::from)
+                    .map_err(ArcAnyhowError::new)
+            })
+            .map(format_cpu_frequency)
+            .context("Failed to get cpu frequency")
+        {
+            Ok(value) => Some(value),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let min_cpu_frequency = match cache_context
+            .get_min_cpu_frequency()
+            .context("Failed to get min cpu frequency")
+        {
+            Ok(value) => Some(format_cpu_frequency(value)),
+            // Don't warn for unsupported APIs; too noisy.
+            Err(error)
+                if error
+                    .root_cause()
+                    .downcast_ref::<pikadick_system_info::Error>()
+                    .is_some_and(|error| error.is_unsupported()) =>
+            {
+                None
+            }
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        // This is an underestimate on Windows;
+        // there does not seem to be an API for this that includes TurboBoost.
+        let max_cpu_frequency = match cache_context
+            .get_max_cpu_frequency()
+            .context("Failed to get max CPU frequency")
+        {
+            Ok(value) => Some(format_cpu_frequency(value)),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let cpu_logical_count = match cache_context
+            .count_logical_cpus()
+            .context("Failed to count number of logical cpus")
+        {
+            Ok(cpu_logical_count) => Some(cpu_logical_count),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let cpu_physical_count = match cache_context
+            .count_physical_cpus()
+            .context("Failed to count number of physical cpus")
+        {
+            Ok(cpu_physical_count) => Some(cpu_physical_count),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let cpu_core_count = match (cpu_logical_count, cpu_physical_count) {
+            (Some(logical_count), Some(physical_count)) => Some(format!(
+                "{logical_count} logical, {physical_count} physical"
+            )),
+            (Some(logical_count), None) => Some(format!("{logical_count} logical")),
+            (None, Some(physical_count)) => Some(format!("{physical_count} physical")),
+            (None, None) => None,
+        };
+
+        let total_memory = match cache_context
+            .get_total_memory()
+            .context("Failed to get total memory")
+        {
+            Ok(memory) => Some(memory),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let available_memory = match cache_context
+            .get_available_memory()
+            .context("Failed to get available memory")
+        {
+            Ok(memory) => Some(memory),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let memory_usage = match (total_memory, available_memory) {
+            (Some(total_memory), Some(available_memory)) => {
+                Some(format_memory_usage(total_memory, available_memory))
+            }
+            _ => None,
+        };
+
+        let total_swap = match cache_context
+            .get_total_swap()
+            .context("Failed to get total swap")
+        {
+            Ok(memory) => Some(memory),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let available_swap = match cache_context
+            .get_available_swap()
+            .context("Failed to get available swap")
+        {
+            Ok(memory) => Some(memory),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let swap_usage = match (total_swap, available_swap) {
+            (Some(total_swap), Some(available_swap)) => {
+                Some(format_memory_usage(total_swap, available_swap))
+            }
+            _ => None,
+        };
+
+        let cpu_usage = match cache_context
+            .get_cpu_usage()
+            .context("Failed to get CPU usage")
+            .map(|cpu_usage| format!("{cpu_usage:.2}%"))
+        {
+            Ok(cpu_usage) => Some(cpu_usage),
+            Err(error) => {
+                warn!("{error:?}");
+                None
+            }
+        };
+
+        let cpu_temp = {
+            let cache_context = cache_context.clone();
+            let result = tokio::task::spawn_blocking(move || {
+                cache_context
+                    .get_cpu_temperature()
+                    .map_err(anyhow::Error::from)
+            })
+            .await
+            .map_err(anyhow::Error::from)
+            .flatten()
+            .context("Failed to get CPU temp")
+            .map(|value| format!("{value:.2} °C"));
+            match result {
+                Ok(cpu_temp) => Some(cpu_temp),
+                // Don't warn for unsupported APIs; too noisy.
+                Err(error)
+                    if error
+                        .root_cause()
+                        .downcast_ref::<pikadick_system_info::Error>()
+                        .is_some_and(|error| error.is_unsupported()) =>
+                {
+                    None
+                }
+                Err(error) => {
+                    warn!("{error:?}");
+                    None
+                }
+            }
+        };
+
         Self {
             hostname,
             system_name,
@@ -164,6 +361,14 @@ impl SystemStats {
             architecture,
             boot_time,
             uptime,
+            cpu_frequency,
+            min_cpu_frequency,
+            max_cpu_frequency,
+            cpu_core_count,
+            memory_usage,
+            swap_usage,
+            cpu_usage,
+            cpu_temp,
         }
     }
 
@@ -175,6 +380,14 @@ impl SystemStats {
             ("Architecture", self.architecture),
             ("Boot Time", self.boot_time.as_deref()),
             ("Uptime", self.uptime.as_deref()),
+            ("CPU Freq", self.cpu_frequency.as_deref()),
+            ("Min CPU Freq", self.min_cpu_frequency.as_deref()),
+            ("Max CPU Freq", self.max_cpu_frequency.as_deref()),
+            ("Cpu Core Count", self.cpu_core_count.as_deref()),
+            ("Memory Usage", self.memory_usage.as_deref()),
+            ("Swap Usage", self.swap_usage.as_deref()),
+            ("Cpu Usage", self.cpu_usage.as_deref()),
+            ("Cpu Temp", self.cpu_temp.as_deref()),
         ];
 
         for (key, value) in fields {
@@ -192,114 +405,9 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     ctx.defer().await?;
 
     let start = Instant::now();
-
     let profile_avatar_url = ctx.cache().current_user().avatar_url();
-
-    // Start Legacy data gathering
-    let sys = System::new();
-
-    let cpu_temp = match sys.cpu_temp() {
-        Ok(cpu_temp) => Some(cpu_temp),
-        Err(error) => {
-            warn!("Failed to get cpu temp: {error}");
-            None
-        }
-    };
-
-    // End Legacy data gathering
-    let cache_context = pikadick_system_info::CacheContext::new();
-
-    let total_memory = match cache_context
-        .get_total_memory()
-        .context("Failed to get total memory")
-    {
-        Ok(memory) => Some(memory),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let available_memory = match cache_context
-        .get_available_memory()
-        .context("Failed to get available memory")
-    {
-        Ok(memory) => Some(memory),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let total_swap = match cache_context
-        .get_total_swap()
-        .context("Failed to get total swap")
-    {
-        Ok(memory) => Some(memory),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let available_swap = match cache_context
-        .get_available_swap()
-        .context("Failed to get available swap")
-    {
-        Ok(memory) => Some(memory),
-        Err(error) => {
-            warn!("{error:?}");
-            None
-        }
-    };
-
-    let cpu_logical_count = match cache_context
-        .count_logical_cpus()
-        .context("Failed to count number of logical cpus")
-    {
-        Ok(cpu_logical_count) => Some(cpu_logical_count),
-        Err(error) => {
-            warn!("Failed to get logical cpu count: {error}");
-            None
-        }
-    };
-
-    let cpu_frequency = match heim::cpu::frequency().await {
-        Ok(cpu_frequency) => Some(cpu_frequency),
-        Err(error) => {
-            warn!("Failed to get cpu frequency: {error}");
-            None
-        }
-    };
-
-    let cpu_physical_count = match heim::cpu::physical_count().await {
-        Ok(cpu_physical_count) => cpu_physical_count, // This returns an option, so we return it here to flatten it.
-        Err(error) => {
-            warn!("Failed to get physical cpu count: {error}");
-            None
-        }
-    };
-
-    let virtualization = heim::virt::detect().await;
-
-    let cpu_usage = match get_cpu_usage().await {
-        Ok(usage) => Some(usage),
-        Err(error) => {
-            warn!("Failed to get cpu usage: {error}");
-            None
-        }
-    };
-
-    let data_retrieval_time = Instant::now() - start;
-
-    // Start WIP
-
-    // Reports temps from all sensors
-    // let temperatures = heim::sensors::temperatures().collect::<Vec<_>>().await;
-
-    // End WIP
-
-    let system_stats = SystemStats::new();
+    let system_stats = SystemStats::new().await;
+    let data_retrieval_time = start.elapsed();
 
     let mut create_embed = CreateEmbed::new()
         .title("System Status")
@@ -307,91 +415,8 @@ pub async fn system(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     if let Some(icon) = profile_avatar_url {
         create_embed = create_embed.thumbnail(icon);
     }
+
     create_embed = system_stats.populate_embed(create_embed);
-
-    // Currently reports incorrectly on Windows
-    if let Some(cpu_frequency) = cpu_frequency {
-        create_embed =
-            create_embed.field("Cpu Freq", fmt_cpu_frequency(cpu_frequency.current()), true);
-
-        if let Some(min_cpu_frequency) = cpu_frequency.min() {
-            create_embed =
-                create_embed.field("Min Cpu Freq", fmt_cpu_frequency(min_cpu_frequency), true);
-        }
-
-        if let Some(max_cpu_frequency) = cpu_frequency.max() {
-            create_embed =
-                create_embed.field("Max Cpu Freq", fmt_cpu_frequency(max_cpu_frequency), true);
-        }
-    }
-
-    match (cpu_logical_count, cpu_physical_count) {
-        (Some(logical_count), Some(physical_count)) => {
-            create_embed = create_embed.field(
-                "Cpu Core Count",
-                format!("{logical_count} logical, {physical_count} physical"),
-                true,
-            );
-        }
-        (Some(logical_count), None) => {
-            create_embed =
-                create_embed.field("Cpu Core Count", format!("{logical_count} logical"), true);
-        }
-        (None, Some(physical_count)) => {
-            create_embed =
-                create_embed.field("Cpu Core Count", format!("{physical_count} physical"), true);
-        }
-        (None, None) => {}
-    }
-
-    if let (Some(total_memory), Some(available_memory)) = (total_memory, available_memory) {
-        create_embed = create_embed.field(
-            "Memory Usage",
-            format!(
-                "{:.2} GB / {:.2} GB",
-                (total_memory - available_memory) as f64 / BYTES_IN_GB_F64,
-                total_memory as f64 / BYTES_IN_GB_F64,
-            ),
-            true,
-        );
-    }
-
-    if let (Some(total_swap), Some(available_swap)) = (total_swap, available_swap) {
-        create_embed = create_embed.field(
-            "Swap Usage",
-            format!(
-                "{:.2} GB / {:.2} GB",
-                (total_swap - available_swap) as f64 / BYTES_IN_GB_F64,
-                total_swap as f64 / BYTES_IN_GB_F64,
-            ),
-            true,
-        );
-    }
-
-    let virtualization_field = match virtualization.as_ref() {
-        Some(virtualization) => virtualization.as_str(),
-        None => "None",
-    };
-    create_embed = create_embed.field("Virtualization", virtualization_field, true);
-
-    if let (Some(cpu_usage), Some(cpu_logical_count)) = (cpu_usage, cpu_logical_count) {
-        create_embed = create_embed.field(
-            "Cpu Usage",
-            format!("{:.2}%", cpu_usage / (cpu_logical_count as f32)),
-            true,
-        );
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////
-    // Legacy (These functions from systemstat have no direct replacement in heim yet) //
-    /////////////////////////////////////////////////////////////////////////////////////
-
-    // This does not work on Windows
-    // TODO: This can probably be replaced with temprature readings from heim.
-    // It doesn't support Windows, but this never worked there anyways as Windows has no simple way to get temps
-    if let Some(cpu_temp) = cpu_temp {
-        create_embed = create_embed.field("Cpu Temp", format!("{cpu_temp} °C"), true);
-    }
 
     let footer = CreateEmbedFooter::new(format!(
         "Retrieved system data in {:.2} second(s)",

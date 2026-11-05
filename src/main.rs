@@ -30,19 +30,17 @@
 
 //! # Pikadick
 
-pub mod cli_options;
-pub mod client_data;
-pub mod commands;
-pub mod config;
-pub mod database;
-pub mod logger;
+mod cli_options;
+mod commands;
+mod config;
+mod database;
+mod logger;
 mod poise_data;
-pub mod setup;
-pub mod util;
+mod setup;
+mod util;
 
 use crate::{
     cli_options::CliOptions,
-    client_data::ClientData,
     config::{
         ActivityKind,
         Config,
@@ -61,7 +59,11 @@ use anyhow::{
 };
 use mimalloc::MiMalloc;
 use pikadick_util::AsyncLockFile;
-use poise::structs::FrameworkError;
+use poise::{
+    dispatch::FrameworkContext,
+    serenity_prelude::FullEvent,
+    structs::FrameworkError,
+};
 use serenity::{
     FutureExt,
     gateway::{
@@ -73,6 +75,7 @@ use serenity::{
 };
 use songbird::SerenityInit;
 use std::{
+    collections::HashSet,
     sync::Arc,
     time::{
         Duration,
@@ -86,6 +89,10 @@ use tracing::{
 };
 use tracing_appender::non_blocking::WorkerGuard;
 use url::Url;
+
+type PoiseData = Arc<crate::poise_data::PoiseData>;
+type PoiseError = anyhow::Error;
+type PoiseContext<'a> = poise::Context<'a, PoiseData, PoiseError>;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -121,158 +128,6 @@ fn rusqlite_log_handler(error_code: i32, message: &str) {
     }
 }
 
-struct Handler;
-
-type PoiseData = Arc<crate::poise_data::PoiseData>;
-type PoiseError = Box<dyn std::error::Error + Send + Sync>;
-type PoiseContext<'a> = poise::Context<'a, PoiseData, PoiseError>;
-
-#[serenity::async_trait]
-impl EventHandler for Handler {
-    async fn ready(&self, ctx: Context, ready: Ready) {
-        let data_lock = ctx.data.read().await;
-        let client_data = data_lock
-            .get::<ClientDataKey>()
-            .expect("Missing client data");
-        let config = client_data.config.clone();
-        drop(data_lock);
-
-        if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
-            match kind {
-                ActivityKind::Listening => {
-                    ctx.set_activity(Some(ActivityData::listening(status)));
-                }
-                ActivityKind::Streaming => {
-                    let result: Result<_, anyhow::Error> = async {
-                        let activity = ActivityData::streaming(
-                            status,
-                            config.status_url().context("Failed to get status url")?,
-                        )?;
-
-                        ctx.set_activity(Some(activity));
-
-                        Ok(())
-                    }
-                    .await;
-
-                    if let Err(error) = result.context("Failed to set activity") {
-                        error!("{error:?}");
-                    }
-                }
-                ActivityKind::Playing => {
-                    ctx.set_activity(Some(ActivityData::playing(status)));
-                }
-            }
-        }
-
-        info!("Logged in as \"{}\"", ready.user.name);
-    }
-
-    async fn resume(&self, _ctx: Context, _resumed: ResumedEvent) {
-        warn!("Resumed connection");
-    }
-
-    #[tracing::instrument(skip(self, ctx, msg), fields(author = %msg.author.id, guild = ?msg.guild_id, content = %msg.content))]
-    #[expect(clippy::collapsible_match)]
-    async fn message(&self, ctx: Context, msg: Message) {
-        let data_lock = ctx.data.read().await;
-        let client_data = data_lock
-            .get::<ClientDataKey>()
-            .expect("Missing client data");
-        let tiktok_data = client_data.tiktok_data.clone();
-        let db = client_data.db.clone();
-        drop(data_lock);
-
-        // Process URL Embeds
-        {
-            // Only embed guild links
-            let guild_id = match msg.guild_id {
-                Some(id) => id,
-                None => {
-                    return;
-                }
-            };
-
-            // No Bots
-            if msg.author.bot {
-                return;
-            }
-
-            let tiktok_embed_flags = db
-                .get_tiktok_embed_flags(guild_id)
-                .await
-                .with_context(|| format!("Failed to get tiktok-embed server data for {guild_id}"))
-                .unwrap_or_else(|error| {
-                    error!("{error:?}");
-                    TikTokEmbedFlags::empty()
-                });
-
-            // Extract urls.
-            // We collect into a `Vec` as the regex iterator is not Sync and cannot be held across await points.
-            let urls: Vec<Url> = util::extract_urls(&msg.content).collect();
-
-            // Check to see if it we will even try to embed
-            let will_try_embedding = urls.iter().any(|url| {
-                let url_host = match url.host() {
-                    Some(host) => host,
-                    None => return false,
-                };
-
-                let tiktok_url = matches!(
-                    url_host,
-                    url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")
-                );
-
-                tiktok_url && tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED)
-            });
-
-            // Return if we won't try embedding.
-            if !will_try_embedding {
-                return;
-            }
-
-            let mut loading_reaction = Some(LoadingReaction::new(ctx.http.clone(), &msg));
-
-            // Embed for each url
-            // NOTE: We short circuit on failure since sending a msg to a channel and failing is most likely a permissions problem,
-            // especially since serenity retries each req once
-            for url in urls.iter() {
-                #[expect(
-                    clippy::single_match,
-                    reason = "Allow for adding other host processing."
-                )]
-                match url.host() {
-                    Some(url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com")) => {
-                        if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
-                            let result = tiktok_data
-                                .try_embed_url(
-                                    &ctx,
-                                    &msg,
-                                    url,
-                                    &mut loading_reaction,
-                                    tiktok_embed_flags.contains(TikTokEmbedFlags::DELETE_LINK),
-                                )
-                                .await
-                                .context("Failed to generate tiktok embed");
-                            if let Err(error) = result {
-                                error!("{error:?}");
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct ClientDataKey;
-
-impl TypeMapKey for ClientDataKey {
-    type Value = ClientData;
-}
-
 async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
     match tokio::signal::ctrl_c()
         .await
@@ -290,9 +145,133 @@ async fn handle_ctrl_c(shard_manager: Arc<ShardManager>) {
     };
 }
 
+async fn process_urls_in_message(
+    ctx: &FrameworkContext<'_, PoiseData, PoiseError>,
+    msg: &Message,
+) -> anyhow::Result<()> {
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+    enum UrlType {
+        TikTok,
+    }
+
+    let tiktok_data = &ctx.user_data.tiktok_data;
+
+    // Only embed guild links
+    let guild_id = match msg.guild_id {
+        Some(id) => id,
+        None => {
+            return Ok(());
+        }
+    };
+
+    // No Bots
+    if msg.author.bot {
+        return Ok(());
+    }
+
+    let mut embed_url_types = HashSet::new();
+    let tiktok_embed_flags = ctx
+        .user_data
+        .database
+        .get_tiktok_embed_flags(guild_id)
+        .await
+        .with_context(|| format!("Failed to get tiktok-embed server data for {guild_id}"))
+        .unwrap_or_else(|error| {
+            error!("{error:?}");
+            TikTokEmbedFlags::empty()
+        });
+    if tiktok_embed_flags.contains(TikTokEmbedFlags::ENABLED) {
+        embed_url_types.insert(UrlType::TikTok);
+    }
+
+    // If there are no url types to embed, exit.
+    if embed_url_types.is_empty() {
+        return Ok(());
+    }
+
+    // Extract urls.
+    let urls: Vec<(UrlType, Url)> = crate::util::extract_urls(&msg.content)
+        .filter_map(|url| {
+            let url_host = match url.host() {
+                Some(host) => host,
+                None => return None,
+            };
+
+            let url_type = match url_host {
+                url::Host::Domain("vm.tiktok.com" | "tiktok.com" | "www.tiktok.com") => {
+                    UrlType::TikTok
+                }
+                _ => return None,
+            };
+
+            Some((url_type, url))
+        })
+        .filter(|(url_type, _url)| embed_url_types.contains(url_type))
+        .collect();
+
+    if urls.is_empty() {
+        return Ok(());
+    }
+
+    let mut loading_reaction = Some(LoadingReaction::new(ctx.serenity_context.http.clone(), msg));
+    for (url_type, url) in urls.iter() {
+        match url_type {
+            UrlType::TikTok => {
+                tiktok_data
+                    .try_embed_url(
+                        ctx.serenity_context,
+                        msg,
+                        url,
+                        &mut loading_reaction,
+                        tiktok_embed_flags.contains(TikTokEmbedFlags::DELETE_LINK),
+                    )
+                    .await
+                    .context("Failed to generate tiktok embed")?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+async fn set_status(ctx: &FrameworkContext<'_, PoiseData, PoiseError>) -> anyhow::Result<()> {
+    let config = &ctx.user_data.config;
+    let ctx = ctx.serenity_context;
+
+    if let (Some(status), Some(kind)) = (config.status_name(), config.status_type()) {
+        match kind {
+            ActivityKind::Listening => {
+                ctx.set_activity(Some(ActivityData::listening(status)));
+            }
+            ActivityKind::Streaming => {
+                let result = async {
+                    let activity = ActivityData::streaming(
+                        status,
+                        config.status_url().context("Failed to get status url")?,
+                    )?;
+
+                    ctx.set_activity(Some(activity));
+
+                    anyhow::Ok(())
+                }
+                .await;
+
+                if let Err(error) = result.context("Failed to set activity") {
+                    error!("{error:?}");
+                }
+            }
+            ActivityKind::Playing => {
+                ctx.set_activity(Some(ActivityData::playing(status)));
+            }
+        }
+    }
+
+    Ok(())
+}
+
 /// Set up a serenity client
-async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result<Client> {
-    let poise_data = Arc::new(PoiseDataInner::new(config.clone(), database).await?);
+async fn setup_client(poise_data: PoiseData) -> anyhow::Result<Client> {
+    let config = poise_data.config.clone();
 
     let framework_options = poise::FrameworkOptions {
         commands: vec![
@@ -328,7 +307,7 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
                     }
                     FrameworkError::NsfwOnly { ctx, .. } => {
                         let result = ctx
-                            .reply("This command can only be used in nsfw channels")
+                            .reply("This command can only be used in nsfw channels.")
                             .await;
                         if let Err(error) = result {
                             error!("{error}");
@@ -350,7 +329,7 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
                         let seconds = remaining_cooldown.as_secs_f64();
                         let result = ctx
                             .reply(format!(
-                                "Wait {seconds:2} seconds to use that command again"
+                                "Wait {seconds:2} seconds to use that command again."
                             ))
                             .await;
                         if let Err(error) = result {
@@ -371,38 +350,54 @@ async fn setup_client(config: Arc<Config>, database: Database) -> anyhow::Result
             })
             .boxed()
         },
+        event_handler: |context, event| {
+            async move {
+                match event {
+                    FullEvent::Message { new_message } => {
+                        process_urls_in_message(&context, new_message).await?;
+                    }
+                    FullEvent::Ready { data_about_bot } => {
+                        set_status(&context).await?;
+                        info!("Logged in as \"{}\"", data_about_bot.user.name);
+                    }
+                    FullEvent::Resume { .. } => {
+                        warn!("Resumed connection");
+                    }
+                    _ => {}
+                }
+                anyhow::Ok(())
+            }
+            .boxed()
+        },
         ..Default::default()
     };
 
-    let framework = {
-        let config = config.clone();
-        poise::Framework::builder()
-            .options(framework_options)
-            .setup(move |ctx, _ready, framework| {
-                Box::pin(async move {
-                    poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                    if let Some(test_guild_id) = config.test_guild {
-                        poise::builtins::register_in_guild(
-                            ctx,
-                            &framework.options().commands,
-                            test_guild_id,
-                        )
-                        .await?;
-                    }
-                    info!("Registered commands");
+    let framework = poise::Framework::builder()
+        .options(framework_options)
+        .setup(move |ctx, _ready, framework| {
+            async move {
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                if let Some(test_guild_id) = poise_data.config.test_guild {
+                    poise::builtins::register_in_guild(
+                        ctx,
+                        &framework.options().commands,
+                        test_guild_id,
+                    )
+                    .await?;
+                }
+                info!("Registered commands");
 
-                    Ok::<PoiseData, PoiseError>(poise_data)
-                })
-            })
-            .build()
-    };
+                anyhow::Ok(poise_data)
+            }
+            .boxed()
+        })
+        .build();
 
     // Build the client
     let client = Client::builder(
         config.token.clone(),
         GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
     )
-    .event_handler(Handler)
     .application_id(ApplicationId::new(config.application_id))
     .framework(framework)
     .register_songbird()
@@ -489,37 +484,27 @@ fn setup(cli_options: CliOptions) -> anyhow::Result<SetupData> {
 
 /// The async entry
 async fn async_main(config: Arc<Config>) -> anyhow::Result<()> {
-    let database_path = config.data_dir.join("pikadick.sqlite");
+    const DATABASE_NAME: &str = "pikadick.sqlite";
+
+    let database_path = config.data_dir.join(DATABASE_NAME);
     let database = Database::new(database_path)
         .await
         .context("Failed to open database")?;
 
     // TODO: See if it is possible to start serenity without a network
     info!("Setting up client...");
-    let mut client = setup_client(config.clone(), database.clone())
+    let poise_data = Arc::new(PoiseDataInner::new(config.clone(), database.clone()).await?);
+    let mut client = setup_client(poise_data.clone())
         .await
         .context("Failed to set up client")?;
 
-    let client_data = ClientData::init(config, database.clone())
-        .await
-        .context("Client data initialization failed")?;
-
-    {
-        let mut data = client.data.write().await;
-        data.insert::<ClientDataKey>(client_data);
-    }
-
     info!("Logging in...");
     client.start().await.context("Failed to run client")?;
-    let client_data = {
-        let mut data = client.data.write().await;
-        data.remove::<ClientDataKey>().expect("Missing client data")
-    };
     drop(client);
 
     info!("Running shutdown routine for client data...");
-    client_data.shutdown().await;
-    drop(client_data);
+    poise_data.shutdown().await;
+    drop(poise_data);
 
     info!("Closing database...");
     database.close().await.context("Failed to close database")?;
@@ -541,7 +526,7 @@ fn real_main(setup_data: SetupData) -> anyhow::Result<()> {
         .tokio_rt
         .shutdown_timeout(TOKIO_RT_SHUTDOWN_TIMEOUT);
     let elapsed = shutdown_start.elapsed();
-    info!("Shutdown tokio runtime in {:?}", elapsed);
+    info!("Shutdown tokio runtime in {elapsed:?}");
 
     info!("Unlocking lockfile...");
     setup_data

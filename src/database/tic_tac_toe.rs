@@ -1,7 +1,7 @@
 use crate::database::{
     Database,
     model::{
-        MaybeGuildString,
+        OptionGuildIdString,
         TicTacToeGame,
         TicTacToePlayer,
         TicTacToeScore,
@@ -9,34 +9,69 @@ use crate::database::{
     },
 };
 use anyhow::Context;
-use rusqlite::{
+use nd_async_rusqlite::rusqlite::{
     OptionalExtension,
+    Result as RusqliteResult,
+    Transaction,
     TransactionBehavior,
     named_params,
     params,
 };
-use serenity::model::prelude::*;
+use serenity::model::id::{
+    GuildId,
+    UserId,
+};
 use tic_tac_toe::Board;
 
 // Tic-Tac-Toe SQL
-const DELETE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../../sql/delete_tic_tac_toe_game.sql");
-const UPDATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../../sql/update_tic_tac_toe_game.sql");
-const CREATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../../sql/create_tic_tac_toe_game.sql");
-const GET_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../../sql/get_tic_tac_toe_game.sql");
-const CHECK_IN_TIC_TAC_TOE_GAME_SQL: &str = include_str!("../../sql/check_in_tic_tac_toe_game.sql");
-const CREATE_DEFAULT_SCORE_TIC_TAC_TOE_SQL: &str =
-    include_str!("../../sql/create_default_score_tic_tac_toe.sql");
-const INCREMENT_TIES_SCORE_TIC_TAC_TOE_SQL: &str =
-    include_str!("../../sql/increment_ties_score_tic_tac_toe.sql");
-const INCREMENT_WINS_SCORE_TIC_TAC_TOE_SQL: &str =
-    include_str!("../../sql/increment_wins_score_tic_tac_toe.sql");
-const INCREMENT_LOSSES_SCORE_TIC_TAC_TOE_SQL: &str =
-    include_str!("../../sql/increment_losses_score_tic_tac_toe.sql");
-const INCREMENT_CONCEDES_SCORE_TIC_TAC_TOE_SQL: &str =
-    include_str!("../../sql/increment_concedes_score_tic_tac_toe.sql");
-const GET_TIC_TAC_TOE_SCORE_SQL: &str = include_str!("../../sql/get_tic_tac_toe_score.sql");
-const GET_TOP_TIC_TAC_TOE_SCORES_SQL: &str =
-    include_str!("../../sql/get_top_tic_tac_toe_scores.sql");
+const DELETE_TIC_TAC_TOE_GAME_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/delete_tic_tac_toe_game.sql"
+));
+const UPDATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/update_tic_tac_toe_game.sql"
+));
+const CREATE_TIC_TAC_TOE_GAME_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/create_tic_tac_toe_game.sql"
+));
+const GET_TIC_TAC_TOE_GAME_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/get_tic_tac_toe_game.sql"
+));
+const CHECK_IN_TIC_TAC_TOE_GAME_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/check_in_tic_tac_toe_game.sql"
+));
+const CREATE_DEFAULT_SCORE_TIC_TAC_TOE_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/create_default_score_tic_tac_toe.sql"
+));
+const INCREMENT_TIES_SCORE_TIC_TAC_TOE_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/increment_ties_score_tic_tac_toe.sql"
+));
+const INCREMENT_WINS_SCORE_TIC_TAC_TOE_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/increment_wins_score_tic_tac_toe.sql"
+));
+const INCREMENT_LOSSES_SCORE_TIC_TAC_TOE_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/increment_losses_score_tic_tac_toe.sql"
+));
+const INCREMENT_CONCEDES_SCORE_TIC_TAC_TOE_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/increment_concedes_score_tic_tac_toe.sql"
+));
+const GET_TIC_TAC_TOE_SCORE_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/get_tic_tac_toe_score.sql"
+));
+const GET_TOP_TIC_TAC_TOE_SCORES_SQL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/sql/get_top_tic_tac_toe_scores.sql"
+));
 
 /// Error that may occur while creating a tic-tac-toe game
 #[derive(Debug, thiserror::Error)]
@@ -90,14 +125,14 @@ pub enum TicTacToeTryMoveResponse {
 }
 
 fn get_tic_tac_toe_game(
-    txn: &rusqlite::Transaction<'_>,
-    guild_id: MaybeGuildString,
+    txn: &Transaction<'_>,
+    guild_id: Option<GuildId>,
     user_id: TicTacToePlayer,
-) -> rusqlite::Result<Option<(i64, TicTacToeGame)>> {
+) -> RusqliteResult<Option<(i64, TicTacToeGame)>> {
     txn.prepare_cached(GET_TIC_TAC_TOE_GAME_SQL)?
         .query_row(
             named_params! {
-                ":guild_id": guild_id,
+                ":guild_id": OptionGuildIdString(guild_id),
                 ":user_id": user_id
             },
             |row| {
@@ -114,17 +149,13 @@ fn get_tic_tac_toe_game(
         .optional()
 }
 
-fn update_tic_tac_toe_game(
-    txn: &rusqlite::Transaction<'_>,
-    id: i64,
-    board: Board,
-) -> rusqlite::Result<()> {
+fn update_tic_tac_toe_game(txn: &Transaction<'_>, id: i64, board: Board) -> RusqliteResult<()> {
     txn.prepare_cached(UPDATE_TIC_TAC_TOE_GAME_SQL)?
         .execute(params![board.encode_u16(), id])?;
     Ok(())
 }
 
-fn delete_tic_tac_toe_game(txn: &rusqlite::Transaction<'_>, id: i64) -> rusqlite::Result<()> {
+fn delete_tic_tac_toe_game(txn: &Transaction<'_>, id: i64) -> RusqliteResult<()> {
     txn.prepare_cached(DELETE_TIC_TAC_TOE_GAME_SQL)?
         .execute([id])?;
     Ok(())
@@ -132,24 +163,24 @@ fn delete_tic_tac_toe_game(txn: &rusqlite::Transaction<'_>, id: i64) -> rusqlite
 
 /// Try to make a user's score data
 fn create_user_score_data(
-    txn: &rusqlite::Transaction<'_>,
-    guild_id: MaybeGuildString,
+    txn: &Transaction<'_>,
+    guild_id: Option<GuildId>,
     user_id: UserId,
-) -> rusqlite::Result<()> {
+) -> RusqliteResult<()> {
     txn.prepare_cached(CREATE_DEFAULT_SCORE_TIC_TAC_TOE_SQL)?
-        .execute(params![guild_id, i64::from(user_id)])?;
+        .execute(params![OptionGuildIdString(guild_id), i64::from(user_id)])?;
 
     Ok(())
 }
 
 /// Set a tic-tac-toe game as a draw as part of a larger transaction, consuming it.
 fn set_draw_tic_tac_toe_game(
-    txn: rusqlite::Transaction<'_>,
+    txn: Transaction<'_>,
     id: i64,
-    guild_id: MaybeGuildString,
+    guild_id: Option<GuildId>,
     game: TicTacToeGame,
 ) -> anyhow::Result<()> {
-    delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
+    delete_tic_tac_toe_game(&txn, id).context("Failed to delete game")?;
 
     if let (TicTacToePlayer::User(x_player), TicTacToePlayer::User(o_player)) =
         (game.x_player, game.o_player)
@@ -158,44 +189,48 @@ fn set_draw_tic_tac_toe_game(
         create_user_score_data(&txn, guild_id, o_player)?;
 
         txn.prepare_cached(INCREMENT_TIES_SCORE_TIC_TAC_TOE_SQL)?
-            .execute(params![guild_id, i64::from(x_player), i64::from(o_player)])?;
+            .execute(params![
+                OptionGuildIdString(guild_id),
+                i64::from(x_player),
+                i64::from(o_player)
+            ])?;
     }
 
-    txn.commit().context("failed to commit")?;
+    txn.commit().context("Failed to commit")?;
 
     Ok(())
 }
 
 /// Set a tic-tac-toe game as a win as part of a larger transaction, consuming it.
 fn set_win_tic_tac_toe_game(
-    txn: rusqlite::Transaction<'_>,
+    txn: Transaction<'_>,
     id: i64,
-    guild_id: MaybeGuildString,
+    guild_id: Option<GuildId>,
     winner: TicTacToePlayer,
     loser: TicTacToePlayer,
 ) -> anyhow::Result<()> {
-    delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
+    delete_tic_tac_toe_game(&txn, id).context("Failed to delete game")?;
 
     if let (TicTacToePlayer::User(winner), TicTacToePlayer::User(loser)) = (winner, loser) {
         create_user_score_data(&txn, guild_id, winner)?;
         create_user_score_data(&txn, guild_id, loser)?;
 
         txn.prepare_cached(INCREMENT_WINS_SCORE_TIC_TAC_TOE_SQL)?
-            .execute(params![guild_id, i64::from(winner)])?;
+            .execute(params![OptionGuildIdString(guild_id), i64::from(winner)])?;
         txn.prepare_cached(INCREMENT_LOSSES_SCORE_TIC_TAC_TOE_SQL)?
-            .execute(params![guild_id, i64::from(loser)])?;
+            .execute(params![OptionGuildIdString(guild_id), i64::from(loser)])?;
     }
 
-    txn.commit().context("failed to commit")?;
+    txn.commit().context("Failed to commit")?;
 
     Ok(())
 }
 
 impl Database {
-    /// Create a new tic-tac-toe game
+    /// Create a new tic-tac-toe game.
     pub async fn create_tic_tac_toe_game(
         &self,
-        guild_id: MaybeGuildString,
+        guild_id: Option<GuildId>,
         author: TicTacToePlayer,
         author_team: tic_tac_toe::Team,
         opponent: TicTacToePlayer,
@@ -206,26 +241,26 @@ impl Database {
             (opponent, author)
         };
 
-        self.access_db(move |db| {
-            let txn = db
+        self.write(move |db| {
+            let transaction = db
                 .transaction_with_behavior(TransactionBehavior::Immediate)
-                .context("failed to create transaction")
+                .context("Failed to create transaction")
                 .map_err(TicTacToeCreateGameError::Database)?;
 
-            let check_in_game_result: Option<(TicTacToePlayer, TicTacToePlayer)> = txn
+            let check_in_game_result: Option<(TicTacToePlayer, TicTacToePlayer)> = transaction
                 .prepare_cached(CHECK_IN_TIC_TAC_TOE_GAME_SQL)
-                .context("failed to prepare query")
+                .context("Failed to prepare query")
                 .map_err(TicTacToeCreateGameError::Database)?
                 .query_row(
                     named_params! {
-                        ":guild_id": guild_id,
+                        ":guild_id": OptionGuildIdString(guild_id),
                         ":author": author,
                         ":opponent": opponent,
                     },
                     |row| Ok((row.get(0)?, row.get(1)?)),
                 )
                 .optional()
-                .context("failed to query if in game")
+                .context("Failed to query if in game")
                 .map_err(TicTacToeCreateGameError::Database)?;
 
             if let Some((maybe_x_player_in_game, maybe_o_player_in_game)) = check_in_game_result {
@@ -247,39 +282,46 @@ impl Database {
             }
 
             let board = game.board.encode_u16();
-            txn.prepare_cached(CREATE_TIC_TAC_TOE_GAME_SQL)
-                .context("failed to prepare query")
+            transaction
+                .prepare_cached(CREATE_TIC_TAC_TOE_GAME_SQL)
+                .context("Failed to prepare query")
                 .map_err(TicTacToeCreateGameError::Database)?
-                .execute(params![board, x_player, o_player, guild_id])
-                .context("failed to create game in database")
+                .execute(params![
+                    board,
+                    x_player,
+                    o_player,
+                    OptionGuildIdString(guild_id)
+                ])
+                .context("Failed to create game in database")
                 .map_err(TicTacToeCreateGameError::Database)?;
 
-            txn.commit()
-                .context("failed to commit")
+            transaction
+                .commit()
+                .context("Failed to commit")
                 .map_err(TicTacToeCreateGameError::Database)?;
 
             Ok(game)
         })
         .await
-        .context("database access failed to join")
+        .context("Database access failed")
         .map_err(TicTacToeCreateGameError::Database)?
     }
 
     /// Try to make a tic-tac-toe move
     pub async fn try_tic_tac_toe_move(
         &self,
-        guild_id: MaybeGuildString,
+        guild_id: Option<GuildId>,
         player: TicTacToePlayer,
         move_index: u8,
     ) -> Result<TicTacToeTryMoveResponse, TicTacToeTryMoveError> {
-        self.access_db(move |db| {
-            let txn = db
+        self.write(move |db| {
+            let transaction = db
                 .transaction_with_behavior(TransactionBehavior::Immediate)
-                .context("failed to create transaction")
+                .context("Failed to create transaction")
                 .map_err(TicTacToeTryMoveError::Database)?;
 
-            let (id, mut game) = get_tic_tac_toe_game(&txn, guild_id, player)
-                .context("failed to get game")
+            let (id, mut game) = get_tic_tac_toe_game(&transaction, guild_id, player)
+                .context("Failed to get game")
                 .map_err(TicTacToeTryMoveError::Database)?
                 .ok_or(TicTacToeTryMoveError::NotInAGame)?;
 
@@ -298,7 +340,7 @@ impl Database {
                 let winner = game.get_player(winner_team);
                 let loser = game.get_player(winner_team.inverse());
 
-                set_win_tic_tac_toe_game(txn, id, guild_id, winner, loser)
+                set_win_tic_tac_toe_game(transaction, id, guild_id, winner, loser)
                     .map_err(TicTacToeTryMoveError::Database)?;
 
                 return Ok(TicTacToeTryMoveResponse::Winner {
@@ -309,7 +351,7 @@ impl Database {
             }
 
             if game.board.is_draw() {
-                set_draw_tic_tac_toe_game(txn, id, guild_id, game)
+                set_draw_tic_tac_toe_game(transaction, id, guild_id, game)
                     .map_err(TicTacToeTryMoveError::Database)?;
                 return Ok(TicTacToeTryMoveResponse::Tie { game });
             }
@@ -323,7 +365,7 @@ impl Database {
                     let winner = game.get_player(winner_team);
                     let loser = game.get_player(winner_team.inverse());
 
-                    set_win_tic_tac_toe_game(txn, id, guild_id, winner, loser)
+                    set_win_tic_tac_toe_game(transaction, id, guild_id, winner, loser)
                         .map_err(TicTacToeTryMoveError::Database)?;
 
                     return Ok(TicTacToeTryMoveResponse::Winner {
@@ -334,39 +376,38 @@ impl Database {
                 }
 
                 if game.board.is_draw() {
-                    set_draw_tic_tac_toe_game(txn, id, guild_id, game)
+                    set_draw_tic_tac_toe_game(transaction, id, guild_id, game)
                         .map_err(TicTacToeTryMoveError::Database)?;
                     return Ok(TicTacToeTryMoveResponse::Tie { game });
                 }
             }
 
-            update_tic_tac_toe_game(&txn, id, game.board)
-                .context("failed to update game")
+            update_tic_tac_toe_game(&transaction, id, game.board)
+                .context("Failed to update game")
                 .map_err(TicTacToeTryMoveError::Database)?;
 
-            txn.commit()
-                .context("failed to commit")
+            transaction
+                .commit()
+                .context("Failed to commit")
                 .map_err(TicTacToeTryMoveError::Database)?;
 
             Ok(TicTacToeTryMoveResponse::NextTurn { game })
         })
         .await
-        .context("database access failed to join")
+        .context("Database access failed to join")
         .map_err(TicTacToeTryMoveError::Database)?
     }
 
     /// Try to get a tic-tac-toe game by guild and player
     pub async fn get_tic_tac_toe_game(
         &self,
-        guild_id: MaybeGuildString,
+        guild_id: Option<GuildId>,
         player: TicTacToePlayer,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
-        self.access_db(move |db| {
+        self.read(move |db| {
             let txn = db.transaction()?;
-            let ret = get_tic_tac_toe_game(&txn, guild_id, player).context("failed to query")?;
-            txn.commit()
-                .context("failed to commit")
-                .map(|_| ret.map(|ret| ret.1))
+            let result = get_tic_tac_toe_game(&txn, guild_id, player).context("failed to query")?;
+            anyhow::Ok(result.map(|result| result.1))
         })
         .await?
     }
@@ -377,35 +418,38 @@ impl Database {
     /// Returns the game if it existed
     pub async fn concede_tic_tac_toe_game(
         &self,
-        guild_id: MaybeGuildString,
+        guild_id: Option<GuildId>,
         player: UserId,
     ) -> anyhow::Result<Option<TicTacToeGame>> {
-        self.access_db(move |db| {
+        self.write(move |db| {
             let txn = db.transaction()?;
             let ret =
-                get_tic_tac_toe_game(&txn, guild_id, player.into()).context("failed to query")?;
+                get_tic_tac_toe_game(&txn, guild_id, player.into()).context("Failed to query")?;
 
             if let Some((id, game)) = ret {
-                delete_tic_tac_toe_game(&txn, id).context("failed to delete game")?;
+                delete_tic_tac_toe_game(&txn, id).context("Failed to delete game")?;
 
                 let conceding_player = TicTacToePlayer::from(player);
                 let opponent = game
                     .get_opponent(conceding_player)
-                    .context("missing opponent")?;
+                    .context("Missing opponent")?;
 
                 if let (TicTacToePlayer::User(conceding_player), TicTacToePlayer::User(opponent)) =
                     (conceding_player, opponent)
                 {
                     txn.prepare_cached(INCREMENT_CONCEDES_SCORE_TIC_TAC_TOE_SQL)?
-                        .execute(params![guild_id, i64::from(conceding_player)])?;
+                        .execute(params![
+                            OptionGuildIdString(guild_id),
+                            i64::from(conceding_player)
+                        ])?;
 
                     txn.prepare_cached(INCREMENT_WINS_SCORE_TIC_TAC_TOE_SQL)?
-                        .execute(params![guild_id, i64::from(opponent)])?;
+                        .execute(params![OptionGuildIdString(guild_id), i64::from(opponent)])?;
                 }
             }
 
             txn.commit()
-                .context("failed to commit")
+                .context("Failed to commit")
                 .map(|_| ret.map(|ret| ret.1))
         })
         .await?
@@ -414,14 +458,14 @@ impl Database {
     /// Get the user's Tic-Tac-Toe scores
     pub async fn get_tic_tac_toe_score(
         &self,
-        guild_id: MaybeGuildString,
+        guild_id: Option<GuildId>,
         player: UserId,
     ) -> anyhow::Result<TicTacToeScore> {
-        self.access_db(move |db| {
+        self.read(move |db| {
             let txn = db.transaction()?;
             create_user_score_data(&txn, guild_id, player)?;
             let ret = txn.prepare_cached(GET_TIC_TAC_TOE_SCORE_SQL)?.query_row(
-                params![guild_id, i64::from(player)],
+                params![OptionGuildIdString(guild_id), i64::from(player)],
                 |row| {
                     Ok(TicTacToeScore {
                         wins: row.get(0)?,
@@ -441,7 +485,7 @@ impl Database {
         &self,
         guild_id: GuildId,
     ) -> anyhow::Result<Vec<TicTacToeTopPlayerScore>> {
-        self.access_db(move |db| {
+        self.read(move |db| {
             let ret = db
                 .prepare_cached(GET_TOP_TIC_TAC_TOE_SCORES_SQL)?
                 .query_map([i64::from(guild_id)], TicTacToeTopPlayerScore::from_row)?

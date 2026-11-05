@@ -1,5 +1,6 @@
 use bitflags::bitflags;
 use nd_async_rusqlite::rusqlite::{
+    Result as RusqliteResult,
     ToSql,
     types::{
         FromSql,
@@ -22,7 +23,7 @@ bitflags! {
 }
 
 impl ToSql for TikTokEmbedFlags {
-    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+    fn to_sql(&self) -> RusqliteResult<ToSqlOutput<'_>> {
         Ok(self.bits().into())
     }
 }

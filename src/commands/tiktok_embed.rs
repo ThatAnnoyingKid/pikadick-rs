@@ -1,5 +1,4 @@
 use crate::{
-    ClientDataKey,
     LoadingReaction,
     PoiseContext,
     PoiseError,
@@ -449,11 +448,6 @@ pub async fn tiktok_embed(
     #[rename = "delete-link"]
     delete_link: Option<bool>,
 ) -> Result<(), PoiseError> {
-    let data_lock = ctx.serenity_context().data.read().await;
-    let client_data = data_lock.get::<ClientDataKey>().unwrap();
-    let db = client_data.db.clone();
-    drop(data_lock);
-
     let guild_id = match ctx.guild_id() {
         Some(id) => id,
         None => {
@@ -481,15 +475,17 @@ pub async fn tiktok_embed(
     }
 
     let flags = if set_flags.is_empty() && unset_flags.is_empty() {
-        db.get_tiktok_embed_flags(guild_id).await?
+        ctx.data().database.get_tiktok_embed_flags(guild_id).await?
     } else {
-        let (_old_flags, new_flags) = db
+        let (_old_flags, new_flags) = ctx
+            .data()
+            .database
             .set_tiktok_embed_flags(guild_id, set_flags, unset_flags)
             .await?;
         new_flags
     };
 
-    let embed_builder = CreateEmbed::new()
+    let create_embed = CreateEmbed::new()
         .title("TikTok Embeds")
         .field(
             "Enabled?",
@@ -502,7 +498,7 @@ pub async fn tiktok_embed(
             false,
         );
 
-    ctx.send(CreateReply::default().reply(true).embed(embed_builder))
+    ctx.send(CreateReply::default().reply(true).embed(create_embed))
         .await?;
 
     Ok(())

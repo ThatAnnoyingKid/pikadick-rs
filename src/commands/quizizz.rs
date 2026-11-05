@@ -50,11 +50,12 @@ impl CodeCache {
     pub fn len(&self) -> usize {
         self.cache.len()
     }
-
+    /*
     /// Returns true if it is empty
     pub fn is_empty(&self) -> bool {
         self.cache.is_empty()
     }
+    */
 
     /// Trim the cache
     pub fn trim(&mut self) {
@@ -228,7 +229,7 @@ async fn finder_task(watch_tx: WatchSender<SearchResult>, wakeup: Arc<Notify>) {
             let _ = watch_tx.send(Ok(None)).is_ok();
         }
 
-        info!("quizizz has {} cached entries", cache.len());
+        info!("Quizizz has {} cached entries", cache.len());
     }
 }
 
@@ -243,13 +244,13 @@ pub async fn quizizz(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 
     match result {
         Ok(Some(code_str)) => {
-            info!("located quizizz code \"{code_str}\"");
+            info!("Located quizizz code \"{code_str}\"");
 
             ctx.reply(format!("Located quizizz code: {code_str}"))
                 .await?;
         }
         Ok(None) => {
-            info!("quizziz finder reached limit");
+            info!("Quizziz finder reached limit");
             ctx.reply(LIMIT_REACHED_MSG).await?;
         }
         Err(error) => {

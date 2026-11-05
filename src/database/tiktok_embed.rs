@@ -3,7 +3,7 @@ use crate::database::{
     model::TikTokEmbedFlags,
 };
 use anyhow::Context;
-use rusqlite::{
+use nd_async_rusqlite::rusqlite::{
     OptionalExtension,
     TransactionBehavior,
     named_params,

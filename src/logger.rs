@@ -1,6 +1,3 @@
-mod delay_writer;
-
-pub use self::delay_writer::DelayWriter;
 use crate::config::Config;
 use anyhow::Context;
 use tracing_appender::{
