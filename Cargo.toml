@@ -51,7 +51,7 @@ tracing-appender = "0.2.5"
 tracing-log = "0.2.0"
 tracing-subscriber = { version = "0.3.23", features = [ "env-filter", "fmt" ] }
 # This is needed as heim doesn't re-export some types needed for formatting.
-uom = "=0.31.1"
+uom = "=0.38.0"
 urban-dictionary = { path = "./lib/urban-dictionary-rs", default-features = false, features = [ "rustls" ] }
 url = "2.5.8"
 xkcd = { path = "lib/xkcd-rs", default-features = false, features = [ "rustls" ] }
