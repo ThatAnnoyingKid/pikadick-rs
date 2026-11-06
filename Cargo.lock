@@ -4204,6 +4204,7 @@ dependencies = [
  "bytes",
  "cookie",
  "cookie_store",
+ "encoding_rs",
  "futures-core",
  "futures-util",
  "h2",
@@ -4216,6 +4217,7 @@ dependencies = [
  "hyper-util",
  "js-sys",
  "log",
+ "mime",
  "mime_guess",
  "native-tls",
  "percent-encoding",
@@ -6070,6 +6072,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "ugg"
+version = "0.0.0"
+dependencies = [
+ "reqwest 0.13.5",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tokio",
 ]
 
 [[package]]
