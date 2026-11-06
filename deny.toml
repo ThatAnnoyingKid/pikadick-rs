@@ -45,6 +45,11 @@ ignore = [
     # Blocked on davey updating p256.
     # Joy.
     "RUSTSEC-2026-0387",
+    
+    # Blocked on davey updating openmls
+    # Joy.
+    "RUSTSEC-2026-0441",
+    
 ]
 
 [licenses]
