@@ -204,7 +204,7 @@ impl UserStatsRenderer {
         ))
     }
 
-    pub fn render(&mut self, user: ugg::model::User, icon_png: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+    pub fn render(&mut self, user: ugg::model::User, icon_png: Vec<u8>, _rank_icon: Option<Vec<u8>>) -> anyhow::Result<Vec<u8>> {
         const NAME_FONT_SIZE: f32 = 48.0;
         const LEVEL_FONT_SIZE: f32 = 32.0;
         const REGION_FONT_SIZE: f32 = 32.0;

@@ -37,6 +37,8 @@ pub struct UggClient {
     client: ugg::Client,
     icon_lock_map: AsyncMutexMap<u32>,
     profile_icons_dir: Utf8PathBuf,
+    rank_icon_lock_map: AsyncMutexMap<String>,
+    rank_icons_dir: Utf8PathBuf,
     user_stats_renderer: Arc<tokio::sync::Mutex<UserStatsRenderer>>,
 }
 
@@ -45,13 +47,19 @@ impl UggClient {
     pub async fn new(cache_dir: &Utf8Path) -> anyhow::Result<Self> {
         let lol_dir = cache_dir.join("lol");
         crate::util::try_create_dir(&lol_dir).await?;
+
         let profile_icons_dir = lol_dir.join("profile-icons");
         crate::util::try_create_dir(&profile_icons_dir).await?;
+
+        let rank_icons_dir = lol_dir.join("rank-icons");
+        crate::util::try_create_dir(&rank_icons_dir).await?;
 
         Ok(Self {
             client: ugg::Client::new(),
             icon_lock_map: AsyncMutexMap::new(),
             profile_icons_dir,
+            rank_icon_lock_map: AsyncMutexMap::new(),
+            rank_icons_dir,
             user_stats_renderer: Arc::new(tokio::sync::Mutex::new(UserStatsRenderer::new())),
         })
     }
@@ -98,20 +106,8 @@ impl UggClient {
         Ok(())
     }
 
-    pub async fn get_icon_path(&self, icon_id: u32) -> anyhow::Result<Utf8PathBuf> {
-        let lock = self.icon_lock_map.lock(icon_id).await;
-        let icon_path = self.profile_icons_dir.join(format!("{icon_id}.png"));
-
-        if tokio::fs::try_exists(&icon_path).await? {
-            return Ok(icon_path);
-        }
-
-        info!("Downloading lol profile icon {icon_id}");
-
-        let temp_path = icon_path.with_added_extension("temp");
-        let url = format!(
-            "https://static.bigbrain.gg/assets/lol/riot_static/16.22.1/img/profileicon/{icon_id}.png"
-        );
+    async fn download_to_path(&self, url: &str, path: &Utf8Path) -> anyhow::Result<()> {
+        let temp_path = path.with_added_extension("temp");
         let mut file = tokio::fs::File::create(&temp_path).await?;
         let mut response = self
             .client
@@ -126,21 +122,70 @@ impl UggClient {
         file.flush().await?;
         file.sync_all().await?;
 
-        tokio::fs::rename(temp_path, &icon_path).await?;
+        tokio::fs::rename(temp_path, &path).await?;
+
+        anyhow::Ok(())
+    }
+
+    pub async fn get_icon_path(&self, icon_id: u32) -> anyhow::Result<Utf8PathBuf> {
+        let lock = self.icon_lock_map.lock(icon_id).await;
+        let path = self.profile_icons_dir.join(format!("{icon_id}.png"));
+
+        if tokio::fs::try_exists(&path).await? {
+            return Ok(path);
+        }
+
+        info!("Downloading lol profile icon {icon_id}");
+
+        let url = format!(
+            "https://static.bigbrain.gg/assets/lol/riot_static/16.22.1/img/profileicon/{icon_id}.png"
+        );
+        self.download_to_path(url.as_str(), &path).await?;
 
         drop(lock);
 
-        Ok(icon_path)
+        Ok(path)
+    }
+
+    /// Get the path to the rank icon.
+    ///
+    /// Downloads if not already present.
+    pub async fn get_rank_icon_path(&self, rank: &str) -> anyhow::Result<Utf8PathBuf> {
+        let lock = self.rank_icon_lock_map.lock(rank.to_string()).await;
+        let path = self.rank_icons_dir.join(format!("{rank}.png"));
+
+        if tokio::fs::try_exists(&path).await? {
+            return Ok(path);
+        }
+
+        info!("Downloading lol rank icon {rank}");
+
+        let url = format!(
+            "https://static.bigbrain.gg/assets/lol/ranks/s13/{rank}.png"
+        );
+        self.download_to_path(url.as_str(), &path).await?;
+
+        drop(lock);
+
+        Ok(path)
     }
 
     pub async fn render_user_stats(&self, user: ugg::model::User) -> anyhow::Result<Vec<u8>> {
         let icon_path = self.get_icon_path(user.icon_id).await?;
         let icon = tokio::fs::read(icon_path).await?;
 
+        let rank_icon = match user.rank.as_ref() {
+            Some(rank) => {
+                let rank_icon_path = self.get_rank_icon_path(rank).await?;
+                Some(tokio::fs::read(rank_icon_path).await?)
+            }
+            None => None,
+        };
+
         let mut renderer = self.user_stats_renderer.clone().lock_owned().await;
         let png = tokio::task::spawn_blocking(move || {
             let start = Instant::now();
-            let png = renderer.render(user, icon)?;
+            let png = renderer.render(user, icon, rank_icon)?;
             let elapsed = start.elapsed();
 
             info!("Rendered lol user stats in {elapsed:?}");
