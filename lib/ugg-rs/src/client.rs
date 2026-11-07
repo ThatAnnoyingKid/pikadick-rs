@@ -84,7 +84,6 @@ impl Client {
             .send()
             .await?
             .error_for_status()?;
-        dbg!(&response.headers());
         let text = response.text().await?;
         // dbg!(&text);
         let graphql_response: GraphQlResponse<T> = serde_json::from_str(&text)?;

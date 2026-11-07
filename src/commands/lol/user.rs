@@ -33,7 +33,6 @@ use vello_cpu::{
     },
     peniko::{
         Blob,
-        Extend,
         FontData,
         ImageSampler,
         color::{
@@ -126,22 +125,25 @@ impl UserStatsRenderer {
 
     fn draw_icon(&mut self, icon_png: Vec<u8>) -> anyhow::Result<()> {
         let icon_pixmap = Pixmap::from_png(std::io::Cursor::new(icon_png))?;
+        let icon_pixmap_width = icon_pixmap.width();
+        let icon_pixmap_height = icon_pixmap.height();
         let icon_image = Image {
             image: ImageSource::Pixmap(Arc::new(icon_pixmap)),
-            sampler: ImageSampler {
-                x_extend: Extend::Pad,
-                y_extend: Extend::Pad,
-                ..Default::default()
-            },
+            sampler: ImageSampler::default(),
         };
 
-        self.context
-            .set_transform(Affine::translate((MARGIN.into(), MARGIN.into())));
-        let squircle_path = squircle_path(ICON_SIZE.into(), 0.49);
+        let transform = Affine::translate((MARGIN.into(), MARGIN.into()))
+            * Affine::scale(f64::from(ICON_SIZE) / f64::from(icon_pixmap_width));
+        self.context.set_transform(transform);
+        let squircle_path = squircle_path(icon_pixmap_width.into(), 0.49);
         self.context.push_clip_path(&squircle_path);
         self.context.set_paint(icon_image);
-        self.context
-            .fill_rect(&Rect::new(0.0, 0.0, ICON_SIZE.into(), ICON_SIZE.into()));
+        self.context.fill_rect(&Rect::new(
+            0.0,
+            0.0,
+            icon_pixmap_width.into(),
+            icon_pixmap_height.into(),
+        ));
         self.context.pop_clip();
         self.context.reset_transform();
 
