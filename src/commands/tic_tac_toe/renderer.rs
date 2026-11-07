@@ -29,12 +29,10 @@ use tiny_skia::{
 use tokio::sync::Semaphore;
 use tracing::info;
 
-const FONT_BYTES: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/assets/Averia_Serif_Libre/AveriaSerifLibre-Light.ttf"
-));
-static FONT_FACE: LazyLock<skrifa::FontRef<'static>> =
-    LazyLock::new(|| skrifa::FontRef::new(FONT_BYTES).expect("Failed to load FONT_BYTES"));
+static FONT_FACE: LazyLock<skrifa::FontRef<'static>> = LazyLock::new(|| {
+    skrifa::FontRef::new(crate::constants::AVERIA_SERIF_LIBRE_LIGHT_TTF_BYTES)
+        .expect("Failed to load AVERIA_SERIF_LIBRE_LIGHT_TTF_BYTES")
+});
 
 const RENDERED_SIZE: u16 = 600;
 const SQUARE_SIZE: u16 = RENDERED_SIZE / 3;

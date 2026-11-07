@@ -7,15 +7,23 @@ use crate::{
     },
 };
 
+const USER_AGENT_STR: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36";
+
 const PLAYER_PROFILE_SUGGESTIONS_QUERY: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/queries/PlayerProfileSuggestions.graphql"
 ));
 
+const FETCH_MATCH_SUMMARIES_QUERY: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/queries/FetchMatchSummaries.graphql"
+));
+
 /// Client
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: reqwest::Client,
+    /// The inner http client.
+    pub client: reqwest::Client,
 }
 
 impl Client {
@@ -36,10 +44,10 @@ impl Client {
         T: serde::de::DeserializeOwned,
         V: serde::Serialize,
     {
-        let response: GraphQlResponse<T> = self
+        let response = self
             .client
             .post("https://u.gg/api")
-            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36")
+            .header(reqwest::header::USER_AGENT, USER_AGENT_STR)
             .json(&GraphQlRequest {
                 operation_name,
                 query,
@@ -47,14 +55,15 @@ impl Client {
             })
             .send()
             .await?
-            .error_for_status()?
-            .json()
-            .await?;
+            .error_for_status()?;
+        let text = response.text().await?;
+        // dbg!(&text);
+        let response: GraphQlResponse<T> = serde_json::from_str(&text)?;
 
-        Ok(response.data)
+        Ok(response.into_result()?)
     }
 
-    pub async fn search_users(&self) -> Result<Vec<User>, Error> {
+    pub async fn search_users(&self, query: &str) -> Result<Vec<User>, Error> {
         #[derive(Debug, serde::Serialize)]
         struct PlayerProfileSuggestionsVariables<'a> {
             query: &'a str,
@@ -73,13 +82,75 @@ impl Client {
                 "PlayerProfileSuggestions",
                 PLAYER_PROFILE_SUGGESTIONS_QUERY,
                 PlayerProfileSuggestionsVariables {
-                    query: "a",
+                    query,
                     region_id: "na1",
                 },
             )
             .await?;
 
         Ok(response.player_profile_suggestions)
+    }
+
+    pub async fn fetch_match_summaries(&self) -> Result<(), Error> {
+        #[derive(Debug, serde::Serialize)]
+        struct FetchMatchSummariesVariables<'a> {
+            #[serde(rename = "championId")]
+            champion_id: Vec<()>,
+
+            #[serde(rename = "duoRiotTagLine")]
+            duo_riot_tag_line: &'static str,
+
+            #[serde(rename = "duoRiotUserName")]
+            duo_riot_user_name: &'static str,
+
+            page: u32,
+
+            #[serde(rename = "queueType")]
+            queue_type: Vec<()>,
+
+            #[serde(rename = "regionId")]
+            region_id: &'static str,
+
+            #[serde(rename = "riotTagLine")]
+            riot_tag_line: &'a str,
+
+            #[serde(rename = "riotUserName")]
+            riot_user_name: &'a str,
+
+            role: Vec<()>,
+
+            #[serde(rename = "seasonIds")]
+            season_ids: Vec<u64>,
+        }
+
+        #[derive(Debug, serde::Deserialize)]
+        struct FetchMatchSummariesResponse {
+            #[serde(rename = "fetchPlayerMatchSummaries")]
+            fetch_match_summaries: serde_json::Value,
+        }
+
+        let response: FetchMatchSummariesResponse = self
+            .make_graphql_request(
+                "FetchMatchSummaries",
+                FETCH_MATCH_SUMMARIES_QUERY,
+                FetchMatchSummariesVariables {
+                    champion_id: Vec::new(),
+                    duo_riot_tag_line: "",
+                    duo_riot_user_name: "",
+                    page: 1,
+                    queue_type: Vec::new(),
+                    region_id: "na1",
+                    riot_tag_line: "1234",
+                    riot_user_name: "adumbidiot",
+                    role: Vec::new(),
+                    season_ids: vec![26, 25],
+                },
+            )
+            .await?;
+
+        dbg!(response.fetch_match_summaries);
+        todo!("fetch_match_summaries")
+        // Ok(response.fetch_match_summaries)
     }
 }
 

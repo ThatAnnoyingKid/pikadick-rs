@@ -2,6 +2,7 @@ pub mod deviantart;
 pub mod iqdb;
 pub mod latency;
 pub mod leave;
+pub mod lol;
 pub mod nekos;
 pub mod ping;
 pub mod quizizz;
@@ -24,6 +25,7 @@ pub use self::{
     iqdb::iqdb,
     latency::latency,
     leave::leave,
+    lol::lol,
     nekos::nekos,
     ping::ping,
     quizizz::quizizz,

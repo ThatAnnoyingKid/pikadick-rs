@@ -38,3 +38,15 @@ pub async fn try_metadata<P: AsRef<Path>>(path: P) -> std::io::Result<Option<std
         Err(error) => Err(error),
     }
 }
+
+/// Try to create a dir.
+pub async fn try_create_dir<P>(path: P) -> std::io::Result<bool>
+where
+    P: AsRef<Path>,
+{
+    match tokio::fs::create_dir(path.as_ref()).await {
+        Ok(()) => Ok(true),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => Ok(false),
+        Err(error) => Err(error),
+    }
+}

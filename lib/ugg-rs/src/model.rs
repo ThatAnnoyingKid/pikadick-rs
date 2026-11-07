@@ -1,3 +1,7 @@
+pub mod graphql;
+
+pub(crate) use self::graphql::GraphQlResponse;
+
 #[derive(Debug, serde::Serialize)]
 pub(crate) struct GraphQlRequest<'a, V> {
     #[serde(rename = "operationName")]
@@ -6,12 +10,7 @@ pub(crate) struct GraphQlRequest<'a, V> {
     pub(crate) variables: V,
 }
 
-#[derive(Debug, serde::Deserialize)]
-pub(crate) struct GraphQlResponse<T> {
-    pub(crate) data: T,
-}
-
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct User {
     pub puuid: String,
 
@@ -24,10 +23,15 @@ pub struct User {
     #[serde(rename = "summonerLevel")]
     pub summoner_level: u32,
 
-    pub tier: String,
+    pub tier: Option<String>,
 
-    pub lp: u32,
+    pub rank: Option<String>,
+
+    pub lp: Option<u32>,
 
     #[serde(rename = "iconId")]
     pub icon_id: u32,
+
+    #[serde(rename = "regionId")]
+    pub region_id: String,
 }

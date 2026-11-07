@@ -1,0 +1,289 @@
+use crate::{
+    PoiseContext,
+    PoiseError,
+};
+use anyhow::Context;
+use poise::{
+    CreateReply,
+    serenity_prelude::CreateAttachment,
+};
+use skrifa::{
+    MetadataProvider,
+    prelude::{
+        LocationRef,
+        Size as SkrifaSize,
+    },
+};
+use std::sync::{
+    Arc,
+    LazyLock,
+};
+use tracing::warn;
+use vello_cpu::{
+    Glyph,
+    Image,
+    ImageSource,
+    Pixmap,
+    RenderContext,
+    Resources,
+    kurbo::{
+        BezPath,
+        Rect,
+    },
+    peniko::{
+        Blob,
+        Extend,
+        FontData,
+        ImageSampler,
+        color::{
+            AlphaColor,
+            Srgb,
+        },
+        kurbo::Affine,
+    },
+};
+
+const fn hex_color_const(data: u32) -> AlphaColor<Srgb> {
+    let r = (data >> 16) & 0xFF;
+    let g = (data >> 8) & 0xFF;
+    let b = data & 0xFF;
+
+    AlphaColor::new([r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0])
+}
+
+static FONT_REF: LazyLock<skrifa::FontRef<'static>> = LazyLock::new(|| {
+    skrifa::FontRef::new(crate::constants::ROBOTO_MEDIUM_TTF_BYTES).expect("Failed to parse font")
+});
+const MARGIN: u16 = 20;
+const ICON_SIZE: u16 = 300;
+const WIDTH: u16 = 1000;
+const HEIGHT: u16 = 300 + (MARGIN * 2);
+/// #121212
+const BACKGROUND_COLOR: AlphaColor<Srgb> = hex_color_const(0x121212);
+// #E8E1D2
+const PRIMARY_TEXT_COLOR: AlphaColor<Srgb> = hex_color_const(0xE8E1D2);
+
+fn capitalize(input: &str) -> String {
+    let mut output = String::with_capacity(input.len());
+    let mut chars = input.chars();
+    let first = match chars.next() {
+        Some(ch) => ch.to_ascii_uppercase(),
+        None => return output,
+    };
+    output.push(first);
+    output.extend(chars);
+    output
+}
+
+fn squircle_path(size: f64, control: f64) -> BezPath {
+    let mut path = BezPath::new();
+
+    let c = size / 2.0;
+    let k = size * control;
+
+    path.move_to((c, 0.0));
+    path.curve_to((c + k, 0.0), (size, c - k), (size, c));
+    path.curve_to((size, c + k), (c + k, size), (c, size));
+    path.curve_to((c - k, size), (0.0, c + k), (0.0, c));
+    path.curve_to((0.0, c - k), (c - k, 0.0), (c, 0.0));
+
+    path.close_path();
+    path
+}
+
+fn get_font_line_height(font_size: f32) -> f32 {
+    let metrics = FONT_REF.metrics(SkrifaSize::new(font_size), LocationRef::default());
+    metrics.ascent - metrics.descent + metrics.leading
+}
+
+#[derive(Debug)]
+pub(super) struct UserStatsRenderer {
+    context: RenderContext,
+    resources: Resources,
+    font_blob: Blob<u8>,
+}
+
+impl UserStatsRenderer {
+    pub fn new() -> Self {
+        let context = RenderContext::new(WIDTH, HEIGHT);
+        let resources = Resources::new();
+        let font = Arc::new(crate::constants::ROBOTO_MEDIUM_TTF_BYTES);
+        let font_blob = Blob::new(font);
+
+        Self {
+            context,
+            resources,
+            font_blob,
+        }
+    }
+
+    fn draw_background(&mut self) {
+        self.context.set_paint(BACKGROUND_COLOR);
+        self.context
+            .fill_rect(&Rect::new(0.0, 0.0, f64::from(WIDTH), f64::from(HEIGHT)));
+    }
+
+    fn draw_icon(&mut self, icon_png: Vec<u8>) -> anyhow::Result<()> {
+        let icon_pixmap = Pixmap::from_png(std::io::Cursor::new(icon_png))?;
+        let icon_image = Image {
+            image: ImageSource::Pixmap(Arc::new(icon_pixmap)),
+            sampler: ImageSampler {
+                x_extend: Extend::Pad,
+                y_extend: Extend::Pad,
+                ..Default::default()
+            },
+        };
+
+        self.context
+            .set_transform(Affine::translate((MARGIN.into(), MARGIN.into())));
+        let squircle_path = squircle_path(ICON_SIZE.into(), 0.49);
+        self.context.push_clip_path(&squircle_path);
+        self.context.set_paint(icon_image);
+        self.context
+            .fill_rect(&Rect::new(0.0, 0.0, ICON_SIZE.into(), ICON_SIZE.into()));
+        self.context.pop_clip();
+        self.context.reset_transform();
+
+        Ok(())
+    }
+
+    fn draw_text(&mut self, text: &str, x: f32, y: f32, font_size: f32) -> anyhow::Result<Rect> {
+        self.context.set_paint(PRIMARY_TEXT_COLOR);
+
+        let charmap = FONT_REF.charmap();
+        let glyph_metrics =
+            FONT_REF.glyph_metrics(SkrifaSize::new(font_size), LocationRef::default());
+
+        let mut current_x = x;
+        let mut mapped_glyphs = Vec::new();
+
+        let mut min_x = x;
+        let mut min_y = y;
+        let mut max_x = x;
+        let mut max_y = y;
+
+        for ch in text.chars() {
+            if let Some(glyph_id) = charmap.map(ch) {
+                mapped_glyphs.push(Glyph {
+                    id: glyph_id.to_u32(),
+                    x: current_x,
+                    y,
+                });
+
+                let bounds = glyph_metrics.bounds(glyph_id);
+                min_x = min_x.min(x + bounds.map_or(0.0, |bounds| bounds.x_min));
+                min_y = min_y.min(y + bounds.map_or(0.0, |bounds| bounds.y_min));
+                max_x = max_x.max(current_x + bounds.map_or(0.0, |bounds| bounds.x_max));
+                max_y = max_y.max(y + bounds.map_or(0.0, |bounds| bounds.y_max));
+
+                let advance = glyph_metrics.advance_width(glyph_id).unwrap_or(0.0);
+                current_x += advance;
+            }
+        }
+
+        self.context
+            .glyph_run(
+                &mut self.resources,
+                &FontData {
+                    data: self.font_blob.clone(),
+                    index: 0,
+                },
+            )
+            .font_size(font_size)
+            .hint(true)
+            .fill_glyphs(mapped_glyphs.into_iter())?;
+
+        Ok(Rect::new(
+            min_x.into(),
+            min_y.into(),
+            max_x.into(),
+            max_y.into(),
+        ))
+    }
+
+    pub fn render(&mut self, user: ugg::model::User, icon_png: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+        const NAME_FONT_SIZE: f32 = 48.0;
+        const LEVEL_FONT_SIZE: f32 = 32.0;
+        const REGION_FONT_SIZE: f32 = 32.0;
+        const RANK_FONT_SIZE: f32 = 32.0;
+
+        let name_text = format!("{}#{}", user.riot_user_name, user.riot_tag_line);
+        let level_text = format!("Level: {}", user.summoner_level);
+        let region_text = format!("Region: {}", user.region_id.to_ascii_uppercase());
+        let rank_text = match (user.tier, user.rank, user.lp) {
+            (Some(tier), Some(rank), Some(lp)) => {
+                let tier = capitalize(&tier);
+                let rank = rank.to_ascii_uppercase();
+                Some(format!("Rank: {tier} {rank}, {lp} LP"))
+            }
+            _ => None,
+        };
+
+        self.context.reset();
+
+        self.draw_background();
+        self.draw_icon(icon_png)?;
+
+        let start_x = f32::from(MARGIN * 2 + ICON_SIZE);
+        let mut start_y = get_font_line_height(NAME_FONT_SIZE);
+        self.draw_text(name_text.as_str(), start_x, start_y, NAME_FONT_SIZE)?;
+        start_y += get_font_line_height(LEVEL_FONT_SIZE);
+        self.draw_text(level_text.as_str(), start_x, start_y, LEVEL_FONT_SIZE)?;
+        start_y += get_font_line_height(REGION_FONT_SIZE);
+        self.draw_text(region_text.as_str(), start_x, start_y, REGION_FONT_SIZE)?;
+        if let Some(rank_text) = rank_text {
+            start_y += get_font_line_height(RANK_FONT_SIZE);
+            self.draw_text(rank_text.as_str(), start_x, start_y, RANK_FONT_SIZE)?;
+        }
+
+        let mut target = Pixmap::new(WIDTH, HEIGHT);
+        self.context.flush();
+        self.context.render(&mut target, &mut self.resources);
+
+        Ok(target.into_png()?)
+    }
+}
+
+#[poise::command(
+    slash_command,
+    description_localized("en-US", "Get lol stats for a user.")
+)]
+pub async fn user(ctx: PoiseContext<'_>, user: String) -> Result<(), PoiseError> {
+    let ugg_client = &ctx.data().ugg_client;
+
+    ctx.defer().await?;
+
+    let result = ugg_client
+        .search_users(&user)
+        .await
+        .context("Failed to search for users");
+    let mut users = match result {
+        Ok(users) => users,
+        Err(error) => {
+            warn!("{error:?}");
+            ctx.reply(format!("{error:?}")).await?;
+
+            return Ok(());
+        }
+    };
+    if users.is_empty() {
+        ctx.reply(format!("Failed to find user from \"{user}\""))
+            .await?;
+        return Ok(());
+    }
+    let user = users.swap_remove(0);
+
+    let file_name = format!(
+        "lol-profile-{}-{}.png",
+        user.riot_user_name, user.riot_tag_line
+    );
+
+    let png = ugg_client.render_user_stats(user).await?;
+
+    let attachment = CreateAttachment::bytes(png, file_name);
+    let create_reply = CreateReply::new().attachment(attachment);
+
+    ctx.send(create_reply).await?;
+
+    Ok(())
+}

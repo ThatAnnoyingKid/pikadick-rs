@@ -146,6 +146,7 @@ skip = [
     { name = "parking_lot", version = "0.12.5" },
     { name = "miniz_oxide", version = "0.8.9" },
     { name = "base64", version = "0.22.1" },
+    { name = "core-foundation", version = "0.9.4" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs

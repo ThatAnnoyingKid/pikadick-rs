@@ -1,0 +1,12 @@
+curl 'https://u.gg/api' \
+  -X POST \
+  -H 'Content-Type: application/json' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36' \
+  --data-raw '{"query":"{ __type(name: \"TeamData\") { name fields { name description type { kind name ofType { kind name ofType { kind name } } } } } }"}'
+  
+  
+curl 'https://u.gg/api' \
+  -X POST \
+  -H 'Content-Type: application/json' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36' \
+  --data-raw '{"query":"{ __schema { types { name kind description } } }"}'

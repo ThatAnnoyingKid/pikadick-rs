@@ -4,6 +4,7 @@ use crate::{
     commands::{
         deviantart::DeviantartClient,
         iqdb::IqdbClient,
+        lol::UggClient,
         nekos::NekosClient,
         quizizz::QuizizzClient,
         r6tracker::R6TrackerClient,
@@ -33,6 +34,7 @@ pub struct PoiseData {
     pub sauce_nao_client: SauceNaoClient,
     pub tic_tac_toe_data: TicTacToeData,
     pub tiktok_data: TikTokData,
+    pub ugg_client: UggClient,
     pub urban_client: UrbanClient,
     pub xkcd_client: xkcd::Client,
     pub yodaspeak_client: yodaspeak::Client,
@@ -56,6 +58,9 @@ impl PoiseData {
         let tiktok_data = TikTokData::new(&cache_dir, encoder_task.clone())
             .await
             .context("Failed to init tiktok data")?;
+        let ugg_client = UggClient::new(&cache_dir)
+            .await
+            .context("Failed to init ugg client")?;
 
         Ok(Self {
             config,
@@ -70,6 +75,7 @@ impl PoiseData {
             sauce_nao_client,
             tic_tac_toe_data,
             tiktok_data,
+            ugg_client,
             urban_client: UrbanClient::new(),
             xkcd_client: xkcd::Client::new(),
             yodaspeak_client: yodaspeak::Client::new(),
