@@ -7,8 +7,21 @@ use crate::{
         User,
     },
 };
+use reqwest::header::{
+    ACCEPT,
+    HeaderMap,
+    HeaderValue,
+    REFERER,
+    USER_AGENT,
+};
 
-const USER_AGENT_STR: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36";
+const ACCEPT_VALUE: HeaderValue = HeaderValue::from_static("*/*");
+const USER_AGENT_VALUE: HeaderValue = HeaderValue::from_static(
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+);
+const X_APP_TYPE_VALUE: HeaderValue = HeaderValue::from_static("web");
+const X_APP_VERSION_VALUE: HeaderValue =
+    HeaderValue::from_static("e87de972c9d34246a671e3729b696376303fa780");
 
 const PLAYER_PROFILE_SUGGESTIONS_QUERY: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -35,9 +48,18 @@ pub struct Client {
 impl Client {
     /// Create a new client.
     pub fn new() -> Self {
-        Self {
-            client: reqwest::Client::new(),
-        }
+        let mut header_map = HeaderMap::new();
+        header_map.insert(USER_AGENT, USER_AGENT_VALUE);
+        header_map.insert(ACCEPT, ACCEPT_VALUE);
+        header_map.insert("x-app-type", X_APP_TYPE_VALUE);
+        header_map.insert("x-app-version", X_APP_VERSION_VALUE);
+
+        let client = reqwest::Client::builder()
+            .default_headers(header_map)
+            .build()
+            .expect("Failed to build client");
+
+        Self { client }
     }
 
     async fn make_graphql_request<T, V>(
@@ -53,7 +75,7 @@ impl Client {
         let response = self
             .client
             .post("https://u.gg/api")
-            .header(reqwest::header::USER_AGENT, USER_AGENT_STR)
+            .header(REFERER, "https://u.gg/")
             .json(&GraphQlRequest {
                 operation_name,
                 query,
@@ -62,18 +84,22 @@ impl Client {
             .send()
             .await?
             .error_for_status()?;
+        dbg!(&response.headers());
         let text = response.text().await?;
         // dbg!(&text);
-        let response: GraphQlResponse<T> = serde_json::from_str(&text)?;
+        let graphql_response: GraphQlResponse<T> = serde_json::from_str(&text)?;
 
-        Ok(response.into_result()?)
+        Ok(graphql_response.into_result()?)
     }
 
     /// Search for users.
     pub async fn search_users(&self, query: &str) -> Result<Vec<User>, Error> {
+        // The query is always lowercase.
+        let query = query.to_ascii_lowercase();
+
         #[derive(Debug, serde::Serialize)]
         struct PlayerProfileSuggestionsVariables<'a> {
-            query: &'a str,
+            query: String,
             #[serde(rename = "regionId")]
             region_id: &'a str,
         }

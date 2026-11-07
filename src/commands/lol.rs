@@ -21,12 +21,16 @@ use camino::{
     Utf8Path,
     Utf8PathBuf,
 };
+use poise::serenity_prelude::CreateAutocompleteResponse;
 use std::{
     sync::Arc,
     time::Instant,
 };
 use tokio::io::AsyncWriteExt;
-use tracing::info;
+use tracing::{
+    info,
+    warn,
+};
 
 #[derive(Debug)]
 pub struct UggClient {
@@ -54,7 +58,7 @@ impl UggClient {
 
     /// Search for a user.
     pub async fn search_users(&self, user: &str) -> anyhow::Result<Vec<ugg::model::User>> {
-        info!("Searching for lol user with \"{user}\"");
+        info!("Searching for lol users with \"{user}\"");
 
         self.client
             .search_users(user)
@@ -65,8 +69,9 @@ impl UggClient {
     /// Get a player profile suggestion.
     pub async fn get_profile_suggestion(&self, user: &str) -> anyhow::Result<ugg::model::User> {
         info!("Searching for lol user with \"{user}\"");
-        
+
         let mut users = self
+            .client
             .search_users(user)
             .await
             .context("Failed to search for users")?;
@@ -146,6 +151,28 @@ impl UggClient {
 
         Ok(png)
     }
+}
+
+async fn autocomplete_user(ctx: PoiseContext<'_>, partial: &str) -> CreateAutocompleteResponse {
+    if partial.is_empty() {
+        return CreateAutocompleteResponse::new();
+    }
+
+    let ugg_client = &ctx.data().ugg_client;
+
+    let users = match ugg_client.search_users(partial).await {
+        Ok(users) => users,
+        Err(error) => {
+            warn!("{error:?}");
+            return CreateAutocompleteResponse::new();
+        }
+    };
+    let choices = users
+        .iter()
+        .map(|user| format!("{}#{}", user.riot_user_name, user.riot_tag_line).into())
+        .collect();
+
+    CreateAutocompleteResponse::new().set_choices(choices)
 }
 
 #[poise::command(

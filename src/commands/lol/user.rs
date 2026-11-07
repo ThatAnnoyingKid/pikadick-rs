@@ -1,3 +1,4 @@
+use super::autocomplete_user;
 use crate::{
     PoiseContext,
     PoiseError,
@@ -250,7 +251,9 @@ impl UserStatsRenderer {
 )]
 pub async fn user(
     ctx: PoiseContext<'_>,
-    #[description = "The user to look up stats for."] user: String,
+    #[description = "The user to look up stats for."]
+    #[autocomplete = "autocomplete_user"]
+    user: String,
     #[description = "Refresh user stats."] refresh: Option<bool>,
 ) -> Result<(), PoiseError> {
     let refresh = refresh.unwrap_or(false);
