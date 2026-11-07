@@ -248,17 +248,23 @@ impl UserStatsRenderer {
     slash_command,
     description_localized("en-US", "Get lol stats for a user.")
 )]
-pub async fn user(ctx: PoiseContext<'_>, user: String) -> Result<(), PoiseError> {
+pub async fn user(
+    ctx: PoiseContext<'_>,
+    #[description = "The user to look up stats for."] user: String,
+    #[description = "Refresh user stats."] refresh: Option<bool>,
+) -> Result<(), PoiseError> {
+    let refresh = refresh.unwrap_or(false);
+
     let ugg_client = &ctx.data().ugg_client;
 
     ctx.defer().await?;
 
     let result = ugg_client
-        .search_users(&user)
+        .get_profile_suggestion(&user)
         .await
-        .context("Failed to search for users");
-    let mut users = match result {
-        Ok(users) => users,
+        .context("Failed to get user");
+    let mut profile_suggestion = match result {
+        Ok(user) => user,
         Err(error) => {
             warn!("{error:?}");
             ctx.reply(format!("{error:?}")).await?;
@@ -266,19 +272,42 @@ pub async fn user(ctx: PoiseContext<'_>, user: String) -> Result<(), PoiseError>
             return Ok(());
         }
     };
-    if users.is_empty() {
-        ctx.reply(format!("Failed to find user from \"{user}\""))
-            .await?;
-        return Ok(());
+    if refresh {
+        let result = ugg_client
+            .update_player_profile(
+                &profile_suggestion.riot_user_name,
+                &profile_suggestion.riot_tag_line,
+            )
+            .await
+            .context("Failed to update player profile");
+        if let Err(error) = result {
+            warn!("{error:?}");
+            ctx.reply(format!("{error:?}")).await?;
+            return Ok(());
+        }
+
+        let result = ugg_client
+            .get_profile_suggestion(&user)
+            .await
+            .context("Failed to get user");
+        let new_profile_suggestion = match result {
+            Ok(user) => user,
+            Err(error) => {
+                warn!("{error:?}");
+                ctx.reply(format!("{error:?}")).await?;
+
+                return Ok(());
+            }
+        };
+        profile_suggestion = new_profile_suggestion;
     }
-    let user = users.swap_remove(0);
 
     let file_name = format!(
         "lol-profile-{}-{}.png",
-        user.riot_user_name, user.riot_tag_line
+        profile_suggestion.riot_user_name, profile_suggestion.riot_tag_line
     );
 
-    let png = ugg_client.render_user_stats(user).await?;
+    let png = ugg_client.render_user_stats(profile_suggestion).await?;
 
     let attachment = CreateAttachment::bytes(png, file_name);
     let create_reply = CreateReply::new().attachment(attachment);

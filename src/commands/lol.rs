@@ -12,7 +12,10 @@ use crate::{
     PoiseContext,
     PoiseError,
 };
-use anyhow::Context;
+use anyhow::{
+    Context,
+    ensure,
+};
 use bewu_util::AsyncMutexMap;
 use camino::{
     Utf8Path,
@@ -57,6 +60,37 @@ impl UggClient {
             .search_users(user)
             .await
             .with_context(|| format!("Failed to search for user \"{user}\""))
+    }
+
+    /// Get a player profile suggestion.
+    pub async fn get_profile_suggestion(&self, user: &str) -> anyhow::Result<ugg::model::User> {
+        info!("Searching for lol user with \"{user}\"");
+        
+        let mut users = self
+            .search_users(user)
+            .await
+            .context("Failed to search for users")?;
+        ensure!(!users.is_empty(), "Failed to find user from \"{user}\"");
+        let user = users.swap_remove(0);
+        Ok(user)
+    }
+
+    /// Update a player profile.
+    pub async fn update_player_profile(
+        &self,
+        user_name: &str,
+        tag_line: &str,
+    ) -> anyhow::Result<()> {
+        info!("Updating profile for lol user with \"{user_name}#{tag_line}\"");
+
+        self.client
+            .update_player_profile(user_name, tag_line)
+            .await
+            .with_context(|| {
+                format!("Failed to update profile for user \"{user_name}#{tag_line}\"")
+            })?;
+
+        Ok(())
     }
 
     pub async fn get_icon_path(&self, icon_id: u32) -> anyhow::Result<Utf8PathBuf> {

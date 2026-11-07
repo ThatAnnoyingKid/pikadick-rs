@@ -35,3 +35,11 @@ pub struct User {
     #[serde(rename = "regionId")]
     pub region_id: String,
 }
+
+#[derive(Debug, serde::Deserialize)]
+pub struct StatusWithErrorReason {
+    #[serde(rename = "errorReason")]
+    pub error_reason: Option<serde_json::Value>,
+
+    pub success: bool,
+}

@@ -17,6 +17,10 @@ pub enum Error {
     /// GraphQl error
     #[error("GraphQl error")]
     GraphQl(#[from] self::model::graphql::GraphQlResponseError),
+
+    /// A generic error
+    #[error("{0}")]
+    Generic(&'static str),
 }
 
 #[cfg(test)]

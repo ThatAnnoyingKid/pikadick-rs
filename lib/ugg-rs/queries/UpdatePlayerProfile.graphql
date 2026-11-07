@@ -1,0 +1,11 @@
+query UpdatePlayerProfile($regionId: String!, $riotUserName: String!, $riotTagLine: String!) {
+  updatePlayerProfile(
+    regionId: $regionId
+    riotUserName: $riotUserName
+    riotTagLine: $riotTagLine
+  ) {
+    success
+    errorReason
+    __typename
+  }
+}

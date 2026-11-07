@@ -3,6 +3,7 @@ use crate::{
     model::{
         GraphQlRequest,
         GraphQlResponse,
+        StatusWithErrorReason,
         User,
     },
 };
@@ -12,6 +13,11 @@ const USER_AGENT_STR: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb
 const PLAYER_PROFILE_SUGGESTIONS_QUERY: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/queries/PlayerProfileSuggestions.graphql"
+));
+
+const UPDATE_PLAYER_PROFILE_QUERY: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/queries/UpdatePlayerProfile.graphql"
 ));
 
 const FETCH_MATCH_SUMMARIES_QUERY: &str = include_str!(concat!(
@@ -63,6 +69,7 @@ impl Client {
         Ok(response.into_result()?)
     }
 
+    /// Search for users.
     pub async fn search_users(&self, query: &str) -> Result<Vec<User>, Error> {
         #[derive(Debug, serde::Serialize)]
         struct PlayerProfileSuggestionsVariables<'a> {
@@ -89,6 +96,47 @@ impl Client {
             .await?;
 
         Ok(response.player_profile_suggestions)
+    }
+
+    pub async fn update_player_profile(
+        &self,
+        user_name: &str,
+        tag_line: &str,
+    ) -> Result<(), Error> {
+        #[derive(Debug, serde::Serialize)]
+        struct UpdatePlayerProfileVariables<'a> {
+            #[serde(rename = "riotUserName")]
+            riot_user_name: &'a str,
+
+            #[serde(rename = "riotTagLine")]
+            riot_tag_line: &'a str,
+
+            #[serde(rename = "regionId")]
+            region_id: &'a str,
+        }
+
+        #[derive(Debug, serde::Deserialize)]
+        struct UpdatePlayerProfileResponse {
+            #[serde(rename = "updatePlayerProfile")]
+            update_player_profile: StatusWithErrorReason,
+        }
+
+        let response: UpdatePlayerProfileResponse = self
+            .make_graphql_request(
+                "UpdatePlayerProfile",
+                UPDATE_PLAYER_PROFILE_QUERY,
+                UpdatePlayerProfileVariables {
+                    riot_user_name: user_name,
+                    riot_tag_line: tag_line,
+                    region_id: "na1",
+                },
+            )
+            .await?;
+        if !response.update_player_profile.success {
+            return Err(Error::Generic("API call failed"));
+        }
+
+        Ok(())
     }
 
     pub async fn fetch_match_summaries(&self) -> Result<(), Error> {
