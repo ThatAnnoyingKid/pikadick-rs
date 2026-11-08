@@ -1,6 +1,7 @@
 use skrifa::{
     FontRef,
     MetadataProvider,
+    metrics::BoundingBox,
     prelude::{
         LocationRef,
         Size as SkrifaSize,
@@ -99,6 +100,49 @@ impl SimpleCanvas {
         metrics.ascent - metrics.descent + metrics.leading
     }
 
+    /// Get the bounding box for some text.
+    #[expect(dead_code)]
+    pub fn get_text_bounding_box(
+        &self,
+        font_id: FontId,
+        text: &str,
+        font_size: f32,
+    ) -> BoundingBox {
+        let font = self.get_font_data(font_id);
+
+        let charmap = font.font_ref.charmap();
+        let glyph_metrics = font
+            .font_ref
+            .glyph_metrics(SkrifaSize::new(font_size), LocationRef::default());
+
+        let mut current_x = 0.0;
+        let mut x_min: f32 = 0.0;
+        let mut x_max: f32 = 0.0;
+        let mut y_min: f32 = 0.0;
+        let mut y_max: f32 = 0.0;
+        for ch in text.chars() {
+            if let Some(glyph_id) = charmap.map(ch) {
+                let bounds = glyph_metrics.bounds(glyph_id);
+                if let Some(bounds) = bounds {
+                    x_min = x_min.min(bounds.x_min + current_x);
+                    x_max = x_max.max(bounds.x_max + current_x);
+                    y_min = y_min.min(bounds.y_min);
+                    y_max = y_max.max(bounds.y_max);
+                }
+
+                let advance = glyph_metrics.advance_width(glyph_id).unwrap_or(0.0);
+                current_x += advance;
+            }
+        }
+
+        BoundingBox {
+            x_min,
+            x_max,
+            y_min,
+            y_max,
+        }
+    }
+
     /// Reset the context.
     pub fn reset(&mut self) {
         self.context.reset();
@@ -139,6 +183,7 @@ impl SimpleCanvas {
         self.context.set_transform(old_transform);
     }
 
+    /// Fill in text.
     pub fn fill_text(
         &mut self,
         font_id: FontId,

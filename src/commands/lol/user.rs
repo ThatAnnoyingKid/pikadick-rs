@@ -35,6 +35,7 @@ const fn hex_color_const(data: u32) -> AlphaColor<Srgb> {
 
 const MARGIN: u16 = 20;
 const ICON_SIZE: u16 = 300;
+const RANK_ICON_SIZE: u16 = 64;
 const WIDTH: u16 = 1000;
 const HEIGHT: u16 = 300 + (MARGIN * 2);
 /// #121212
@@ -108,11 +109,24 @@ impl UserStatsRenderer {
         Ok(())
     }
 
+    fn draw_rank_icon(
+        &mut self,
+        rank_icon: Vec<u8>,
+        x: f64,
+        y: f64,
+        size: f64,
+    ) -> anyhow::Result<()> {
+        let pixmap = Pixmap::from_png(std::io::Cursor::new(rank_icon))?;
+        self.canvas.draw_image(pixmap, x, y, size, size, None);
+
+        Ok(())
+    }
+
     pub fn render(
         &mut self,
         user: ugg::model::User,
         icon_png: Vec<u8>,
-        _rank_icon: Option<Vec<u8>>,
+        rank_icon: Option<Vec<u8>>,
     ) -> anyhow::Result<Vec<u8>> {
         const NAME_FONT_SIZE: f32 = 48.0;
         const LEVEL_FONT_SIZE: f32 = 32.0;
@@ -126,7 +140,7 @@ impl UserStatsRenderer {
             (Some(tier), Some(rank), Some(lp)) => {
                 let tier = capitalize(&tier);
                 let rank = rank.to_ascii_uppercase();
-                Some(format!("Rank: {tier} {rank}, {lp} LP"))
+                Some(format!("{tier} {rank}, {lp} LP"))
             }
             _ => None,
         };
@@ -146,6 +160,29 @@ impl UserStatsRenderer {
             start_y,
             NAME_FONT_SIZE,
         )?;
+
+        if let Some(rank_text) = rank_text {
+            const RANK_TEXT_MARGIN: f32 = 5.0;
+
+            let line_height = self.canvas.get_line_height(self.font_id, RANK_FONT_SIZE);
+
+            let icon_y = f64::from(start_y);
+            let rank_icon = rank_icon.context("Missing rank icon")?;
+            self.draw_rank_icon(rank_icon, f64::from(start_x), icon_y, RANK_ICON_SIZE.into())?;
+
+            start_y += line_height;
+
+            self.canvas.context.set_paint(PRIMARY_TEXT_COLOR);
+            let rank_text_x = start_x + f32::from(RANK_ICON_SIZE) + RANK_TEXT_MARGIN;
+            self.canvas.fill_text(
+                self.font_id,
+                &rank_text,
+                rank_text_x,
+                start_y,
+                RANK_FONT_SIZE,
+            )?;
+        }
+
         start_y += self.canvas.get_line_height(self.font_id, LEVEL_FONT_SIZE);
         self.canvas.fill_text(
             self.font_id,
@@ -162,19 +199,8 @@ impl UserStatsRenderer {
             start_y,
             REGION_FONT_SIZE,
         )?;
-        if let Some(rank_text) = rank_text {
-            start_y += self.canvas.get_line_height(self.font_id, RANK_FONT_SIZE);
-            self.canvas.fill_text(
-                self.font_id,
-                rank_text.as_str(),
-                start_x,
-                start_y,
-                RANK_FONT_SIZE,
-            )?;
-        }
 
         let target = self.canvas.render();
-
         Ok(target.into_png()?)
     }
 }
