@@ -2,39 +2,26 @@ use super::autocomplete_user;
 use crate::{
     PoiseContext,
     PoiseError,
-    util::SimpleCanvas,
+    util::{
+        FontId,
+        SimpleCanvas,
+    },
 };
 use anyhow::Context;
 use poise::{
     CreateReply,
     serenity_prelude::CreateAttachment,
 };
-use skrifa::{
-    MetadataProvider,
-    prelude::{
-        LocationRef,
-        Size as SkrifaSize,
-    },
-};
-use std::sync::{
-    Arc,
-    LazyLock,
-};
 use tracing::warn;
 use vello_cpu::{
-    Glyph,
     Pixmap,
     kurbo::{
         BezPath,
         Rect,
     },
-    peniko::{
-        Blob,
-        FontData,
-        color::{
-            AlphaColor,
-            Srgb,
-        },
+    peniko::color::{
+        AlphaColor,
+        Srgb,
     },
 };
 
@@ -46,9 +33,6 @@ const fn hex_color_const(data: u32) -> AlphaColor<Srgb> {
     AlphaColor::new([r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0])
 }
 
-static FONT_REF: LazyLock<skrifa::FontRef<'static>> = LazyLock::new(|| {
-    skrifa::FontRef::new(crate::constants::ROBOTO_MEDIUM_TTF_BYTES).expect("Failed to parse font")
-});
 const MARGIN: u16 = 20;
 const ICON_SIZE: u16 = 300;
 const WIDTH: u16 = 1000;
@@ -86,24 +70,20 @@ fn squircle_path(size: f64, control: f64) -> BezPath {
     path
 }
 
-fn get_font_line_height(font_size: f32) -> f32 {
-    let metrics = FONT_REF.metrics(SkrifaSize::new(font_size), LocationRef::default());
-    metrics.ascent - metrics.descent + metrics.leading
-}
-
 #[derive(Debug)]
 pub(super) struct UserStatsRenderer {
     canvas: SimpleCanvas,
-    font_blob: Blob<u8>,
+    font_id: FontId,
 }
 
 impl UserStatsRenderer {
     pub fn new() -> Self {
-        let canvas = SimpleCanvas::new(WIDTH, HEIGHT);
-        let font = Arc::new(crate::constants::ROBOTO_MEDIUM_TTF_BYTES);
-        let font_blob = Blob::new(font);
+        let mut canvas = SimpleCanvas::new(WIDTH, HEIGHT);
+        let font_id = canvas
+            .add_font(crate::constants::ROBOTO_MEDIUM_TTF_BYTES)
+            .expect("Failed to add font");
 
-        Self { canvas, font_blob }
+        Self { canvas, font_id }
     }
 
     fn draw_background(&mut self) {
@@ -126,61 +106,6 @@ impl UserStatsRenderer {
         );
 
         Ok(())
-    }
-
-    fn draw_text(&mut self, text: &str, x: f32, y: f32, font_size: f32) -> anyhow::Result<Rect> {
-        self.canvas.context.set_paint(PRIMARY_TEXT_COLOR);
-
-        let charmap = FONT_REF.charmap();
-        let glyph_metrics =
-            FONT_REF.glyph_metrics(SkrifaSize::new(font_size), LocationRef::default());
-
-        let mut current_x = x;
-        let mut mapped_glyphs = Vec::new();
-
-        let mut min_x = x;
-        let mut min_y = y;
-        let mut max_x = x;
-        let mut max_y = y;
-
-        for ch in text.chars() {
-            if let Some(glyph_id) = charmap.map(ch) {
-                mapped_glyphs.push(Glyph {
-                    id: glyph_id.to_u32(),
-                    x: current_x,
-                    y,
-                });
-
-                let bounds = glyph_metrics.bounds(glyph_id);
-                min_x = min_x.min(x + bounds.map_or(0.0, |bounds| bounds.x_min));
-                min_y = min_y.min(y + bounds.map_or(0.0, |bounds| bounds.y_min));
-                max_x = max_x.max(current_x + bounds.map_or(0.0, |bounds| bounds.x_max));
-                max_y = max_y.max(y + bounds.map_or(0.0, |bounds| bounds.y_max));
-
-                let advance = glyph_metrics.advance_width(glyph_id).unwrap_or(0.0);
-                current_x += advance;
-            }
-        }
-
-        self.canvas
-            .context
-            .glyph_run(
-                &mut self.canvas.resources,
-                &FontData {
-                    data: self.font_blob.clone(),
-                    index: 0,
-                },
-            )
-            .font_size(font_size)
-            .hint(true)
-            .fill_glyphs(mapped_glyphs.into_iter())?;
-
-        Ok(Rect::new(
-            min_x.into(),
-            min_y.into(),
-            max_x.into(),
-            max_y.into(),
-        ))
     }
 
     pub fn render(
@@ -211,16 +136,41 @@ impl UserStatsRenderer {
         self.draw_background();
         self.draw_profile_icon(icon_png)?;
 
+        self.canvas.context.set_paint(PRIMARY_TEXT_COLOR);
         let start_x = f32::from(MARGIN * 2 + ICON_SIZE);
-        let mut start_y = get_font_line_height(NAME_FONT_SIZE);
-        self.draw_text(name_text.as_str(), start_x, start_y, NAME_FONT_SIZE)?;
-        start_y += get_font_line_height(LEVEL_FONT_SIZE);
-        self.draw_text(level_text.as_str(), start_x, start_y, LEVEL_FONT_SIZE)?;
-        start_y += get_font_line_height(REGION_FONT_SIZE);
-        self.draw_text(region_text.as_str(), start_x, start_y, REGION_FONT_SIZE)?;
+        let mut start_y = self.canvas.get_line_height(self.font_id, NAME_FONT_SIZE);
+        self.canvas.fill_text(
+            self.font_id,
+            name_text.as_str(),
+            start_x,
+            start_y,
+            NAME_FONT_SIZE,
+        )?;
+        start_y += self.canvas.get_line_height(self.font_id, LEVEL_FONT_SIZE);
+        self.canvas.fill_text(
+            self.font_id,
+            level_text.as_str(),
+            start_x,
+            start_y,
+            LEVEL_FONT_SIZE,
+        )?;
+        start_y += self.canvas.get_line_height(self.font_id, REGION_FONT_SIZE);
+        self.canvas.fill_text(
+            self.font_id,
+            region_text.as_str(),
+            start_x,
+            start_y,
+            REGION_FONT_SIZE,
+        )?;
         if let Some(rank_text) = rank_text {
-            start_y += get_font_line_height(RANK_FONT_SIZE);
-            self.draw_text(rank_text.as_str(), start_x, start_y, RANK_FONT_SIZE)?;
+            start_y += self.canvas.get_line_height(self.font_id, RANK_FONT_SIZE);
+            self.canvas.fill_text(
+                self.font_id,
+                rank_text.as_str(),
+                start_x,
+                start_y,
+                RANK_FONT_SIZE,
+            )?;
         }
 
         let target = self.canvas.render();

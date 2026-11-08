@@ -7,7 +7,10 @@ pub use self::{
     ascii_table::AsciiTable,
     encoder_task::EncoderTask,
     loading_reaction::LoadingReaction,
-    simple_canvas::SimpleCanvas,
+    simple_canvas::{
+        FontId,
+        SimpleCanvas,
+    },
 };
 use regex::Regex;
 use std::{
