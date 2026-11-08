@@ -164,7 +164,15 @@ impl Client {
         Ok(())
     }
 
-    pub async fn fetch_match_summaries(&self) -> Result<(), Error> {
+    /// Fetch match summaries for a user.
+    ///
+    /// Page starts at 1.
+    pub async fn fetch_match_summaries(
+        &self,
+        riot_user_name: &str,
+        riot_tag_line: &str,
+        page: u32,
+    ) -> Result<serde_json::Value, Error> {
         #[derive(Debug, serde::Serialize)]
         struct FetchMatchSummariesVariables<'a> {
             #[serde(rename = "championId")]
@@ -210,20 +218,18 @@ impl Client {
                     champion_id: Vec::new(),
                     duo_riot_tag_line: "",
                     duo_riot_user_name: "",
-                    page: 1,
+                    page,
                     queue_type: Vec::new(),
                     region_id: "na1",
-                    riot_tag_line: "1234",
-                    riot_user_name: "adumbidiot",
+                    riot_tag_line,
+                    riot_user_name,
                     role: Vec::new(),
                     season_ids: vec![26, 25],
                 },
             )
             .await?;
 
-        dbg!(response.fetch_match_summaries);
-        todo!("fetch_match_summaries")
-        // Ok(response.fetch_match_summaries)
+        Ok(dbg!(response).fetch_match_summaries)
     }
 }
 

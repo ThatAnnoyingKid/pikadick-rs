@@ -40,10 +40,10 @@ mod test {
     #[tokio::test]
     async fn fetch_match_summaries() {
         let client = Client::new();
-        let users = client
-            .fetch_match_summaries()
+        let summaries = client
+            .fetch_match_summaries("adumbidiot", "1234", 1)
             .await
             .expect("Failed to fetch match summaries");
-        dbg!(users);
+        dbg!(summaries);
     }
 }
