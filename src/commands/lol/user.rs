@@ -3,6 +3,7 @@ use crate::{
     PoiseContext,
     PoiseError,
     util::{
+        FillTextOptions,
         FontId,
         SimpleCanvas,
     },
@@ -134,7 +135,7 @@ impl UserStatsRenderer {
         const RANK_FONT_SIZE: f32 = 32.0;
 
         let name_text = format!("{}#{}", user.riot_user_name, user.riot_tag_line);
-        let level_text = format!("Level: {}", user.summoner_level);
+        let level_text = format!("Level {}", user.summoner_level);
         let region_text = format!("Region: {}", user.region_id.to_ascii_uppercase());
         let rank_text = match (user.tier, user.rank, user.lp) {
             (Some(tier), Some(rank), Some(lp)) => {
@@ -156,9 +157,10 @@ impl UserStatsRenderer {
         self.canvas.fill_text(
             self.font_id,
             name_text.as_str(),
-            start_x,
-            start_y,
-            NAME_FONT_SIZE,
+            FillTextOptions::new()
+                .x(start_x)
+                .y(start_y)
+                .font_size(NAME_FONT_SIZE),
         )?;
 
         if let Some(rank_text) = rank_text {
@@ -177,9 +179,10 @@ impl UserStatsRenderer {
             self.canvas.fill_text(
                 self.font_id,
                 &rank_text,
-                rank_text_x,
-                start_y,
-                RANK_FONT_SIZE,
+                FillTextOptions::new()
+                    .x(rank_text_x)
+                    .y(start_y)
+                    .font_size(RANK_FONT_SIZE),
             )?;
         }
 
@@ -187,17 +190,19 @@ impl UserStatsRenderer {
         self.canvas.fill_text(
             self.font_id,
             level_text.as_str(),
-            start_x,
-            start_y,
-            LEVEL_FONT_SIZE,
+            FillTextOptions::new()
+                .x(start_x)
+                .y(start_y)
+                .font_size(LEVEL_FONT_SIZE),
         )?;
         start_y += self.canvas.get_line_height(self.font_id, REGION_FONT_SIZE);
         self.canvas.fill_text(
             self.font_id,
             region_text.as_str(),
-            start_x,
-            start_y,
-            REGION_FONT_SIZE,
+            FillTextOptions::new()
+                .x(start_x)
+                .y(start_y)
+                .font_size(REGION_FONT_SIZE),
         )?;
 
         let target = self.canvas.render();

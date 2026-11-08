@@ -8,6 +8,7 @@ pub use self::{
     encoder_task::EncoderTask,
     loading_reaction::LoadingReaction,
     simple_canvas::{
+        FillTextOptions,
         FontId,
         SimpleCanvas,
     },

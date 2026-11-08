@@ -27,6 +27,46 @@ use vello_cpu::{
     },
 };
 
+const DEFAULT_FONT_SIZE: f32 = 16.0;
+
+#[derive(Debug)]
+pub struct FillTextOptions {
+    pub x: f32,
+    pub y: f32,
+    pub font_size: f32,
+}
+
+impl FillTextOptions {
+    pub fn new() -> Self {
+        Self {
+            x: 0.0,
+            y: 0.0,
+            font_size: DEFAULT_FONT_SIZE,
+        }
+    }
+
+    pub fn x(mut self, x: f32) -> Self {
+        self.x = x;
+        self
+    }
+
+    pub fn y(mut self, y: f32) -> Self {
+        self.y = y;
+        self
+    }
+
+    pub fn font_size(mut self, font_size: f32) -> Self {
+        self.font_size = font_size;
+        self
+    }
+}
+
+impl Default for FillTextOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct FontId(usize);
 
@@ -188,9 +228,7 @@ impl SimpleCanvas {
         &mut self,
         font_id: FontId,
         text: &str,
-        x: f32,
-        y: f32,
-        font_size: f32,
+        options: FillTextOptions,
     ) -> anyhow::Result<()> {
         let font = self.get_font_data(font_id);
         let font_data = font.font_data.clone();
@@ -198,9 +236,9 @@ impl SimpleCanvas {
         let charmap = font.font_ref.charmap();
         let glyph_metrics = font
             .font_ref
-            .glyph_metrics(SkrifaSize::new(font_size), LocationRef::default());
+            .glyph_metrics(SkrifaSize::new(options.font_size), LocationRef::default());
 
-        let mut current_x = x;
+        let mut current_x = options.x;
         let mut mapped_glyphs = Vec::new();
 
         for ch in text.chars() {
@@ -208,7 +246,7 @@ impl SimpleCanvas {
                 mapped_glyphs.push(Glyph {
                     id: glyph_id.to_u32(),
                     x: current_x,
-                    y,
+                    y: options.y,
                 });
 
                 let advance = glyph_metrics.advance_width(glyph_id).unwrap_or(0.0);
@@ -218,7 +256,7 @@ impl SimpleCanvas {
 
         self.context
             .glyph_run(&mut self.resources, &font_data)
-            .font_size(font_size)
+            .font_size(options.font_size)
             .hint(true)
             .fill_glyphs(mapped_glyphs.into_iter())?;
 
