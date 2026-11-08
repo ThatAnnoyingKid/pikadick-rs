@@ -1,11 +1,13 @@
 mod ascii_table;
 mod encoder_task;
 mod loading_reaction;
+mod simple_canvas;
 
 pub use self::{
     ascii_table::AsciiTable,
     encoder_task::EncoderTask,
     loading_reaction::LoadingReaction,
+    simple_canvas::SimpleCanvas,
 };
 use regex::Regex;
 use std::{

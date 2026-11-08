@@ -2,6 +2,7 @@ use super::autocomplete_user;
 use crate::{
     PoiseContext,
     PoiseError,
+    util::SimpleCanvas,
 };
 use anyhow::Context;
 use poise::{
@@ -22,11 +23,7 @@ use std::sync::{
 use tracing::warn;
 use vello_cpu::{
     Glyph,
-    Image,
-    ImageSource,
     Pixmap,
-    RenderContext,
-    Resources,
     kurbo::{
         BezPath,
         Rect,
@@ -34,12 +31,10 @@ use vello_cpu::{
     peniko::{
         Blob,
         FontData,
-        ImageSampler,
         color::{
             AlphaColor,
             Srgb,
         },
-        kurbo::Affine,
     },
 };
 
@@ -98,60 +93,43 @@ fn get_font_line_height(font_size: f32) -> f32 {
 
 #[derive(Debug)]
 pub(super) struct UserStatsRenderer {
-    context: RenderContext,
-    resources: Resources,
+    canvas: SimpleCanvas,
     font_blob: Blob<u8>,
 }
 
 impl UserStatsRenderer {
     pub fn new() -> Self {
-        let context = RenderContext::new(WIDTH, HEIGHT);
-        let resources = Resources::new();
+        let canvas = SimpleCanvas::new(WIDTH, HEIGHT);
         let font = Arc::new(crate::constants::ROBOTO_MEDIUM_TTF_BYTES);
         let font_blob = Blob::new(font);
 
-        Self {
-            context,
-            resources,
-            font_blob,
-        }
+        Self { canvas, font_blob }
     }
 
     fn draw_background(&mut self) {
-        self.context.set_paint(BACKGROUND_COLOR);
-        self.context
+        self.canvas.context.set_paint(BACKGROUND_COLOR);
+        self.canvas
+            .context
             .fill_rect(&Rect::new(0.0, 0.0, f64::from(WIDTH), f64::from(HEIGHT)));
     }
 
-    fn draw_icon(&mut self, icon_png: Vec<u8>) -> anyhow::Result<()> {
-        let icon_pixmap = Pixmap::from_png(std::io::Cursor::new(icon_png))?;
-        let icon_pixmap_width = icon_pixmap.width();
-        let icon_pixmap_height = icon_pixmap.height();
-        let icon_image = Image {
-            image: ImageSource::Pixmap(Arc::new(icon_pixmap)),
-            sampler: ImageSampler::default(),
-        };
-
-        let transform = Affine::translate((MARGIN.into(), MARGIN.into()))
-            * Affine::scale(f64::from(ICON_SIZE) / f64::from(icon_pixmap_width));
-        self.context.set_transform(transform);
-        let squircle_path = squircle_path(icon_pixmap_width.into(), 0.49);
-        self.context.push_clip_path(&squircle_path);
-        self.context.set_paint(icon_image);
-        self.context.fill_rect(&Rect::new(
-            0.0,
-            0.0,
-            icon_pixmap_width.into(),
-            icon_pixmap_height.into(),
-        ));
-        self.context.pop_clip();
-        self.context.reset_transform();
+    fn draw_profile_icon(&mut self, icon_png: Vec<u8>) -> anyhow::Result<()> {
+        let pixmap = Pixmap::from_png(std::io::Cursor::new(icon_png))?;
+        let clip_path = squircle_path(pixmap.width().into(), 0.49);
+        self.canvas.draw_image(
+            pixmap,
+            MARGIN.into(),
+            MARGIN.into(),
+            ICON_SIZE.into(),
+            ICON_SIZE.into(),
+            Some(&clip_path),
+        );
 
         Ok(())
     }
 
     fn draw_text(&mut self, text: &str, x: f32, y: f32, font_size: f32) -> anyhow::Result<Rect> {
-        self.context.set_paint(PRIMARY_TEXT_COLOR);
+        self.canvas.context.set_paint(PRIMARY_TEXT_COLOR);
 
         let charmap = FONT_REF.charmap();
         let glyph_metrics =
@@ -184,9 +162,10 @@ impl UserStatsRenderer {
             }
         }
 
-        self.context
+        self.canvas
+            .context
             .glyph_run(
-                &mut self.resources,
+                &mut self.canvas.resources,
                 &FontData {
                     data: self.font_blob.clone(),
                     index: 0,
@@ -204,7 +183,12 @@ impl UserStatsRenderer {
         ))
     }
 
-    pub fn render(&mut self, user: ugg::model::User, icon_png: Vec<u8>, _rank_icon: Option<Vec<u8>>) -> anyhow::Result<Vec<u8>> {
+    pub fn render(
+        &mut self,
+        user: ugg::model::User,
+        icon_png: Vec<u8>,
+        _rank_icon: Option<Vec<u8>>,
+    ) -> anyhow::Result<Vec<u8>> {
         const NAME_FONT_SIZE: f32 = 48.0;
         const LEVEL_FONT_SIZE: f32 = 32.0;
         const REGION_FONT_SIZE: f32 = 32.0;
@@ -222,10 +206,10 @@ impl UserStatsRenderer {
             _ => None,
         };
 
-        self.context.reset();
+        self.canvas.reset();
 
         self.draw_background();
-        self.draw_icon(icon_png)?;
+        self.draw_profile_icon(icon_png)?;
 
         let start_x = f32::from(MARGIN * 2 + ICON_SIZE);
         let mut start_y = get_font_line_height(NAME_FONT_SIZE);
@@ -239,9 +223,7 @@ impl UserStatsRenderer {
             self.draw_text(rank_text.as_str(), start_x, start_y, RANK_FONT_SIZE)?;
         }
 
-        let mut target = Pixmap::new(WIDTH, HEIGHT);
-        self.context.flush();
-        self.context.render(&mut target, &mut self.resources);
+        let target = self.canvas.render();
 
         Ok(target.into_png()?)
     }

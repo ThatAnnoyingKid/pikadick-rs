@@ -160,9 +160,7 @@ impl UggClient {
 
         info!("Downloading lol rank icon {rank}");
 
-        let url = format!(
-            "https://static.bigbrain.gg/assets/lol/ranks/s13/{rank}.png"
-        );
+        let url = format!("https://static.bigbrain.gg/assets/lol/ranks/s13/{rank}.png");
         self.download_to_path(url.as_str(), &path).await?;
 
         drop(lock);
@@ -174,10 +172,10 @@ impl UggClient {
         let icon_path = self.get_icon_path(user.icon_id).await?;
         let icon = tokio::fs::read(icon_path).await?;
 
-        let rank_icon = match user.rank.as_ref() {
-            Some(rank) => {
-                let rank_icon_path = self.get_rank_icon_path(rank).await?;
-                Some(tokio::fs::read(rank_icon_path).await?)
+        let rank_icon = match user.tier.as_ref() {
+            Some(tier) => {
+                let path = self.get_rank_icon_path(tier).await?;
+                Some(tokio::fs::read(path).await?)
             }
             None => None,
         };
