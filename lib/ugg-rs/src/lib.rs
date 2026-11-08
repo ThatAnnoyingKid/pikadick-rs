@@ -27,7 +27,9 @@ pub enum Error {
 mod test {
     use super::*;
 
+    // CI IP is blocked
     #[tokio::test]
+    #[ignore]
     async fn search_users() {
         let client = Client::new();
         let users = client
@@ -37,7 +39,9 @@ mod test {
         dbg!(users);
     }
 
+    // CI IP is blocked
     #[tokio::test]
+    #[ignore]
     async fn fetch_match_summaries() {
         let client = Client::new();
         let summaries = client
