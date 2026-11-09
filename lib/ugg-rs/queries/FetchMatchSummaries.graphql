@@ -1,0 +1,92 @@
+query FetchMatchSummaries($championId: [Int], $page: Int, $queueType: [Int], $duoRiotUserName: String, $duoRiotTagLine: String, $regionId: String!, $role: [Int], $seasonIds: [Int]!, $riotUserName: String!, $riotTagLine: String!) {
+  fetchPlayerMatchSummaries(
+    championId: $championId
+    page: $page
+    queueType: $queueType
+    duoRiotUserName: $duoRiotUserName
+    duoRiotTagLine: $duoRiotTagLine
+    regionId: $regionId
+    role: $role
+    seasonIds: $seasonIds
+    riotUserName: $riotUserName
+    riotTagLine: $riotTagLine
+  ) {
+    finishedMatchSummaries
+    totalNumMatches
+    matchSummaries {
+      assists
+      augments
+      championId
+      cs
+      damage
+      deaths
+      gold
+      items
+      jungleCs
+      killParticipation
+      kills
+      level
+      matchCreationTime
+      matchDuration
+      matchId
+      maximumKillStreak
+      primaryStyle
+      queueType
+      regionId
+      role
+      runes
+      subStyle
+      summonerName
+      riotUserName
+      riotTagLine
+      summonerSpells
+      psHardCarry
+      psTeamPlay
+      lpInfo {
+        lp
+        placement
+        promoProgress
+        promoTarget
+        promotedTo {
+          tier
+          rank
+          __typename
+        }
+        __typename
+      }
+      teamA {
+        championId
+        summonerName
+        riotUserName
+        riotTagLine
+        teamId
+        role
+        hardCarry
+        teamplay
+        placement
+        playerSubteamId
+        __typename
+      }
+      teamB {
+        championId
+        summonerName
+        riotUserName
+        riotTagLine
+        teamId
+        role
+        hardCarry
+        teamplay
+        placement
+        playerSubteamId
+        __typename
+      }
+      version
+      visionScore
+      win
+      roleQuestCompletion
+      roleBoundItem
+      __typename
+    }
+    __typename
+  }
+}

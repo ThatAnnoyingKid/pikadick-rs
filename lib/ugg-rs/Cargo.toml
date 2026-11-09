@@ -1,0 +1,19 @@
+[package]
+name = "ugg"
+version = "0.0.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+reqwest = { version = "0.13.5", features = [ "gzip", "http2", "json" ] }
+serde = { version = "1.0.229", features = [ "derive" ] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+
+[features]
+default = [ "rustls", "reqwest/system-proxy" ]
+native-tls = [ "reqwest/native-tls" ]
+rustls = [ "reqwest/rustls" ]
+
+[dev-dependencies]
+tokio = { version = "1.54.1", features = [ "macros" ] }

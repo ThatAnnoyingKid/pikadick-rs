@@ -1,0 +1,53 @@
+mod client;
+pub mod model;
+
+pub use crate::client::Client;
+
+/// Library error
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    /// Reqwest http error
+    #[error("Http error")]
+    Reqwest(#[from] reqwest::Error),
+
+    /// Json error
+    #[error("Json error")]
+    Json(#[from] serde_json::Error),
+
+    /// GraphQl error
+    #[error("GraphQl error")]
+    GraphQl(#[from] self::model::graphql::GraphQlResponseError),
+
+    /// A generic error
+    #[error("{0}")]
+    Generic(&'static str),
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    // CI IP is blocked
+    #[tokio::test]
+    #[ignore]
+    async fn search_users() {
+        let client = Client::new();
+        let users = client
+            .search_users("a")
+            .await
+            .expect("Failed to search users");
+        dbg!(users);
+    }
+
+    // CI IP is blocked
+    #[tokio::test]
+    #[ignore]
+    async fn fetch_match_summaries() {
+        let client = Client::new();
+        let summaries = client
+            .fetch_match_summaries("adumbidiot", "1234", 1)
+            .await
+            .expect("Failed to fetch match summaries");
+        dbg!(summaries);
+    }
+}

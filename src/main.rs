@@ -33,6 +33,7 @@
 mod cli_options;
 mod commands;
 mod config;
+mod constants;
 mod database;
 mod logger;
 mod poise_data;
@@ -279,6 +280,7 @@ async fn setup_client(poise_data: PoiseData) -> anyhow::Result<Client> {
             self::commands::iqdb(),
             self::commands::latency(),
             self::commands::leave(),
+            self::commands::lol(),
             self::commands::nekos(),
             self::commands::ping(),
             self::commands::quizizz(),

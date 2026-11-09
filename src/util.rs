@@ -1,11 +1,17 @@
 mod ascii_table;
 mod encoder_task;
 mod loading_reaction;
+mod simple_canvas;
 
 pub use self::{
     ascii_table::AsciiTable,
     encoder_task::EncoderTask,
     loading_reaction::LoadingReaction,
+    simple_canvas::{
+        FillTextOptions,
+        FontId,
+        SimpleCanvas,
+    },
 };
 use regex::Regex;
 use std::{
@@ -35,6 +41,18 @@ pub async fn try_metadata<P: AsRef<Path>>(path: P) -> std::io::Result<Option<std
     match tokio::fs::metadata(&path).await {
         Ok(metadata) => Ok(Some(metadata)),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
+/// Try to create a dir.
+pub async fn try_create_dir<P>(path: P) -> std::io::Result<bool>
+where
+    P: AsRef<Path>,
+{
+    match tokio::fs::create_dir(path.as_ref()).await {
+        Ok(()) => Ok(true),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => Ok(false),
         Err(error) => Err(error),
     }
 }

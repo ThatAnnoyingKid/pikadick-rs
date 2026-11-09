@@ -45,6 +45,11 @@ ignore = [
     # Blocked on davey updating p256.
     # Joy.
     "RUSTSEC-2026-0387",
+    
+    # Blocked on davey updating openmls
+    # Joy.
+    "RUSTSEC-2026-0441",
+    
 ]
 
 [licenses]
@@ -141,6 +146,7 @@ skip = [
     { name = "parking_lot", version = "0.12.5" },
     { name = "miniz_oxide", version = "0.8.9" },
     { name = "base64", version = "0.22.1" },
+    { name = "core-foundation", version = "0.9.4" },
 ]
 
 # Mostly soundness denies since the advisory lacks a section for soundess bugs
