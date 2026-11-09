@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["extract_urls","try_create_dir","try_metadata"],"mod":["ascii_table","encoder_task","loading_reaction","simple_canvas"],"static":["URL_REGEX"]};

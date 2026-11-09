@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["GraphQlResponse"],"struct":["GraphQlError","GraphQlResponseError","Location"]};

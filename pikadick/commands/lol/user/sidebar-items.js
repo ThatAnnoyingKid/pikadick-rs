@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["BACKGROUND_COLOR","HEIGHT","ICON_SIZE","MARGIN","PRIMARY_TEXT_COLOR","RANK_ICON_SIZE","WIDTH"],"fn":["capitalize","hex_color_const","squircle_path","user"],"struct":["UserStatsRenderer"]};

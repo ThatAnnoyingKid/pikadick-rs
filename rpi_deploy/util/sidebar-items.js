@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["get_rustup_active_toolchain","get_rustup_installed_targets","make_deb_arch"]};
